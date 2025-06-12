@@ -4,6 +4,7 @@ BatchFeatureTable API payload schema
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, List, Optional
 
 from bson import ObjectId
@@ -27,6 +28,7 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     batch_request_table_id: Optional[PydanticObjectId] = Field(default=None)
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
+    point_in_time: Optional[datetime] = Field(default=None)
 
     @model_validator(mode="after")
     def _validate_input(self) -> "BatchFeatureTableCreate":

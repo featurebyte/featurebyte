@@ -251,6 +251,7 @@ def get_current_timestamp_expr(
     if request_timestamp is None:
         current_timestamp_expr = adapter.current_timestamp()
     else:
+        # TODO: if tz provided, we should convert the timestamp to UTC
         current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     return current_timestamp_expr
 

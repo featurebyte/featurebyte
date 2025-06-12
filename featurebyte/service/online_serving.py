@@ -116,6 +116,7 @@ class OnlineServingService:
         request_data: Union[List[Dict[str, Any]], BatchRequestTableModel],
         output_table_details: Optional[TableDetails] = None,
         batch_feature_table_id: Optional[PydanticObjectId] = None,
+        point_in_time: Optional[datetime] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -130,6 +131,8 @@ class OnlineServingService:
             Output table details
         batch_feature_table_id: Optional[PydanticObjectId]
             Batch feature table ID to track the time taken for the online serving request
+        point_in_time: Optional[datetime]
+            Point in time to use for the request. If not provided, the current time will be used.
 
         Returns
         -------
@@ -186,6 +189,7 @@ class OnlineServingService:
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,
+            request_timestamp=point_in_time,
             source_info=feature_store.get_source_info(),
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,

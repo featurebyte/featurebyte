@@ -2,6 +2,7 @@
 Unit tests for BatchFeatureTable class
 """
 
+from datetime import datetime
 from typing import Any, Dict
 
 import pandas as pd
@@ -10,6 +11,7 @@ import pytest
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="batch_feature_table")
@@ -118,3 +120,37 @@ class TestBatchFeatureTableFromView(BaseMaterializedTableApiTest):
         assert df["feature_store_name"].tolist() == ["sf_featurestore"]
         assert df["batch_request_table_name"].tolist() == [None]
         assert df["shape"].tolist() == [[500, 3]]
+
+
+def test_batch_feature_table_with_point_in_time(
+    deployment,
+    batch_request_table_from_view,
+    mock_deployment_flow,
+    snowflake_execute_query_for_materialized_table,
+    update_fixtures,
+):
+    """
+    Test creating batch feature table with point in time
+    """
+    deployment.enable()
+    _ = deployment.compute_batch_feature_table(
+        batch_request_table_from_view,
+        "my_batch_feature_table_with_point_in_time",
+        point_in_time=datetime(2023, 1, 1, 10, 0, 0),
+    )
+    query = None
+    for execute_query_call_args in snowflake_execute_query_for_materialized_table.call_args_list:
+        args, kwargs = execute_query_call_args
+        if args:
+            query = args[0]
+        else:
+            query = kwargs.get("query")
+        if query is not None and "ONLINE_REQUEST_TABLE" in query:
+            break
+    else:
+        pytest.fail("Expected query for ONLINE_REQUEST_TABLE not found")
+    assert_equal_with_expected_fixture(
+        query,
+        "tests/fixtures/api/test_batch_feature_table/query_with_point_in_time.sql",
+        update_fixtures,
+    )

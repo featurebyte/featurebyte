@@ -311,6 +311,18 @@ def patched_deployed_tile_table_manager_unique_identifier():
         yield
 
 
+@pytest.fixture(autouse=True)
+def patched_materialized_table_location_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.service.materialized_table.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """
