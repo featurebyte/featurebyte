@@ -3,7 +3,6 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
-    REQ."POINT_IN_TIME",
     REQ."target",
     CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000000" AS REQ
@@ -27,7 +26,6 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
-    REQ."POINT_IN_TIME",
     REQ."target",
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"

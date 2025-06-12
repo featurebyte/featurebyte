@@ -557,6 +557,14 @@ async def get_online_features(
             request_table_details = request_data.table_details
             request_table_columns = request_data.column_names[:]
 
+    # Point in time should be provided via request_timestamp. We need to make sure
+    # request_table_columns does not contain POINT_IN_TIME since that will be added internally
+    request_table_columns = [
+        column_name
+        for column_name in request_table_columns
+        if column_name != SpecialColumnName.POINT_IN_TIME
+    ]
+
     # If using multiple queries, FeatureQuerySet requires request table to be registered as a
     # table beforehand.
     if isinstance(request_data, pd.DataFrame):
