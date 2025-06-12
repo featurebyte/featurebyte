@@ -184,7 +184,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 ),
             )
             converted_expr = (
-                select(column_expr)
+                select(expressions.alias_(column_expr, alias=column_name, quoted=True))
                 .from_(source_table_expr)
                 .where(columns_not_null([column_name]))
                 .limit(FORMAT_STRING_VALIDATION_NUM_RECORDS)
