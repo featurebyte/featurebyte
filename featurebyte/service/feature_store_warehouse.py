@@ -147,13 +147,17 @@ class FeatureStoreWarehouseService:
         if not filter_featurebyte_tables:
             return True
         for prefix in ViewNamePrefix.visible():
-            if table_name.startswith(prefix):
+            # Table name case can get changed in certain databases (e.g. Databricks)
+            prefix = prefix.upper()
+            if table_name.upper().startswith(prefix):
                 return True
         # quick filter for materialized tables
         if "TABLE" not in table_name:
             return False
         for prefix in MaterializedTableNamePrefix.visible():
-            if table_name.startswith(prefix):
+            # Table name case can get changed in certain databases (e.g. Databricks)
+            prefix = prefix.upper()
+            if table_name.upper().startswith(prefix):
                 return True
         return False
 

@@ -2,6 +2,7 @@
 Test for ManagedView route
 """
 
+import textwrap
 from http import HTTPStatus
 
 import pytest
@@ -194,7 +195,13 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response_dict == {
             "name": "My Managed View",
-            "sql": "SELECT * FROM my_table",
+            "sql": textwrap.dedent(
+                """
+                SELECT
+                  *
+                FROM my_table
+                """
+            ).strip(),
             "table_details": model_response_dict["tabular_source"]["table_details"],
             "created_at": model_response_dict["created_at"],
             "description": "This is a managed view",
@@ -211,10 +218,14 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         view_name = response_dict["tabular_source"]["table_details"]["table_name"]
 
         assert snowflake_execute_query.call_args_list[-2][1] == {
-            "query": (
-                f'CREATE VIEW "sf_database"."sf_schema"."{view_name}" AS\n'
-                "SELECT * FROM (SELECT\n  *\nFROM my_table)"
-            ),
+            "query": textwrap.dedent(
+                f"""
+                CREATE VIEW "sf_database"."sf_schema"."{view_name}" AS
+                SELECT * FROM (SELECT
+                  *
+                FROM my_table)
+                """
+            ).strip(),
             "timeout": 86400,
             "to_log_error": True,
             "query_metadata": None,
@@ -253,7 +264,13 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
             "description": "This is a managed view",
             "is_deleted": False,
             "catalog_id": "646f6c1c0ed28a5271fb02db",
-            "sql": "SELECT * FROM my_table",
+            "sql": textwrap.dedent(
+                """
+                SELECT
+                  *
+                FROM my_table
+                """
+            ).strip(),
             "tabular_source": {
                 "feature_store_id": "646f6c190ed28a5271fb02a1",
                 "table_details": {
