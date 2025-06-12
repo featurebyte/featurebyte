@@ -223,7 +223,7 @@ class Deployment(DeletableApiObject):
             Rename columns in the source table using this mapping from old column names to new
             column names when creating the batch feature table. If None, no columns are renamed.
             Not applicable when batch_request_table is a BatchRequestTable.
-        point_in_time: Optional[datetime]
+        point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
             current time is used.
 
