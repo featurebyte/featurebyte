@@ -204,7 +204,7 @@ class Deployment(DeletableApiObject):
         batch_feature_table_name: str,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
-        point_in_time: Optional[datetime] = None,
+        point_in_time: Optional[str | datetime] = None,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features

@@ -5,7 +5,7 @@ SQL generation for online serving
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
@@ -251,7 +251,8 @@ def get_current_timestamp_expr(
     if request_timestamp is None:
         current_timestamp_expr = adapter.current_timestamp()
     else:
-        # TODO: if tz provided, we should convert the timestamp to UTC
+        if request_timestamp.tzinfo is not None:
+            request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
         current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     return current_timestamp_expr
 

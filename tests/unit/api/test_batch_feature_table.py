@@ -122,11 +122,20 @@ class TestBatchFeatureTableFromView(BaseMaterializedTableApiTest):
         assert df["shape"].tolist() == [[500, 3]]
 
 
+@pytest.mark.parametrize(
+    "point_in_time",
+    [
+        datetime(2023, 1, 1, 10, 0, 0),
+        "2023-01-01 10:00:00",
+        "2023-01-01 18:00:00+08:00",
+    ],
+)
 def test_batch_feature_table_with_point_in_time(
     deployment,
     batch_request_table_from_view,
     mock_deployment_flow,
     snowflake_execute_query_for_materialized_table,
+    point_in_time,
     update_fixtures,
 ):
     """
@@ -136,7 +145,7 @@ def test_batch_feature_table_with_point_in_time(
     _ = deployment.compute_batch_feature_table(
         batch_request_table_from_view,
         "my_batch_feature_table_with_point_in_time",
-        point_in_time=datetime(2023, 1, 1, 10, 0, 0),
+        point_in_time=point_in_time,
     )
     query = None
     for execute_query_call_args in snowflake_execute_query_for_materialized_table.call_args_list:
