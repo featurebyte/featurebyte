@@ -262,7 +262,7 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
                 )
               )
               WHERE
-                "__fb_object_agg_row_number" <= 50000
+                "__fb_object_agg_row_number" <= 500
             ) AS INNER_
             GROUP BY
               INNER_."serving_name",
@@ -335,7 +335,7 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
                 )
               )
               WHERE
-                "__fb_object_agg_row_number" <= 50000
+                "__fb_object_agg_row_number" <= 500
             ) AS INNER_
             GROUP BY
               INNER_."serving_name",
@@ -483,7 +483,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params, spark_s
             )
           )
           WHERE
-            "__fb_object_agg_row_number" <= 50000
+            "__fb_object_agg_row_number" <= 500
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",
