@@ -17,7 +17,6 @@ from bson import ObjectId
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
@@ -267,14 +266,11 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
     """
     Check get_batch_features_async
     """
-    with patch(
-        "featurebyte.query_graph.sql.online_serving.get_current_timestamp_expr",
-        return_value=make_literal_value("2001-01-02 13:15:00", cast_as_timestamp=True),
-    ):
-        batch_feature_table = deployment.compute_batch_feature_table(
-            batch_request_table=batch_request_table,
-            batch_feature_table_name=f"batch_feature_table_{ObjectId()}",
-        )
+    batch_feature_table = deployment.compute_batch_feature_table(
+        batch_request_table=batch_request_table,
+        batch_feature_table_name=f"batch_feature_table_{ObjectId()}",
+        point_in_time="2001-01-02 13:15:00",
+    )
     preview_df = batch_feature_table.preview(limit=df_historical.shape[0])
     fb_assert_frame_equal(
         df_historical[columns],
