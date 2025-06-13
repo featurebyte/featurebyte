@@ -61,7 +61,7 @@ LEFT JOIN (
       )
     )
     WHERE
-      "__fb_object_agg_row_number" <= 50000
+      "__fb_object_agg_row_number" <= 500
   ) AS INNER_
   GROUP BY
     INNER_."POINT_IN_TIME",
