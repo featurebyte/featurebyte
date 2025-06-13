@@ -16,14 +16,27 @@ from featurebyte.sql.tile_generate import TileGenerate
 from tests.integration.tile.hepler import format_timestamp_expr
 
 
+@pytest.fixture(name="tile_generate_services")
+def tile_generate_services_fixture(app_container):
+    """
+    Fixture for services required by TileGenerate.
+
+    We really should refactor TileGenerate as a proper service to handle dependency injection.
+    """
+    return {
+        "tile_registry_service": app_container.tile_registry_service,
+        "warehouse_table_service": app_container.warehouse_table_service,
+        "deployed_tile_table_service": app_container.deployed_tile_table_service,
+        "system_metrics_service": app_container.system_metrics_service,
+    }
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tile(
     session,
     base_sql_model,
-    tile_registry_service,
-    warehouse_table_service,
-    deployed_tile_table_service,
+    tile_generate_services,
 ):
     """
     Test normal generation of tiles
@@ -63,9 +76,7 @@ async def test_generate_tile(
         update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
-        tile_registry_service=tile_registry_service,
-        warehouse_table_service=warehouse_table_service,
-        deployed_tile_table_service=deployed_tile_table_service,
+        **tile_generate_services,
     )
 
     await tile_generate_ins.execute()
@@ -80,9 +91,7 @@ async def test_generate_tile(
 async def test_generate_tile_no_data(
     session,
     base_sql_model,
-    tile_registry_service,
-    warehouse_table_service,
-    deployed_tile_table_service,
+    tile_generate_services,
 ):
     """
     Test generation of tile with no tile table
@@ -120,9 +129,7 @@ async def test_generate_tile_no_data(
         update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
-        tile_registry_service=tile_registry_service,
-        warehouse_table_service=warehouse_table_service,
-        deployed_tile_table_service=deployed_tile_table_service,
+        **tile_generate_services,
     )
 
     await tile_generate_ins.execute()
@@ -137,9 +144,7 @@ async def test_generate_tile_no_data(
 async def test_generate_tile_new_value_column(
     session,
     base_sql_model,
-    tile_registry_service,
-    warehouse_table_service,
-    deployed_tile_table_service,
+    tile_generate_services,
 ):
     """
     Test normal generation of tiles
@@ -177,9 +182,7 @@ async def test_generate_tile_new_value_column(
         update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
-        tile_registry_service=tile_registry_service,
-        warehouse_table_service=warehouse_table_service,
-        deployed_tile_table_service=deployed_tile_table_service,
+        **tile_generate_services,
     )
 
     await tile_generate_ins.execute()
@@ -213,9 +216,7 @@ async def test_generate_tile_new_value_column(
         update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
-        tile_registry_service=tile_registry_service,
-        warehouse_table_service=warehouse_table_service,
-        deployed_tile_table_service=deployed_tile_table_service,
+        **tile_generate_services,
     )
 
     await tile_generate_ins.execute()
@@ -229,9 +230,7 @@ async def test_generate_tile_new_value_column(
 async def test_generate_tile_concurrent(
     session,
     base_sql_model,
-    tile_registry_service,
-    warehouse_table_service,
-    deployed_tile_table_service,
+    tile_generate_services,
 ):
     """
     Test multiple tasks generating the same tile table concurrently
@@ -284,9 +283,7 @@ async def test_generate_tile_concurrent(
             update_last_run_metadata=False,
             aggregation_id=agg_id,
             feature_store_id=ObjectId(),
-            tile_registry_service=tile_registry_service,
-            warehouse_table_service=warehouse_table_service,
-            deployed_tile_table_service=deployed_tile_table_service,
+            **tile_generate_services,
         )
         await tile_generate_ins.execute()
 

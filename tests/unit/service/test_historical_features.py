@@ -48,6 +48,27 @@ def output_table_details_fixture():
     return TableDetails(table_name="SOME_HISTORICAL_FEATURE_TABLE")
 
 
+@pytest.fixture(name="required_services")
+def required_services_fixture(
+    app_container,
+    tile_cache_service,
+    warehouse_table_service,
+    cron_helper,
+    column_statistics_service,
+    system_metrics_service,
+):
+    """
+    Fixture for required services when calling get_historical_features
+    """
+    return {
+        "tile_cache_service": tile_cache_service,
+        "warehouse_table_service": warehouse_table_service,
+        "cron_helper": cron_helper,
+        "column_statistics_service": column_statistics_service,
+        "system_metrics_service": system_metrics_service,
+    }
+
+
 @pytest.mark.asyncio
 async def test_get_historical_features__feature_list_not_deployed(
     historical_features_service,
@@ -151,11 +172,8 @@ async def test_get_historical_features__missing_point_in_time(
     mock_snowflake_feature,
     mock_snowflake_session,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
-    cron_helper,
-    column_statistics_service,
     snowflake_feature_store,
+    required_services,
 ):
     """Test validation of missing point in time for historical features"""
     observation_set = pd.DataFrame({
@@ -164,15 +182,12 @@ async def test_get_historical_features__missing_point_in_time(
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
         await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
+            **required_services,
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
 
@@ -185,11 +200,8 @@ async def test_get_historical_features__too_recent_point_in_time(
     mock_snowflake_session,
     point_in_time_is_datetime_dtype,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
-    cron_helper,
-    column_statistics_service,
     snowflake_feature_store,
+    required_services,
 ):
     """Test validation of too recent point in time for historical features"""
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
@@ -202,15 +214,12 @@ async def test_get_historical_features__too_recent_point_in_time(
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
         await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
+            **required_services,
         )
     assert str(exc_info.value) == (
         "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
@@ -224,11 +233,8 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     mock_snowflake_session,
     mocked_compute_tiles_on_demand,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
-    cron_helper,
-    column_statistics_service,
     snowflake_feature_store,
+    required_services,
 ):
     """
     Test that if point in time column is provided as string, it is converted to datetime before
@@ -244,15 +250,12 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
     await get_historical_features(
         session=mock_snowflake_session,
-        tile_cache_service=tile_cache_service,
-        warehouse_table_service=warehouse_table_service,
-        cron_helper=cron_helper,
-        column_statistics_service=column_statistics_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
         feature_store=snowflake_feature_store,
         output_table_details=output_table_details,
+        **required_services,
     )
 
     # Check POINT_IN_TIME is converted to datetime
@@ -270,11 +273,8 @@ async def test_get_historical_features__intermediate_tables_dropped(
     mock_snowflake_session,
     mocked_compute_tiles_on_demand,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
-    cron_helper,
-    column_statistics_service,
     snowflake_feature_store,
+    required_services,
 ):
     """
     Test intermediate tables are dropped after get historical features
@@ -286,7 +286,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     })
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
     with patch.object(
-        cron_helper, "register_job_schedule_tables"
+        required_services["cron_helper"], "register_job_schedule_tables"
     ) as mock_register_job_schedule_tables:
         mock_register_job_schedule_tables.return_value = JobScheduleTableSet(
             tables=[
@@ -298,15 +298,12 @@ async def test_get_historical_features__intermediate_tables_dropped(
         )
         await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=float_feature.graph,
             nodes=[float_feature.node],
             observation_set=df_request,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
+            **required_services,
         )
     assert mock_snowflake_session.drop_table.call_args_list == [
         call(
@@ -345,11 +342,8 @@ async def test_get_historical_features__tile_tables_dropped(
     mock_snowflake_session,
     mocked_compute_tiles_on_demand,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
-    cron_helper,
-    column_statistics_service,
     snowflake_feature_store,
+    required_services,
 ):
     """
     Test temporary tile tables are dropped after get historical features
@@ -402,15 +396,12 @@ async def test_get_historical_features__tile_tables_dropped(
     ) as patched_list_warehouse_tables_by_tag:
         await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=float_feature.graph,
             nodes=[float_feature.node],
             observation_set=df_request,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
+            **required_services,
         )
 
     assert patched_list_warehouse_tables_by_tag.call_args == call(
@@ -445,11 +436,8 @@ async def test_not_raise_on_error__tile_compute_error(
     scd_lookup_feature,
     mock_snowflake_session,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
     snowflake_feature_store,
-    cron_helper,
-    column_statistics_service,
+    required_services,
     update_fixtures,
 ):
     """
@@ -458,8 +446,9 @@ async def test_not_raise_on_error__tile_compute_error(
     float_feature.save()
     scd_lookup_feature.save()
 
-    async def patched_execute_query(query):
+    async def patched_execute_query(query, **kwargs):
         # Simulate an error in tile SQL query
+        _ = kwargs
         if 'CREATE TABLE "__TEMP_TILE_TABLE' in query:
             raise RuntimeError("Fail on purpose!")
 
@@ -477,16 +466,13 @@ async def test_not_raise_on_error__tile_compute_error(
     with patch("featurebyte.session.session_helper.validate_output_row_index"):
         result = await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=graph,
             nodes=nodes,
             observation_set=df_request,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
             raise_on_error=False,
+            **required_services,
         )
     assert result.failed_node_names == [nodes[0].name]
 
@@ -506,11 +492,8 @@ async def test_not_raise_on_error__feature_compute_error(
     scd_lookup_feature,
     mock_snowflake_session,
     output_table_details,
-    tile_cache_service,
-    warehouse_table_service,
     snowflake_feature_store,
-    cron_helper,
-    column_statistics_service,
+    required_services,
     update_fixtures,
 ):
     """
@@ -519,8 +502,9 @@ async def test_not_raise_on_error__feature_compute_error(
     float_feature.save()
     scd_lookup_feature.save()
 
-    async def patched_execute_query(query):
+    async def patched_execute_query(query, **kwargs):
         # Simulate an error in feature compute query for "some_lookup_feature"
+        _ = kwargs
         if ' AS "some_lookup_feature"' in query:
             raise RuntimeError("Fail on purpose!")
 
@@ -538,16 +522,13 @@ async def test_not_raise_on_error__feature_compute_error(
     with patch("featurebyte.session.session_helper.validate_output_row_index"):
         result = await get_historical_features(
             session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            warehouse_table_service=warehouse_table_service,
-            cron_helper=cron_helper,
-            column_statistics_service=column_statistics_service,
             graph=graph,
             nodes=nodes,
             observation_set=df_request,
             feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
             raise_on_error=False,
+            **required_services,
         )
     assert result.failed_node_names == [nodes[1].name]
 

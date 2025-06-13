@@ -260,6 +260,12 @@ def column_statistics_service_fixture(app_container):
     return app_container.column_statistics_service
 
 
+@pytest.fixture(name="system_metrics_service")
+def system_metrics_service_fixture(app_container):
+    """SystemMetricsService fixture"""
+    return app_container.system_metrics_service
+
+
 @pytest.fixture(name="tile_job_log_service")
 def tile_job_log_service(app_container):
     """

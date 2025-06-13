@@ -50,6 +50,7 @@ from featurebyte.service.historical_features_and_target import (
 )
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
@@ -98,6 +99,7 @@ class FeatureTableCacheService:
         warehouse_table_service: WarehouseTableService,
         cron_helper: CronHelper,
         column_statistics_service: ColumnStatisticsService,
+        system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
         self.feature_table_cache_metadata_service = feature_table_cache_metadata_service
@@ -109,6 +111,7 @@ class FeatureTableCacheService:
         self.warehouse_table_service = warehouse_table_service
         self.cron_helper = cron_helper
         self.column_statistics_service = column_statistics_service
+        self.system_metrics_service = system_metrics_service
         self.redis = redis
 
     async def definition_hashes_for_nodes(
@@ -427,6 +430,7 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
+                system_metrics_service=self.system_metrics_service,
             )
         else:
             return await get_historical_features(
@@ -435,6 +439,7 @@ class FeatureTableCacheService:
                 warehouse_table_service=self.warehouse_table_service,
                 cron_helper=self.cron_helper,
                 column_statistics_service=self.column_statistics_service,
+                system_metrics_service=self.system_metrics_service,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,

@@ -210,7 +210,8 @@ def mock_snowflake_session_fixture(
     Patch session query results
     """
 
-    async def mock_execute_query_long_running(query):
+    async def mock_execute_query_long_running(query, **kwargs):
+        _ = kwargs
         if "LIMIT 1" in query:
             table_name = parse_one(query).args["from"].name
             async for doc in feature_table_cache_metadata_service.list_documents_iterator(

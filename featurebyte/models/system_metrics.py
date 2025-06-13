@@ -27,6 +27,7 @@ class SystemMetricsType(StrEnum):
     TILE_TASK = "tile_task"
     SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
     DEPLOYMENT_ENABLEMENT = "deployment_enablement"
+    SQL_QUERY = "sql_query"
 
 
 class TileComputeMetrics(FeatureByteBaseModel):
@@ -109,6 +110,30 @@ class DeploymentEnablementMetrics(FeatureByteBaseModel):
     )
 
 
+class SqlQueryType(StrEnum):
+    """
+    SqlQueryType class
+    """
+
+    TILE_COMPUTE = "TILE_COMPUTE"
+    FEATURE_COMPUTE = "FEATURE_COMPUTE"
+
+
+class SqlQueryMetrics(FeatureByteBaseModel):
+    """
+    SqlQueryMetrics class
+    """
+
+    query: str
+    total_seconds: float
+    query_type: SqlQueryType
+    query_id: Optional[str] = None
+    feature_names: Optional[list[str]] = None
+    observation_table_id: Optional[PydanticObjectId] = None
+    batch_request_table_id: Optional[PydanticObjectId] = None
+    metrics_type: Literal[SystemMetricsType.SQL_QUERY] = SystemMetricsType.SQL_QUERY
+
+
 SystemMetricsData = Annotated[
     Union[
         HistoricalFeaturesMetrics,
@@ -116,6 +141,7 @@ SystemMetricsData = Annotated[
         TileTaskMetrics,
         ScheduledFeatureMaterializeMetrics,
         DeploymentEnablementMetrics,
+        SqlQueryMetrics,
     ],
     Field(discriminator="metrics_type"),
 ]
@@ -137,6 +163,7 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("metrics_data.tile_table_id"),
             IndexModel("metrics_data.offline_store_feature_table_id"),
             IndexModel("metrics_data.deployment_id"),
+            IndexModel("metrics_data.observation_table_id"),
             IndexModel("metrics_data.batch_feature_table_id"),
         ]
         auditable = False

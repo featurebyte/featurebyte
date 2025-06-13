@@ -23,6 +23,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.historical_features_and_target import get_historical_features
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
     Computer,
@@ -62,12 +63,14 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         warehouse_table_service: WarehouseTableService,
         cron_helper: CronHelper,
         column_statistics_service: ColumnStatisticsService,
+        system_metrics_service: SystemMetricsService,
     ):
         self.tile_cache_service = tile_cache_service
         self.feature_table_cache_service = feature_table_cache_service
         self.warehouse_table_service = warehouse_table_service
         self.cron_helper = cron_helper
         self.column_statistics_service = column_statistics_service
+        self.system_metrics_service = system_metrics_service
 
     async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> ExecutionResult:
         if (
@@ -95,6 +98,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 warehouse_table_service=self.warehouse_table_service,
                 cron_helper=self.cron_helper,
                 column_statistics_service=self.column_statistics_service,
+                system_metrics_service=self.system_metrics_service,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 observation_set=executor_params.observation_set,

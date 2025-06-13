@@ -13,6 +13,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.historical_features_and_target import get_target
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
     Computer,
@@ -30,8 +31,13 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
     Target Executor
     """
 
-    def __init__(self, feature_table_cache_service: FeatureTableCacheService):
+    def __init__(
+        self,
+        feature_table_cache_service: FeatureTableCacheService,
+        system_metrics_service: SystemMetricsService,
+    ):
         self.feature_table_cache_service = feature_table_cache_service
+        self.system_metrics_service = system_metrics_service
 
     async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
         """
@@ -74,6 +80,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 serving_names_mapping=executor_params.serving_names_mapping,
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 progress_callback=executor_params.progress_callback,
+                system_metrics_service=self.system_metrics_service,
             )
             historical_features_metrics = features_computation_result.historical_features_metrics
             is_output_view = False

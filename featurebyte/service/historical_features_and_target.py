@@ -40,6 +40,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
@@ -197,6 +198,7 @@ async def get_historical_features(
     warehouse_table_service: WarehouseTableService,
     cron_helper: CronHelper,
     column_statistics_service: ColumnStatisticsService,
+    system_metrics_service: SystemMetricsService,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -221,6 +223,8 @@ async def get_historical_features(
         Warehouse table service
     column_statistics_service: ColumnStatisticsService
         Column statistics service
+    system_metrics_service: SystemMetricsService
+        System metrics service
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -249,6 +253,9 @@ async def get_historical_features(
     """
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
+    )
+    observation_table_id = (
+        observation_set.id if isinstance(observation_set, ObservationTableModel) else None
     )
     observation_set = get_internal_observation_set(observation_set)
 
@@ -352,6 +359,7 @@ async def get_historical_features(
                 session=session,
                 redis=tile_cache_service.tile_manager_service.redis,
                 feature_store=feature_store,
+                system_metrics_service=system_metrics_service,
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
@@ -364,6 +372,7 @@ async def get_historical_features(
                 else None
             ),
             raise_on_error=raise_on_error,
+            observation_table_id=observation_table_id,
         )
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
@@ -452,6 +461,7 @@ async def get_target(
     observation_set: Union[pd.DataFrame, ObservationTableModel],
     feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
+    system_metrics_service: SystemMetricsService,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
@@ -474,6 +484,8 @@ async def get_target(
         Feature store. We need the feature store id and source type information.
     output_table_details: TableDetails
         Output table details to write the results to
+    system_metrics_service: SystemMetricsService
+        System metrics service
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the observations set has different serving name columns
         than those defined in Entities
@@ -526,7 +538,10 @@ async def get_target(
         tic = time.time()
         await execute_feature_query_set(
             session_handler=SessionHandler(
-                session=session, redis=redis, feature_store=feature_store
+                session=session,
+                redis=redis,
+                feature_store=feature_store,
+                system_metrics_service=system_metrics_service,
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
@@ -537,6 +552,9 @@ async def get_target(
                 )
                 if progress_callback
                 else None
+            ),
+            observation_table_id=(
+                observation_set.id if isinstance(observation_set, ObservationTableModel) else None
             ),
         )
         feature_compute_seconds = time.time() - tic
