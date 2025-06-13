@@ -129,6 +129,8 @@ class SqlQueryMetrics(FeatureByteBaseModel):
     query_type: SqlQueryType
     query_id: Optional[str] = None
     feature_names: Optional[list[str]] = None
+    observation_table_id: Optional[PydanticObjectId] = None
+    batch_request_table_id: Optional[PydanticObjectId] = None
     metrics_type: Literal[SystemMetricsType.SQL_QUERY] = SystemMetricsType.SQL_QUERY
 
 
@@ -161,6 +163,7 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("metrics_data.tile_table_id"),
             IndexModel("metrics_data.offline_store_feature_table_id"),
             IndexModel("metrics_data.deployment_id"),
+            IndexModel("metrics_data.observation_table_id"),
             IndexModel("metrics_data.batch_feature_table_id"),
         ]
         auditable = False

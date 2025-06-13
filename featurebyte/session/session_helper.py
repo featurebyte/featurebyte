@@ -127,6 +127,8 @@ async def execute_feature_query(
     feature_query: FeatureQuery,
     done_callback: Callable[[int], Coroutine[Any, Any, None]],
     system_metrics_service: SystemMetricsService,
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> FeatureQuery:
     """
     Process a single FeatureQuery
@@ -141,6 +143,10 @@ async def execute_feature_query(
         To be called when task is completed to update progress
     system_metrics_service: SystemMetricsService
         System metrics service
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -173,6 +179,8 @@ async def execute_feature_query(
                     query_type=SqlQueryType.FEATURE_COMPUTE,
                     query_id=query_metadata.query_id,
                     feature_names=sorted(feature_query.feature_names),
+                    observation_table_id=observation_table_id,
+                    batch_request_table_id=batch_request_table_id,
                 )
             )
         try:
@@ -225,6 +233,8 @@ async def execute_feature_query_set(
     feature_query_set: FeatureQuerySet,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> FeatureQuerySetResult:
     """
     Execute the feature queries to materialize features
@@ -239,6 +249,10 @@ async def execute_feature_query_set(
         Optional progress callback function
     raise_on_error: bool
         Whether to raise an error if any of the feature queries fail to materialize
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -297,6 +311,8 @@ async def execute_feature_query_set(
                 materialized_feature_table=materialized_feature_table,
                 table_name_suffix_counter=table_name_suffix_counter,
                 progress_callback=_progress_callback,
+                observation_table_id=observation_table_id,
+                batch_request_table_id=batch_request_table_id,
             )
             table_name_suffix_counter += len(node_groups)
             num_features_per_query //= 2
@@ -342,6 +358,8 @@ async def execute_queries_for_node_groups(
     materialized_feature_table: List[str],
     table_name_suffix_counter: int,
     progress_callback: Callable[[int], Coroutine[Any, Any, None]],
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> list[FeatureQuery | Exception]:
     """
     Execute the feature queries for a list of node groups and update feature_query_set accordingly
@@ -360,6 +378,10 @@ async def execute_queries_for_node_groups(
         Counter for table name suffix
     progress_callback: Callable[[int], Coroutine[Any, Any, None]]
         Progress callback function
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -388,6 +410,8 @@ async def execute_queries_for_node_groups(
                 feature_query=feature_query,
                 done_callback=progress_callback,
                 system_metrics_service=session_handler.system_metrics_service,
+                observation_table_id=observation_table_id,
+                batch_request_table_id=batch_request_table_id,
             )
         )
         materialized_feature_table.append(feature_query.feature_table_query.table_name)

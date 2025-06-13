@@ -254,6 +254,9 @@ async def get_historical_features(
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
+    observation_table_id = (
+        observation_set.id if isinstance(observation_set, ObservationTableModel) else None
+    )
     observation_set = get_internal_observation_set(observation_set)
 
     # Validate request
@@ -369,6 +372,7 @@ async def get_historical_features(
                 else None
             ),
             raise_on_error=raise_on_error,
+            observation_table_id=observation_table_id,
         )
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
@@ -548,6 +552,9 @@ async def get_target(
                 )
                 if progress_callback
                 else None
+            ),
+            observation_table_id=(
+                observation_set.id if isinstance(observation_set, ObservationTableModel) else None
             ),
         )
         feature_compute_seconds = time.time() - tic

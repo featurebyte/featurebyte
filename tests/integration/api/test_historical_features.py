@@ -31,7 +31,7 @@ def patched_sql_metrics_logging_threshold_seconds():
 
 @pytest.mark.asyncio
 async def test_get_historical_feature_tables_parallel(
-    session, event_view, data_source, feature_table_cache_metadata_service
+    session, event_view, data_source, feature_table_cache_metadata_service, config
 ):
     """
     Test get historical feature tables in parallel on the same observation table
@@ -125,6 +125,14 @@ async def test_get_historical_feature_tables_parallel(
     df = await session.execute_query(query)
     expected_columns = {feature_def.feature_name for feature_def in cached_definitions}
     assert expected_columns.issubset(df.columns)
+
+    client = config.get_client()
+    response = client.get("/system_metrics", params={"metrics_type": "sql_query"})
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["total"] > 0
+    metrics = response_dict["data"][0]
+    assert metrics["metrics_data"]["observation_table_id"] == str(observation_table.id)
 
 
 def test_historical_feature_query_dynamic_batching(feature_list_with_combined_feature_groups):
