@@ -2,7 +2,7 @@
 Model for Managed View.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import pymongo
 from pydantic import StrictStr
@@ -46,3 +46,7 @@ class ManagedViewModel(FeatureByteBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ]
         ]
+
+    @property
+    def warehouse_tables(self) -> list[Any]:
+        return [self.tabular_source.table_details]
