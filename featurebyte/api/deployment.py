@@ -4,6 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
@@ -203,6 +204,7 @@ class Deployment(DeletableApiObject):
         batch_feature_table_name: str,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
+        point_in_time: Optional[str | datetime] = None,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features
@@ -221,6 +223,9 @@ class Deployment(DeletableApiObject):
             Rename columns in the source table using this mapping from old column names to new
             column names when creating the batch feature table. If None, no columns are renamed.
             Not applicable when batch_request_table is a BatchRequestTable.
+        point_in_time: Optional[str | datetime]
+            Optional point in time to use for computing the batch feature table. If None, the
+            current time is used.
 
         Returns
         -------
@@ -262,6 +267,7 @@ class Deployment(DeletableApiObject):
             batch_request_table_id=batch_request_table_id,
             request_input=request_input,
             deployment_id=self.id,
+            point_in_time=point_in_time,
         )
         batch_feature_table_doc = self.post_async_task(
             route="/batch_feature_table", payload=payload.json_dict()
