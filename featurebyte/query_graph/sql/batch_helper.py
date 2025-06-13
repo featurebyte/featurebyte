@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 
 from sqlglot import expressions
 
@@ -19,7 +20,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
-NUM_FEATURES_PER_QUERY = 20
+NUM_FEATURES_PER_QUERY = int(os.getenv("FEATUREBYTE_NUM_FEATURES_PER_QUERY", "20"))
 
 
 def split_nodes(
