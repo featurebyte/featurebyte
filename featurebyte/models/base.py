@@ -417,7 +417,7 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        list[str]
+        list[Any]
         """
         return []
 
