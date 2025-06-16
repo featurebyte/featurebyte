@@ -126,7 +126,7 @@ class DatabricksUnitySession(DatabricksSession):
             )
         except self._no_schema_error:
             # fallback to using show statements if catalog does not have information schema
-            return await super().list_schemas(database_name=database_name)
+            return await super()._list_schemas(database_name=database_name)
         output = []
         if schemas is not None:
             output.extend(schemas["SCHEMA_NAME"].tolist())

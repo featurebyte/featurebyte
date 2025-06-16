@@ -56,6 +56,7 @@ async def deployed_feature_list_fixture(
     online_store,
     mock_update_data_warehouse,
     is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
 ):
     """
     Fixture for FeatureMaterializeService
@@ -66,6 +67,12 @@ async def deployed_feature_list_fixture(
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
         await app_container.catalog_service.update_document(
             document_id=production_ready_feature_list.catalog_id, data=catalog_update
+        )
+
+    if populate_offline_feature_tables_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(populate_offline_feature_tables=True)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
         )
 
     # TODO: use deploy_feature() helper
@@ -373,6 +380,7 @@ async def test_materialize_features(
 
 
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
+@pytest.mark.parametrize("populate_offline_feature_tables_for_catalog", [True, False])
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features(
@@ -382,6 +390,7 @@ async def test_scheduled_materialize_features(
     offline_store_feature_table,
     mock_materialize_partial,
     is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
     feature_materialize_run,
     update_fixtures,
     insert_credential,
@@ -394,11 +403,18 @@ async def test_scheduled_materialize_features(
     )
 
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
-    assert_equal_with_expected_fixture(
-        executed_queries,
-        "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
-        update_fixtures,
-    )
+
+    if (
+        not is_online_store_registered_for_catalog
+        and not populate_offline_feature_tables_for_catalog
+    ):
+        assert executed_queries == ""
+    else:
+        assert_equal_with_expected_fixture(
+            executed_queries,
+            "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
+            update_fixtures,
+        )
 
     # Check online materialization called if there is a registered online store (note: start_date is
     # None because the initialize_new_columns is mocked when deploying)
@@ -421,7 +437,10 @@ async def test_scheduled_materialize_features(
     updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
         offline_store_feature_table.id
     )
-    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
+    if populate_offline_feature_tables_for_catalog or is_online_store_registered_for_catalog:
+        assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
+    else:
+        assert updated_feature_table.last_materialized_at is None
 
     # Check online last materialization timestamp updated
     if is_online_store_registered_for_catalog:
@@ -590,7 +609,8 @@ async def test_initialize_new_columns__table_does_not_exist(
     Test initialize_new_columns when feature table is not yet created
     """
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -640,7 +660,8 @@ async def test_initialize_new_columns__table_exists(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
@@ -689,7 +710,8 @@ async def test_initialize_new_columns__table_exists_but_empty(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [0]})
 
@@ -736,7 +758,8 @@ async def test_initialize_new_columns__no_feature_columns(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
@@ -773,7 +796,8 @@ async def test_initialize_new_columns__databricks_unity(
     Test initialize_new_columns when session is databricks_unity
     """
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -899,7 +923,8 @@ async def test_materialize_features_no_entity_databricks_unity(
     """
     _ = mock_get_feature_store_session
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -934,7 +959,8 @@ async def test_update_online_store__never_materialized_before(
     """
     offline_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
@@ -990,7 +1016,8 @@ async def test_update_online_store__materialized_before(
     offline_last_materialized_at = datetime(2022, 12, 15, 10, 0, 0)
     online_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
@@ -1094,7 +1121,8 @@ async def test_precomputed_lookup_feature_table__initialize_new_columns(
     """
     _ = mock_get_feature_store_session
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)\nFROM" in query:
             raise ValueError()
 
@@ -1269,7 +1297,8 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
             )
         return schema
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)\nFROM" in query:
             # Simulate that source feature table exists and lookup feature table doesn't
             table_name = query.split("FROM", 1)[1].strip().replace('"', "")

@@ -98,7 +98,9 @@ async def test_catalog_update_online_store(
     Ordered to run later than other feature store integration test to reduce coupling.
     """
     # Enable online store after deployment is made
-    catalog.update_online_store(online_store.name)
+    with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        catalog.update_online_store(online_store.name)
 
     # Check get_online_features() produces correct result
     client = config.get_client()

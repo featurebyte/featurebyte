@@ -347,6 +347,10 @@ class FeatureManagerService:
                 document_id=deployed_tile_table.id,
                 backfill_start_date=start_ts,
             )
+        await self.feature_service.update_last_updated_by_scheduled_task_at(
+            aggregation_ids=deployed_tile_table.aggregation_ids,
+            last_updated_by_scheduled_task_at=datetime.utcnow(),
+        )
 
     async def online_disable(self, session: Optional[BaseSession], feature: FeatureModel) -> None:
         """

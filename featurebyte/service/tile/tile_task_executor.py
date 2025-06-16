@@ -180,10 +180,12 @@ class TileTaskExecutor:
         # Use deployed tile table as the tile table name if it is provided. Not strictly needed as
         # the tile_id of the params should have been set to the same value.
         if params.deployed_tile_table_id is not None:
-            tile_table_name = (
-                await self.deployed_tile_table_service.get_document(params.deployed_tile_table_id)
-            ).table_name
+            deployed_tile_table_model = await self.deployed_tile_table_service.get_document(
+                params.deployed_tile_table_id
+            )
+            tile_table_name = deployed_tile_table_model.table_name
         else:
+            deployed_tile_table_model = None
             tile_table_name = tile_id
 
         tile_generate_ins = TileGenerate(
@@ -207,6 +209,7 @@ class TileTaskExecutor:
             tile_registry_service=self.tile_registry_service,
             warehouse_table_service=self.warehouse_table_service,
             deployed_tile_table_service=self.deployed_tile_table_service,
+            system_metrics_service=self.system_metrics_service,
         )
 
         step_specs: List[Dict[str, Any]] = [
@@ -244,8 +247,12 @@ class TileTaskExecutor:
             await _add_log_entry(success_code, "", duration=duration)
 
         logger.debug("Start updating feature last updated date")
+        if deployed_tile_table_model is None:
+            aggregation_ids = [params.aggregation_id]
+        else:
+            aggregation_ids = deployed_tile_table_model.aggregation_ids
         await self.feature_service.update_last_updated_by_scheduled_task_at(
-            aggregation_id=params.aggregation_id,
+            aggregation_ids=aggregation_ids,
             last_updated_by_scheduled_task_at=datetime.utcnow(),
         )
         await self.system_metrics_service.create_metrics(

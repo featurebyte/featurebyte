@@ -4,6 +4,7 @@ BaseTableValidationService class
 
 from __future__ import annotations
 
+import os
 from typing import Generic
 
 from bson import ObjectId
@@ -38,6 +39,10 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+
+FORMAT_STRING_VALIDATION_NUM_RECORDS = int(
+    os.getenv("FEATUREBYTE_FORMAT_STRING_VALIDATION_NUM_RECORDS", "50000")
+)
 
 
 class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdate]):
@@ -130,7 +135,6 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         timestamp_schema: TimestampSchema,
         session: BaseSession,
         table_model: TableModel,
-        num_records: int,
     ) -> None:
         adapter = session.adapter
         assert timestamp_schema.format_string is not None
@@ -138,7 +142,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         source_table_expr = get_fully_qualified_table_name(
             table_model.tabular_source.table_details.model_dump()
         )
-        query_expr = (
+        converted_expr = (
             select(
                 expressions.alias_(
                     adapter.to_timestamp_from_string(
@@ -151,8 +155,13 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             )
             .from_(source_table_expr)
             .where(columns_not_null([column_name]))
-            .limit(num_records)
+            .limit(FORMAT_STRING_VALIDATION_NUM_RECORDS)
         )
+        query_expr = select(
+            expressions.alias_(
+                expressions.Max(this=quoted_identifier(column_name)), alias="RESULT", quoted=True
+            )
+        ).from_(converted_expr.subquery())
         query = sql_to_string(query_expr, source_type=adapter.source_type)
         # check that the format string is valid for the first num_records
         try:
@@ -174,12 +183,19 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                     timestamp_schema.format_string,
                 ),
             )
-            query_expr = (
-                select(column_expr)
+            converted_expr = (
+                select(expressions.alias_(column_expr, alias=column_name, quoted=True))
                 .from_(source_table_expr)
                 .where(columns_not_null([column_name]))
-                .limit(num_records)
+                .limit(FORMAT_STRING_VALIDATION_NUM_RECORDS)
             )
+            query_expr = select(
+                expressions.alias_(
+                    expressions.Max(this=quoted_identifier(column_name)),
+                    alias="RESULT",
+                    quoted=True,
+                )
+            ).from_(converted_expr.subquery())
             query = sql_to_string(query_expr, source_type=adapter.source_type)
             # check that the offset is valid for the first num_records
             try:
@@ -221,7 +237,6 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                     timestamp_schema=col_info.dtype_metadata.timestamp_schema,
                     session=session,
                     table_model=table_model,
-                    num_records=num_records,
                 )
 
             if col_info.critical_data_info:
@@ -233,7 +248,6 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                             timestamp_schema=clean_op.timestamp_schema,
                             session=session,
                             table_model=table_model,
-                            num_records=num_records,
                         )
 
         await self._validate_table(

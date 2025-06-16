@@ -5,7 +5,7 @@ SQL generation for online serving
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
@@ -251,6 +251,8 @@ def get_current_timestamp_expr(
     if request_timestamp is None:
         current_timestamp_expr = adapter.current_timestamp()
     else:
+        if request_timestamp.tzinfo is not None:
+            request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
         current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     return current_timestamp_expr
 
@@ -555,6 +557,14 @@ async def get_online_features(
             request_table_details = request_data.table_details
             request_table_columns = request_data.column_names[:]
 
+    # Point in time should be provided via request_timestamp. We need to make sure
+    # request_table_columns does not contain POINT_IN_TIME since that will be added internally
+    request_table_columns = [
+        column_name
+        for column_name in request_table_columns
+        if column_name != SpecialColumnName.POINT_IN_TIME
+    ]
+
     # If using multiple queries, FeatureQuerySet requires request table to be registered as a
     # table beforehand.
     if isinstance(request_data, pd.DataFrame):
@@ -596,7 +606,13 @@ async def get_online_features(
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
         tic = time.time()
-        feature_query_set_result = await execute_feature_query_set(session_handler, query_set)
+        feature_query_set_result = await execute_feature_query_set(
+            session_handler,
+            query_set,
+            batch_request_table_id=(
+                request_data.id if isinstance(request_data, BatchRequestTableModel) else None
+            ),
+        )
         df_features = feature_query_set_result.dataframe
     finally:
         if request_table_name is not None and request_table_details is None:
