@@ -13,11 +13,14 @@ from bson import ObjectId
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
-from featurebyte.models.system_metrics import TileComputeMetrics
+from featurebyte.models.system_metrics import SqlQueryMetrics, SqlQueryType, TileComputeMetrics
 from featurebyte.models.tile import TileType
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
+from featurebyte.session.base import QueryMetadata
+from featurebyte.session.session_helper import SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
@@ -65,6 +68,7 @@ class TileGenerate(TileCommon):
     tile_registry_service: TileRegistryService
     warehouse_table_service: WarehouseTableService
     deployed_tile_table_service: DeployedTileTableService
+    system_metrics_service: SystemMetricsService
 
     async def execute(self) -> TileComputeMetrics:
         """
@@ -138,6 +142,7 @@ class TileGenerate(TileCommon):
         tic = time.time()
         computed_tiles_table_name = f"__TEMP_TILE_TABLE_{ObjectId()}".upper()
         try:
+            query_metadata = QueryMetadata()
             await self.warehouse_table_service.create_table_as_with_session(
                 session=self._session,
                 feature_store_id=self.feature_store_id,
@@ -145,8 +150,19 @@ class TileGenerate(TileCommon):
                 table_details=computed_tiles_table_name,
                 select_expr=tile_sql,
                 time_to_live_seconds=TEMP_TILE_TABLE_TTL_SECONDS,
+                query_metadata=query_metadata,
             )
             compute_seconds = time.time() - tic
+            elapsed = time.time() - tic
+            if elapsed > SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS:
+                await self.system_metrics_service.create_metrics(
+                    SqlQueryMetrics(
+                        query=tile_sql,
+                        total_seconds=elapsed,
+                        query_type=SqlQueryType.TILE_COMPUTE,
+                        query_id=query_metadata.query_id,
+                    )
+                )
             return TileComputeSuccess(
                 computed_tiles_table_name=computed_tiles_table_name,
                 tile_sql=final_sql,

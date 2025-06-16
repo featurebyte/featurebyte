@@ -55,7 +55,7 @@ def mock_redis_fixture(is_output_row_index_valid):
 
 
 @pytest.fixture(name="session_handler")
-def session_handler_fixture(mock_snowflake_session, mock_redis):
+def session_handler_fixture(mock_snowflake_session, mock_redis, app_container):
     """
     Fixture for a mock SessionHandler
     """
@@ -63,6 +63,7 @@ def session_handler_fixture(mock_snowflake_session, mock_redis):
         session=mock_snowflake_session,
         redis=mock_redis,
         feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
+        system_metrics_service=app_container.system_metrics_service,
     )
 
 
@@ -200,13 +201,13 @@ async def test_dynamic_batching__success(session_handler, feature_query_set, upd
     progress_callback = AsyncMock(name="mock_progress_callback")
     call_count = {"count": 0}
 
-    async def patched_func(session, feature_query, done_callback):
+    async def patched_func(*args, **kwargs):
         """
         Patched function to simulate a successful query after a retry
         """
         should_error = call_count["count"] == 0
         call_count["count"] += 1
-        result = await execute_feature_query(session, feature_query, done_callback)
+        result = await execute_feature_query(*args, **kwargs)
         if should_error:
             raise ValueError("Fail query on purpose")
         return result

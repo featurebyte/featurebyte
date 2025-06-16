@@ -207,6 +207,7 @@ class TileTaskExecutor:
             tile_registry_service=self.tile_registry_service,
             warehouse_table_service=self.warehouse_table_service,
             deployed_tile_table_service=self.deployed_tile_table_service,
+            system_metrics_service=self.system_metrics_service,
         )
 
         step_specs: List[Dict[str, Any]] = [

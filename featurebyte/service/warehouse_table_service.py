@@ -14,7 +14,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSession, QueryMetadata
 
 
 class WarehouseTableService(
@@ -33,6 +33,7 @@ class WarehouseTableService(
         table_details: TableDetails | str,
         tag: Optional[str] = None,
         time_to_live_seconds: Optional[int] = None,
+        query_metadata: Optional[QueryMetadata] = None,
         **kwargs: Any,
     ) -> WarehouseTableModel:
         """
@@ -51,6 +52,8 @@ class WarehouseTableService(
             Tag to identify a collection of tables
         time_to_live_seconds: Optional[int]
             Time to live in seconds
+        query_metadata: Optional[QueryMetadata]
+            Metadata for the query
         **kwargs: Any
             Additional keyword arguments to be passed to create_table_as
 
@@ -58,7 +61,9 @@ class WarehouseTableService(
         -------
         WarehouseTableModel
         """
-        await session.create_table_as(table_details=table_details, **kwargs)
+        await session.create_table_as(
+            table_details=table_details, query_metadata=query_metadata, **kwargs
+        )
         if isinstance(table_details, str):
             table_details = TableDetails(table_name=table_details)
         if table_details.database_name is None:

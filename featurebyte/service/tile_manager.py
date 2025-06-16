@@ -27,6 +27,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
@@ -53,6 +54,7 @@ class TileManagerService:
         feature_store_service: FeatureStoreService,
         warehouse_table_service: WarehouseTableService,
         deployed_tile_table_service: DeployedTileTableService,
+        system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -63,6 +65,7 @@ class TileManagerService:
         self.feature_store_service = feature_store_service
         self.warehouse_table_service = warehouse_table_service
         self.deployed_tile_table_service = deployed_tile_table_service
+        self.system_metrics_service = system_metrics_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
@@ -271,6 +274,7 @@ class TileManagerService:
             tile_registry_service=self.tile_registry_service,
             warehouse_table_service=self.warehouse_table_service,
             deployed_tile_table_service=self.deployed_tile_table_service,
+            system_metrics_service=self.system_metrics_service,
         )
 
     async def generate_tiles(
