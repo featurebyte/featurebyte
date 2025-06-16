@@ -89,8 +89,9 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
 def mock_session_for_online_serving_fixture(mock_snowflake_session):
     """Mock session for online serving"""
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
         _ = query
+        _ = kwargs
         if "is_row_index_valid" in query:
             return pd.DataFrame({"is_row_index_valid": [True]})
         return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_TABLE_ROW_INDEX": [0]})

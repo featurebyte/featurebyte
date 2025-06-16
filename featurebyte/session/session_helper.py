@@ -5,6 +5,7 @@ Session related helper functions
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, List, Optional
 
@@ -21,19 +22,24 @@ from featurebyte.exception import FeatureQueryExecutionError, InvalidOutputRowIn
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.models.system_metrics import SqlQueryMetrics, SqlQueryType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.batch_helper import (
     NUM_FEATURES_PER_QUERY,
 )
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureQuery
-from featurebyte.session.base import BaseSession
+from featurebyte.service.system_metrics import SystemMetricsService
+from featurebyte.session.base import BaseSession, QueryMetadata
 from featurebyte.utils.async_helper import asyncio_gather
 
 logger = get_logger(__name__)
 
 
 MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
+SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS = int(
+    os.getenv("FEATUREBYTE_SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS", "600")
+)
 
 
 async def validate_output_row_index(session: BaseSession, output_table_name: str) -> None:
@@ -120,6 +126,9 @@ async def execute_feature_query(
     session: BaseSession,
     feature_query: FeatureQuery,
     done_callback: Callable[[int], Coroutine[Any, Any, None]],
+    system_metrics_service: SystemMetricsService,
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> FeatureQuery:
     """
     Process a single FeatureQuery
@@ -132,6 +141,12 @@ async def execute_feature_query(
         Instance of a FeatureQuery
     done_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]]
         To be called when task is completed to update progress
+    system_metrics_service: SystemMetricsService
+        System metrics service
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -152,7 +167,22 @@ async def execute_feature_query(
 
         feature_sql = feature_query.feature_table_query.sql
         feature_table_name = feature_query.feature_table_query.table_name
-        await session.execute_query_long_running(feature_sql)
+        tic = time.time()
+        query_metadata = QueryMetadata()
+        await session.execute_query_long_running(feature_sql, query_metadata=query_metadata)
+        elapsed = time.time() - tic
+        if elapsed > SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS:
+            await system_metrics_service.create_metrics(
+                SqlQueryMetrics(
+                    query=feature_sql,
+                    total_seconds=elapsed,
+                    query_type=SqlQueryType.FEATURE_COMPUTE,
+                    query_id=query_metadata.query_id,
+                    feature_names=sorted(feature_query.feature_names),
+                    observation_table_id=observation_table_id,
+                    batch_request_table_id=batch_request_table_id,
+                )
+            )
         try:
             await validate_output_row_index(session, feature_table_name)
         except InvalidOutputRowIndexError:
@@ -175,10 +205,17 @@ async def execute_feature_query(
 
 
 class SessionHandler:
-    def __init__(self, session: BaseSession, redis: Redis[Any], feature_store: FeatureStoreModel):
+    def __init__(
+        self,
+        session: BaseSession,
+        redis: Redis[Any],
+        feature_store: FeatureStoreModel,
+        system_metrics_service: SystemMetricsService,
+    ):
         self.session = session
         self.redis = redis
         self.feature_store = feature_store
+        self.system_metrics_service = system_metrics_service
 
 
 @dataclass
@@ -196,6 +233,8 @@ async def execute_feature_query_set(
     feature_query_set: FeatureQuerySet,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> FeatureQuerySetResult:
     """
     Execute the feature queries to materialize features
@@ -210,6 +249,10 @@ async def execute_feature_query_set(
         Optional progress callback function
     raise_on_error: bool
         Whether to raise an error if any of the feature queries fail to materialize
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -268,6 +311,8 @@ async def execute_feature_query_set(
                 materialized_feature_table=materialized_feature_table,
                 table_name_suffix_counter=table_name_suffix_counter,
                 progress_callback=_progress_callback,
+                observation_table_id=observation_table_id,
+                batch_request_table_id=batch_request_table_id,
             )
             table_name_suffix_counter += len(node_groups)
             num_features_per_query //= 2
@@ -313,6 +358,8 @@ async def execute_queries_for_node_groups(
     materialized_feature_table: List[str],
     table_name_suffix_counter: int,
     progress_callback: Callable[[int], Coroutine[Any, Any, None]],
+    observation_table_id: Optional[ObjectId] = None,
+    batch_request_table_id: Optional[ObjectId] = None,
 ) -> list[FeatureQuery | Exception]:
     """
     Execute the feature queries for a list of node groups and update feature_query_set accordingly
@@ -331,6 +378,10 @@ async def execute_queries_for_node_groups(
         Counter for table name suffix
     progress_callback: Callable[[int], Coroutine[Any, Any, None]]
         Progress callback function
+    observation_table_id: Optional[ObjectId]
+        ID of the observation table, if applicable
+    batch_request_table_id: Optional[ObjectId]
+        ID of the batch request table, if applicable
 
     Returns
     -------
@@ -358,6 +409,9 @@ async def execute_queries_for_node_groups(
                 session=session_handler.session,
                 feature_query=feature_query,
                 done_callback=progress_callback,
+                system_metrics_service=session_handler.system_metrics_service,
+                observation_table_id=observation_table_id,
+                batch_request_table_id=batch_request_table_id,
             )
         )
         materialized_feature_table.append(feature_query.feature_table_query.table_name)
@@ -382,6 +436,9 @@ async def execute_queries_for_node_groups(
             # Raise InvalidOutputRowIndexError immediately since that is likely a bug that cannot be
             # recovered from retrying
             raise feature_query_result
+        else:
+            # If the result is an exception, we will log it and continue
+            logger.error(f"Failed to materialize feature query: {feature_query_result}")
 
     failed_node_names = list(set(all_node_names) - set(completed_node_names))
     if failed_node_names:
