@@ -2,10 +2,13 @@
 Tests for tile related SQL generation using high level API fixtures
 """
 
+from dataclasses import asdict
+
 import pytest
 from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.tile import JoinKeysLineage
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -113,3 +116,25 @@ def test_join_keys_lineage():
         (table_2, "col_2"),
         (table_3, "col_3"),
     ]
+
+
+def test_on_demand_tile_sql_event_timestamp_schema(
+    float_feature_with_event_timestamp_schema, source_info, update_fixtures
+):
+    """
+    Test on demand tile sql for event table with event timestamp schema
+    """
+    query_graph = float_feature_with_event_timestamp_schema.cached_model.graph
+    interpreter = GraphInterpreter(query_graph, source_info)
+    groupby_node = query_graph.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop("tile_compute_spec")
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_on_demand_event_timestamp_schema.sql",
+        update_fixtures,
+    )

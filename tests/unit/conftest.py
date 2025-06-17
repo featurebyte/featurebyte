@@ -2212,6 +2212,28 @@ def non_time_based_feature_with_event_timestamp_schema(
     return feature
 
 
+@pytest.fixture(name="float_feature_with_event_timestamp_schema")
+def float_feature_with_event_timestamp_schema_fixture(
+    snowflake_event_table_with_timestamp_schema, cust_id_entity, feature_group_feature_job_setting
+):
+    """
+    Get a non-time-based feature with event timestamp schema
+    """
+    snowflake_event_table_with_timestamp_schema.cust_id.as_entity(cust_id_entity.name)
+    event_view = snowflake_event_table_with_timestamp_schema.get_view()
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    feature = feature.astype(float)
+    feature.name = "sum_30m"
+    feature.save()
+    return feature
+
+
 @pytest.fixture(name="float_feature")
 def float_feature_fixture(feature_group):
     """
