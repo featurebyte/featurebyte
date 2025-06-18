@@ -8,8 +8,9 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, field_validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.observation_table import ObservationInput, ObservationTableModel, Purpose
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -38,6 +39,9 @@ class ObservationTableCreate(BaseRequestTableCreate):
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     target_column: Optional[StrictStr] = Field(default=None)
 
+    # pydantic validators
+    _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
+
 
 class ObservationTableUpload(FeatureByteBaseModel):
     """
@@ -49,6 +53,9 @@ class ObservationTableUpload(FeatureByteBaseModel):
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: List[PydanticObjectId]
     target_column: Optional[StrictStr] = Field(default=None)
+
+    # pydantic validators
+    _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
 
 
 class ObservationTableList(PaginationMixin):
