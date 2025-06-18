@@ -83,7 +83,7 @@ SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY = textwrap.dedent(
             )
           )
           WHERE
-            "__fb_object_agg_row_number" <= 50000
+            "__fb_object_agg_row_number" <= 500
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",
