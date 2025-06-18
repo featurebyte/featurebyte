@@ -56,6 +56,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("entity", "entity_transaction"),
             ("event_table", "event_table"),
             ("item_table", "item_table"),
             ("context", "context"),
@@ -543,6 +544,50 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert (
             response_dict["detail"] == 'Target "target" does not have matching primary entity ids.'
         )
+
+    @pytest.mark.asyncio
+    @patch(
+        "featurebyte.models.observation_table.SourceTableObservationInput.get_column_names_and_dtypes"
+    )
+    async def test_create_with_target_column_primary_entity_ids_multiple_201(
+        self, patch_get_column_names_and_dtypes, test_api_client_persistent
+    ):
+        """Test create with target column and primary entity ids with multiple entities"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target namespace
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
+        # test with multiple primary entity ids
+        payload["name"] = "target"
+        entity_ids = [
+            BaseMaterializedTableTestSuite.load_payload(
+                "tests/fixtures/request_payloads/entity.json"
+            )["_id"],
+            BaseMaterializedTableTestSuite.load_payload(
+                "tests/fixtures/request_payloads/entity_transaction.json"
+            )["_id"],
+        ]
+        payload["entity_ids"] = entity_ids
+        payload["default_target_id"] = None
+        payload["target_ids"] = []
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        patch_get_column_names_and_dtypes.return_value = {
+            "cust_id": "INT",
+            "POINT_IN_TIME": "TIMESTAMP",
+            "target": "UNKNOWN",
+            "transaction_id": "INT",
+        }
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "target"
+        # reverse order to check order does not matter
+        payload["primary_entity_ids"] = entity_ids[::-1]
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
 
     @pytest.mark.asyncio
     async def test_create_with_target_column_definition_exists_422(

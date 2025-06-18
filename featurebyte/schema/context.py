@@ -5,8 +5,9 @@ Context API payload schema
 from typing import Any, List, Optional
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -22,6 +23,9 @@ class ContextCreate(FeatureByteBaseModel):
     name: NameStr
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr] = Field(default=None)
+
+    # pydantic validators
+    _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
 
 
 class ContextList(PaginationMixin):
