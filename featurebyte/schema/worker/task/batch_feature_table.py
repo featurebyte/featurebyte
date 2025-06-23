@@ -4,6 +4,7 @@ Online prediction table task payload schema
 
 from __future__ import annotations
 
+from datetime import date
 from typing import ClassVar, Optional
 
 from pydantic import Field
@@ -29,3 +30,12 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     priority: TaskPriority = Field(default=TaskPriority.CRITICAL)
     parent_batch_feature_table_name: Optional[str] = Field(default=None)
+    output_table_name: Optional[str] = Field(default=None)
+    output_table_snapshot_date_name: str = Field(default="snapshot_date")
+    output_table_snapshot_date: date = Field(default_factory=date.today)
+
+    @property
+    def task_output_path(self) -> Optional[str]:
+        if self.output_table_name is not None:
+            return None
+        return super().task_output_path

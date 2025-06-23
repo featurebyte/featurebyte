@@ -6,11 +6,12 @@ We split this into a separate service, as these typically require a session obje
 
 from __future__ import annotations
 
+import datetime
 import os
 from typing import Any, AsyncGenerator, List, Optional, Tuple
 
 from featurebyte.common.utils import dataframe_to_json
-from featurebyte.enum import InternalName, MaterializedTableNamePrefix, ViewNamePrefix
+from featurebyte.enum import DBVarType, InternalName, MaterializedTableNamePrefix, ViewNamePrefix
 from featurebyte.exception import (
     DatabaseNotFoundError,
     LimitExceededError,
@@ -411,7 +412,13 @@ class FeatureStoreWarehouseService:
         if result is not None and InternalName.TABLE_ROW_INDEX in result.columns:
             result.drop(columns=[InternalName.TABLE_ROW_INDEX], inplace=True)
 
-        return dataframe_to_json(result)
+        # convert to json
+        type_conversions = {}
+        if result is not None:
+            for col_name in result.columns:
+                if result.shape[0] > 0 and isinstance(result[col_name].iloc[0], datetime.date):
+                    type_conversions[col_name] = DBVarType.DATE
+        return dataframe_to_json(result, type_conversions=type_conversions or None)
 
     async def sql_preview(
         self,

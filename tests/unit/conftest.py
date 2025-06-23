@@ -924,6 +924,7 @@ def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
+        print(query)
         return None
 
     with mock.patch(
@@ -1866,7 +1867,25 @@ def snowflake_execute_query_for_materialized_table_fixture(
         query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True, query_metadata=None
     ):
         _ = timeout, to_log_error, query_metadata
-        if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"'):
+        if query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"."BATCH_FEATURE_TABLE'):
+            res = [
+                {
+                    "column_name": "cust_id",
+                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    "comment": None,
+                },
+                {
+                    "column_name": "POINT_IN_TIME",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ", "scale": 0}),
+                    "comment": None,
+                },
+                {
+                    "column_name": "sum_30m",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                },
+            ]
+        elif query.startswith('SHOW COLUMNS IN "sf_database"."sf_schema"'):
             res = [
                 {
                     "column_name": "cust_id",
@@ -1892,6 +1911,8 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "row_count": 500,
                 }
             ]
+        elif query.startswith("SELECT") and "new_batch_prediction_table" in query:
+            raise ProgrammingError()
         else:
             res = snowflake_query_map.get(query)
         if res is not None:

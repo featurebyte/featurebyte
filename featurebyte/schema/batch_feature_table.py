@@ -4,7 +4,7 @@ BatchFeatureTable API payload schema
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, List, Optional
 
 from bson import ObjectId
@@ -17,13 +17,11 @@ from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
-class BatchFeatureTableCreate(FeatureByteBaseModel):
+class BatchFeatureTableCreateBase(FeatureByteBaseModel):
     """
-    BatchFeatureTableCreate creation payload
+    BatchFeatureTableCreateBase creation payload
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: NameStr
     feature_store_id: PydanticObjectId
     batch_request_table_id: Optional[PydanticObjectId] = Field(default=None)
     request_input: Optional[BatchRequestInput] = Field(default=None)
@@ -31,12 +29,37 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     point_in_time: Optional[datetime] = Field(default=None)
 
     @model_validator(mode="after")
-    def _validate_input(self) -> "BatchFeatureTableCreate":
+    def _validate_input(self) -> Any:
         if self.batch_request_table_id is None and self.request_input is None:
             raise ValueError("Either batch_request_table_id or request_input must be provided")
         if self.batch_request_table_id is not None and self.request_input is not None:
             raise ValueError("Only one of batch_request_table_id or request_input must be provided")
         return self
+
+
+class BatchFeatureTableCreate(BatchFeatureTableCreateBase):
+    """
+    BatchFeatureTableCreate creation payload
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: NameStr
+
+
+class BatchFeaturesAppendFeatureTableCreate(BatchFeatureTableCreateBase):
+    """
+    BatchFeaturesAppendFeatureTableCreate creation payload
+    """
+
+    output_table_name: str
+    output_table_snapshot_date_name: str = Field(
+        default="snapshot_date",
+        description="Name of the column that contains the snapshot date in the output table",
+    )
+    output_table_snapshot_date: date = Field(
+        default_factory=date.today,
+        description="Snapshot date for the output table",
+    )
 
 
 class BatchFeatureTableList(PaginationMixin):

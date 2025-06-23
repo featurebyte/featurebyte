@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, cast
 
 from dateutil import tz
 from pydantic import Field, StrictStr
@@ -127,6 +127,36 @@ class BaseRequestInput(FeatureByteBaseModel):
         # guarantee an exact number of rows.
         return min(100.0, 100.0 * desired_row_count / total_row_count * 1.4)
 
+    async def get_output_columns_and_dtypes(
+        self, session: BaseSession
+    ) -> Tuple[List[str], Dict[str, DBVarType]]:
+        """
+        Get the output columns and dtypes based on the input columns and rename mapping
+
+        Parameters
+        ----------
+        session: BaseSession
+            The session to use to get the column names
+
+        Returns
+        -------
+        Tuple[List[str], Dict[str, DBVarType]]
+        """
+        column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
+        available_columns = list(column_names_and_dtypes.keys())
+        self._validate_columns_and_rename_mapping(available_columns)
+        input_columns = self.columns or available_columns
+        if self.columns_rename_mapping is not None:
+            output_column_names_and_dtypes = {
+                self.columns_rename_mapping.get(col, col): column_names_and_dtypes[col]
+                for col in input_columns
+            }
+        else:
+            output_column_names_and_dtypes = {
+                col: column_names_and_dtypes[col] for col in input_columns
+            }
+        return input_columns, output_column_names_and_dtypes
+
     async def materialize(
         self,
         session: BaseSession,
@@ -161,19 +191,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
         # Derive output column names and dtypes
-        column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
-        available_columns = list(column_names_and_dtypes.keys())
-        self._validate_columns_and_rename_mapping(available_columns)
-        input_columns = self.columns or available_columns
-        if self.columns_rename_mapping is not None:
-            output_column_names_and_dtypes = {
-                self.columns_rename_mapping.get(col, col): column_names_and_dtypes[col]
-                for col in input_columns
-            }
-            output_columns = list(output_column_names_and_dtypes.keys())
-        else:
-            output_column_names_and_dtypes = column_names_and_dtypes
-            output_columns = input_columns
+        input_columns, output_column_names_and_dtypes = await self.get_output_columns_and_dtypes(
+            session=session
+        )
+        output_columns = list(output_column_names_and_dtypes.keys())
 
         # Always perform explicit column selection and renaming
         adapter = get_sql_adapter(session.get_source_info())

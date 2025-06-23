@@ -344,6 +344,33 @@ class DBVarType(StrEnum):
         """
         return {cls.TIMESTAMP_TZ_TUPLE}
 
+    @classmethod
+    def are_compatible_types(cls, left_type: DBVarType, right_type: DBVarType) -> bool:
+        """
+        Check if two DBVarTypes are compatible
+
+        Parameters
+        ----------
+        left_type: DBVarType
+            First DBVarType
+        right_type: DBVarType
+            Second DBVarType
+
+        Returns
+        -------
+        bool
+        """
+        if left_type == right_type:
+            return True
+
+        if left_type in cls.dictionary_types() and right_type in cls.dictionary_types():
+            return True
+
+        if left_type in cls.array_types() and right_type in cls.array_types():
+            return True
+
+        return False
+
 
 class FeatureType(StrEnum):
     """

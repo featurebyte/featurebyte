@@ -392,6 +392,8 @@ class SnowflakeSession(BaseSession):
                     db_type = "TIMESTAMP_TZ"
                 else:
                     db_type = "TIMESTAMP_NTZ"
+            elif dataframe.shape[0] > 0 and isinstance(dataframe[colname].iloc[0], datetime.date):
+                db_type = "DATE"
             elif pd.api.types.is_datetime64_any_dtype(dataframe[colname]):
                 if isinstance(dataframe[colname], pd.DatetimeTZDtype):
                     db_type = "TIMESTAMP_TZ"

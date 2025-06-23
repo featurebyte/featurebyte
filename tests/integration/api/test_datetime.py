@@ -75,10 +75,7 @@ async def test_datetime_timestamp_difference(catalog, session, data_source, sour
         expected_d_tz = pd.Timestamp("2024-01-01 10:00:00+0000", tz="UTC")
     else:
         expected_d_tz = pd.Timestamp("2024-01-01 10:00:00")
-    if source_type in [SourceType.SPARK, SourceType.DATABRICKS_UNITY]:
-        expected_d_dt = "2024-01-01"
-    else:
-        expected_d_dt = "2024-01-01T00:00:00.000000000"
+    expected_d_dt = "2024-01-01T00:00:00.000000000"
     expected = [
         {
             "dimension_id": 1,

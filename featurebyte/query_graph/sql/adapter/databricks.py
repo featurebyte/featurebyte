@@ -42,6 +42,7 @@ class DatabricksAdapter(BaseAdapter):
         MAP = "MAP<STRING, DOUBLE>"
         ARRAY = "ARRAY<STRING>"
         EMBEDDING = "ARRAY<DOUBLE>"
+        DATE = "DATE"
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
@@ -196,6 +197,7 @@ class DatabricksAdapter(BaseAdapter):
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.EMBEDDING,
             DBVarType.TIMESTAMP_TZ_TUPLE: cls.DataType.STRING,
+            DBVarType.DATE: cls.DataType.DATE,
         }
         if dtype in mapping:
             return mapping[dtype]

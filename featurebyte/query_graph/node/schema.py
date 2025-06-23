@@ -468,3 +468,25 @@ class ColumnSpec(FeatureByteBaseModel):
             Var type info
         """
         return DBVarTypeInfo(dtype=self.dtype, metadata=self.dtype_metadata)
+
+    def is_compatible_with(self, other: ColumnSpec) -> bool:
+        """
+        Compares the column spec with another column spec
+
+        Parameters
+        ----------
+        other: ColumnSpec
+            The other column spec to compare with
+
+        Returns
+        -------
+        bool
+            True if the column specs are the same, False otherwise
+        """
+        if self.name != other.name:
+            return False
+        if not DBVarType.are_compatible_types(self.dtype, other.dtype):
+            return False
+        if self.dtype_metadata != other.dtype_metadata:
+            return False
+        return True
