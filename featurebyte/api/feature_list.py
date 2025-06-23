@@ -1250,7 +1250,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... )
         >>> # Compute the historical feature table
         >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP
-        ...   observation_table=observation_table,
+        ...   observation_set=observation_table,
         ...   historical_feature_table_name=training_table_name
         ...   serving_names_mapping={"GROCERYCUSTOMERGUID": "CUSTOMERGUID"}
         ... )
