@@ -4,7 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
@@ -33,7 +33,11 @@ from featurebyte.exception import (
 )
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
+from featurebyte.schema.batch_feature_table import (
+    BatchFeaturesAppendFeatureTableCreate,
+    BatchFeatureTableCreate,
+    OutputTableInfo,
+)
 from featurebyte.schema.deployment import DeploymentUpdate
 
 
@@ -273,6 +277,91 @@ class Deployment(DeletableApiObject):
             route="/batch_feature_table", payload=payload.json_dict()
         )
         return BatchFeatureTable.get_by_id(batch_feature_table_doc["_id"])
+
+    @typechecked
+    def compute_batch_features(
+        self,
+        batch_request_table: Union[BatchRequestTable, SourceTable, View],
+        output_table_name: str,
+        output_table_snapshot_date: Optional[str | date] = date.today(),
+        output_table_snapshot_date_name: str = "snapshot_date",
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+        point_in_time: Optional[str | datetime] = None,
+    ) -> None:
+        """
+        Compute batch features asynchronously using a batch request table. The batch request features
+        will be materialized into a specified table in the data warehouse.
+
+        Parameters
+        ----------
+        batch_request_table: Union[BatchRequestTable, SourceTable, View]
+            Batch request table object, source table object, or view object that contains required serving names columns
+        output_table_name: str
+            Fully qualified name of the output table to be created or appended in the data warehouse.
+        output_table_snapshot_date: date
+            Snapshot date for the output table.
+        output_table_snapshot_date_name: str
+            Name of the snapshot date column in the output table.
+        columns: Optional[list[str]]
+            Include only these columns when creating the batch feature table. If None, all columns
+            are included. Not applicable when batch_request_table is a BatchRequestTable.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the batch feature table. If None, no columns are renamed.
+            Not applicable when batch_request_table is a BatchRequestTable.
+        point_in_time: Optional[str | datetime]
+            Optional point in time to use for computing the batch feature table. If None, the
+            current time is used.
+
+        Examples
+        --------
+        Compute batch features using a batch request table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> batch_features = deployment.compute_batch_features(  # doctest: +SKIP
+        ...     batch_request_table=batch_request_table,
+        ...     output_table_name="<output_table_name>",
+        ... )
+
+        Compute batch features using a source table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> batch_features = deployment.compute_batch_features(  # doctest: +SKIP
+        ...     batch_request_table=source_table,
+        ...     output_table_name="<output_table_name>",
+        ...     columns=["cust_id"],
+        ...     columns_rename_mapping={"cust_id": "GROCERYCUSTOMERGUID"},
+        ... )
+        """
+
+        request_input = None
+        batch_request_table_id = None
+        if isinstance(batch_request_table, BatchRequestTable):
+            feature_store_id = batch_request_table.location.feature_store_id
+            batch_request_table_id = batch_request_table.id
+        else:
+            feature_store_id = batch_request_table.feature_store.id
+            request_input = batch_request_table.get_batch_request_input(
+                columns=columns, columns_rename_mapping=columns_rename_mapping
+            )
+
+        payload = BatchFeaturesAppendFeatureTableCreate(
+            feature_store_id=feature_store_id,
+            batch_request_table_id=batch_request_table_id,
+            request_input=request_input,
+            deployment_id=self.id,
+            point_in_time=point_in_time,
+            output_table_info=OutputTableInfo(
+                name=output_table_name,
+                snapshot_date=output_table_snapshot_date,
+                snapshot_date_name=output_table_snapshot_date_name,
+            ),
+        )
+        self.post_async_task(
+            route="/batch_feature_table/feature_table",
+            payload=payload.json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """

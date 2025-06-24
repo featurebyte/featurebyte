@@ -593,3 +593,15 @@ class InvalidViewSQL(BaseUnprocessableEntityError):
     """
     Raise when the SQL for a view is invalid
     """
+
+
+class InvalidTableNameError(BaseUnprocessableEntityError):
+    """
+    Raise when an invalid table name is provided
+    """
+
+
+class InvalidTableSchemaError(BaseUnprocessableEntityError):
+    """
+    Raise when a table with invalid schema is provided
+    """

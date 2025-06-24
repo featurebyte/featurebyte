@@ -48,6 +48,7 @@ class SnowflakeAdapter(BaseAdapter):
         VARCHAR = "VARCHAR"
         VARIANT = "VARIANT"
         ARRAY = "ARRAY"
+        DATE = "DATE"
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
@@ -132,6 +133,7 @@ class SnowflakeAdapter(BaseAdapter):
             DBVarType.TIMESTAMP_TZ_TUPLE: cls.SnowflakeDataType.VARCHAR,
             DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
             DBVarType.EMBEDDING: cls.SnowflakeDataType.ARRAY,
+            DBVarType.DATE: cls.SnowflakeDataType.DATE,
         }
         for dict_dtype in DBVarType.dictionary_types():
             mapping[dict_dtype] = cls.SnowflakeDataType.OBJECT

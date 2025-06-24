@@ -3,6 +3,7 @@ Tests for BatchFeatureTable routes
 """
 
 import copy
+import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -10,6 +11,12 @@ import freezegun
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.exception import SchemaNotFoundError
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.schema.batch_feature_table import (
+    BatchFeaturesAppendFeatureTableCreate,
+    OutputTableInfo,
+)
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -377,4 +384,214 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         assert (
             recreate_response_dict["parent_batch_feature_table_name"]
             == "batch_feature_table_with_request_input"
+        )
+
+    @pytest.fixture(name="payload_for_feature_table")
+    def payload_for_feature_table_fixture(self):
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/batch_feature_table_with_request_input.json"
+        )
+        payload["point_in_time"] = "2025-06-19T03:00:00"
+        payload = BatchFeaturesAppendFeatureTableCreate(
+            **payload,
+            output_table_info=OutputTableInfo(
+                name='"db"."schema"."batch_prediction_table"',
+                snapshot_date="2025-06-19",
+            ),
+        )
+        payload.request_input.columns = ["cust_id"]
+        return payload.json_dict()
+
+    def test_create_fail_feature_table_invalid_table_name(
+        self, test_api_client_persistent, payload_for_feature_table
+    ):
+        """Test create fail append to table invalid table name"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload_for_feature_table["output_table_info"]["name"] = (
+            "`db`.`schema`.`batch_prediction_table`"
+        )
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Invalid output table name: `db`.`schema`.`batch_prediction_table`"
+        )
+
+    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_tables")
+    def test_create_fail_feature_table_schema_does_not_exist(
+        self, mock_list_tables, test_api_client_persistent, payload_for_feature_table
+    ):
+        """Test create fail append to table schema does not exist"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        mock_list_tables.side_effect = SchemaNotFoundError
+
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Invalid output table name: schema not found"
+
+    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns")
+    def test_create_fail_feature_table_missing_columns(
+        self, mock_list_columns, test_api_client_persistent, payload_for_feature_table
+    ):
+        """Test create fail append to table missing columns"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        mock_list_columns.return_value = [
+            ColumnSpecWithDescription(
+                name="cust_id",
+                dtype="VARCHAR",
+            ),
+        ]
+
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Output table missing required columns: POINT_IN_TIME, snapshot_date, sum_30m"
+        )
+
+    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns")
+    def test_create_fail_feature_table_mismatch_dtypes(
+        self, mock_list_columns, test_api_client_persistent, payload_for_feature_table
+    ):
+        """Test create fail append to table mismatch column dtypes"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        mock_list_columns.return_value = [
+            ColumnSpecWithDescription(
+                name="POINT_IN_TIME",
+                dtype="TIMESTAMP",
+            ),
+            ColumnSpecWithDescription(
+                name="snapshot_date",
+                dtype="VARCHAR",
+            ),
+            ColumnSpecWithDescription(
+                name="cust_id",
+                dtype="INT",
+            ),
+            ColumnSpecWithDescription(
+                name="sum_30m",
+                dtype="FLOAT",
+            ),
+        ]
+
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Output table column type mismatch: snapshot_date (expected DATE, got VARCHAR)"
+        )
+
+    @pytest.fixture(name="output_table_list_columns")
+    def output_table_list_columns_fixture(self):
+        with patch(
+            "featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns"
+        ) as mock_list_columns:
+            mock_list_columns.return_value = [
+                ColumnSpecWithDescription(
+                    name="POINT_IN_TIME",
+                    dtype="TIMESTAMP",
+                ),
+                ColumnSpecWithDescription(
+                    name="snapshot_date",
+                    dtype="DATE",
+                ),
+                ColumnSpecWithDescription(
+                    name="cust_id",
+                    dtype="INT",
+                ),
+                ColumnSpecWithDescription(
+                    name="sum_30m",
+                    dtype="FLOAT",
+                ),
+            ]
+            yield mock_list_columns
+
+    def test_create_success_feature_table_new_table(
+        self,
+        test_api_client_persistent,
+        output_table_list_columns,
+        payload_for_feature_table,
+        snowflake_execute_query_for_materialized_table,
+    ):
+        """Test create success append to table"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload_for_feature_table["output_table_info"]["name"] = (
+            '"db"."schema"."new_batch_prediction_table"'
+        )
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        assert (
+            snowflake_execute_query_for_materialized_table.call_args_list[-3].kwargs["query"]
+            == textwrap.dedent(
+                """
+            CREATE TABLE "db"."schema"."new_batch_prediction_table" AS
+            SELECT
+              CAST('2025-06-19T03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
+              CAST('2025-06-19' AS DATE) AS "snapshot_date",
+              "cust_id",
+              "sum_30m"
+            FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002"
+            """
+            ).strip()
+        )
+
+    def test_create_success_feature_table_existing_table(
+        self,
+        test_api_client_persistent,
+        output_table_list_columns,
+        snowflake_execute_query_for_materialized_table,
+        payload_for_feature_table,
+    ):
+        """Test create success append to table"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        assert (
+            snowflake_execute_query_for_materialized_table.call_args_list[-3].kwargs["query"]
+            == textwrap.dedent(
+                """
+            INSERT INTO "db"."schema"."batch_prediction_table" (
+              "POINT_IN_TIME",
+              "snapshot_date",
+              "cust_id",
+              "sum_30m"
+            )
+            SELECT
+              CAST('2025-06-19T03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
+              CAST('2025-06-19' AS DATE) AS "snapshot_date",
+              "cust_id",
+              "sum_30m"
+            FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002"
+            """
+            ).strip()
         )

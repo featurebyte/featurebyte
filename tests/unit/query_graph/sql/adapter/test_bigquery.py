@@ -22,7 +22,7 @@ class TestBigQueryAdapter(BaseAdapterTest):
     expected_physical_type_from_dtype_mapping = {
         "BOOL": "BOOLEAN",
         "CHAR": "STRING",
-        "DATE": "STRING",
+        "DATE": "DATE",
         "FLOAT": "FLOAT64",
         "INT": "FLOAT64",
         "TIME": "STRING",

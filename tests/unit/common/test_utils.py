@@ -32,8 +32,10 @@ def data_to_convert_fixture():
     dataframe = pd.DataFrame({
         "a": range(10),
         "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
+        "c": [f"2020-01-03 12:00:{i:02d}" for i in range(10)],
+        "d": [f"2020-01-{i:02d}" for i in range(1, 11)],
     })
-    type_conversions = {"b": DBVarType.TIMESTAMP_TZ}
+    type_conversions = {"b": DBVarType.TIMESTAMP_TZ, "c": DBVarType.TIMESTAMP, "d": DBVarType.DATE}
     return dataframe, type_conversions
 
 
@@ -56,6 +58,8 @@ def test_dataframe_to_json(data_to_convert):
     output_df = dataframe_from_json(data)
     # timestamp column should be casted to datetime with tz offsets
     original_df["b"] = pd.to_datetime(original_df["b"])
+    original_df["c"] = pd.to_datetime(original_df["c"])
+    original_df["d"] = pd.to_datetime(original_df["d"]).apply(lambda x: x.date())
     assert_frame_equal(output_df, original_df)
 
 

@@ -21,7 +21,7 @@ class TestDatabricksUnityAdapter(BaseAdapterTest):
     expected_physical_type_from_dtype_mapping = {
         "BOOL": "BOOLEAN",
         "CHAR": "STRING",
-        "DATE": "STRING",
+        "DATE": "DATE",
         "FLOAT": "DOUBLE",
         "INT": "DOUBLE",
         "TIME": "STRING",
