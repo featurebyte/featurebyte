@@ -3,10 +3,11 @@ Integration test for online store SQL generation
 """
 
 import asyncio
+import copy
 import threading
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from queue import Queue
 from unittest.mock import patch
 
@@ -176,6 +177,13 @@ async def test_online_serving_sql(
                 df_historical,
                 columns,
             )
+        check_get_batch_features_feature_table(
+            data_source,
+            deployment,
+            batch_request_table,
+            df_historical,
+            columns,
+        )
 
         # clear batch request table
         batch_request_table.delete()
@@ -286,6 +294,50 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
     # check preview deleted materialized table should raise RecordRetrievalException
     with pytest.raises(RecordRetrievalException):
         batch_feature_table.preview()
+
+
+def check_get_batch_features_feature_table(
+    data_source, deployment, batch_request_table, df_historical, columns
+):
+    """
+    Check get_batch_features_async that appends to an existing table
+    """
+    table_details = copy.deepcopy(batch_request_table.location.table_details)
+    table_details.table_name = "BATCH_FEATURE_TABLE_APPEND_TO"
+    deployment.compute_batch_features(
+        batch_request_table=batch_request_table,
+        output_table_name=f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"',
+        output_table_snapshot_date=date.fromisoformat("2001-01-02"),
+        point_in_time="2001-01-02 13:15:00",
+    )
+    output_table = data_source.get_source_table(
+        table_name=table_details.table_name,
+        database_name=table_details.database_name,
+        schema_name=table_details.schema_name,
+    )
+    preview_df = output_table.preview(limit=df_historical.shape[0])
+    fb_assert_frame_equal(
+        df_historical[columns],
+        preview_df[columns],
+        dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+        sort_by_columns=["üser id"],
+    )
+
+    # check that the POINT_IN_TIME and snapshot_date columns are present
+    assert "POINT_IN_TIME" in preview_df.columns
+    assert "snapshot_date" in preview_df.columns
+    assert preview_df["POINT_IN_TIME"].iloc[0] == pd.Timestamp("2001-01-02 13:15:00")
+    assert preview_df["snapshot_date"].iloc[0] == pd.Timestamp("2001-01-02").date()
+
+    # append to the existing table
+    deployment.compute_batch_features(
+        batch_request_table=batch_request_table,
+        output_table_name=f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"',
+        output_table_snapshot_date=date.fromisoformat("2001-01-03"),
+        point_in_time="2001-01-03 13:15:00",
+    )
+    preview_df = output_table.preview(limit=50)
+    assert preview_df.shape[0] == df_historical.shape[0] * 2
 
 
 async def check_concurrent_online_store_table_updates(
