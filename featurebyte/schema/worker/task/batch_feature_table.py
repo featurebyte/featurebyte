@@ -4,14 +4,13 @@ Online prediction table task payload schema
 
 from __future__ import annotations
 
-from datetime import date
 from typing import ClassVar, Optional
 
 from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
+from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, OutputTableInfo
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskPriority, TaskType
 
 
@@ -29,13 +28,12 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     priority: TaskPriority = Field(default=TaskPriority.CRITICAL)
+
+    output_table_info: Optional[OutputTableInfo] = Field(default=None)
     parent_batch_feature_table_name: Optional[str] = Field(default=None)
-    output_table_name: Optional[str] = Field(default=None)
-    output_table_snapshot_date_name: str = Field(default="snapshot_date")
-    output_table_snapshot_date: date = Field(default_factory=date.today)
 
     @property
     def task_output_path(self) -> Optional[str]:
-        if self.output_table_name is not None:
+        if self.output_table_info is not None:
             return None
         return super().task_output_path

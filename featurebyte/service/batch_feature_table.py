@@ -155,12 +155,12 @@ class BatchFeatureTableService(
         )
         try:
             select_expr = sqlglot.parse_one(
-                f"SELECT * FROM {data.output_table_name}",
+                f"SELECT * FROM {data.output_table_info.name}",
                 dialect=get_dialect_from_source_type(feature_store.type),
             )
         except sqlglot.errors.ParseError as exc:
             raise InvalidTableNameError(
-                f"Invalid output table name: {data.output_table_name}"
+                f"Invalid output table name: {data.output_table_info.name}"
             ) from exc
 
         # ensure schema is valid
@@ -186,7 +186,7 @@ class BatchFeatureTableService(
 
             # ensure all required columns are present
             output_columns_and_dtypes[SpecialColumnName.POINT_IN_TIME] = DBVarType.TIMESTAMP
-            output_columns_and_dtypes[data.output_table_snapshot_date_name] = DBVarType.DATE
+            output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = DBVarType.DATE
             missing_columns = set(output_columns_and_dtypes.keys()) - set(
                 available_column_details.keys()
             )

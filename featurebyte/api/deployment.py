@@ -36,6 +36,7 @@ from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import (
     BatchFeaturesAppendFeatureTableCreate,
     BatchFeatureTableCreate,
+    OutputTableInfo,
 )
 from featurebyte.schema.deployment import DeploymentUpdate
 
@@ -349,9 +350,11 @@ class Deployment(DeletableApiObject):
             request_input=request_input,
             deployment_id=self.id,
             point_in_time=point_in_time,
-            output_table_name=output_table_name,
-            output_table_snapshot_date=output_table_snapshot_date,
-            output_table_snapshot_date_name=output_table_snapshot_date_name,
+            output_table_info=OutputTableInfo(
+                name=output_table_name,
+                snapshot_date=output_table_snapshot_date,
+                snapshot_date_name=output_table_snapshot_date_name,
+            ),
         )
         self.post_async_task(
             route="/batch_feature_table/feature_table",

@@ -13,7 +13,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import SchemaNotFoundError
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.schema.batch_feature_table import BatchFeaturesAppendFeatureTableCreate
+from featurebyte.schema.batch_feature_table import (
+    BatchFeaturesAppendFeatureTableCreate,
+    OutputTableInfo,
+)
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -391,8 +394,10 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         payload["point_in_time"] = "2025-06-19T03:00:00"
         payload = BatchFeaturesAppendFeatureTableCreate(
             **payload,
-            output_table_name='"db"."schema"."batch_prediction_table"',
-            output_table_snapshot_date="2025-06-19",
+            output_table_info=OutputTableInfo(
+                name='"db"."schema"."batch_prediction_table"',
+                snapshot_date="2025-06-19",
+            ),
         )
         payload.request_input.columns = ["cust_id"]
         return payload.json_dict()
@@ -404,7 +409,9 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
-        payload_for_feature_table["output_table_name"] = "`db`.`schema`.`batch_prediction_table`"
+        payload_for_feature_table["output_table_info"]["name"] = (
+            "`db`.`schema`.`batch_prediction_table`"
+        )
         response = test_api_client.post(
             f"{self.base_route}/feature_table", json=payload_for_feature_table
         )
@@ -526,7 +533,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
-        payload_for_feature_table["output_table_name"] = (
+        payload_for_feature_table["output_table_info"]["name"] = (
             '"db"."schema"."new_batch_prediction_table"'
         )
         response = test_api_client.post(

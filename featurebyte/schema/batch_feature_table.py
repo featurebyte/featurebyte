@@ -46,20 +46,31 @@ class BatchFeatureTableCreate(BatchFeatureTableCreateBase):
     name: NameStr
 
 
+class OutputTableInfo(FeatureByteBaseModel):
+    """
+    Information about output table for batch feature table task
+    """
+
+    name: str = Field(
+        default="batch_feature_table_output",
+        description="Fully qualified name of the table to write features to",
+    )
+    snapshot_date_name: str = Field(
+        default="snapshot_date",
+        description="Name of the column that contains the snapshot date in the table",
+    )
+    snapshot_date: date = Field(
+        default_factory=date.today,
+        description="Snapshot date value to be used for the features to be written to the table",
+    )
+
+
 class BatchFeaturesAppendFeatureTableCreate(BatchFeatureTableCreateBase):
     """
     BatchFeaturesAppendFeatureTableCreate creation payload
     """
 
-    output_table_name: str
-    output_table_snapshot_date_name: str = Field(
-        default="snapshot_date",
-        description="Name of the column that contains the snapshot date in the output table",
-    )
-    output_table_snapshot_date: date = Field(
-        default_factory=date.today,
-        description="Snapshot date for the output table",
-    )
+    output_table_info: OutputTableInfo
 
 
 class BatchFeatureTableList(PaginationMixin):

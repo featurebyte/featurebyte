@@ -144,14 +144,14 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     db_session, location.table_details
                 )
 
-                if payload.output_table_name is not None:
+                if payload.output_table_info is not None:
                     logger.debug(
                         "Appending output table with batch predictions",
-                        extra={"table_name": payload.output_table_name},
+                        extra={"table_name": payload.output_table_info.name},
                     )
 
                     select_expr = sqlglot.parse_one(
-                        f"SELECT * FROM {payload.output_table_name}",
+                        f"SELECT * FROM {payload.output_table_info.name}",
                         dialect=get_dialect_from_source_type(feature_store.type),
                     )
                     table_expr = select_expr.args["from"].this
@@ -168,7 +168,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     )
                     snapshot_date_expr = expressions.Cast(
                         this=expressions.Literal(
-                            this=payload.output_table_snapshot_date.isoformat(), is_string=True
+                            this=payload.output_table_info.snapshot_date.isoformat(), is_string=True
                         ),
                         to=expressions.DataType.build("DATE"),
                     )
@@ -178,7 +178,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                         if col.name
                         not in {
                             SpecialColumnName.POINT_IN_TIME,
-                            payload.output_table_snapshot_date_name,
+                            payload.output_table_info.snapshot_date_name,
                         }
                     ]
                     input_select_expr = expressions.Select(
@@ -189,7 +189,9 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                             ),
                             expressions.Alias(
                                 this=snapshot_date_expr,
-                                alias=quoted_identifier(payload.output_table_snapshot_date_name),
+                                alias=quoted_identifier(
+                                    payload.output_table_info.snapshot_date_name
+                                ),
                             ),
                         ]
                         + columns
@@ -199,7 +201,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                         # Create the output table if it does not exist
                         await db_session.create_table_as(
                             table_details=output_table_details,
-                            partition_keys=[payload.output_table_snapshot_date_name],
+                            partition_keys=[payload.output_table_info.snapshot_date_name],
                             select_expr=input_select_expr,
                         )
                     else:
@@ -209,7 +211,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                             into=get_fully_qualified_table_name(output_table_details.model_dump()),
                             columns=[
                                 quoted_identifier(SpecialColumnName.POINT_IN_TIME),
-                                quoted_identifier(payload.output_table_snapshot_date_name),
+                                quoted_identifier(payload.output_table_info.snapshot_date_name),
                             ]
                             + columns,  # type: ignore
                         )
