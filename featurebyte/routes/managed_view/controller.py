@@ -10,13 +10,13 @@ from bson import ObjectId
 
 from featurebyte.enum import ViewNamePrefix
 from featurebyte.logging import get_logger
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.managed_view import ManagedViewModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.managed_view import (
     ManagedViewCreate,
     ManagedViewInfo,

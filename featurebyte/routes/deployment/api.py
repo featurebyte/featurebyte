@@ -9,6 +9,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -18,7 +19,6 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,

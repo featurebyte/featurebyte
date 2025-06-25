@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Union, cast
 
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -18,7 +19,6 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,

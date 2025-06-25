@@ -44,3 +44,21 @@ def test_get_status():
     response = Configurations().get_client().get("/status")
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"sdk_version": get_version()}
+
+
+def test_open_api_schema():
+    """Test app openapi schema"""
+    response = Configurations().get_client().get("/openapi.json")
+    assert response.status_code == HTTPStatus.OK
+    schema = response.json()
+    assert "openapi" in schema
+    assert "info" in schema
+    assert "paths" in schema
+    assert "components" in schema
+    assert schema["components"]["schemas"]["FeatureListNamespaceModelResponse"]["properties"][
+        "feature_namespace_ids"
+    ] == {
+        "type": "array",
+        "items": {"type": "string"},
+        "title": "Feature Namespace Ids",
+    }

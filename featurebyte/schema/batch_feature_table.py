@@ -87,7 +87,7 @@ class BatchFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
 
     feature_store_id: PydanticObjectId
-    batch_request_table_id: PydanticObjectId
+    batch_request_table_id: Optional[PydanticObjectId]
 
     @model_validator(mode="before")
     @classmethod

@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
@@ -18,7 +19,6 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortDirQuery,
 )

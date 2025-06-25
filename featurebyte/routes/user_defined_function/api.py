@@ -7,6 +7,7 @@ from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -15,7 +16,6 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,

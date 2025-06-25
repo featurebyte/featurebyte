@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, cast
 from fastapi import APIRouter, Query, Request
 from starlette.responses import StreamingResponse
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -21,7 +22,6 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,

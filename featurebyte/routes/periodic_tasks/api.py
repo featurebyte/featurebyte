@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -15,7 +16,6 @@ from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortByQuery,
     SortDirQuery,
