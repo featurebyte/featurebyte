@@ -55,10 +55,10 @@ def test_open_api_schema():
     assert "info" in schema
     assert "paths" in schema
     assert "components" in schema
-    assert schema["components"]["schemas"]["FeatureListNamespaceModelResponse"]["properties"][
-        "feature_namespace_ids"
+    assert schema["components"]["schemas"]["CatalogCreate"]["properties"][
+        "default_feature_store_ids"
     ] == {
         "type": "array",
         "items": {"type": "string"},
-        "title": "Feature Namespace Ids",
+        "title": "Default Feature Store Ids",
     }
