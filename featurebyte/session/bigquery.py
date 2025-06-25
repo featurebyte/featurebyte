@@ -533,6 +533,8 @@ class BigQuerySession(BaseSession):
             mode = "NULLABLE"
             if dataframe.shape[0] > 0 and isinstance(dataframe[colname].iloc[0], datetime.datetime):
                 db_type = SqlTypeNames.TIMESTAMP
+            elif dataframe.shape[0] > 0 and isinstance(dataframe[colname].iloc[0], datetime.date):
+                db_type = SqlTypeNames.DATE
             elif pd.api.types.is_datetime64_any_dtype(dataframe[colname]):
                 db_type = SqlTypeNames.TIMESTAMP
             elif pd.api.types.is_bool_dtype(dtype):
@@ -574,6 +576,11 @@ class BigQuerySession(BaseSession):
             ts_val = ts_val.tz_convert("UTC").tz_localize(None)
         return ts_val.isoformat()  # type: ignore[no-any-return]
 
+    @staticmethod
+    def _process_date_value(date_val: Any) -> str:
+        date_val = pd.Timestamp(date_val).date()
+        return date_val.isoformat()  # type: ignore[no-any-return]
+
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         table_schema = self.get_columns_schema_from_dataframe(dataframe)
         types = {field.name: field.field_type for field in table_schema}
@@ -583,6 +590,8 @@ class BigQuerySession(BaseSession):
             for colname in dataframe.columns:
                 if types[colname] == SqlTypeNames.TIMESTAMP:
                     dataframe[colname] = dataframe[colname].apply(self._process_timestamp_value)
+                elif types[colname] == SqlTypeNames.DATE:
+                    dataframe[colname] = dataframe[colname].apply(self._process_date_value)
 
         table_ref = TableReference(
             dataset_ref=self.dataset_ref,

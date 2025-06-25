@@ -299,6 +299,26 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
                 pass
         return value
 
+    def _to_date(value: Any) -> Any:
+        """
+        Convert value with date if feasible
+
+        Parameters
+        ----------
+        value: Any
+            Value to convert
+
+        Returns
+        -------
+        Any
+        """
+        if isinstance(value, str):
+            try:
+                return pd.to_datetime(value).date()
+            except (TypeError, parser.ParserError):
+                pass
+        return value
+
     dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
     type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     if type_conversions:
@@ -307,8 +327,10 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
             if not col_name:
                 col_name = dataframe.columns[0]
 
-            if dtype == DBVarType.TIMESTAMP_TZ:
+            if dtype in [DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ]:
                 dataframe[col_name] = dataframe[col_name].apply(_to_datetime)
+            elif dtype == DBVarType.DATE:
+                dataframe[col_name] = dataframe[col_name].apply(_to_date)
             else:
                 raise NotImplementedError()
     return dataframe

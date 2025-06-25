@@ -3,6 +3,7 @@ Test base session
 """
 
 import asyncio
+import datetime
 from io import BytesIO
 from uuid import UUID
 
@@ -31,8 +32,8 @@ def sample_dataframe():
         "int": [1] * 10 + [2, 3],
         "float": [1.1] * 10 + [2.2, 3.3],
         "string": [None] * 10 + ["Bob", "Charlie"],
-        "date": [pd.Timestamp("2020-01-01")] * 10
-        + [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")],
+        "date": [datetime.date(2020, 1, 1)] * 10
+        + [datetime.date(2020, 1, 2), datetime.date(2020, 1, 3)],
         "timestamp": [pd.Timestamp("2020-01-01 12:00:00")] * 10
         + [pd.Timestamp("2020-01-02 12:00:00"), pd.Timestamp("2020-01-03 12:00:00")],
         "int_list": [None] * 10 + [[4, 5, 6], [7, 8, 9]],
@@ -103,7 +104,7 @@ async def test_arrow_schema(test_session):
         pa.field("int", pa.int64()),
         pa.field("float", pa.float64()),
         pa.field("string", pa.string()),
-        pa.field("date", pa.timestamp("us", tz=None)),
+        pa.field("date", pa.date64()),
         pa.field("timestamp", pa.timestamp("us", tz=None)),
         pa.field("int_list", pa.string()),
         pa.field("float_list", pa.string()),
@@ -121,7 +122,7 @@ async def test_arrow_schema(test_session):
         "INT",
         "FLOAT",
         "VARCHAR",
-        "TIMESTAMP",
+        "DATE",
         "TIMESTAMP",
         "ARRAY",
         "ARRAY",

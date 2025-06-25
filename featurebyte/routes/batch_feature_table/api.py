@@ -27,7 +27,11 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, BatchFeatureTableList
+from featurebyte.schema.batch_feature_table import (
+    BatchFeaturesAppendFeatureTableCreate,
+    BatchFeatureTableCreate,
+    BatchFeatureTableList,
+)
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
@@ -46,6 +50,14 @@ class BatchFeatureTableRouter(BaseRouter):
         self.router.add_api_route(
             path="",
             endpoint=self.create_batch_feature_table,
+            methods=["POST"],
+            response_model=Task,
+            status_code=HTTPStatus.CREATED,
+        )
+
+        self.router.add_api_route(
+            path="/feature_table",
+            endpoint=self.append_batch_features_to_feature_table,
             methods=["POST"],
             response_model=Task,
             status_code=HTTPStatus.CREATED,
@@ -130,6 +142,20 @@ class BatchFeatureTableRouter(BaseRouter):
     ) -> Task:
         """
         Create BatchFeatureTable by submitting a materialization task
+        """
+        controller = request.state.app_container.batch_feature_table_controller
+        task_submit: Task = await controller.create_batch_feature_table(
+            data=data,
+        )
+        return task_submit
+
+    async def append_batch_features_to_feature_table(
+        self,
+        request: Request,
+        data: BatchFeaturesAppendFeatureTableCreate,
+    ) -> Task:
+        """
+        Append batch features to an unmanaged feature table by submitting a materialization task
         """
         controller = request.state.app_container.batch_feature_table_controller
         task_submit: Task = await controller.create_batch_feature_table(

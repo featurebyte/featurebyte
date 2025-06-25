@@ -46,6 +46,7 @@ class BigQueryAdapter(BaseAdapter):
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
         ARRAY = "ARRAY<FLOAT64>"
+        DATE = "DATE"
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
@@ -59,6 +60,7 @@ class BigQueryAdapter(BaseAdapter):
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.ARRAY,
             DBVarType.TIMESTAMP_TZ_TUPLE: cls.DataType.STRING,
+            DBVarType.DATE: cls.DataType.DATE,
         }
         for dict_dtype in DBVarType.dictionary_types():
             mapping[dict_dtype] = cls.DataType.OBJECT

@@ -5,7 +5,7 @@ BatchFeatureTable API route controller
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from bson import ObjectId
 
@@ -13,7 +13,11 @@ from featurebyte.exception import FeatureTableRequestInputNotFoundError
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate, BatchFeatureTableList
+from featurebyte.schema.batch_feature_table import (
+    BatchFeaturesAppendFeatureTableCreate,
+    BatchFeatureTableCreate,
+    BatchFeatureTableList,
+)
 from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
@@ -21,6 +25,7 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -45,6 +50,7 @@ class BatchFeatureTableController(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
+        feature_service: FeatureService,
         batch_request_table_service: BatchRequestTableService,
         deployment_service: DeploymentService,
         entity_validation_service: EntityValidationService,
@@ -57,6 +63,7 @@ class BatchFeatureTableController(
         self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
+        self.feature_service = feature_service
         self.batch_request_table_service = batch_request_table_service
         self.deployment_service = deployment_service
         self.entity_validation_service = entity_validation_service
@@ -64,7 +71,7 @@ class BatchFeatureTableController(
 
     async def create_batch_feature_table(
         self,
-        data: BatchFeatureTableCreate,
+        data: Union[BatchFeatureTableCreate, BatchFeaturesAppendFeatureTableCreate],
         parent_batch_feature_table_name: Optional[str] = None,
     ) -> Task:
         """
@@ -72,8 +79,8 @@ class BatchFeatureTableController(
 
         Parameters
         ----------
-        data: BatchFeatureTableCreate
-            BatchFeatureTable creation request parameters
+        data: Union[BatchFeatureTableCreate, BatchFeaturesAppendFeatureTableCreate]
+            Request parameters
         parent_batch_feature_table_name: Optional[str]
             Parent BatchFeatureTable name
 
@@ -105,10 +112,42 @@ class BatchFeatureTableController(
                 feature_store=feature_store,
             )
 
-        # prepare task payload and submit task
-        payload = await self.service.get_batch_feature_table_task_payload(
-            data=data, parent_batch_feature_table_name=parent_batch_feature_table_name
-        )
+        if isinstance(data, BatchFeaturesAppendFeatureTableCreate):
+            # get output columns and dtypes of the request input
+            if batch_request_table is not None:
+                output_columns_and_dtypes = {
+                    col.name: col.dtype for col in batch_request_table.columns_info
+                }
+            else:
+                assert data.request_input is not None
+                db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
+                    feature_store=feature_store
+                )
+                (
+                    _,
+                    output_columns_and_dtypes,
+                ) = await data.request_input.get_output_columns_and_dtypes(db_session)
+
+            # include feature names and dtypes from the feature list
+            async for doc in self.feature_service.list_documents_as_dict_iterator(
+                projection={"name": 1, "dtype": 1},
+                query_filter={"_id": {"$in": feature_list.feature_ids}},
+            ):
+                output_columns_and_dtypes[doc["name"]] = doc["dtype"]
+
+            # prepare task payload for appending batch features to an unmanaged feature table
+            payload = (
+                await self.service.get_batch_feature_table_task_payload_for_unmanaged_feature_table(
+                    data=data,
+                    output_columns_and_dtypes=output_columns_and_dtypes,
+                )
+            )
+        else:
+            # prepare task payload for creating a batch feature table
+            payload = await self.service.get_batch_feature_table_task_payload(
+                data=data, parent_batch_feature_table_name=parent_batch_feature_table_name
+            )
+
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 

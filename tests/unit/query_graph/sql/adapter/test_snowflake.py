@@ -22,7 +22,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
     expected_physical_type_from_dtype_mapping = {
         "BOOL": "BOOLEAN",
         "CHAR": "VARIANT",
-        "DATE": "VARIANT",
+        "DATE": "DATE",
         "FLOAT": "FLOAT",
         "INT": "FLOAT",
         "TIME": "VARIANT",
