@@ -7,10 +7,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 
 from bson import ObjectId
-from bson.errors import InvalidId
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -44,32 +43,58 @@ CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0
 NameStr = Annotated[str, StringConstraints(min_length=0, max_length=230)]
 
 
-class _ObjectIdPydanticAnnotation:
-    # Based on https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types.
+class PyObjectId(str):
+    """
+    Pydantic ObjectId type for API route path parameter
+    """
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls,
-        _source_type: Any,
-        _handler: Callable[[Any], core_schema.CoreSchema],
+        cls, _source_type: Any, _handler: Any
     ) -> core_schema.CoreSchema:
-        def validate_from_str(input_value: str) -> ObjectId:
-            try:
-                return ObjectId(input_value)
-            except InvalidId as exc:
-                raise ValueError(f"Invalid ObjectId: {input_value}") from exc
-
-        return core_schema.union_schema(
-            [
-                # check if it's an instance first before doing any further work
+        return core_schema.json_or_python_schema(
+            json_schema=core_schema.no_info_after_validator_function(
+                cls.validate,
+                core_schema.str_schema(),
+            ),
+            python_schema=core_schema.union_schema([
                 core_schema.is_instance_schema(ObjectId),
-                core_schema.no_info_plain_validator_function(validate_from_str),
-            ],
-            serialization=core_schema.to_string_ser_schema(),
+                core_schema.no_info_after_validator_function(
+                    cls.validate,
+                    core_schema.str_schema(),
+                ),
+            ]),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                str, when_used="json-unless-none"
+            ),
         )
 
+    @classmethod
+    def validate(cls, value: Any) -> ObjectId:
+        """
+        Validate ObjectId
 
-PydanticObjectId = Annotated[ObjectId, _ObjectIdPydanticAnnotation]
+        Parameters
+        ----------
+        value: Any
+            value to validate
+
+        Raises
+        -------
+        ValueError
+            If the value is not a valid ObjectId
+
+        Returns
+        -------
+        ObjectId
+            ObjectId value
+        """
+        if not ObjectId.is_valid(value):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(value)
+
+
+PydanticObjectId = Annotated[ObjectId, PyObjectId]
 
 
 class FeatureByteBaseModel(BaseModel):

@@ -10,6 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.time_series_table import (
     CronFeatureJobSettingHistoryEntry,
@@ -21,7 +22,6 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,

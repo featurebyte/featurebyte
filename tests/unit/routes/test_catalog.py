@@ -337,7 +337,7 @@ class TestCatalogApi(BaseApiTestSuite):
             {
                 "ctx": {"error": {}},
                 "input": "abc",
-                "loc": ["path", "catalog_id", "chain[str,function-plain[validate()]]"],
+                "loc": ["path", "catalog_id", "function-after[validate(), str]"],
                 "msg": "Value error, Invalid ObjectId",
                 "type": "value_error",
             },

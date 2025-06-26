@@ -12,6 +12,7 @@ from fastapi import Query, Request
 
 from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -26,7 +27,6 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,

@@ -9,12 +9,12 @@ from typing import Any, Dict, List, Tuple, cast
 from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,

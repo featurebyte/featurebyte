@@ -12,11 +12,11 @@ from featurebyte.exception import (
     DocumentUpdateError,
     ObservationTableInvalidUseCaseError,
 )
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableServiceUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate

@@ -9,9 +9,9 @@ from fastapi import Request
 
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models import FeatureStoreModel
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.schema import PyObjectId
 from featurebyte.schema.credential import (
     CredentialCreate,
     CredentialList,

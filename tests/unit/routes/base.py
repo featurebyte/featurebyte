@@ -1105,7 +1105,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             {
                 "ctx": {"error": {}},
                 "input": "abc",
-                "loc": ["path", self.id_field_name, "chain[str,function-plain[validate()]]"],
+                "loc": ["path", self.id_field_name, "function-after[validate(), str]"],
                 "msg": "Value error, Invalid ObjectId",
                 "type": "value_error",
             },

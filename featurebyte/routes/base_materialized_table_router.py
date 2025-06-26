@@ -6,9 +6,9 @@ from typing import Generic, Type, TypeVar
 
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.routes.base_router import BaseRouter
-from featurebyte.routes.common.schema import PyObjectId
 
 MaterializedTableModelT = TypeVar("MaterializedTableModelT", bound=MaterializedTableModel)
 

@@ -9,6 +9,7 @@ from typing import Optional, cast
 from bson import ObjectId
 from fastapi import Request
 
+from featurebyte.models.base import PyObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
@@ -16,7 +17,6 @@ from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
-    PyObjectId,
     SearchQuery,
     SortDirQuery,
     VerboseQuery,

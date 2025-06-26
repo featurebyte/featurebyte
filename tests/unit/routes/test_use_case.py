@@ -41,8 +41,8 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
                 {
                     "ctx": {"error": {}},
                     "input": "test_id",
-                    "loc": ["body", "context_id", "function-plain[validate_from_str()]"],
-                    "msg": "Value error, Invalid ObjectId: test_id",
+                    "loc": ["body", "context_id", "function-after[validate(), str]"],
+                    "msg": "Value error, Invalid ObjectId",
                     "type": "value_error",
                 },
             ],

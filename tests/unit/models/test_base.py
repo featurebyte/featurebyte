@@ -2,6 +2,7 @@
 Tests FeatureByteBaseModel
 """
 
+import json
 from typing import List
 
 import pytest
@@ -11,6 +12,7 @@ from pydantic import StrictStr, ValidationError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     ReferenceInfo,
     VersionIdentifier,
 )
@@ -59,6 +61,12 @@ def test_featurebyte_base_model__pydantic_model_type_error_message():
     assert expected_msg in str(exc.value)
 
 
+class TestClass(FeatureByteBaseModel):
+    """Test class for FeatureByteBaseModel"""
+
+    items: List[PydanticObjectId]
+
+
 def test_base_model__id_validation():
     """Test base model id field validation logic"""
     model = FeatureByteBaseDocumentModel()
@@ -66,8 +74,22 @@ def test_base_model__id_validation():
     model = FeatureByteBaseDocumentModel(_id=None)
     assert model.id is not None
     id_value = ObjectId()
+
     model = FeatureByteBaseDocumentModel(_id=id_value)
     assert model.id == id_value
+    model = FeatureByteBaseDocumentModel(_id=str(id_value))
+    assert model.id == id_value
+
+    # test PydanticObjectId in a list
+    model = TestClass(items=[ObjectId(), ObjectId()])
+    assert model.model_dump()["items"] == model.items
+    assert json.loads(model.model_dump_json())["items"] == [str(item) for item in model.items]
+    assert TestClass.model_validate_json(model.model_dump_json(by_alias=True)) == model
+
+    model = TestClass(items=[str(ObjectId()), str(ObjectId())])
+    assert model.model_dump()["items"] == model.items
+    assert json.loads(model.model_dump_json())["items"] == [str(item) for item in model.items]
+    assert TestClass.model_validate_json(model.model_dump_json(by_alias=True)) == model
 
 
 @pytest.mark.parametrize(

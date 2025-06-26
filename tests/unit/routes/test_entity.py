@@ -194,7 +194,7 @@ class TestEntityApi(BaseCatalogApiTestSuite):
             {
                 "ctx": {"error": {}},
                 "input": "abc",
-                "loc": ["path", "entity_id", "chain[str,function-plain[validate()]]"],
+                "loc": ["path", "entity_id", "function-after[validate(), str]"],
                 "msg": "Value error, Invalid ObjectId",
                 "type": "value_error",
             },
