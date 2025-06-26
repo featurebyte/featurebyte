@@ -67,6 +67,42 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
+    @classmethod
+    def get_primary_input_nodes_from_graph_model(
+        cls, graph: QueryGraphModel, node_name: str
+    ) -> List[InputNode]:
+        """
+        Get primary input nodes from the query graph given the target node name
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph model to get primary input nodes from
+        node_name: str
+            Name of the node to get primary input nodes for
+
+        Returns
+        -------
+        List[InputNode]
+        """
+        target_node = graph.get_node_by_name(node_name)
+        operation_structure_info = OperationStructureExtractor(graph=graph).extract(
+            node=target_node,
+            keep_all_source_columns=True,
+        )
+        target_op_struct = operation_structure_info.operation_structure_map[node_name]
+        node_name_to_input_node = OrderedDict()
+        for column in target_op_struct.iterate_source_columns_or_aggregations():
+            if graph.get_node_by_name(column.node_name).type == NodeType.REQUEST_COLUMN:
+                continue
+            # get_input_node performs a depth-first search to find the input node
+            # during the search, it will traverse the left input node first before the right input node.
+            # This is important because left input node is the main table for all existing join operations.
+            input_node = graph.get_input_node(node_name=column.node_name)
+            if input_node.name not in node_name_to_input_node:
+                node_name_to_input_node[input_node.name] = input_node
+        return list(node_name_to_input_node.values())
+
     def get_primary_input_nodes(self, node_name: str) -> List[InputNode]:
         """
         Get the primary input node of the query graph
@@ -81,23 +117,7 @@ class QueryGraph(QueryGraphModel):
         List[InputNode]
             Main InputNode objects
         """
-        target_node = self.get_node_by_name(node_name)
-        operation_structure_info = OperationStructureExtractor(graph=self).extract(
-            node=target_node,
-            keep_all_source_columns=True,
-        )
-        target_op_struct = operation_structure_info.operation_structure_map[node_name]
-        node_name_to_input_node = OrderedDict()
-        for column in target_op_struct.iterate_source_columns_or_aggregations():
-            if self.get_node_by_name(column.node_name).type == NodeType.REQUEST_COLUMN:
-                continue
-            # get_input_node performs a depth-first search to find the input node
-            # during the search, it will traverse the left input node first before the right input node.
-            # This is important because left input node is the main table for all existing join operations.
-            input_node = self.get_input_node(node_name=column.node_name)
-            if input_node.name not in node_name_to_input_node:
-                node_name_to_input_node[input_node.name] = input_node
-        return list(node_name_to_input_node.values())
+        return self.get_primary_input_nodes_from_graph_model(graph=self, node_name=node_name)
 
     def get_table_ids(self, node_name: str) -> List[ObjectId]:
         """
