@@ -558,10 +558,8 @@ class FeatureModel(BaseFeatureModel):
 
     @model_validator(mode="after")
     def _add_tile_derived_attributes(self) -> "FeatureModel":
-        # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
-        # specific scheduled tile task. An aggregation_id can produce multiple aggregation results
-        # using different feature derivation windows.
-        if self.aggregation_ids and self.aggregation_result_names:
+        # Each aggregation_id refers to a set of columns in a tile table
+        if self.aggregation_ids:
             return self
 
         graph_dict = self.internal_graph
