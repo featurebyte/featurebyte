@@ -5,7 +5,7 @@ Helpers to simulate job schedules for historical features
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, cast
+from typing import Optional
 
 import pandas as pd
 import pytz
@@ -250,7 +250,7 @@ class CronHelper:
         cron = croniter(
             expr_format=cron_feature_job_setting.get_cron_expression(), start_time=local_time
         )
-        next_time = cast(datetime, cron.get_next(datetime))
+        next_time = cron.get_next(datetime)
         next_utc_time = next_time.astimezone(pytz.utc).replace(tzinfo=None)
         return next_utc_time
 
