@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.2 (2025-06-28)
+
+### 💡 Enhancements
+
++ `adapter` Skip sorting during sampling for large datasets (>10M rows) to improve speed.
+  + This change is intended to improve sampling speed for large datasets (>10M rows)
+  + The default behavior remains unchanged for smaller datasets
+  + Sampling for datasets larger than 10M rows will not be deterministic even if seed is provided
++ `service` Support one-to-one relationship type between entities
++ `session` Use python 3.11 runtime for Snowflake UDFs
++ `service` Add option to specify point in time when computing batch feature tables
++ `service` Add service and routes to support managed views that can be used as source tables
++ `service` Reduce cap on number of most frequent categories to keep during aggregation to avoid creating too large feature tables
++ `service` Disable online feature serving if online store is not configured for the catalog
++ `service` Add API and SDK function to compute batch features that are appended to an unmanaged feature table
+
+### 🐛 Bug Fixes
+
++ `utils` Handle control characters and invalid json strings in dataframe_from_arrow_table helper function
++ `service` Fix boolean features and targets being materialized as string types in the database.
++ `session` Handle session lost in DataBricks connection with retry using re-initialized connection
+
 ## v3.0.1 (2025-04-07)
 
 ### 💡 Enhancements
