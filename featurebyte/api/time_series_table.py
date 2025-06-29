@@ -72,6 +72,12 @@ class TimeSeriesTable(TableApiObject):
     internal_reference_datetime_schema: TimestampSchema = Field(alias="reference_datetime_schema")
     internal_time_interval: TimeInterval = Field(alias="time_interval")
     internal_series_id_column: Optional[StrictStr] = Field(alias="series_id_column", default=None)
+    internal_datetime_partition_column: Optional[StrictStr] = Field(
+        alias="datetime_partition_column", default=None
+    )
+    internal_datetime_partition_schema: Optional[TimestampSchema] = Field(
+        alias="datetime_partition_schema", default=None
+    )
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -84,6 +90,7 @@ class TimeSeriesTable(TableApiObject):
                 ),
                 ("internal_reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("internal_series_id_column", DBVarType.supported_id_types()),
+                ("internal_datetime_partition_column", DBVarType.supported_ts_datetime_types()),
             ],
         )
     )
@@ -257,6 +264,34 @@ class TimeSeriesTable(TableApiObject):
             return self.cached_model.reference_datetime_schema
         except RecordRetrievalException:
             return self.internal_reference_datetime_schema
+
+    @property
+    def datetime_partition_column(self) -> Optional[str]:
+        """
+        Datetime partition column name of the TimeSeriesTable
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.datetime_partition_column
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_column
+
+    @property
+    def datetime_partition_schema(self) -> Optional[TimestampSchema]:
+        """
+        Schema of the datetime partition column
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        try:
+            return self.cached_model.datetime_partition_schema
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_schema
 
     @property
     def time_interval(self) -> TimeInterval:

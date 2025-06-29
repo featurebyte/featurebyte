@@ -74,6 +74,8 @@
             "name": "another_timestamp_col"
         }
     ],
+    "datetime_partition_column": null,
+    "datetime_partition_schema": null,
     "default_feature_job_setting": null,
     "description": "test time series table",
     "managed_view_id": null,

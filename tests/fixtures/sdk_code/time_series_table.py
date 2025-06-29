@@ -50,6 +50,8 @@ time_series_table = TimeSeriesTable(
         is_utc_time=None,
         timezone="Etc/UTC",
     ),
+    partition_datetime_column=None,
+    partition_datetime_schema=None,
     time_interval=TimeInterval(value=1, unit="DAY"),
     _id=ObjectId("{table_id}"),
 )

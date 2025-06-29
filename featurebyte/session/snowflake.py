@@ -24,7 +24,7 @@ from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import PrivateKeyCredential, UsernamePasswordCredential
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -322,7 +322,7 @@ class SnowflakeSession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecWithDescription]:
+    ) -> OrderedDict[str, ColumnSpecDetailed]:
         schema = await self.execute_query_interactive(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
             timeout=timeout,
@@ -333,7 +333,7 @@ class SnowflakeSession(BaseSession):
                 ["column_name", "data_type", "comment"]
             ].iterrows():
                 dtype = self._convert_to_internal_variable_type(json.loads(var_info))
-                column_name_type_map[column_name] = ColumnSpecWithDescription(
+                column_name_type_map[column_name] = ColumnSpecDetailed(
                     name=column_name,
                     dtype=dtype,
                     description=comment or None,

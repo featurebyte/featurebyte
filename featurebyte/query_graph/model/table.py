@@ -71,6 +71,8 @@ class EventTableData(BaseTableData):
     event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
     event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -647,6 +649,8 @@ class TimeSeriesTableData(BaseTableData):
     series_id_column: Optional[StrictStr]
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
     time_interval: TimeInterval
 
     @property

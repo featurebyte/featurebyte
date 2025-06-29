@@ -71,6 +71,18 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 }
             ],
         ),
+        (
+            {**payload, "datetime_partition_column": "non_existent_column"},
+            [
+                {
+                    "ctx": {"error": {}},
+                    "input": "non_existent_column",
+                    "loc": ["body", "datetime_partition_column"],
+                    "msg": "Value error, Column not found in table: non_existent_column",
+                    "type": "value_error",
+                },
+            ],
+        ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 

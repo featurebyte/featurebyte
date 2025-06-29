@@ -152,6 +152,8 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
         "event_timestamp_timezone_offset": None,
         "event_timestamp_timezone_offset_column": None,
         "event_timestamp_schema": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
         "is_deleted": False,
     }
 
@@ -979,6 +981,8 @@ def test_default_feature_job_setting_history(saved_event_table):
         "is_deleted",
         "managed_view_id",
         "validation",
+        "datetime_partition_schema",
+        "datetime_partition_column",
     }
 
 

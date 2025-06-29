@@ -109,6 +109,28 @@ class EventView(View, GroupByMixin, RawMixin):
         """
         return self._get_event_table_node_parameters().event_timestamp_timezone_offset
 
+    @property
+    def datetime_partition_column(self) -> Optional[str]:
+        """
+        Datetime partition column of the event table
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self._get_event_table_node_parameters().datetime_partition_column
+
+    @property
+    def datetime_partition_schema(self) -> Optional[TimestampSchema]:
+        """
+        Datetime partition schema of the event table
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        return self._get_event_table_node_parameters().datetime_partition_schema
+
     def _get_event_table_node_parameters(self) -> EventTableInputNodeParameters:
         input_node = next(
             node
@@ -125,6 +147,9 @@ class EventView(View, GroupByMixin, RawMixin):
             self.event_timestamp_schema.timezone, TimeZoneColumn
         ):
             columns.add(self.event_timestamp_schema.timezone.column_name)
+        if self.datetime_partition_schema is not None:
+            if isinstance(self.datetime_partition_schema.timezone, TimeZoneColumn):
+                columns.add(self.datetime_partition_schema.timezone.column_name)
         return columns
 
     @property

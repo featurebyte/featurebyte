@@ -368,7 +368,9 @@ def test_query_graph__representation():
                         "id_column": null,
                         "event_timestamp_timezone_offset": null,
                         "event_timestamp_timezone_offset_column": null,
-                        "event_timestamp_schema": null
+                        "event_timestamp_schema": null,
+                        "datetime_partition_column": null,
+                        "datetime_partition_schema": null
                     }
                 }
             ]

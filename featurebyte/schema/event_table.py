@@ -29,6 +29,8 @@ class EventTableCreate(TableCreate):
     event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
     event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
 
     # pydantic validators
@@ -37,6 +39,7 @@ class EventTableCreate(TableCreate):
         "event_id_column",
         "event_timestamp_column",
         "event_timestamp_timezone_offset_column",
+        "datetime_partition_column",
         mode="after",
     )(TableCreate._special_column_validator)
 

@@ -54,6 +54,12 @@ class EventTableModel(EventTableData, TableModel):
         Event ID column name
     event_timestamp_column: str
         Event timestamp column name
+    event_timestamp_schema: Optional[TimestampSchema]
+        Event timestamp schema
+    datetime_partition_column: Optional[StrictStr]
+        Datetime partition column name
+    datetime_partition_schema: Optional[TimestampSchema]
+        Datetime partition schema
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
     status : TableStatus
@@ -79,6 +85,7 @@ class EventTableModel(EventTableData, TableModel):
             ],
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("event_timestamp_column", "event_timestamp_schema"),
+                ColumnToTimestampSchema("datetime_partition_column", "datetime_partition_schema"),
             ],
         )
     )

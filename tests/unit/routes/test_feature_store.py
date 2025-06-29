@@ -362,31 +362,25 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == [
             {
-                "critical_data_info": None,
                 "description": None,
                 "dtype": "TIMESTAMP",
-                "entity_id": None,
                 "name": "a",
-                "semantic_id": None,
                 "dtype_metadata": None,
+                "is_partition_key": False,
             },
             {
-                "critical_data_info": None,
                 "description": None,
                 "dtype": "INT",
-                "entity_id": None,
                 "name": "b",
-                "semantic_id": None,
                 "dtype_metadata": None,
+                "is_partition_key": False,
             },
             {
-                "critical_data_info": None,
                 "description": None,
                 "dtype": "BOOL",
-                "entity_id": None,
                 "name": "c",
-                "semantic_id": None,
                 "dtype_metadata": None,
+                "is_partition_key": False,
             },
         ]
 

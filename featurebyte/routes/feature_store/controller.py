@@ -13,7 +13,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
@@ -260,7 +260,7 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpecWithDescription]:
+    ) -> List[ColumnSpecDetailed]:
         """
         List columns in database table
 

@@ -24,6 +24,17 @@ class ColumnSpecWithDescription(ColumnSpec):
     description: Optional[str] = Field(default=None)
 
 
+class ColumnSpecDetailed(ColumnSpecWithDescription):
+    """
+    ColumnInfo for storing column information with details
+    """
+
+    is_partition_key: bool = Field(
+        default=False,
+        description="Indicates if the column is a partition key",
+    )
+
+
 class ColumnInfo(ColumnSpecWithDescription):
     """
     ColumnInfo for storing column information

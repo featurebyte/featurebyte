@@ -131,6 +131,10 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_metadata(
     if node_type == NodeType.INPUT:
         if node_parameters.get("event_timestamp_schema") is None:
             node_parameters.pop("event_timestamp_schema", None)
+        if node_parameters.get("datetime_partition_column") is None:
+            node_parameters.pop("datetime_partition_column", None)
+        if node_parameters.get("datetime_partition_schema") is None:
+            node_parameters.pop("datetime_partition_schema", None)
 
     return node_parameters
 

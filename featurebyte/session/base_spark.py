@@ -17,7 +17,7 @@ from pydantic import Field
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -294,7 +294,7 @@ class BaseSparkSession(BaseSession, ABC):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecWithDescription]:
+    ) -> OrderedDict[str, ColumnSpecDetailed]:
         schema = await self.execute_query_interactive(
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
             timeout=timeout,
@@ -310,11 +310,22 @@ class BaseSparkSession(BaseSession, ABC):
                     break
 
                 dtype = self._convert_to_internal_variable_type(var_info.upper())
-                column_name_type_map[column_name] = ColumnSpecWithDescription(
+                column_name_type_map[column_name] = ColumnSpecDetailed(
                     name=column_name,
                     dtype=dtype,
                     description=comment or None,
                 )
+
+        # get partition columns
+        details = await self.execute_query_interactive(
+            f"DESCRIBE DETAIL `{database_name}`.`{schema_name}`.`{table_name}`",
+            timeout=timeout,
+        )
+        if details is not None:
+            partition_columns = details["partitionColumns"].iloc[0] or []
+            for partition_column in partition_columns:
+                if partition_column in column_name_type_map:
+                    column_name_type_map[partition_column].is_partition_key = True
 
         return column_name_type_map
 

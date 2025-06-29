@@ -1899,6 +1899,8 @@ def query_graph_single_node(
                 "event_timestamp_timezone_offset": None,
                 "event_timestamp_timezone_offset_column": None,
                 "event_timestamp_schema": None,
+                "datetime_partition_column": None,
+                "datetime_partition_schema": None,
             },
             "output_type": "frame",
         }
