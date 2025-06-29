@@ -157,6 +157,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
                 "event_timestamp_timezone_offset": None,
                 "event_timestamp_timezone_offset_column": None,
                 "event_timestamp_schema": None,
+                "datetime_partition_column": None,
+                "datetime_partition_schema": None,
             },
         }
 

@@ -91,6 +91,8 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "columns_info": columns_info,
         "event_timestamp_column": "event_date",
         "event_timestamp_schema": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
         "event_id_column": "event_id",
         "id": event_table.id,
         "name": "my_event_table",

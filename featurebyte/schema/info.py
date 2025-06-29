@@ -199,8 +199,11 @@ class EventTableInfo(TableInfo):
     """
 
     event_timestamp_column: str
+    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
     event_id_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
+    datetime_partition_column: Optional[str] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class ItemTableInfo(TableInfo):
@@ -241,6 +244,8 @@ class TimeSeriesTableInfo(TableInfo):
     series_id_column: Optional[str]
     reference_datetime_column: str
     reference_datetime_schema: TimestampSchema
+    datetime_partition_column: Optional[str] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
     time_interval: TimeInterval
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
 

@@ -166,6 +166,8 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
         "series_id_column": "col_int",
         "reference_datetime_column": "date",
         "reference_datetime_schema": ts_schema,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
         "time_interval": {"unit": "DAY", "value": 1},
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
@@ -983,6 +985,8 @@ def test_default_feature_job_setting_history(saved_time_series_table):
         "reference_datetime_schema.timezone",
         "time_interval.unit",
         "time_interval.value",
+        "datetime_partition_schema",
+        "datetime_partition_column",
     }
 
 

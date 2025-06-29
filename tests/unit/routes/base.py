@@ -964,7 +964,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         payload = self.data_create_schema_class(**data_model_dict).json_dict()
         payload["columns_info"] = columns_info
         response = test_api_client.post(self.base_route, json=payload)
-        assert response.status_code == HTTPStatus.CREATED
+        assert response.status_code == HTTPStatus.CREATED, response.json()
         assert response.json()["_id"] == data_model_dict["_id"]
         return response
 
@@ -986,7 +986,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         special_columns = [
             field_name
             for field_name in self.data_create_schema_class.model_fields
-            if field_name.endswith("column")
+            if field_name.endswith("column") and field_name != "datetime_partition_column"
         ]
         for special_column in special_columns:
             payload[special_column] = ""

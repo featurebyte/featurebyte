@@ -53,6 +53,10 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         Reference datetime column name
     reference_datetime_schema: TimestampSchema
         Reference datetime schema
+    datetime_partition_column: Optional[StrictStr]
+        Datetime partition column name
+    datetime_partition_schema: Optional[TimestampSchema]
+        Datetime partition schema
     time_interval: TimeInterval
         Time interval between consecutive records in each series
     default_feature_job_setting : Optional[FeatureJobSetting]
@@ -80,6 +84,7 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
             ],
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("reference_datetime_column", "reference_datetime_schema"),
+                ColumnToTimestampSchema("datetime_partition_column", "datetime_partition_schema"),
             ],
         ),
     )

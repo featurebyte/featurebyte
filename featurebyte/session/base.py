@@ -39,7 +39,7 @@ from featurebyte.exception import (
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.node.schema import TableDetails as NodeTableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
@@ -403,7 +403,7 @@ class BaseSession(BaseModel):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecWithDescription]:
+    ) -> OrderedDict[str, ColumnSpecDetailed]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
         schema type to internal variable type

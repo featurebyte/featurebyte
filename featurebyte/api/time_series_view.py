@@ -97,6 +97,28 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
         return self._get_time_series_table_node_parameters().reference_datetime_schema
 
     @property
+    def datetime_partition_column(self) -> Optional[str]:
+        """
+        Datetime partition column of the time series table
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self._get_time_series_table_node_parameters().datetime_partition_column
+
+    @property
+    def datetime_partition_schema(self) -> Optional[TimestampSchema]:
+        """
+        Datetime partition schema of the time series table
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        return self._get_time_series_table_node_parameters().reference_datetime_schema
+
+    @property
     def time_interval(self) -> TimeInterval:
         """
         Time interval of the time series table
@@ -120,6 +142,9 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
         if self.reference_datetime_schema is not None:
             if isinstance(self.reference_datetime_schema.timezone, TimeZoneColumn):
                 columns.add(self.reference_datetime_schema.timezone.column_name)
+        if self.datetime_partition_schema is not None:
+            if isinstance(self.datetime_partition_schema.timezone, TimeZoneColumn):
+                columns.add(self.datetime_partition_schema.timezone.column_name)
         return columns
 
     @property

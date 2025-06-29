@@ -16,7 +16,9 @@ from featurebyte.models.base import PyObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
-from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import (
+    ColumnSpecDetailed,
+)
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
@@ -89,7 +91,7 @@ class FeatureStoreRouter(
             "/column",
             self.list_columns_in_database_table,
             methods=["POST"],
-            response_model=List[ColumnInfo],
+            response_model=List[ColumnSpecDetailed],
         )
         self.router.add_api_route(
             "/shape",
@@ -283,7 +285,7 @@ class FeatureStoreRouter(
         schema_name: str,
         table_name: str,
         feature_store: FeatureStoreModel,
-    ) -> List[ColumnSpecWithDescription]:
+    ) -> List[ColumnSpecDetailed]:
         """
         List columns
         """
@@ -291,7 +293,7 @@ class FeatureStoreRouter(
         feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
             controller, feature_store
         )
-        result: List[ColumnSpecWithDescription] = await controller.list_columns(
+        result: List[ColumnSpecDetailed] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,

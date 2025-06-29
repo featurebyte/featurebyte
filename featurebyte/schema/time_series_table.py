@@ -27,6 +27,8 @@ class TimeSeriesTableCreate(TableCreate):
     series_id_column: Optional[StrictStr]
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
     time_interval: TimeInterval
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
 
@@ -35,6 +37,7 @@ class TimeSeriesTableCreate(TableCreate):
         "record_creation_timestamp_column",
         "series_id_column",
         "reference_datetime_column",
+        "datetime_partition_column",
         mode="after",
     )(TableCreate._special_column_validator)
 

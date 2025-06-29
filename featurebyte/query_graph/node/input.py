@@ -230,6 +230,8 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
     event_timestamp_timezone_offset: Optional[str] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
     event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    datetime_partition_column: Optional[InColumnStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
@@ -252,6 +254,19 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "event_id_column": self.id_column,
             "event_timestamp_column": self.timestamp_column,
+            "event_timestamp_schema": (
+                derive_sdk_code_from_timestamp_schema(timestamp_schema=self.event_timestamp_schema)
+                if self.event_timestamp_schema
+                else None
+            ),
+            "partition_datetime_column": self.datetime_partition_column,
+            "partition_datetime_schema": (
+                derive_sdk_code_from_timestamp_schema(
+                    timestamp_schema=self.datetime_partition_schema
+                )
+                if self.datetime_partition_schema
+                else None
+            ),
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
@@ -380,6 +395,8 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)
     reference_datetime_column: InColumnStr
     reference_datetime_schema: TimestampSchema
+    datetime_partition_column: Optional[InColumnStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
     time_interval: TimeInterval
 
     @property
@@ -393,6 +410,14 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
             "reference_datetime_column": self.reference_datetime_column,
             "reference_datetime_schema": derive_sdk_code_from_timestamp_schema(
                 timestamp_schema=self.reference_datetime_schema
+            ),
+            "partition_datetime_column": self.datetime_partition_column,
+            "partition_datetime_schema": (
+                derive_sdk_code_from_timestamp_schema(
+                    timestamp_schema=self.datetime_partition_schema
+                )
+                if self.datetime_partition_schema
+                else None
             ),
             "time_interval": ClassEnum.TIME_INTERVAL(
                 value=self.time_interval.value,

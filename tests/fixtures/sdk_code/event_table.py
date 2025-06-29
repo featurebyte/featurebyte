@@ -42,6 +42,9 @@ event_table = EventTable(
     record_creation_timestamp_column=None,
     event_id_column="col_int",
     event_timestamp_column="event_timestamp",
+    event_timestamp_schema=None,
+    partition_datetime_column=None,
+    partition_datetime_schema=None,
     _id=ObjectId("{table_id}"),
 )
 output = event_table

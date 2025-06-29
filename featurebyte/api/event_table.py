@@ -92,6 +92,13 @@ class EventTable(TableApiObject):
         alias="event_timestamp_schema",
         default=None,
     )
+    internal_datetime_partition_column: Optional[StrictStr] = Field(
+        alias="datetime_partition_column", default=None
+    )
+    internal_datetime_partition_schema: Optional[TimestampSchema] = Field(
+        alias="datetime_partition_schema",
+        default=None,
+    )
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -264,6 +271,34 @@ class EventTable(TableApiObject):
             return self.cached_model.event_timestamp_schema
         except RecordRetrievalException:
             return self.internal_event_timestamp_schema
+
+    @property
+    def datetime_partition_column(self) -> Optional[str]:
+        """
+        Datetime partition column name of the TimeSeriesTable
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.datetime_partition_column
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_column
+
+    @property
+    def datetime_partition_schema(self) -> Optional[TimestampSchema]:
+        """
+        Schema of the datetime partition column
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        try:
+            return self.cached_model.datetime_partition_schema
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_schema
 
     @property
     def event_id_column(self) -> Optional[str]:
