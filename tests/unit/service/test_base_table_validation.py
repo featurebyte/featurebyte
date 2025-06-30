@@ -11,7 +11,7 @@ from featurebyte import TimestampSchema
 from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
 from featurebyte.models.scd_table import SCDTableModel
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.scd_table import SCDTableCreate
@@ -48,11 +48,11 @@ async def table_model_fixture(document_service, feature_store):
             ),
         ),
         columns_info=[
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="effective_date",
                 dtype=DBVarType.TIMESTAMP,
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype=DBVarType.INT,
             ),

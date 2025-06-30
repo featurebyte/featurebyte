@@ -12,7 +12,7 @@ from typing import Any, Optional, OrderedDict
 import pandas as pd
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
@@ -96,13 +96,13 @@ class SQLiteSession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecDetailed]:
+    ) -> OrderedDict[str, ColumnSpecWithDetails]:
         schema = await self.execute_query(f'PRAGMA table_info("{table_name}")', timeout=timeout)
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
             for _, (column_name, data_type) in schema[["name", "type"]].iterrows():
                 dtype = self._convert_to_internal_variable_type(data_type)
-                column_name_type_map[column_name] = ColumnSpecDetailed(
+                column_name_type_map[column_name] = ColumnSpecWithDetails(
                     name=column_name,
                     dtype=dtype,
                     description=None,  # sqlite doesn't provide any meta for description

@@ -8,7 +8,7 @@ import tempfile
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableDetails
 from featurebyte.session.sqlite import SQLiteSession
 
@@ -74,30 +74,32 @@ async def test_sqlite_session(sqlite_db_filename):
     tables = await session.list_tables()
     assert [table.name for table in tables] == ["type_table"]
     assert await session.list_table_schema(table_name="type_table") == {
-        "int": ColumnSpecDetailed(name="int", dtype=DBVarType.INT),
-        "integer": ColumnSpecDetailed(name="integer", dtype=DBVarType.INT),
-        "tinyint": ColumnSpecDetailed(name="tinyint", dtype=DBVarType.INT),
-        "smallint": ColumnSpecDetailed(name="smallint", dtype=DBVarType.INT),
-        "mediumint": ColumnSpecDetailed(name="mediumint", dtype=DBVarType.INT),
-        "bigint": ColumnSpecDetailed(name="bigint", dtype=DBVarType.INT),
-        "unsigned_big_int": ColumnSpecDetailed(name="unsigned_big_int", dtype=DBVarType.INT),
-        "int2": ColumnSpecDetailed(name="int2", dtype=DBVarType.INT),
-        "int8": ColumnSpecDetailed(name="int8", dtype=DBVarType.INT),
-        "char": ColumnSpecDetailed(name="char", dtype=DBVarType.VARCHAR),
-        "varchar": ColumnSpecDetailed(name="varchar", dtype=DBVarType.VARCHAR),
-        "varying_character": ColumnSpecDetailed(name="varying_character", dtype=DBVarType.VARCHAR),
-        "nchar": ColumnSpecDetailed(name="nchar", dtype=DBVarType.VARCHAR),
-        "native_character": ColumnSpecDetailed(name="native_character", dtype=DBVarType.VARCHAR),
-        "nvarchar": ColumnSpecDetailed(name="nvarchar", dtype=DBVarType.VARCHAR),
-        "text": ColumnSpecDetailed(name="text", dtype=DBVarType.VARCHAR),
-        "real": ColumnSpecDetailed(name="real", dtype=DBVarType.FLOAT),
-        "double": ColumnSpecDetailed(name="double", dtype=DBVarType.FLOAT),
-        "double_precision": ColumnSpecDetailed(name="double_precision", dtype=DBVarType.FLOAT),
-        "float": ColumnSpecDetailed(name="float", dtype=DBVarType.FLOAT),
-        "decimal": ColumnSpecDetailed(name="decimal", dtype=DBVarType.FLOAT),
-        "boolean": ColumnSpecDetailed(name="boolean", dtype=DBVarType.BOOL),
-        "date": ColumnSpecDetailed(name="date", dtype=DBVarType.DATE),
-        "datetime": ColumnSpecDetailed(name="datetime", dtype=DBVarType.TIMESTAMP),
+        "int": ColumnSpecWithDetails(name="int", dtype=DBVarType.INT),
+        "integer": ColumnSpecWithDetails(name="integer", dtype=DBVarType.INT),
+        "tinyint": ColumnSpecWithDetails(name="tinyint", dtype=DBVarType.INT),
+        "smallint": ColumnSpecWithDetails(name="smallint", dtype=DBVarType.INT),
+        "mediumint": ColumnSpecWithDetails(name="mediumint", dtype=DBVarType.INT),
+        "bigint": ColumnSpecWithDetails(name="bigint", dtype=DBVarType.INT),
+        "unsigned_big_int": ColumnSpecWithDetails(name="unsigned_big_int", dtype=DBVarType.INT),
+        "int2": ColumnSpecWithDetails(name="int2", dtype=DBVarType.INT),
+        "int8": ColumnSpecWithDetails(name="int8", dtype=DBVarType.INT),
+        "char": ColumnSpecWithDetails(name="char", dtype=DBVarType.VARCHAR),
+        "varchar": ColumnSpecWithDetails(name="varchar", dtype=DBVarType.VARCHAR),
+        "varying_character": ColumnSpecWithDetails(
+            name="varying_character", dtype=DBVarType.VARCHAR
+        ),
+        "nchar": ColumnSpecWithDetails(name="nchar", dtype=DBVarType.VARCHAR),
+        "native_character": ColumnSpecWithDetails(name="native_character", dtype=DBVarType.VARCHAR),
+        "nvarchar": ColumnSpecWithDetails(name="nvarchar", dtype=DBVarType.VARCHAR),
+        "text": ColumnSpecWithDetails(name="text", dtype=DBVarType.VARCHAR),
+        "real": ColumnSpecWithDetails(name="real", dtype=DBVarType.FLOAT),
+        "double": ColumnSpecWithDetails(name="double", dtype=DBVarType.FLOAT),
+        "double_precision": ColumnSpecWithDetails(name="double_precision", dtype=DBVarType.FLOAT),
+        "float": ColumnSpecWithDetails(name="float", dtype=DBVarType.FLOAT),
+        "decimal": ColumnSpecWithDetails(name="decimal", dtype=DBVarType.FLOAT),
+        "boolean": ColumnSpecWithDetails(name="boolean", dtype=DBVarType.BOOL),
+        "date": ColumnSpecWithDetails(name="date", dtype=DBVarType.DATE),
+        "datetime": ColumnSpecWithDetails(name="datetime", dtype=DBVarType.TIMESTAMP),
     }
     assert await session.get_table_details(table_name="type_table") == TableDetails(
         fully_qualified_name="type_table"

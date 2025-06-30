@@ -8,7 +8,7 @@ import pytest_asyncio
 
 from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.scd_table import SCDTableCreate
@@ -49,11 +49,11 @@ def payload_no_end_timestamp_fixture(feature_store):
             ),
         ),
         columns_info=[
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="effective_date",
                 dtype=DBVarType.TIMESTAMP,
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype=DBVarType.INT,
             ),
@@ -78,7 +78,7 @@ async def table_with_end_timestamp_fixture(payload_no_end_timestamp, document_se
     """
     payload = payload_no_end_timestamp.copy()
     payload.columns_info.append(
-        ColumnSpecWithDescription(
+        ColumnSpecWithDetails(
             name="end_date",
             dtype=DBVarType.TIMESTAMP,
         )

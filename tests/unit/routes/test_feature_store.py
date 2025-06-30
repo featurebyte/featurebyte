@@ -24,7 +24,7 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
@@ -350,9 +350,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_get_session.return_value.list_schemas.return_value = ["y"]
         mock_get_session.return_value.list_tables.return_value = [TableSpec(name="z")]
         columns = {
-            "a": ColumnSpecWithDescription(name="a", dtype="TIMESTAMP"),
-            "b": ColumnSpecWithDescription(name="b", dtype="INT"),
-            "c": ColumnSpecWithDescription(name="c", dtype="BOOL"),
+            "a": ColumnSpecWithDetails(name="a", dtype="TIMESTAMP"),
+            "b": ColumnSpecWithDetails(name="b", dtype="INT"),
+            "c": ColumnSpecWithDetails(name="c", dtype="BOOL"),
         }
         mock_get_session.return_value.list_table_schema.return_value = columns
         response = test_api_client.post(

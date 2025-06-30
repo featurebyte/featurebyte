@@ -16,26 +16,19 @@ from featurebyte.query_graph.node.cleaning_operation import (
 from featurebyte.query_graph.node.schema import ColumnSpec
 
 
-class ColumnSpecWithDescription(ColumnSpec):
-    """
-    ColumnInfo for storing column information wth description
-    """
-
-    description: Optional[str] = Field(default=None)
-
-
-class ColumnSpecDetailed(ColumnSpecWithDescription):
+class ColumnSpecWithDetails(ColumnSpec):
     """
     ColumnInfo for storing column information with details
     """
 
+    description: Optional[str] = Field(default=None)
     is_partition_key: bool = Field(
         default=False,
         description="Indicates if the column is a partition key",
     )
 
 
-class ColumnInfo(ColumnSpecWithDescription):
+class ColumnInfo(ColumnSpecWithDetails):
     """
     ColumnInfo for storing column information
 

@@ -12,7 +12,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import session_cache
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
@@ -114,25 +114,25 @@ async def test_list_table_schema(config, session_without_datasets):
     assert schema == OrderedDict([
         (
             "GroceryInvoiceGuid",
-            ColumnSpecDetailed(name="GroceryInvoiceGuid", dtype="VARCHAR", description=None),
+            ColumnSpecWithDetails(name="GroceryInvoiceGuid", dtype="VARCHAR", description=None),
         ),
         (
             "GroceryCustomerGuid",
-            ColumnSpecDetailed(name="GroceryCustomerGuid", dtype="VARCHAR", description=None),
+            ColumnSpecWithDetails(name="GroceryCustomerGuid", dtype="VARCHAR", description=None),
         ),
         (
             "Timestamp",
-            ColumnSpecDetailed(name="Timestamp", dtype="TIMESTAMP", description=None),
+            ColumnSpecWithDetails(name="Timestamp", dtype="TIMESTAMP", description=None),
         ),
         (
             "tz_offset",
-            ColumnSpecDetailed(name="tz_offset", dtype="VARCHAR", description=None),
+            ColumnSpecWithDetails(name="tz_offset", dtype="VARCHAR", description=None),
         ),
         (
             "record_available_at",
-            ColumnSpecDetailed(name="record_available_at", dtype="TIMESTAMP", description=None),
+            ColumnSpecWithDetails(name="record_available_at", dtype="TIMESTAMP", description=None),
         ),
-        ("Amount", ColumnSpecDetailed(name="Amount", dtype="FLOAT", description=None)),
+        ("Amount", ColumnSpecWithDetails(name="Amount", dtype="FLOAT", description=None)),
     ])
 
 

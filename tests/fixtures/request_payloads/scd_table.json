@@ -12,6 +12,7 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_int"
         },
         {
@@ -20,6 +21,7 @@
             "dtype": "FLOAT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_float"
         },
         {
@@ -28,6 +30,7 @@
             "dtype": "BOOL",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "is_active"
         },
         {
@@ -36,6 +39,7 @@
             "dtype": "VARCHAR",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_text"
         },
         {
@@ -44,6 +48,7 @@
             "dtype": "BINARY",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_binary"
         },
         {
@@ -52,6 +57,7 @@
             "dtype": "BOOL",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_boolean"
         },
         {
@@ -60,6 +66,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "effective_timestamp"
         },
         {
@@ -68,6 +75,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "end_timestamp"
         },
         {
@@ -76,6 +84,7 @@
             "dtype": "TIMESTAMP",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "date_of_birth"
         },
         {
@@ -84,6 +93,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "created_at"
         },
         {
@@ -92,6 +102,7 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "cust_id"
         }
     ],

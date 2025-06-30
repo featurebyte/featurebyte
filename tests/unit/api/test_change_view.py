@@ -334,6 +334,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "col_text",
             "semantic_id": columns_info_dict[0]["semantic_id"],
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "critical_data_info": None,
@@ -343,6 +344,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_effective_timestamp",
             "semantic_id": columns_info_dict[1]["semantic_id"],
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "critical_data_info": None,
@@ -352,6 +354,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_effective_timestamp",
             "semantic_id": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "critical_data_info": None,
@@ -361,6 +364,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_col_float",
             "semantic_id": columns_info_dict[3]["semantic_id"],
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "critical_data_info": None,
@@ -370,6 +374,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_col_float",
             "semantic_id": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
     ]
 

@@ -12,6 +12,7 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": "63f94ed6ea1f050131379204",
+            "is_partition_key": false,
             "name": "event_id_col"
         },
         {
@@ -20,6 +21,7 @@
             "dtype": "VARCHAR",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "item_id_col"
         },
         {
@@ -28,6 +30,7 @@
             "dtype": "VARCHAR",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "item_type"
         },
         {
@@ -36,6 +39,7 @@
             "dtype": "FLOAT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "item_amount"
         },
         {
@@ -44,6 +48,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "created_at"
         },
         {
@@ -52,6 +57,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "event_timestamp"
         }
     ],

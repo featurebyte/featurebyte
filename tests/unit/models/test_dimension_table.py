@@ -27,6 +27,7 @@ def get_dimension_columns_info():
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "dimension_id",
@@ -36,6 +37,7 @@ def get_dimension_columns_info():
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "created_at",
@@ -45,6 +47,7 @@ def get_dimension_columns_info():
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
     ]
 

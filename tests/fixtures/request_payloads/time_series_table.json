@@ -10,36 +10,42 @@
             "description": null,
             "dtype": "INT",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_int"
         },
         {
             "description": "Float column",
             "dtype": "FLOAT",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_float"
         },
         {
             "description": "Char column",
             "dtype": "CHAR",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_char"
         },
         {
             "description": "Text column",
             "dtype": "VARCHAR",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_text"
         },
         {
             "description": null,
             "dtype": "BINARY",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_binary"
         },
         {
             "description": null,
             "dtype": "BOOL",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "col_boolean"
         },
         {
@@ -53,24 +59,28 @@
                 },
                 "timestamp_tuple_schema": null
             },
+            "is_partition_key": false,
             "name": "date"
         },
         {
             "description": null,
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "created_at"
         },
         {
             "description": null,
             "dtype": "INT",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "store_id"
         },
         {
             "description": null,
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
+            "is_partition_key": false,
             "name": "another_timestamp_col"
         }
     ],

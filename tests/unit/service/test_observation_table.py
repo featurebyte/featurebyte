@@ -18,7 +18,7 @@ from featurebyte.exception import (
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.observation_table import validate_columns_info
@@ -93,8 +93,8 @@ def db_session_fixture(point_in_time_has_missing_values, adapter):
         _ = args
         _ = kwargs
         return {
-            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="TIMESTAMP"),
-            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+            "POINT_IN_TIME": ColumnSpecWithDetails(name="POINT_IN_TIME", dtype="TIMESTAMP"),
+            "cust_id": ColumnSpecWithDetails(name="cust_id", dtype="VARCHAR"),
         }
 
     async def execute_query_long_running(*args, **kwargs):
@@ -163,11 +163,9 @@ async def test_validate__missing_point_in_time(
         _ = args
         _ = kwargs
         return {
-            "a": ColumnSpecWithDescription(name="a", dtype="INT"),
-            "b": ColumnSpecWithDescription(name="b", dtype="FLOAT"),
-            "not_point_in_time": ColumnSpecWithDescription(
-                name="not_point_in_time", dtype="VARCHAR"
-            ),
+            "a": ColumnSpecWithDetails(name="a", dtype="INT"),
+            "b": ColumnSpecWithDetails(name="b", dtype="FLOAT"),
+            "not_point_in_time": ColumnSpecWithDetails(name="not_point_in_time", dtype="VARCHAR"),
         }
 
     # TODO: we should consolidate the definition of mock_snowflake_session in a single fixture and
@@ -286,8 +284,8 @@ async def test_validate__supported_type_point_in_time(
         _ = args
         _ = kwargs
         return {
-            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="VARCHAR"),
-            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+            "POINT_IN_TIME": ColumnSpecWithDetails(name="POINT_IN_TIME", dtype="VARCHAR"),
+            "cust_id": ColumnSpecWithDetails(name="cust_id", dtype="VARCHAR"),
         }
 
     mock_db_session = Mock(

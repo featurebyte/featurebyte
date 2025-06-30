@@ -15,7 +15,7 @@ from featurebyte import SourceType
 from featurebyte.enum import DBVarType
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.snowflake import SnowflakeSession
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
@@ -32,9 +32,9 @@ def session_fixture(adapter):
         source_type=SourceType.SNOWFLAKE,
         list_table_schema=AsyncMock(
             return_value={
-                "a": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
-                "b": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
-                "event_timestamp": ColumnSpecWithDescription(
+                "a": ColumnSpecWithDetails(name="a", dtype=DBVarType.INT),
+                "b": ColumnSpecWithDetails(name="a", dtype=DBVarType.INT),
+                "event_timestamp": ColumnSpecWithDetails(
                     name="event_timestamp", dtype=DBVarType.TIMESTAMP
                 ),
             }

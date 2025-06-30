@@ -18,7 +18,7 @@ from snowflake.connector.errors import DatabaseError, NotSupportedError, Operati
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
 from featurebyte.exception import DataWarehouseConnectionError, QueryExecutionTimeOut
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
 from featurebyte.session.enum import SnowflakeDataType
@@ -91,50 +91,50 @@ async def test_snowflake_session__credential_from_config(
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
     ) == {
-        "col_int": ColumnSpecDetailed(name="col_int", dtype=DBVarType.INT),
-        "col_float": ColumnSpecDetailed(
+        "col_int": ColumnSpecWithDetails(name="col_int", dtype=DBVarType.INT),
+        "col_float": ColumnSpecWithDetails(
             name="col_float", dtype=DBVarType.FLOAT, description="Float column"
         ),
-        "col_char": ColumnSpecDetailed(
+        "col_char": ColumnSpecWithDetails(
             name="col_char", dtype=DBVarType.CHAR, description="Char column"
         ),
-        "col_text": ColumnSpecDetailed(
+        "col_text": ColumnSpecWithDetails(
             name="col_text", dtype=DBVarType.VARCHAR, description="Text column"
         ),
-        "col_binary": ColumnSpecDetailed(name="col_binary", dtype=DBVarType.BINARY),
-        "col_boolean": ColumnSpecDetailed(name="col_boolean", dtype=DBVarType.BOOL),
-        "created_at": ColumnSpecDetailed(name="created_at", dtype=DBVarType.TIMESTAMP_TZ),
-        "cust_id": ColumnSpecDetailed(name="cust_id", dtype=DBVarType.INT),
-        "event_timestamp": ColumnSpecDetailed(
+        "col_binary": ColumnSpecWithDetails(name="col_binary", dtype=DBVarType.BINARY),
+        "col_boolean": ColumnSpecWithDetails(name="col_boolean", dtype=DBVarType.BOOL),
+        "created_at": ColumnSpecWithDetails(name="created_at", dtype=DBVarType.TIMESTAMP_TZ),
+        "cust_id": ColumnSpecWithDetails(name="cust_id", dtype=DBVarType.INT),
+        "event_timestamp": ColumnSpecWithDetails(
             name="event_timestamp", dtype=DBVarType.TIMESTAMP_TZ, description="Timestamp column"
         ),
     }
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_view"
     ) == {
-        "col_date": ColumnSpecDetailed(name="col_date", dtype=DBVarType.DATE),
-        "col_time": ColumnSpecDetailed(name="col_time", dtype=DBVarType.TIME),
-        "col_timestamp_ltz": ColumnSpecDetailed(
+        "col_date": ColumnSpecWithDetails(name="col_date", dtype=DBVarType.DATE),
+        "col_time": ColumnSpecWithDetails(name="col_time", dtype=DBVarType.TIME),
+        "col_timestamp_ltz": ColumnSpecWithDetails(
             name="col_timestamp_ltz", dtype=DBVarType.TIMESTAMP, description="Timestamp ltz column"
         ),
-        "col_timestamp_ntz": ColumnSpecDetailed(
+        "col_timestamp_ntz": ColumnSpecWithDetails(
             name="col_timestamp_ntz", dtype=DBVarType.TIMESTAMP
         ),
-        "col_timestamp_tz": ColumnSpecDetailed(
+        "col_timestamp_tz": ColumnSpecWithDetails(
             name="col_timestamp_tz", dtype=DBVarType.TIMESTAMP_TZ, description="Timestamp tz column"
         ),
     }
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="fixed_table"
     ) == {
-        "num": ColumnSpecDetailed(name="num", dtype=DBVarType.INT),
-        "num10": ColumnSpecDetailed(name="num10", dtype=DBVarType.FLOAT),
-        "dec": ColumnSpecDetailed(name="dec", dtype=DBVarType.FLOAT),
+        "num": ColumnSpecWithDetails(name="num", dtype=DBVarType.INT),
+        "num10": ColumnSpecWithDetails(name="num10", dtype=DBVarType.FLOAT),
+        "dec": ColumnSpecWithDetails(name="dec", dtype=DBVarType.FLOAT),
     }
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="non_scalar_table"
     ) == {
-        "variant": ColumnSpecDetailed(name="variant", dtype="UNKNOWN"),
+        "variant": ColumnSpecWithDetails(name="variant", dtype="UNKNOWN"),
     }
     table_details = await session.get_table_details(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_table"

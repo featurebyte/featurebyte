@@ -21,7 +21,7 @@ from featurebyte.exception import (
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
@@ -231,7 +231,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpecDetailed]:
+    ) -> List[ColumnSpecWithDetails]:
         """
         List columns in database table
 
@@ -253,7 +253,7 @@ class FeatureStoreWarehouseService:
 
         Returns
         -------
-        List[ColumnSpecDetailed]
+        List[ColumnSpecWithDetails]
             List of ColumnSpecDetailed object
         """
         db_session = await self.session_manager_service.get_feature_store_session(

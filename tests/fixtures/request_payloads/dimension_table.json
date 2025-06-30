@@ -12,6 +12,7 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_int"
         },
         {
@@ -20,6 +21,7 @@
             "dtype": "FLOAT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_float"
         },
         {
@@ -28,6 +30,7 @@
             "dtype": "CHAR",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_char"
         },
         {
@@ -36,6 +39,7 @@
             "dtype": "VARCHAR",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_text"
         },
         {
@@ -44,6 +48,7 @@
             "dtype": "BINARY",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_binary"
         },
         {
@@ -52,6 +57,7 @@
             "dtype": "BOOL",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "col_boolean"
         },
         {
@@ -60,6 +66,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "event_timestamp"
         },
         {
@@ -68,6 +75,7 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "created_at"
         },
         {
@@ -76,6 +84,7 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
+            "is_partition_key": false,
             "name": "cust_id"
         }
     ],

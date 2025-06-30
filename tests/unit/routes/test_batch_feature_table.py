@@ -12,7 +12,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.exception import SchemaNotFoundError
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.schema.batch_feature_table import (
     BatchFeaturesAppendFeatureTableCreate,
     OutputTableInfo,
@@ -446,7 +446,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
 
         mock_list_columns.return_value = [
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype="VARCHAR",
             ),
@@ -470,19 +470,19 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
 
         mock_list_columns.return_value = [
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="POINT_IN_TIME",
                 dtype="TIMESTAMP",
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="snapshot_date",
                 dtype="VARCHAR",
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype="INT",
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="sum_30m",
                 dtype="FLOAT",
             ),
@@ -503,19 +503,19 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             "featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns"
         ) as mock_list_columns:
             mock_list_columns.return_value = [
-                ColumnSpecWithDescription(
+                ColumnSpecWithDetails(
                     name="POINT_IN_TIME",
                     dtype="TIMESTAMP",
                 ),
-                ColumnSpecWithDescription(
+                ColumnSpecWithDetails(
                     name="snapshot_date",
                     dtype="DATE",
                 ),
-                ColumnSpecWithDescription(
+                ColumnSpecWithDetails(
                     name="cust_id",
                     dtype="INT",
                 ),
-                ColumnSpecWithDescription(
+                ColumnSpecWithDetails(
                     name="sum_30m",
                     dtype="FLOAT",
                 ),

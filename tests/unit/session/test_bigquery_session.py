@@ -14,7 +14,7 @@ from google.cloud.bigquery.dbapi.cursor import Column
 from google.cloud.bigquery.table import Row
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.session.bigquery import (
     BigQuerySchemaInitializer,
     BigQuerySession,
@@ -211,46 +211,46 @@ async def test_bigquery_session(bigquery_session_dict):
     assert await session.list_table_schema(
         database_name="hive_metastore", schema_name="default", table_name="transactions"
     ) == {
-        "col_binary": ColumnSpecDetailed(
+        "col_binary": ColumnSpecWithDetails(
             name="col_binary", dtype=DBVarType.BINARY, description="Binary Column"
         ),
-        "col_bool": ColumnSpecDetailed(
+        "col_bool": ColumnSpecWithDetails(
             name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
         ),
-        "col_date": ColumnSpecDetailed(
+        "col_date": ColumnSpecWithDetails(
             name="col_date", dtype=DBVarType.DATE, description="Date Column"
         ),
-        "col_double": ColumnSpecDetailed(
+        "col_double": ColumnSpecWithDetails(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
         ),
-        "col_float": ColumnSpecDetailed(
+        "col_float": ColumnSpecWithDetails(
             name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
         ),
-        "col_int": ColumnSpecDetailed(
+        "col_int": ColumnSpecWithDetails(
             name="col_int", dtype=DBVarType.INT, description="Int Column"
         ),
-        "col_interval": ColumnSpecDetailed(
+        "col_interval": ColumnSpecWithDetails(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
         ),
-        "col_timestamp": ColumnSpecDetailed(
+        "col_timestamp": ColumnSpecWithDetails(
             name="col_timestamp", dtype=DBVarType.TIMESTAMP, description="Timestamp Column"
         ),
-        "col_array": ColumnSpecDetailed(
+        "col_array": ColumnSpecWithDetails(
             name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
         ),
-        "col_record": ColumnSpecDetailed(
+        "col_record": ColumnSpecWithDetails(
             name="col_record", dtype=DBVarType.DICT, description="Record Column"
         ),
-        "col_numeric": ColumnSpecDetailed(
+        "col_numeric": ColumnSpecWithDetails(
             name="col_numeric", dtype=DBVarType.FLOAT, description="Numeric Column"
         ),
-        "col_json": ColumnSpecDetailed(
+        "col_json": ColumnSpecWithDetails(
             name="col_json", dtype=DBVarType.DICT, description="JSON Column"
         ),
-        "col_string": ColumnSpecDetailed(
+        "col_string": ColumnSpecWithDetails(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
         ),
-        "col_unknown": ColumnSpecDetailed(
+        "col_unknown": ColumnSpecWithDetails(
             name="col_unknown", dtype=DBVarType.UNKNOWN, description="Unknown Column"
         ),
     }

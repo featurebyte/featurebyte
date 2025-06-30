@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.session.base import BaseSession
 
 
@@ -56,6 +56,6 @@ async def test_comment_column(session: BaseSession, registered_table):
         schema_name=session.schema_name,
     )
     assert column_specs == {
-        "a": ColumnSpecDetailed(name="a", dtype="INT", description="this is column a"),
-        "b": ColumnSpecDetailed(name="b", dtype="INT", description=None),
+        "a": ColumnSpecWithDetails(name="a", dtype="INT", description="this is column a"),
+        "b": ColumnSpecWithDetails(name="b", dtype="INT", description=None),
     }

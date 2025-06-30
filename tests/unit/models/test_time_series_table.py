@@ -35,6 +35,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "date",
@@ -47,6 +48,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
                 "timestamp_schema": ts_schema.model_dump(),
                 "timestamp_tuple_schema": None,
             },
+            "is_partition_key": False,
         },
         {
             "name": "series_id",
@@ -56,6 +58,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "created_at",
@@ -65,6 +68,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
     ]
     time_series_table = TimeSeriesTableModel(

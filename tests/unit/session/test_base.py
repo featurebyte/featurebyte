@@ -16,7 +16,7 @@ import pytest
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
@@ -79,7 +79,7 @@ def base_session_test_fixture():
             database_name: str | None = None,
             schema_name: str | None = None,
             timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
-        ) -> OrderedDict[str, ColumnSpecDetailed]:
+        ) -> OrderedDict[str, ColumnSpecWithDetails]:
             _ = timeout
             return collections.OrderedDict()
 

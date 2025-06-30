@@ -17,7 +17,7 @@ from pydantic import Field
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -294,7 +294,7 @@ class BaseSparkSession(BaseSession, ABC):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecDetailed]:
+    ) -> OrderedDict[str, ColumnSpecWithDetails]:
         schema = await self.execute_query_interactive(
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
             timeout=timeout,
@@ -328,7 +328,7 @@ class BaseSparkSession(BaseSession, ABC):
                     continue
 
                 dtype = self._convert_to_internal_variable_type(var_info.upper())
-                column_name_type_map[column_name] = ColumnSpecDetailed(
+                column_name_type_map[column_name] = ColumnSpecWithDetails(
                     name=column_name,
                     dtype=dtype,
                     description=comment or None,

@@ -7,7 +7,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.scd_table import SCDTableCreate
@@ -47,15 +47,15 @@ def scd_create_payload(feature_store, session_without_datasets, table_name):
             ),
         ),
         columns_info=[
-            ColumnSpecDetailed(
+            ColumnSpecWithDetails(
                 name="effective_ts",
                 dtype=DBVarType.TIMESTAMP,
             ),
-            ColumnSpecDetailed(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype=DBVarType.INT,
             ),
-            ColumnSpecDetailed(
+            ColumnSpecWithDetails(
                 name="value",
                 dtype=DBVarType.INT,
             ),
@@ -71,7 +71,7 @@ def scd_create_with_end_date_payload(scd_create_payload):
     Fixture for SCDTableCreate payload with end_timestamp_column
     """
     scd_create_payload.columns_info.append(
-        ColumnSpecDetailed(
+        ColumnSpecWithDetails(
             name="end_ts",
             dtype=DBVarType.TIMESTAMP,
         )

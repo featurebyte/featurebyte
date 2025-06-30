@@ -10,7 +10,7 @@ import pyarrow as pa
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -166,49 +166,49 @@ async def test_databricks_session(databricks_session_dict):
     assert await session.list_table_schema(
         database_name="hive_metastore", schema_name="default", table_name="transactions"
     ) == {
-        "col_binary": ColumnSpecDetailed(
+        "col_binary": ColumnSpecWithDetails(
             name="col_binary", dtype=DBVarType.BINARY, description="Binary Column"
         ),
-        "col_bool": ColumnSpecDetailed(
+        "col_bool": ColumnSpecWithDetails(
             name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
         ),
-        "col_date": ColumnSpecDetailed(
+        "col_date": ColumnSpecWithDetails(
             name="col_date", dtype=DBVarType.DATE, description="Date Column", is_partition_key=True
         ),
-        "col_double": ColumnSpecDetailed(
+        "col_double": ColumnSpecWithDetails(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
         ),
-        "col_float": ColumnSpecDetailed(
+        "col_float": ColumnSpecWithDetails(
             name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
         ),
-        "col_int": ColumnSpecDetailed(
+        "col_int": ColumnSpecWithDetails(
             name="col_int", dtype=DBVarType.INT, description="Int Column", is_partition_key=True
         ),
-        "col_interval": ColumnSpecDetailed(
+        "col_interval": ColumnSpecWithDetails(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
         ),
-        "col_void": ColumnSpecDetailed(
+        "col_void": ColumnSpecWithDetails(
             name="col_void", dtype=DBVarType.VOID, description="Void Column"
         ),
-        "col_timestamp": ColumnSpecDetailed(
+        "col_timestamp": ColumnSpecWithDetails(
             name="col_timestamp", dtype=DBVarType.TIMESTAMP, description="Timestamp Column"
         ),
-        "col_array": ColumnSpecDetailed(
+        "col_array": ColumnSpecWithDetails(
             name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
         ),
-        "col_map": ColumnSpecDetailed(
+        "col_map": ColumnSpecWithDetails(
             name="col_map", dtype=DBVarType.DICT, description="Map Column"
         ),
-        "col_decimal": ColumnSpecDetailed(
+        "col_decimal": ColumnSpecWithDetails(
             name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
         ),
-        "col_struct": ColumnSpecDetailed(
+        "col_struct": ColumnSpecWithDetails(
             name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
         ),
-        "col_string": ColumnSpecDetailed(
+        "col_string": ColumnSpecWithDetails(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
         ),
-        "col_unknown": ColumnSpecDetailed(
+        "col_unknown": ColumnSpecWithDetails(
             name="col_unknown", dtype=DBVarType.UNKNOWN, description="Unknown Column"
         ),
     }

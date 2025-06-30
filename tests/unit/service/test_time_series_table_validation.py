@@ -10,7 +10,7 @@ import pytest_asyncio
 
 from featurebyte import TimeInterval, TimestampSchema
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.time_series_table import TimeSeriesTableCreate
@@ -61,11 +61,11 @@ async def table_model_fixture(document_service, feature_store):
             ),
         ),
         columns_info=[
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="snapshot_date",
                 dtype=DBVarType.VARCHAR,
             ),
-            ColumnSpecWithDescription(
+            ColumnSpecWithDetails(
                 name="cust_id",
                 dtype=DBVarType.INT,
             ),

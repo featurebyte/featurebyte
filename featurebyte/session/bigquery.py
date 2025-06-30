@@ -38,7 +38,7 @@ from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import GoogleCredential
-from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -616,7 +616,7 @@ class BigQuerySession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> OrderedDict[str, ColumnSpecDetailed]:
+    ) -> OrderedDict[str, ColumnSpecWithDetails]:
         assert database_name is not None
         assert schema_name is not None
         assert table_name is not None
@@ -633,7 +633,7 @@ class BigQuerySession(BaseSession):
                     scale=field.scale,
                     mode=field.mode,
                 )
-                column_name_type_map[field.name] = ColumnSpecDetailed(
+                column_name_type_map[field.name] = ColumnSpecWithDetails(
                     name=field.name,
                     dtype=dtype,
                     description=field.description or None,

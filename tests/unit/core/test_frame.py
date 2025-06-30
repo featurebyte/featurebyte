@@ -66,6 +66,7 @@ def test__getitem__list_of_str_key(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "VALUE",
@@ -75,6 +76,7 @@ def test__getitem__list_of_str_key(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
     ]
     assert sub_dataframe_dict["node_name"] == "project_1"
@@ -324,6 +326,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "PRODUCT_ACTION",
@@ -333,6 +336,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "VALUE",
@@ -342,6 +346,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "MASK",
@@ -351,6 +356,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "TIMESTAMP",
@@ -360,6 +366,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "PROMOTION_START_DATE",
@@ -369,6 +376,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "amount",
@@ -378,6 +386,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
         {
             "name": "vip_customer",
@@ -387,6 +396,7 @@ def test_multiple_statements(dataframe):
             "critical_data_info": None,
             "description": None,
             "dtype_metadata": None,
+            "is_partition_key": False,
         },
     ]
     assert dataframe.columns == [

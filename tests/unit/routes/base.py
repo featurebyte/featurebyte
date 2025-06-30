@@ -26,7 +26,7 @@ from featurebyte.common.utils import (
     dataframe_to_arrow_bytes,
 )
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDetails
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
 
@@ -1423,7 +1423,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [301 * 10000000]})
         mock_session.list_table_schema.return_value = {
-            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+            "colA": ColumnSpecWithDetails(name="colA", dtype=DBVarType.INT)
         }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
@@ -1449,7 +1449,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
         mock_session.list_table_schema.return_value = {
-            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+            "colA": ColumnSpecWithDetails(name="colA", dtype=DBVarType.INT)
         }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
@@ -1507,7 +1507,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
         mock_session.list_table_schema.return_value = {
-            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+            "colA": ColumnSpecWithDetails(name="colA", dtype=DBVarType.INT)
         }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
