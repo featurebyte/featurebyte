@@ -309,6 +309,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 event_table_timestamp_filter=None,
                 aggregation_specs=None,
                 on_demand_entity_filters=None,
+                partition_column_filters=None,
             )
         )
         sql_tree = select(sql_node.sql)
