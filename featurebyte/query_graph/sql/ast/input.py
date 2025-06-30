@@ -12,6 +12,7 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
 )
@@ -21,6 +22,7 @@ from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
+from featurebyte.query_graph.sql.partition_filter import get_partition_filter
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -35,6 +37,9 @@ class InputNode(TableNode):
     def from_query_impl(self, select_expr: Select) -> Select:
         dbtable = get_fully_qualified_table_name(self.dbtable)
         select_expr = self._select_from_dbtable(select_expr, dbtable)
+
+        # Apply filters on partition column if available
+        select_expr = self._apply_partition_column_filters(select_expr)
 
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
@@ -205,3 +210,29 @@ class InputNode(TableNode):
             column_expr = adapter.dateadd_second(make_literal_value(86400), column_expr)
 
         return column_expr
+
+    def _apply_partition_column_filters(self, select_expr: Select) -> Select:
+        partition_column = self.context.parameters["partition_column"]
+
+        format_string = None
+        partition_column_metadata_dict = self.context.parameters.get("partition_column_metadata")
+        if partition_column_metadata_dict is not None:
+            partition_column_metadata = DBVarTypeMetadata(**partition_column_metadata_dict)
+            if partition_column_metadata.timestamp_schema is not None:
+                format_string = partition_column_metadata.timestamp_schema.format_string
+
+        if partition_column is not None and self.context.partition_column_filters is not None:
+            partition_column_filter = self.context.partition_column_filters.mapping.get(
+                self.context.parameters["id"]
+            )
+            if partition_column_filter is not None:
+                partition_filter_condition = get_partition_filter(
+                    partition_column=partition_column,
+                    from_timestamp=partition_column_filter.from_timestamp,
+                    to_timestamp=partition_column_filter.to_timestamp,
+                    format_string=format_string,
+                    adapter=self.context.adapter,
+                )
+                select_expr = select_expr.where(partition_filter_condition)
+
+        return select_expr

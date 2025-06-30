@@ -98,6 +98,8 @@
                     },
                     "id": "6337f9651050ee7d5980660d",
                     "id_column": "col_int",
+                    "partition_column": null,
+                    "partition_column_metadata": null,
                     "table_details": {
                         "database_name": "sf_database",
                         "schema_name": "sf_schema",
@@ -158,6 +160,8 @@
                     },
                     "id": "6337f9651050ee7d5980662d",
                     "id_column": "item_id_col",
+                    "partition_column": null,
+                    "partition_column_metadata": null,
                     "table_details": {
                         "database_name": "sf_database",
                         "schema_name": "sf_schema",
