@@ -3,6 +3,7 @@ Test preview service module
 """
 
 import textwrap
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -117,6 +118,21 @@ def feature_store_sample_fixture(feature_store_preview):
     Fixture for a FeatureStoreSample
     """
     return FeatureStoreSample(**feature_store_preview.model_dump())
+
+
+@pytest.fixture(name="feature_store_sample_with_time_range")
+def feature_store_sample_with_time_range_fixture(feature_store_sample):
+    """
+    Fixture for a FeatureStoreSample with a time range
+    """
+    return FeatureStoreSample(
+        **feature_store_sample.model_dump(
+            exclude={"from_timestamp", "to_timestamp", "timestamp_column"}
+        ),
+        from_timestamp=datetime(2023, 1, 1),
+        to_timestamp=datetime(2025, 1, 1),
+        timestamp_column="event_timestamp",
+    )
 
 
 @pytest.mark.asyncio
@@ -776,3 +792,32 @@ async def test_value_counts_with_sample_on_primary_table_enable(
             assert create_sample_table_sql == expected_create_sample_table_sql
         else:
             assert create_sample_table_sql != expected_create_sample_table_sql
+
+
+@pytest.mark.asyncio
+async def test_sample_with_partition_column_filters(
+    preview_service,
+    feature_store_sample_with_time_range,
+    mock_snowflake_session,
+):
+    """Test describe with sample_on_primary_table enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
+    seed = 1234
+
+    await preview_service.sample(
+        feature_store_sample_with_time_range,
+        size=50000,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    create_sample_table_sql = sql_to_string(
+        mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    cached_table_name = mock_snowflake_session.create_table_as.call_args_list[0][1]["table_details"]
+    assert cached_table_name == "__FB_TEMPORARY_TABLE_000000000000000000000000"
+    raise
