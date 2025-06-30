@@ -38,9 +38,6 @@ class InputNode(TableNode):
         dbtable = get_fully_qualified_table_name(self.dbtable)
         select_expr = self._select_from_dbtable(select_expr, dbtable)
 
-        # Apply filters on partition column if available
-        select_expr = self._apply_partition_column_filters(select_expr)
-
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
         if (
@@ -107,6 +104,11 @@ class InputNode(TableNode):
         return select_expr
 
     def _select_from_dbtable(self, select_expr: Select, dbtable: Expression) -> Select:
+        select_expr = select_expr.from_(dbtable)
+
+        # Apply partition column filters if available
+        select_expr = self._apply_partition_column_filters(select_expr)
+
         on_demand_entity_filters = self.context.on_demand_entity_filters
         if (
             on_demand_entity_filters is not None
@@ -124,15 +126,13 @@ class InputNode(TableNode):
             )
             select_expr = expressions.select().from_(
                 get_table_filtered_by_entity(
-                    input_expr=select_expr.select(*original_cols).from_(dbtable),
+                    input_expr=select_expr.select(*original_cols),
                     entity_column_names=entity_filter.entity_columns,
                     table_column_names=entity_filter.table_columns,
                     distinct=need_distinct,
                     adapter=self.context.adapter,
                 ).subquery()
             )
-        else:
-            select_expr = select_expr.from_(dbtable)
 
         return select_expr
 
@@ -212,7 +212,7 @@ class InputNode(TableNode):
         return column_expr
 
     def _apply_partition_column_filters(self, select_expr: Select) -> Select:
-        partition_column = self.context.parameters["partition_column"]
+        partition_column = self.context.parameters.get("partition_column")
 
         format_string = None
         partition_column_metadata_dict = self.context.parameters.get("partition_column_metadata")
