@@ -419,3 +419,18 @@ def test_dynamic_batching(event_table):
         "FLAT_DICT",
         "NESTED_DICT",
     }
+
+
+def test_event_view_with_timestamp_schema_describe_with_date_range(
+    event_table_with_timestamp_schema,
+):
+    """
+    Test describe for EventView with date range
+    """
+    event_view = event_table_with_timestamp_schema.get_view()
+    sample_params = {
+        "from_timestamp": "2001-10-10",
+        "to_timestamp": "2001-10-14",
+    }
+    describe_df = event_view.describe(**sample_params)
+    raise
