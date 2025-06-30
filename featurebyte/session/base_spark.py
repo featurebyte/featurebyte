@@ -7,7 +7,7 @@ from __future__ import annotations
 import collections
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional, OrderedDict, cast
+from typing import Any, DefaultDict, List, Optional, OrderedDict, Tuple, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -301,13 +301,31 @@ class BaseSparkSession(BaseSession, ABC):
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
+            metadata_section = None
+            metadata_data: DefaultDict[str, List[Tuple[str, str, str]]] = collections.defaultdict(
+                list
+            )
             for _, (column_name, var_info, comment) in schema[
                 ["col_name", "data_type", "comment"]
             ].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
+                if metadata_data:
+                    # If we have metadata lines, we should continue to collect them
+                    if column_name == "":
+                        # If we have an empty column name, it indicates a new section
+                        metadata_section = None
+                        continue
+                    if metadata_section is None:
+                        metadata_section = column_name
+                    metadata_data[metadata_section].append((column_name, var_info, comment))
+                    continue
+
                 # Skip the remaining entries once we run into an empty column name
                 if column_name == "" or column_name.startswith("# "):
-                    break
+                    if column_name:
+                        metadata_section = column_name
+                        metadata_data[metadata_section].append((column_name, var_info, comment))
+                    continue
 
                 dtype = self._convert_to_internal_variable_type(var_info.upper())
                 column_name_type_map[column_name] = ColumnSpecDetailed(
@@ -316,16 +334,13 @@ class BaseSparkSession(BaseSession, ABC):
                     description=comment or None,
                 )
 
-        # get partition columns
-        details = await self.execute_query_interactive(
-            f"DESCRIBE DETAIL `{database_name}`.`{schema_name}`.`{table_name}`",
-            timeout=timeout,
-        )
-        if details is not None:
-            partition_columns = details["partitionColumns"].iloc[0] or []
-            for partition_column in partition_columns:
-                if partition_column in column_name_type_map:
-                    column_name_type_map[partition_column].is_partition_key = True
+        # add partition key information
+        partition_info = metadata_data.get("# Partition Information", None)
+        if partition_info:
+            # If we have partition information, we should update the column name type map
+            for column_name, var_info, _ in partition_info[2:]:
+                if column_name in column_name_type_map:
+                    column_name_type_map[column_name].is_partition_key = True
 
         return column_name_type_map
 

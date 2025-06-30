@@ -12,7 +12,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import session_cache
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
@@ -114,29 +114,25 @@ async def test_list_table_schema(config, session_without_datasets):
     assert schema == OrderedDict([
         (
             "GroceryInvoiceGuid",
-            ColumnSpecWithDescription(name="GroceryInvoiceGuid", dtype="VARCHAR", description=None),
+            ColumnSpecDetailed(name="GroceryInvoiceGuid", dtype="VARCHAR", description=None),
         ),
         (
             "GroceryCustomerGuid",
-            ColumnSpecWithDescription(
-                name="GroceryCustomerGuid", dtype="VARCHAR", description=None
-            ),
+            ColumnSpecDetailed(name="GroceryCustomerGuid", dtype="VARCHAR", description=None),
         ),
         (
             "Timestamp",
-            ColumnSpecWithDescription(name="Timestamp", dtype="TIMESTAMP", description=None),
+            ColumnSpecDetailed(name="Timestamp", dtype="TIMESTAMP", description=None),
         ),
         (
             "tz_offset",
-            ColumnSpecWithDescription(name="tz_offset", dtype="VARCHAR", description=None),
+            ColumnSpecDetailed(name="tz_offset", dtype="VARCHAR", description=None),
         ),
         (
             "record_available_at",
-            ColumnSpecWithDescription(
-                name="record_available_at", dtype="TIMESTAMP", description=None
-            ),
+            ColumnSpecDetailed(name="record_available_at", dtype="TIMESTAMP", description=None),
         ),
-        ("Amount", ColumnSpecWithDescription(name="Amount", dtype="FLOAT", description=None)),
+        ("Amount", ColumnSpecDetailed(name="Amount", dtype="FLOAT", description=None)),
     ])
 
 

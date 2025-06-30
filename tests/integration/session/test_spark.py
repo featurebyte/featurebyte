@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnSpecDetailed
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base_spark import BaseSparkSession
 
@@ -47,19 +47,19 @@ async def test_schema_initializer(
     assert column_details == OrderedDict([
         (
             "WORKING_SCHEMA_VERSION",
-            ColumnSpecWithDescription(name="WORKING_SCHEMA_VERSION", dtype="INT", description=None),
+            ColumnSpecDetailed(name="WORKING_SCHEMA_VERSION", dtype="INT", description=None),
         ),
         (
             "MIGRATION_VERSION",
-            ColumnSpecWithDescription(name="MIGRATION_VERSION", dtype="INT", description=None),
+            ColumnSpecDetailed(name="MIGRATION_VERSION", dtype="INT", description=None),
         ),
         (
             "FEATURE_STORE_ID",
-            ColumnSpecWithDescription(name="FEATURE_STORE_ID", dtype="VARCHAR", description=None),
+            ColumnSpecDetailed(name="FEATURE_STORE_ID", dtype="VARCHAR", description=None),
         ),
         (
             "CREATED_AT",
-            ColumnSpecWithDescription(name="CREATED_AT", dtype="TIMESTAMP", description=None),
+            ColumnSpecDetailed(name="CREATED_AT", dtype="TIMESTAMP", description=None),
         ),
     ])
 
@@ -151,7 +151,7 @@ async def test_partitioned_table_column_info(session):
     assert columns == OrderedDict([
         (
             "POINT_IN_TIME",
-            ColumnSpecWithDescription(
+            ColumnSpecDetailed(
                 name="POINT_IN_TIME",
                 dtype="TIMESTAMP",
                 dtype_metadata=None,
@@ -161,7 +161,7 @@ async def test_partitioned_table_column_info(session):
         ),
         (
             "üser id",
-            ColumnSpecWithDescription(
+            ColumnSpecDetailed(
                 name="üser id",
                 dtype="INT",
                 dtype_metadata=None,

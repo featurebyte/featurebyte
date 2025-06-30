@@ -80,11 +80,6 @@ class MockDatabricksConnection:
                 ["default", "transactions"],
                 ["default", "calls"],
             ]
-        elif query.startswith("DESCRIBE DETAIL"):
-            self.description = [
-                ["partitionColumns", "ARRAY"],
-            ]
-            self.result_rows = [["[]"]]
         elif query.startswith("DESCRIBE"):
             self.description = [
                 ["col_name", "STRING"],
@@ -108,6 +103,13 @@ class MockDatabricksConnection:
                 ["col_string", "STRING", "String Column"],
                 ["col_unknown", "UNKNOWN", "Unknown Column"],
                 ["# Partition Information", ""],
+                ["# col_name", ""],
+                ["col_date", "DATE"],
+                ["col_int", "INT"],
+                ["", ""],
+                ["# Storage Information", ""],
+                ["Location", "file:/tmp/test.parquet"],
+                ["", ""],
             ]
         else:
             self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
@@ -171,7 +173,7 @@ async def test_databricks_session(databricks_session_dict):
             name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
         ),
         "col_date": ColumnSpecDetailed(
-            name="col_date", dtype=DBVarType.DATE, description="Date Column"
+            name="col_date", dtype=DBVarType.DATE, description="Date Column", is_partition_key=True
         ),
         "col_double": ColumnSpecDetailed(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
@@ -180,7 +182,7 @@ async def test_databricks_session(databricks_session_dict):
             name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
         ),
         "col_int": ColumnSpecDetailed(
-            name="col_int", dtype=DBVarType.INT, description="Int Column"
+            name="col_int", dtype=DBVarType.INT, description="Int Column", is_partition_key=True
         ),
         "col_interval": ColumnSpecDetailed(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
