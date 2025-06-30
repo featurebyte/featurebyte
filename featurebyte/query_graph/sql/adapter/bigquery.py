@@ -412,8 +412,12 @@ class BigQueryAdapter(BaseAdapter):
 
     @classmethod
     def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        return cls.format_timestamp(expr, cls.ISO_FORMAT_STRING)
+
+    @classmethod
+    def format_timestamp(cls, expr: Expression, format_string: str) -> Expression:
         return expressions.Anonymous(
-            this="FORMAT_DATETIME", expressions=[make_literal_value(cls.ISO_FORMAT_STRING), expr]
+            this="FORMAT_DATETIME", expressions=[make_literal_value(format_string), expr]
         )
 
     @classmethod

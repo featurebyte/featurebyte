@@ -598,13 +598,13 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def to_string_from_timestamp(cls, expr: Expression) -> Expression:
-        assert cls.ISO_FORMAT_STRING
+        return cls.format_timestamp(expr, cls.ISO_FORMAT_STRING)
+
+    @classmethod
+    def format_timestamp(cls, expr: Expression, format_string: str | None = None) -> Expression:
         return expressions.Anonymous(
             this="TO_CHAR",
-            expressions=[
-                expr,
-                make_literal_value(cls.ISO_FORMAT_STRING),
-            ],
+            expressions=[expr, make_literal_value(format_string)],
         )
 
     @classmethod

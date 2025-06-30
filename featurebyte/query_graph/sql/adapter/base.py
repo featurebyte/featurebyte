@@ -1305,6 +1305,24 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
+    def format_timestamp(cls, expr: Expression, format_string: str) -> Expression:
+        """
+        Format a timestamp to a string using the specified format string
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
     def convert_timezone_to_utc(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
