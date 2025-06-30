@@ -16,6 +16,7 @@ from featurebyte.query_graph.model.node_hash_util import (
     exclude_aggregation_and_lookup_node_timestamp_metadata,
     exclude_default_timestamp_metadata,
     exclude_non_aggregation_with_timestamp_node_timestamp_metadata,
+    exclude_partition_metadata_from_node_parameters,
     handle_time_series_window_aggregate_node_parameters,
 )
 from featurebyte.query_graph.node import Node, construct_node
@@ -246,6 +247,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             # exclude feature_store_details.details from input node hash if it exists
             node_parameters["feature_store_details"].pop("details", None)
             exclude_default_timestamp_metadata(node_parameters)
+            exclude_partition_metadata_from_node_parameters(node_parameters)
         if node.type == NodeType.GROUPBY:
             node_parameters.pop("tile_id_version", None)
             fjs = node_parameters.pop("feature_job_setting")

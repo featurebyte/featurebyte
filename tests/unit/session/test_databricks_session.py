@@ -11,6 +11,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -103,6 +104,13 @@ class MockDatabricksConnection:
                 ["col_string", "STRING", "String Column"],
                 ["col_unknown", "UNKNOWN", "Unknown Column"],
                 ["# Partition Information", ""],
+                ["# col_name", ""],
+                ["col_date", "DATE"],
+                ["col_int", "INT"],
+                ["", ""],
+                ["# Storage Information", ""],
+                ["Location", "file:/tmp/test.parquet"],
+                ["", ""],
             ]
         else:
             self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
@@ -166,7 +174,10 @@ async def test_databricks_session(databricks_session_dict):
             name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
         ),
         "col_date": ColumnSpecWithDescription(
-            name="col_date", dtype=DBVarType.DATE, description="Date Column"
+            name="col_date",
+            dtype=DBVarType.DATE,
+            description="Date Column",
+            partition_metadata=PartitionMetadata(is_partition_key=True),
         ),
         "col_double": ColumnSpecWithDescription(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
@@ -175,7 +186,10 @@ async def test_databricks_session(databricks_session_dict):
             name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
         ),
         "col_int": ColumnSpecWithDescription(
-            name="col_int", dtype=DBVarType.INT, description="Int Column"
+            name="col_int",
+            dtype=DBVarType.INT,
+            description="Int Column",
+            partition_metadata=PartitionMetadata(is_partition_key=True),
         ),
         "col_interval": ColumnSpecWithDescription(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"

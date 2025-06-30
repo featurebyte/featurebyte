@@ -50,47 +50,56 @@
                                     {
                                         "dtype": "INT",
                                         "dtype_metadata": null,
-                                        "name": "col_int"
+                                        "name": "col_int",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "FLOAT",
                                         "dtype_metadata": null,
-                                        "name": "col_float"
+                                        "name": "col_float",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "CHAR",
                                         "dtype_metadata": null,
-                                        "name": "col_char"
+                                        "name": "col_char",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "VARCHAR",
                                         "dtype_metadata": null,
-                                        "name": "col_text"
+                                        "name": "col_text",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "BINARY",
                                         "dtype_metadata": null,
-                                        "name": "col_binary"
+                                        "name": "col_binary",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "BOOL",
                                         "dtype_metadata": null,
-                                        "name": "col_boolean"
+                                        "name": "col_boolean",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "TIMESTAMP_TZ",
                                         "dtype_metadata": null,
-                                        "name": "event_timestamp"
+                                        "name": "event_timestamp",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "TIMESTAMP_TZ",
                                         "dtype_metadata": null,
-                                        "name": "created_at"
+                                        "name": "created_at",
+                                        "partition_metadata": null
                                     },
                                     {
                                         "dtype": "INT",
                                         "dtype_metadata": null,
-                                        "name": "cust_id"
+                                        "name": "cust_id",
+                                        "partition_metadata": null
                                     }
                                 ],
                                 "event_timestamp_schema": null,
