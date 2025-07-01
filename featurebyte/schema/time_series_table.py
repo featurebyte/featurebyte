@@ -35,6 +35,7 @@ class TimeSeriesTableCreate(TableCreate):
         "record_creation_timestamp_column",
         "series_id_column",
         "reference_datetime_column",
+        "datetime_partition_column",
         mode="after",
     )(TableCreate._special_column_validator)
 

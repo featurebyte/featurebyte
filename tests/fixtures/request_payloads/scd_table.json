@@ -12,7 +12,8 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_int"
+            "name": "col_int",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -20,7 +21,8 @@
             "dtype": "FLOAT",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_float"
+            "name": "col_float",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -28,7 +30,8 @@
             "dtype": "BOOL",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "is_active"
+            "name": "is_active",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -36,7 +39,8 @@
             "dtype": "VARCHAR",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_text"
+            "name": "col_text",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -44,7 +48,8 @@
             "dtype": "BINARY",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_binary"
+            "name": "col_binary",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -52,7 +57,8 @@
             "dtype": "BOOL",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_boolean"
+            "name": "col_boolean",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -60,7 +66,8 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "effective_timestamp"
+            "name": "effective_timestamp",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -68,7 +75,8 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "end_timestamp"
+            "name": "end_timestamp",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -76,7 +84,8 @@
             "dtype": "TIMESTAMP",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "date_of_birth"
+            "name": "date_of_birth",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -84,7 +93,8 @@
             "dtype": "TIMESTAMP_TZ",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "created_at"
+            "name": "created_at",
+            "partition_metadata": null
         },
         {
             "critical_data_info": null,
@@ -92,10 +102,13 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "entity_id": null,
-            "name": "cust_id"
+            "name": "cust_id",
+            "partition_metadata": null
         }
     ],
     "current_flag_column": "is_active",
+    "datetime_partition_column": null,
+    "datetime_partition_schema": null,
     "default_feature_job_setting": null,
     "description": "test scd table",
     "effective_timestamp_column": "effective_timestamp",

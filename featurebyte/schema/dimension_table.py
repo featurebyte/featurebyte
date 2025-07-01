@@ -24,7 +24,9 @@ class DimensionTableCreate(TableCreate):
 
     # pydantic validators
     _special_columns_validator = field_validator(
-        "record_creation_timestamp_column", "dimension_id_column"
+        "record_creation_timestamp_column",
+        "dimension_id_column",
+        "datetime_partition_column",
     )(TableCreate._special_column_validator)
 
 

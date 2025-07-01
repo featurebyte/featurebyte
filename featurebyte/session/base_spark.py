@@ -7,7 +7,7 @@ from __future__ import annotations
 import collections
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional, OrderedDict, cast
+from typing import Any, DefaultDict, List, Optional, OrderedDict, Tuple, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -18,6 +18,7 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -301,13 +302,31 @@ class BaseSparkSession(BaseSession, ABC):
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
+            metadata_section = None
+            metadata_data: DefaultDict[str, List[Tuple[str, str, str]]] = collections.defaultdict(
+                list
+            )
             for _, (column_name, var_info, comment) in schema[
                 ["col_name", "data_type", "comment"]
             ].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
+                if metadata_data:
+                    # If we have metadata lines, we should continue to collect them
+                    if column_name == "":
+                        # If we have an empty column name, it indicates a new section
+                        metadata_section = None
+                        continue
+                    if metadata_section is None:
+                        metadata_section = column_name
+                    metadata_data[metadata_section].append((column_name, var_info, comment))
+                    continue
+
                 # Skip the remaining entries once we run into an empty column name
                 if column_name == "" or column_name.startswith("# "):
-                    break
+                    if column_name:
+                        metadata_section = column_name
+                        metadata_data[metadata_section].append((column_name, var_info, comment))
+                    continue
 
                 dtype = self._convert_to_internal_variable_type(var_info.upper())
                 column_name_type_map[column_name] = ColumnSpecWithDescription(
@@ -315,6 +334,16 @@ class BaseSparkSession(BaseSession, ABC):
                     dtype=dtype,
                     description=comment or None,
                 )
+
+            # add partition key information
+            partition_info = metadata_data.get("# Partition Information", None)
+            if partition_info and len(partition_info) > 1:
+                # If we have partition information, we should update the column name type map
+                for column_name, var_info, _ in partition_info[2:]:
+                    if column_name in column_name_type_map:
+                        column_name_type_map[column_name].partition_metadata = PartitionMetadata(
+                            is_partition_key=True,
+                        )
 
         return column_name_type_map
 

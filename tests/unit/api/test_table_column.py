@@ -122,6 +122,7 @@ def _check_event_table_with_critical_data_info(event_table):
         "critical_data_info": {"cleaning_operations": []},
         "description": None,
         "dtype_metadata": None,
+        "partition_metadata": None,
     }
     assert event_table.frame.node.type == NodeType.INPUT
 

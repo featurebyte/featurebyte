@@ -344,7 +344,8 @@ def test_query_graph__representation():
                             {
                                 "name": "column",
                                 "dtype": "INT",
-                                "dtype_metadata": null
+                                "dtype_metadata": null,
+                                "partition_metadata": null
                             }
                         ],
                         "table_details": {
