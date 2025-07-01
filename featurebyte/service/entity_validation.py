@@ -9,11 +9,11 @@ from typing import List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.parent_serving import EntityRelationshipsContext, ParentServingPreparation
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -357,16 +357,16 @@ class EntityValidationService:
             entity_lookup_step_creator=entity_lookup_step_creator,
         )
 
-    async def validate_entity_presence(
-        self, columns_info: List[ColumnSpecWithEntityId], serving_entity_ids: List[ObjectId]
+    async def validate_request_columns(
+        self, columns_and_dtypes: dict[str, DBVarType], serving_entity_ids: List[ObjectId]
     ) -> None:
         """
         Validate that the serving entity IDs are present in the provided columns info.
 
         Parameters
         ----------
-        columns_info: List[ColumnSpecWithEntityId]
-            List of ColumnInfo objects containing entity IDs
+        columns_and_dtypes: dict[str, DBVarType]
+            List of input columns and their data types
         serving_entity_ids: List[ObjectId]
             List of serving entity IDs that are expected to be present
 
@@ -375,20 +375,21 @@ class EntityValidationService:
         RequiredEntityNotProvidedError
             If any of the serving entity IDs are not found in the provided columns info.
         """
-        available_entity_ids = {col.entity_id for col in columns_info if col.entity_id}
-        missing_entity_ids = set(serving_entity_ids) - available_entity_ids
-        if missing_entity_ids:
-            entities = await self.entity_service.get_entities(
-                entity_ids=available_entity_ids.union(missing_entity_ids).union(serving_entity_ids)
-            )
+        required_entities = await self.entity_service.get_entities(set(serving_entity_ids))
+        missing_entities = []
+        for entity in required_entities:
+            serving_name = entity.serving_names[0]
+            if serving_name not in columns_and_dtypes:
+                missing_entities.append(entity)
+
+        if missing_entities:
             entity_info = EntityInfo(
-                provided_entities=[
-                    entity for entity in entities if entity.id in available_entity_ids
-                ],
-                required_entities=[
-                    entity for entity in entities if entity.id in serving_entity_ids
-                ],
+                provided_entities=[],
+                required_entities=missing_entities,
+                serving_names_mapping=None,
             )
             raise RequiredEntityNotProvidedError(
-                entity_info.format_missing_entities_error(sorted(missing_entity_ids))
+                entity_info.format_missing_entities_error(
+                    sorted(entity.id for entity in missing_entities)
+                )
             )
