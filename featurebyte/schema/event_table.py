@@ -37,6 +37,7 @@ class EventTableCreate(TableCreate):
         "event_id_column",
         "event_timestamp_column",
         "event_timestamp_timezone_offset_column",
+        "datetime_partition_column",
         mode="after",
     )(TableCreate._special_column_validator)
 

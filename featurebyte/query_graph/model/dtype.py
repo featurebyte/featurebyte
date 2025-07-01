@@ -81,3 +81,11 @@ class DBVarTypeInfo(FeatureByteBaseModel):
                 )
 
         return self
+
+
+class PartitionMetadata(FeatureByteBaseModel):
+    """
+    Metadata for PartitionMetadata
+    """
+
+    is_partition_key: bool

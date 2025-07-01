@@ -158,6 +158,17 @@ def construct_data_model_validator(
             updated_columns_info = [ColumnInfo(**col_info) for col_info in col_info_map.values()]
             self.__dict__[columns_info_key] = updated_columns_info
 
+        # Validate dtype and dtype_metadata consistency in columns_info
+        for col_info in columns_info:
+            if col_info.dtype_metadata is not None:
+                if (
+                    col_info.dtype in ambiguous_timestamp_types
+                    and not col_info.dtype_metadata.timestamp_schema
+                ):
+                    raise ValueError(
+                        f"timestamp_schema is required for {col_info.name} with ambiguous timestamp type {col_info.dtype}"
+                    )
+
         return self
 
     return _model_validator
