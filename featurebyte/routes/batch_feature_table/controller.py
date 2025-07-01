@@ -105,12 +105,21 @@ class BatchFeatureTableController(
             document_id=data.feature_store_id
         )
         if batch_request_table:
-            # Validate entities
-            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                feature_list_model=feature_list,
-                request_column_names={col.name for col in batch_request_table.columns_info},
-                feature_store=feature_store,
-            )
+            if deployment.serving_entity_ids:
+                # Validate the entity of the batch request table matches the deployment's serving entity
+                await self.entity_validation_service.validate_entity_presence(
+                    columns_info=batch_request_table.columns_info,
+                    serving_entity_ids=deployment.serving_entity_ids,
+                )
+            else:
+                # Fallback to the feature list's entity IDs to validate
+                await (
+                    self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                        feature_list_model=feature_list,
+                        request_column_names={col.name for col in batch_request_table.columns_info},
+                        feature_store=feature_store,
+                    )
+                )
 
         if isinstance(data, BatchFeaturesAppendFeatureTableCreate):
             # get output columns and dtypes of the request input
