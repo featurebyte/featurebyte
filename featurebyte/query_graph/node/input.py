@@ -13,7 +13,6 @@ from typing_extensions import Annotated, Literal
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.base import BaseNode
@@ -51,8 +50,6 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
     columns: List[ColumnSpec]
     table_details: TableDetails
     feature_store_details: InputNodeFeatureStoreDetails
-    partition_column: Optional[InColumnStr] = Field(default=None)
-    partition_column_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
 
     # class variable
     _source_type_to_import: ClassVar[Dict[SourceType, ClassEnum]] = {
@@ -200,16 +197,6 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
             schema_name="",
             source_type=self.feature_store_details.type,
         )
-
-    @property
-    def partition_column_format_string(self) -> Optional[str]:
-        """
-        Get partition column format string if available
-        """
-        if self.partition_column_metadata is not None:
-            if self.partition_column_metadata.timestamp_schema is not None:
-                return self.partition_column_metadata.timestamp_schema.format_string
-        return None
 
 
 class SourceTableInputNodeParameters(BaseInputNodeParameters):

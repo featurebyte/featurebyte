@@ -9,7 +9,6 @@ from bson import ObjectId
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
@@ -81,19 +80,23 @@ def test_partition_column_filters(global_graph, input_details, update_fixtures):
     Test that partition column filters are applied correctly in the SQL AST for input nodes.
     """
     source_type = SourceType.DATABRICKS_UNITY
+    dtype_metadata_dict = {
+        "dtype_metadata": {"timestamp_schema": TimestampSchema(format_string="%Y-%m-%d")}
+    }
     node_params = {
         "id": ObjectId(),
         "type": "event_table",
         "columns": [
-            {"name": "partition_col", "dtype": DBVarType.VARCHAR},
+            {
+                "name": "partition_col",
+                "dtype": DBVarType.VARCHAR,
+                "partition_metadata": {"is_partition_key": True},
+                **dtype_metadata_dict,
+            },
             {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
         ],
-        "partition_column": "partition_col",
-        "partition_column_metadata": DBVarTypeMetadata(
-            timestamp_schema=TimestampSchema(format_string="%Y-%m-%d"),
-        ).model_dump(),
     }
     node_params.update(input_details)
     input_node = global_graph.add_operation(
@@ -133,19 +136,23 @@ def test_partition_column_filters_with_on_demand_entity_filters(
     Test combining partition column filters with on-demand entity filters
     """
     source_type = SourceType.DATABRICKS_UNITY
+    dtype_metadata_dict = {
+        "dtype_metadata": {"timestamp_schema": TimestampSchema(format_string="%Y-%m-%d")}
+    }
     node_params = {
         "id": ObjectId(),
         "type": "event_table",
         "columns": [
-            {"name": "partition_col", "dtype": DBVarType.VARCHAR},
+            {
+                "name": "partition_col",
+                "dtype": DBVarType.VARCHAR,
+                "partition_metadata": {"is_partition_key": True},
+                **dtype_metadata_dict,
+            },
             {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
         ],
-        "partition_column": "partition_col",
-        "partition_column_metadata": DBVarTypeMetadata(
-            timestamp_schema=TimestampSchema(format_string="%Y-%m-%d"),
-        ).model_dump(),
     }
     node_params.update(input_details)
     input_node = global_graph.add_operation(

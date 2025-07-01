@@ -212,14 +212,24 @@ class InputNode(TableNode):
         return column_expr
 
     def _apply_partition_column_filters(self, select_expr: Select) -> Select:
-        partition_column = self.context.parameters.get("partition_column")
+        partition_column = None
+        dtype_metadata_mapping = {}
+        for column_info in self.context.parameters["columns"]:
+            partition_metadata = column_info.get("partition_metadata")
+            if (
+                partition_metadata is not None
+                and partition_metadata.get("is_partition_key") is True
+            ):
+                partition_column = column_info["name"]
+            dtype_metadata = column_info.get("dtype_metadata")
+            if dtype_metadata is not None:
+                dtype_metadata_mapping[column_info["name"]] = DBVarTypeMetadata(**dtype_metadata)
 
         format_string = None
-        partition_column_metadata_dict = self.context.parameters.get("partition_column_metadata")
-        if partition_column_metadata_dict is not None:
-            partition_column_metadata = DBVarTypeMetadata(**partition_column_metadata_dict)
-            if partition_column_metadata.timestamp_schema is not None:
-                format_string = partition_column_metadata.timestamp_schema.format_string
+        if partition_column is not None:
+            dtype_metadata = dtype_metadata_mapping.get(partition_column)
+            if dtype_metadata is not None and dtype_metadata.timestamp_schema is not None:
+                format_string = dtype_metadata.timestamp_schema.format_string
 
         if partition_column is not None and self.context.partition_column_filters is not None:
             partition_column_filter = self.context.partition_column_filters.mapping.get(
