@@ -6,7 +6,7 @@ server = ["aioboto3", "asyncache", "celery", "celerybeat-mongo", "databricks-sdk
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "6509550e3f56af79061ec7832d30f39d2375f203966e528d81ce27f7d3e801d1"
+content-hash = "bc6e4e3c2065bd037779a41ddf091f029872cbe0cc4ff4bb816bca9f0fbaba2f"
 
 [[package]]
 name = "about-time"
@@ -72,10 +72,9 @@ boto3 = ["boto3 (>=1.37.0,<1.37.2)"]
 name = "aiofiles"
 version = "24.1.0"
 description = "File support for asyncio."
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"server\""
 files = [
     {file = "aiofiles-24.1.0-py3-none-any.whl", hash = "sha256:b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5"},
     {file = "aiofiles-24.1.0.tar.gz", hash = "sha256:22a075c9e5a3810f0c2e48f3008c94d68c65d763b9b03857924c99e57355166c"},
