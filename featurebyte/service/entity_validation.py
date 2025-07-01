@@ -9,6 +9,7 @@ from typing import List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
@@ -355,3 +356,40 @@ class EntityValidationService:
             feature_node_relationships_infos=parameters.feature_cluster.feature_node_relationships_infos,
             entity_lookup_step_creator=entity_lookup_step_creator,
         )
+
+    async def validate_request_columns(
+        self, columns_and_dtypes: dict[str, DBVarType], serving_entity_ids: List[ObjectId]
+    ) -> None:
+        """
+        Validate that the serving entity IDs are present in the provided columns info.
+
+        Parameters
+        ----------
+        columns_and_dtypes: dict[str, DBVarType]
+            List of input columns and their data types
+        serving_entity_ids: List[ObjectId]
+            List of serving entity IDs that are expected to be present
+
+        Raises
+        ------
+        RequiredEntityNotProvidedError
+            If any of the serving entity IDs are not found in the provided columns info.
+        """
+        required_entities = await self.entity_service.get_entities(set(serving_entity_ids))
+        missing_entities = []
+        for entity in required_entities:
+            serving_name = entity.serving_names[0]
+            if serving_name not in columns_and_dtypes:
+                missing_entities.append(entity)
+
+        if missing_entities:
+            entity_info = EntityInfo(
+                provided_entities=[],
+                required_entities=missing_entities,
+                serving_names_mapping=None,
+            )
+            raise RequiredEntityNotProvidedError(
+                entity_info.format_missing_entities_error(
+                    sorted(entity.id for entity in missing_entities)
+                )
+            )
