@@ -104,42 +104,48 @@ class BatchFeatureTableController(
         feature_store = await self.feature_store_service.get_document(
             document_id=data.feature_store_id
         )
-        if batch_request_table:
-            # Validate entities
+
+        # get output columns and dtypes of the request input
+        if batch_request_table is not None:
+            input_columns_and_dtypes = {
+                col.name: col.dtype for col in batch_request_table.columns_info
+            }
+        else:
+            assert data.request_input is not None
+            db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
+                feature_store=feature_store
+            )
+            (
+                _,
+                input_columns_and_dtypes,
+            ) = await data.request_input.get_output_columns_and_dtypes(db_session)
+
+        if deployment.serving_entity_ids:
+            # Validate the entity of the batch request table matches the deployment's serving entity
+            await self.entity_validation_service.validate_request_columns(
+                columns_and_dtypes=input_columns_and_dtypes,
+                serving_entity_ids=deployment.serving_entity_ids,
+            )
+        else:
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 feature_list_model=feature_list,
-                request_column_names={col.name for col in batch_request_table.columns_info},
+                request_column_names=set(input_columns_and_dtypes.keys()),
                 feature_store=feature_store,
             )
 
         if isinstance(data, BatchFeaturesAppendFeatureTableCreate):
-            # get output columns and dtypes of the request input
-            if batch_request_table is not None:
-                output_columns_and_dtypes = {
-                    col.name: col.dtype for col in batch_request_table.columns_info
-                }
-            else:
-                assert data.request_input is not None
-                db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
-                    feature_store=feature_store
-                )
-                (
-                    _,
-                    output_columns_and_dtypes,
-                ) = await data.request_input.get_output_columns_and_dtypes(db_session)
-
             # include feature names and dtypes from the feature list
             async for doc in self.feature_service.list_documents_as_dict_iterator(
                 projection={"name": 1, "dtype": 1},
                 query_filter={"_id": {"$in": feature_list.feature_ids}},
             ):
-                output_columns_and_dtypes[doc["name"]] = doc["dtype"]
+                input_columns_and_dtypes[doc["name"]] = doc["dtype"]
 
             # prepare task payload for appending batch features to an unmanaged feature table
             payload = (
                 await self.service.get_batch_feature_table_task_payload_for_unmanaged_feature_table(
                     data=data,
-                    output_columns_and_dtypes=output_columns_and_dtypes,
+                    output_columns_and_dtypes=input_columns_and_dtypes,
                 )
             )
         else:
