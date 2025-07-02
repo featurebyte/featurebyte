@@ -1557,29 +1557,13 @@ def test_create_with_datetime_partition_column_missing_format_string(
 
 
 def test_create_event_table_partition_column_success(
-    snowflake_database_table, event_table_dict, catalog
+    snowflake_event_table_with_partition_column, catalog
 ):
     """
     Test EventTable creation using tabular source
     """
     _ = catalog
-
-    # mark a column as partition key
-    snowflake_database_table.columns_info[0].partition_metadata = PartitionMetadata(
-        is_partition_key=True,
-    )
-
-    event_table = snowflake_database_table.create_event_table(
-        name="sf_event_table",
-        event_id_column="col_int",
-        event_timestamp_column="event_timestamp",
-        record_creation_timestamp_column="created_at",
-        description="Some description",
-        datetime_partition_column="col_text",
-        datetime_partition_schema=TimestampSchema(
-            format_string="%Y-%m-%d %H:%M:%S",
-        ),
-    )
+    event_table = snowflake_event_table_with_partition_column
 
     # check that node parameter is set properly
     node_params = event_table.frame.node.parameters
