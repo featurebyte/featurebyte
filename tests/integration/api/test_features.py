@@ -2,13 +2,26 @@
 Tests for more features
 """
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import expressions
 
-from featurebyte import FeatureList, SourceType
+from featurebyte import (
+    Entity,
+    FeatureJobSetting,
+    FeatureList,
+    RequestColumn,
+    SourceType,
+    TimestampSchema,
+)
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import quoted_identifier
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.util.deployment import deploy_and_get_online_features
 from tests.util.helper import (
     create_observation_table_from_dataframe,
     fb_assert_frame_equal,
@@ -292,3 +305,85 @@ async def test_latest_array_with_feature_table_cache(event_table, session, data_
         }
     ])
     fb_assert_frame_equal(df, expected)
+
+
+@pytest.mark.asyncio
+async def test_date_type_in_offline_store_tables(
+    session_without_datasets, data_source, source_type, config
+):
+    """
+    Test that DATE type columns in offline store tables can be used in features
+    """
+    session = session_without_datasets
+    df_events = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-04-10",
+            "2022-04-15",
+            "2022-04-20",
+            "2022-04-25",
+            "2022-04-30",
+        ]),
+        "event_id": [1, 2, 3, 4, 5],
+        "cust_id": [1000, 1000, 1000, 1000, 1000],
+    })
+    table_prefix = f"id_{str(ObjectId())}".upper()
+    table_name = f"{table_prefix}_EVENT"
+    await session.register_table(table_name, df_events)
+
+    # Create a table with DATE type column
+    select_expr = expressions.select(
+        expressions.alias_(
+            expressions.Cast(
+                this=quoted_identifier("ts"),
+                to=expressions.DataType.build("DATE"),
+            ),
+            alias="ts",
+            quoted=True,
+        ),
+        quoted_identifier("event_id"),
+        quoted_identifier("cust_id"),
+    ).from_(quoted_identifier(table_name))
+    await session.create_table_as(
+        TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name=table_name,
+        ),
+        select_expr,
+        replace=True,
+    )
+
+    event_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+        event_timestamp_schema=TimestampSchema(is_utc=True),
+    )
+    event_table.update_default_feature_job_setting(
+        FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
+    )
+    serving_name = f"{table_prefix}_customer_id"
+    customer_entity = Entity.create(f"{table_prefix}_customer", [serving_name])
+    event_table["cust_id"].as_entity(customer_entity.name)
+    event_view = event_table.get_view()
+    date_feature = event_view.groupby("cust_id").aggregate_over(
+        "ts",
+        "latest",
+        windows=["90d"],
+        feature_names=["latest_event_ts_90d"],
+    )["latest_event_ts_90d"]
+    feature = (RequestColumn.point_in_time() - date_feature).dt.hour
+    feature.name = "test_date_type_in_offline_store_tables_feature"
+    feature_list = FeatureList([feature], name="test_date_type_in_offline_store_tables")
+    online_features = deploy_and_get_online_features(
+        config.get_client(),
+        feature_list,
+        datetime(2022, 5, 3),
+        [{serving_name: 1000}],
+    )
+    assert online_features.iloc[0]["test_date_type_in_offline_store_tables_feature"] == 72.0
