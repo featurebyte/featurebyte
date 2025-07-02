@@ -87,6 +87,8 @@ class TableCreate(FeatureByteBaseModel):
                     timestamp_schema=self.datetime_partition_schema
                 )
                 column_info.partition_metadata = PartitionMetadata(is_partition_key=True)
+            else:
+                column_info.partition_metadata = None
 
         return self
 

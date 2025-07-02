@@ -30,6 +30,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_table import EventTableModel
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -1563,6 +1564,11 @@ def test_create_event_table_partition_column_success(
     """
     _ = catalog
 
+    # mark a column as partition key
+    snowflake_database_table.columns_info[0].partition_metadata = PartitionMetadata(
+        is_partition_key=True,
+    )
+
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -1588,4 +1594,42 @@ def test_create_event_table_partition_column_success(
     assert event_table.columns_info[3].partition_metadata.is_partition_key is True
     assert event_table.columns_info[3].dtype_metadata.timestamp_schema == TimestampSchema(
         format_string="%Y-%m-%d %H:%M:%S", is_utc_time=None, timezone=None
+    )
+
+    # expect partition metadata to be cleared for other columns
+    for col_info in event_table.columns_info:
+        if col_info.name != "col_text":
+            assert col_info.partition_metadata is None
+
+
+def test_create_event_table_partition_column_shared_column(
+    snowflake_database_table, event_table_dict, catalog
+):
+    """
+    Test EventTable creation specifying partition column with the same column as event timestamp column
+    """
+    _ = catalog
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="col_text",
+        event_timestamp_schema=TimestampSchema(
+            format_string="%Y-%m-%d %H:%M:%S",
+        ),
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+        datetime_partition_column="col_text",
+        datetime_partition_schema=TimestampSchema(
+            format_string="%Y-%m-%d",
+        ),
+    )
+
+    # expect col_text to be marked as partition key but uses event_timestamp_schema for dtype_metadata
+    assert (
+        event_table.columns_info[3].dtype_metadata.timestamp_schema.format_string
+        == "%Y-%m-%d %H:%M:%S"
+    )
+    assert event_table.columns_info[3].partition_metadata == PartitionMetadata(
+        is_partition_key=True
     )
