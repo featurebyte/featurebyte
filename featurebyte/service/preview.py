@@ -702,7 +702,7 @@ class PreviewService:
 
     async def value_counts(  # pylint: disable=too-many-locals
         self,
-        preview: FeatureStorePreview,
+        payload: Union[FeatureStorePreview, FeatureStoreSample],
         column_names: list[str],
         num_rows: int,
         num_categories_limit: int,
@@ -715,8 +715,8 @@ class PreviewService:
 
         Parameters
         ----------
-        preview: FeatureStorePreview
-            FeatureStorePreview object
+        payload: Union[FeatureStorePreview, FeatureStoreSample]
+            FeatureStorePreview or FeatureStoreSample objectj
         column_names: list[str]
             Column names to get value counts for
         num_rows : int
@@ -736,20 +736,39 @@ class PreviewService:
         -------
         dict[str, dict[Any, int]]
         """
+        if isinstance(payload, FeatureStorePreview):
+            sample = FeatureStoreSample(**payload.model_dump())
+        else:
+            sample = payload
+
         feature_store, session = await self._get_feature_store_session(
-            graph=preview.graph,
-            node_name=preview.node_name,
-            feature_store_id=preview.feature_store_id,
+            graph=sample.graph,
+            node_name=sample.node_name,
+            feature_store_id=sample.feature_store_id,
         )
+
+        if sample_on_primary_table:
+            partition_column_filters = self._get_partition_column_filters(
+                sample.graph,
+                sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+            )
+        else:
+            partition_column_filters = None
 
         if num_rows > 0:
             total_num_rows = await self._get_row_count(
                 session,
-                graph=preview.graph,
-                node_name=preview.node_name,
-                feature_store_id=preview.feature_store_id,
-                enable_query_cache=preview.enable_query_cache,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                feature_store_id=sample.feature_store_id,
+                enable_query_cache=sample.enable_query_cache,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
                 sample_on_primary_table=sample_on_primary_table,
+                partition_column_filters=partition_column_filters,
             )
         else:
             total_num_rows = None
@@ -759,31 +778,35 @@ class PreviewService:
             graph_info = await self._get_graph_using_sampled_primary_table(
                 feature_store=feature_store,
                 session=session,
-                payload=preview,
+                payload=sample,
                 num_rows=num_rows,
                 seed=seed,
                 total_num_rows=total_num_rows,
-                partition_column_filters=None,  # To be fixed; current no range filtering.
+                partition_column_filters=partition_column_filters,
             )
 
         interpreter = GraphInterpreter(
-            query_graph=graph_info.graph if graph_info else preview.graph,
+            query_graph=graph_info.graph if graph_info else sample.graph,
             source_info=feature_store.get_source_info(),
         )
-        op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
+        op_struct = interpreter.extract_operation_structure_for_node(sample.node_name)
         column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
         value_counts_queries = interpreter.construct_value_counts_sql(
-            node_name=preview.node_name,
+            node_name=sample.node_name,
             column_names=column_names,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
             seed=seed,
             total_num_rows=total_num_rows,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+            sample_on_primary_table=sample_on_primary_table,
         )
         input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
-            params=preview,
+            params=sample,
             table_expr=value_counts_queries.data.expr,
         )
         try:
@@ -814,8 +837,8 @@ class PreviewService:
                 coroutines.append(
                     self._process_value_counts_column(
                         session=session,
-                        feature_store_id=preview.feature_store_id,
-                        enable_query_cache=preview.enable_query_cache,
+                        feature_store_id=sample.feature_store_id,
+                        enable_query_cache=sample.enable_query_cache,
                         query=query,
                         column_name=column_query.column_name,
                         column_dtype=column_dtype,
@@ -825,7 +848,7 @@ class PreviewService:
             results = await run_coroutines(
                 coroutines,
                 self.redis,
-                str(preview.feature_store_id),
+                str(sample.feature_store_id),
                 feature_store.max_query_concurrency,
             )
         finally:

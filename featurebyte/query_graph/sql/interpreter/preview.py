@@ -1098,7 +1098,11 @@ class PreviewMixin(BaseGraphInterpreter):
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
         total_num_rows: Optional[int] = None,
+        sample_on_primary_table: bool = False,
     ) -> ValueCountsQueries:
         """
         Construct SQL to get value counts for a given node.
@@ -1116,8 +1120,16 @@ class PreviewMixin(BaseGraphInterpreter):
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to filter on
+        to_timestamp: Optional[datetime]
+            End of date range to filter on
+        timestamp_column: Optional[str]
+            Column to apply date range filtering on
         total_num_rows: Optional[int]
             Total number of rows before sampling
+        sample_on_primary_table: bool
+            Whether the graph is already sampled on primary table
 
         Returns
         -------
@@ -1128,6 +1140,10 @@ class PreviewMixin(BaseGraphInterpreter):
             num_rows=num_rows,
             seed=seed,
             total_num_rows=total_num_rows,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
+            sample_on_primary_table=sample_on_primary_table,
         )[0]
 
         queries = []

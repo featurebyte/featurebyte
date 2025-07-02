@@ -847,3 +847,30 @@ async def test_describe_with_partition_column_filters(
         "tests/fixtures/preview_service/expected_describe_with_partition_column_filters.sql"
     )
     assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_value_counts_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
+    seed = 1234
+
+    await preview_service.value_counts(
+        feature_store_sample_with_time_range,
+        column_names=["col_char"],
+        num_rows=50,
+        num_categories_limit=5,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_value_counts_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
