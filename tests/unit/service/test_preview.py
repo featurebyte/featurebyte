@@ -64,6 +64,14 @@ def feature_store_preview_fixture(feature_store):
                             {"name": "event_timestamp", "dtype": "TIMESTAMP"},
                             {"name": "created_at", "dtype": "TIMESTAMP"},
                             {"name": "cust_id", "dtype": "VARCHAR"},
+                            {
+                                "name": "partition_col",
+                                "dtype": "VARCHAR",
+                                "partition_metadata": {"is_partition_key": True},
+                                "dtype_metadata": {
+                                    "timestamp_schema": {"format_string": "%Y-%m-%d"},
+                                },
+                            },
                         ],
                         "table_details": {
                             "database_name": "sf_database",
@@ -530,7 +538,8 @@ def expected_create_sample_table_sql_fixture():
           "col_boolean",
           "event_timestamp",
           "created_at",
-          "cust_id"
+          "cust_id",
+          "partition_col"
         FROM (
           SELECT
             CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
@@ -542,7 +551,8 @@ def expected_create_sample_table_sql_fixture():
             "col_boolean",
             "event_timestamp",
             "created_at",
-            "cust_id"
+            "cust_id",
+            "partition_col"
           FROM (
             SELECT
               "col_int" AS "col_int",
@@ -553,7 +563,8 @@ def expected_create_sample_table_sql_fixture():
               "col_boolean" AS "col_boolean",
               "event_timestamp" AS "event_timestamp",
               "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
+              CAST("cust_id" AS VARCHAR) AS "cust_id",
+              CAST("partition_col" AS VARCHAR) AS "partition_col"
             FROM "sf_database"."sf_schema"."sf_table"
           )
         )
@@ -796,28 +807,43 @@ async def test_value_counts_with_sample_on_primary_table_enable(
 
 @pytest.mark.asyncio
 async def test_sample_with_partition_column_filters(
-    preview_service,
-    feature_store_sample_with_time_range,
-    mock_snowflake_session,
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
 ):
-    """Test describe with sample_on_primary_table enabled"""
+    """Test sample with sample_on_primary_table and partition column filtering enabled"""
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
-    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "key": ["1", "2", None],
-        "count": [100, 50, 3],
-    })
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     seed = 1234
 
     await preview_service.sample(
         feature_store_sample_with_time_range,
-        size=50000,
+        size=10,
         seed=seed,
         sample_on_primary_table=True,
     )
-    create_sample_table_sql = sql_to_string(
-        mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
-        source_type=SourceType.SNOWFLAKE,
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_sample_with_partition_column_filters.sql"
     )
-    cached_table_name = mock_snowflake_session.create_table_as.call_args_list[0][1]["table_details"]
-    assert cached_table_name == "__FB_TEMPORARY_TABLE_000000000000000000000000"
-    raise
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_describe_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.describe(
+        feature_store_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_describe_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)

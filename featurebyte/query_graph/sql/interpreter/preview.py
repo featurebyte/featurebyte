@@ -221,7 +221,8 @@ class PreviewMixin(BaseGraphInterpreter):
             )
 
         # apply timestamp filtering
-        if timestamp_column and not sample_on_primary_table:
+        already_sampled = sample_on_primary_table or partition_column_filters is not None
+        if timestamp_column and not already_sampled:
             normalized_timestamp_column = self.adapter.normalize_timestamp_before_comparison(
                 quoted_identifier(timestamp_column),
             )
