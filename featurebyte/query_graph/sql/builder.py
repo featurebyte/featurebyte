@@ -20,6 +20,7 @@ from featurebyte.query_graph.sql.ast.generic import (
 from featurebyte.query_graph.sql.common import (
     EventTableTimestampFilter,
     OnDemandEntityFilters,
+    PartitionColumnFilters,
     SQLType,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -119,6 +120,7 @@ class SQLOperationGraph:
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
         aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
         on_demand_entity_filters: Optional[OnDemandEntityFilters] = None,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
@@ -128,6 +130,7 @@ class SQLOperationGraph:
         self.event_table_timestamp_filter = event_table_timestamp_filter
         self.aggregation_specs = aggregation_specs
         self.on_demand_entity_filters = on_demand_entity_filters
+        self.partition_column_filters = partition_column_filters
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -192,6 +195,7 @@ class SQLOperationGraph:
             event_table_timestamp_filter=self.event_table_timestamp_filter,
             aggregation_specs=self.aggregation_specs,
             on_demand_entity_filters=self.on_demand_entity_filters,
+            partition_column_filters=self.partition_column_filters,
         )
 
         # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry

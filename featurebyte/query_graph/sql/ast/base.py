@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     EventTableTimestampFilter,
     OnDemandEntityFilters,
+    PartitionColumnFilters,
     SQLType,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -56,6 +57,7 @@ class SQLNodeContext:
     event_table_timestamp_filter: Optional[EventTableTimestampFilter]
     aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
     on_demand_entity_filters: Optional[OnDemandEntityFilters]
+    partition_column_filters: Optional[PartitionColumnFilters]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.model_dump()
