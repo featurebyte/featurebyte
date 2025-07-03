@@ -736,10 +736,7 @@ class PreviewService:
         -------
         dict[str, dict[Any, int]]
         """
-        if isinstance(payload, FeatureStorePreview):
-            sample = FeatureStoreSample(**payload.model_dump())
-        else:
-            sample = payload
+        sample = FeatureStoreSample(**payload.model_dump())
 
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,

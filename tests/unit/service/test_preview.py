@@ -709,45 +709,16 @@ async def test_value_counts_with_sample_on_primary_table_enable(
         """
         CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000001" AS
         SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean",
-          "event_timestamp",
-          "created_at",
-          "cust_id"
-        FROM (
-          SELECT
-            CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-            "col_int",
-            "col_float",
-            "col_char",
-            "col_text",
-            "col_binary",
-            "col_boolean",
-            "event_timestamp",
-            "created_at",
-            "cust_id"
-          FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              CAST("col_text" AS VARCHAR) AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
-            FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
-          )
-        )
-        WHERE
-          "prob" <= 0.15000000000000002
-        ORDER BY
-          "prob"
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "created_at" AS "created_at",
+          CAST("cust_id" AS VARCHAR) AS "cust_id"
+        FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
         LIMIT 10
         """
     ).strip()
