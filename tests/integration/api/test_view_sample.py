@@ -291,3 +291,19 @@ async def test_sample_invalid_dates(session, source_table_with_invalid_dates):
     })
     sample_df = sample_df.sort_values("id").reset_index(drop=True)
     pd.testing.assert_frame_equal(sample_df, expected)
+
+
+def test_event_view_with_timestamp_schema_sample_with_date_range(
+    event_table_with_timestamp_schema,
+):
+    """
+    Test sample for EventView with date range
+    """
+    event_view = event_table_with_timestamp_schema.get_view()
+    sample_params = {
+        "from_timestamp": "2001-10-10",
+        "to_timestamp": "2001-10-14",
+    }
+    sample_df = event_view.sample(**sample_params)
+    assert sample_df["ËVENT_TIMESTAMP"].min().startswith("2001|10|10")
+    assert sample_df["ËVENT_TIMESTAMP"].max().startswith("2001|10|13")
