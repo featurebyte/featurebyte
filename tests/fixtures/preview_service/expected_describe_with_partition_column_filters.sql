@@ -14,8 +14,14 @@ FROM (
     CAST("partition_col" AS VARCHAR) AS "partition_col"
   FROM "sf_database"."sf_schema"."sf_table"
   WHERE
-    "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
-    AND "partition_col" <= TO_CHAR(CAST('2025-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+    (
+      "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+      AND "partition_col" <= TO_CHAR(CAST('2025-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+    )
+    AND (
+      "event_timestamp" >= CAST('2023-01-01T00:00:00' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2025-01-01T00:00:00' AS TIMESTAMP)
+    )
 );
 
 CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000000" AS
@@ -57,8 +63,14 @@ FROM (
       CAST("partition_col" AS VARCHAR) AS "partition_col"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
-      "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
-      AND "partition_col" <= TO_CHAR(CAST('2025-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+      (
+        "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+        AND "partition_col" <= TO_CHAR(CAST('2025-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+      )
+      AND (
+        "event_timestamp" >= CAST('2023-01-01T00:00:00' AS TIMESTAMP)
+        AND "event_timestamp" < CAST('2025-01-01T00:00:00' AS TIMESTAMP)
+      )
   )
 )
 WHERE
@@ -79,6 +91,9 @@ SELECT
   "created_at" AS "created_at",
   CAST("cust_id" AS VARCHAR) AS "cust_id"
 FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
+WHERE
+  "event_timestamp" >= CAST('2023-01-01T00:00:00' AS TIMESTAMP)
+  AND "event_timestamp" < CAST('2025-01-01T00:00:00' AS TIMESTAMP)
 LIMIT 10;
 
 WITH "casted_data" AS (
