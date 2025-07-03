@@ -222,26 +222,46 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply timestamp filtering
         if timestamp_column:
-            normalized_timestamp_column = self.adapter.normalize_timestamp_before_comparison(
-                quoted_identifier(timestamp_column),
-            )
+            format_string = None
+            for column in operation_structure.columns:
+                if column.name == timestamp_column and column.dtype_info is not None:
+                    format_string = column.dtype_info.timestamp_format_string
+
+            # Only normalize timestamp column if not string type (only has effect on BigQuery)
+            normalized_timestamp_column = quoted_identifier(timestamp_column)
+            if format_string is None:
+                normalized_timestamp_column = self.adapter.normalize_timestamp_before_comparison(
+                    normalized_timestamp_column,
+                )
+
+            # Compare time range as string if format string is provided to avoid parsing all values
+            # in the original timestamp column
             filter_conditions: List[expressions.Expression] = []
             if from_timestamp:
+                from_timestamp_expr = make_literal_value(
+                    from_timestamp.isoformat(), cast_as_timestamp=True
+                )
+                if format_string:
+                    from_timestamp_expr = self.adapter.format_timestamp(
+                        from_timestamp_expr, format_string
+                    )
                 filter_conditions.append(
                     expressions.GTE(
-                        this=normalized_timestamp_column,
-                        expression=make_literal_value(
-                            from_timestamp.isoformat(), cast_as_timestamp=True
-                        ),
+                        this=normalized_timestamp_column, expression=from_timestamp_expr
                     )
                 )
             if to_timestamp:
+                to_timestamp_expr = make_literal_value(
+                    to_timestamp.isoformat(), cast_as_timestamp=True
+                )
+                if format_string:
+                    to_timestamp_expr = self.adapter.format_timestamp(
+                        to_timestamp_expr, format_string
+                    )
                 filter_conditions.append(
                     expressions.LT(
                         this=normalized_timestamp_column,
-                        expression=make_literal_value(
-                            to_timestamp.isoformat(), cast_as_timestamp=True
-                        ),
+                        expression=to_timestamp_expr,
                     )
                 )
             if filter_conditions:
