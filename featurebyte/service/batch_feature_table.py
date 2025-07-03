@@ -4,12 +4,13 @@ BatchFeatureTableService class
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Optional
 
-import sqlglot
 from bson import ObjectId
 from redis import Redis
 
+from featurebyte.common.validator import get_table_expr_from_fully_qualified_table_name
 from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
 from featurebyte.exception import (
     InvalidTableNameError,
@@ -21,7 +22,6 @@ from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
-from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.batch_feature_table import (
     BatchFeaturesAppendFeatureTableCreate,
@@ -153,18 +153,10 @@ class BatchFeatureTableService(
         feature_store = await self.feature_store_service.get_document(
             document_id=data.feature_store_id
         )
-        try:
-            select_expr = sqlglot.parse_one(
-                f"SELECT * FROM {data.output_table_info.name}",
-                dialect=get_dialect_from_source_type(feature_store.type),
-            )
-        except sqlglot.errors.ParseError as exc:
-            raise InvalidTableNameError(
-                f"Invalid output table name: {data.output_table_info.name}"
-            ) from exc
-
-        # ensure schema is valid
-        table_expr = select_expr.args["from"].this
+        table_expr = get_table_expr_from_fully_qualified_table_name(
+            fully_qualified_table_name=data.output_table_info.name,
+            source_type=feature_store.type,
+        )
         try:
             await self.feature_store_warehouse_service.list_tables(
                 feature_store=feature_store,
@@ -185,8 +177,9 @@ class BatchFeatureTableService(
             available_column_details = {specs.name: specs for specs in column_specs}
 
             # ensure all required columns are present
+            output_columns_and_dtypes = copy.deepcopy(output_columns_and_dtypes)
             output_columns_and_dtypes[SpecialColumnName.POINT_IN_TIME] = DBVarType.TIMESTAMP
-            output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = DBVarType.DATE
+            output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = DBVarType.VARCHAR
             missing_columns = set(output_columns_and_dtypes.keys()) - set(
                 available_column_details.keys()
             )

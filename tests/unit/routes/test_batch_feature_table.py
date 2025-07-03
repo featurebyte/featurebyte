@@ -476,7 +476,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             ),
             ColumnSpecWithDescription(
                 name="snapshot_date",
-                dtype="VARCHAR",
+                dtype="DATE",
             ),
             ColumnSpecWithDescription(
                 name="cust_id",
@@ -494,7 +494,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
             response.json()["detail"]
-            == "Output table column type mismatch: snapshot_date (expected DATE, got VARCHAR)"
+            == "Output table column type mismatch: snapshot_date (expected VARCHAR, got DATE)"
         )
 
     @pytest.fixture(name="output_table_list_columns")
@@ -509,7 +509,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
                 ),
                 ColumnSpecWithDescription(
                     name="snapshot_date",
-                    dtype="DATE",
+                    dtype="VARCHAR",
                 ),
                 ColumnSpecWithDescription(
                     name="cust_id",
@@ -542,7 +542,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
-
         assert (
             snowflake_execute_query_for_materialized_table.call_args_list[-3].kwargs["query"]
             == textwrap.dedent(
@@ -550,7 +549,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             CREATE TABLE "db"."schema"."new_batch_prediction_table" AS
             SELECT
               CAST('2025-06-19T03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
-              CAST('2025-06-19' AS DATE) AS "snapshot_date",
+              '2025-06-19' AS "snapshot_date",
               "cust_id",
               "sum_30m"
             FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002"
@@ -575,7 +574,16 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
-
+        assert (
+            snowflake_execute_query_for_materialized_table.call_args_list[-4].kwargs["query"]
+            == textwrap.dedent(
+                """
+            DELETE FROM "db"."schema"."batch_prediction_table"
+            WHERE
+              "snapshot_date" = '2025-06-19'
+            """
+            ).strip()
+        )
         assert (
             snowflake_execute_query_for_materialized_table.call_args_list[-3].kwargs["query"]
             == textwrap.dedent(
@@ -588,7 +596,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             )
             SELECT
               CAST('2025-06-19T03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
-              CAST('2025-06-19' AS DATE) AS "snapshot_date",
+              '2025-06-19' AS "snapshot_date",
               "cust_id",
               "sum_30m"
             FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002"
