@@ -1024,3 +1024,37 @@ def test_graph_interpreter__construct_tile_gen_sql__item_join_dimension_join_scd
     # check that the tile sql is generated without error
     tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
     assert len(tile_infos) == 2
+
+
+@pytest.mark.parametrize("has_timestamp_schema", [True])
+def test_graph_interpreter_sample_date_range_with_timestamp_schema(simple_graph, source_info):
+    """Test graph sample with date range"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, source_info)
+
+    sql_code = interpreter.construct_sample_sql(
+        node.name,
+        num_rows=30,
+        seed=20,
+        timestamp_column="ts",
+        from_timestamp=pd.to_datetime("2020-01-01"),
+        to_timestamp=pd.to_datetime("2020-01-03"),
+    )[0]
+    expected = textwrap.dedent(
+        """
+        SELECT
+          CAST("ts" AS VARCHAR) AS "ts",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        WHERE
+          "ts" >= TO_CHAR(CAST('2020-01-01T00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')
+          AND "ts" < TO_CHAR(CAST('2020-01-03T00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')
+        ORDER BY
+          RANDOM(20)
+        LIMIT 30
+        """
+    ).strip()
+    assert sql_code == expected
