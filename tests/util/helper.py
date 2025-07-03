@@ -1008,8 +1008,8 @@ def extract_session_executed_queries(mock_snowflake_session, func="execute_query
     assert func in {"execute_query_long_running", "execute_query"}
     queries = []
     for call_obj in getattr(mock_snowflake_session, func).call_args_list:
-        args, _ = call_obj
-        queries.append(args[0] + ";")
+        args, kwargs = call_obj
+        queries.append((args[0] if args else kwargs["query"]) + ";")
     return "\n\n".join(queries)
 
 

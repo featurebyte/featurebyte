@@ -418,9 +418,9 @@ class FeatureStoreWarehouseService:
             for col_name in result.columns:
                 if result.shape[0] > 0:
                     if isinstance(result[col_name].iloc[0], datetime.datetime):
-                        type_conversions[col_name] = DBVarType.DATE
-                    elif isinstance(result[col_name].iloc[0], datetime.date):
                         type_conversions[col_name] = DBVarType.TIMESTAMP
+                    elif isinstance(result[col_name].iloc[0], datetime.date):
+                        type_conversions[col_name] = DBVarType.DATE
         return dataframe_to_json(result, type_conversions=type_conversions or None)
 
     async def sql_preview(
