@@ -65,9 +65,9 @@ class OutputTableInfo(FeatureByteBaseModel):
     )
 
 
-class BatchFeaturesAppendFeatureTableCreate(BatchFeatureTableCreateBase):
+class BatchExternalFeatureTableCreate(BatchFeatureTableCreateBase):
     """
-    BatchFeaturesAppendFeatureTableCreate creation payload
+    BatchExternalFeatureTableCreate creation payload
     """
 
     output_table_info: OutputTableInfo

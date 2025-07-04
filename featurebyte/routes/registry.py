@@ -79,6 +79,7 @@ from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.time_series_table.controller import TimeSeriesTableController
 from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
+from featurebyte.service.batch_external_feature_table import BatchExternalFeatureTableService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
@@ -264,6 +265,7 @@ app_container_config.register_class(AllFeatureListService)
 app_container_config.register_class(AllTableService)
 app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
+app_container_config.register_class(BatchExternalFeatureTableService)
 app_container_config.register_class(BatchRequestTableController)
 app_container_config.register_class(BatchRequestTableService)
 app_container_config.register_class(

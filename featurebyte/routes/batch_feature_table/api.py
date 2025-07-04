@@ -28,7 +28,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.batch_feature_table import (
-    BatchFeaturesAppendFeatureTableCreate,
+    BatchExternalFeatureTableCreate,
     BatchFeatureTableCreate,
     BatchFeatureTableList,
 )
@@ -152,7 +152,7 @@ class BatchFeatureTableRouter(BaseRouter):
     async def append_batch_features_to_feature_table(
         self,
         request: Request,
-        data: BatchFeaturesAppendFeatureTableCreate,
+        data: BatchExternalFeatureTableCreate,
     ) -> Task:
         """
         Append batch features to an unmanaged feature table by submitting a materialization task

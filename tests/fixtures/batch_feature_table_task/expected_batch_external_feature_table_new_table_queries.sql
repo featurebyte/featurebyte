@@ -1,0 +1,140 @@
+CREATE TABLE "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000000" AS
+SELECT
+  "cust_id" AS "cust_id",
+  "POINT_IN_TIME" AS "POINT_IN_TIME",
+  "target" AS "target"
+FROM (
+  SELECT
+    *
+  FROM "sf_database"."sf_schema"."dimension_table"
+);
+
+CREATE OR REPLACE TABLE "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000000" AS
+SELECT
+  ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+  *
+FROM "BATCH_REQUEST_TABLE_000000000000000000000000";
+
+SELECT
+  COUNT(*) AS "row_count"
+FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000000";
+
+CREATE TABLE "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000001" AS
+SELECT
+  "cust_id" AS "cust_id"
+FROM (
+  SELECT
+    *
+  FROM "sf_database"."sf_schema"."dimension_table"
+);
+
+CREATE OR REPLACE TABLE "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000001" AS
+SELECT
+  ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+  *
+FROM "BATCH_REQUEST_TABLE_000000000000000000000001";
+
+SELECT
+  COUNT(*) AS "row_count"
+FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000001";
+
+CREATE TABLE "__TEMP_000000000000000000000000_0" AS
+WITH ONLINE_REQUEST_TABLE AS (
+  SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
+    REQ."cust_id",
+    REQ."target",
+    CAST('2025-06-19 03:00:00' AS TIMESTAMP) AS POINT_IN_TIME
+  FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000001" AS REQ
+), "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
+  SELECT
+    "POINT_IN_TIME",
+    "cust_id",
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 300
+    ) / 1800) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 300
+    ) / 1800) AS BIGINT) - 1 AS __FB_FIRST_TILE_INDEX
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME",
+      "cust_id"
+    FROM ONLINE_REQUEST_TABLE
+  )
+), _FB_AGGREGATED AS (
+  SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
+    REQ."cust_id",
+    REQ."target",
+    REQ."POINT_IN_TIME",
+    "T0"."_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+  FROM ONLINE_REQUEST_TABLE AS REQ
+  LEFT JOIN (
+    SELECT
+      "POINT_IN_TIME",
+      "cust_id",
+      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+    FROM (
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."cust_id",
+        TILE.INDEX,
+        TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
+      FROM "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) = FLOOR(TILE.INDEX / 1)
+        AND REQ."cust_id" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+      UNION ALL
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."cust_id",
+        TILE.INDEX,
+        TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
+      FROM "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) - 1 = FLOOR(TILE.INDEX / 1)
+        AND REQ."cust_id" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+    )
+    GROUP BY
+      "POINT_IN_TIME",
+      "cust_id"
+  ) AS T0
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."cust_id" = T0."cust_id"
+)
+SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
+  AGG."cust_id",
+  AGG."target",
+  CAST("_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_30m"
+FROM _FB_AGGREGATED AS AGG;
+
+CREATE TABLE "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002" AS
+SELECT
+  REQ."cust_id",
+  REQ."target",
+  T0."sum_30m"
+FROM "BATCH_REQUEST_TABLE_000000000000000000000001" AS REQ
+LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
+  ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX";
+
+SELECT
+  COUNT(*) AS "row_count"
+FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002";
+
+SELECT
+  *
+FROM "db"."schema"."new_batch_prediction_table"
+LIMIT 0;
+
+CREATE TABLE "db"."schema"."new_batch_prediction_table" AS
+SELECT
+  CAST('2025-06-19T03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
+  '2025-06-19' AS "snapshot_date",
+  "cust_id",
+  "sum_30m"
+FROM "sf_database"."sf_schema"."BATCH_FEATURE_TABLE_000000000000000000000002";

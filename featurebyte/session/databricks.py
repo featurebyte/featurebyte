@@ -126,6 +126,11 @@ class DatabricksSession(BaseSparkSession):
                 **additional_connection_params,
             )
 
+        # Always use UTC for session timezone
+        cursor = self._connection.cursor()
+        cursor.execute("SET TIME ZONE 'UTC'")
+        cursor.close()
+
     @staticmethod
     def get_query_id(cursor: Any) -> str | None:
         return cursor.query_id if cursor.query_id else None
