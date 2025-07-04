@@ -19,10 +19,9 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.node.input import InputNode, InputNodeParameters
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
@@ -955,16 +954,13 @@ class PreviewService:
     ) -> Optional[PartitionColumnFilters]:
         if from_timestamp is None and to_timestamp is None:
             return None
-        node = query_graph.get_node_by_name(node_name)
+        primary_table_node = query_graph.get_sample_table_node(node_name=node_name)
         mapping = {}
-        for input_node in query_graph.iterate_nodes(node, NodeType.INPUT):
-            input_node_parameters = cast(InputNodeParameters, input_node.parameters)
-            table_id = input_node_parameters.id
-            if table_id is not None:
-                mapping[table_id] = PartitionColumnFilter(
-                    from_timestamp=from_timestamp,
-                    to_timestamp=to_timestamp,
-                )
+        if primary_table_node.parameters.id is not None:
+            mapping[primary_table_node.parameters.id] = PartitionColumnFilter(
+                from_timestamp=from_timestamp,
+                to_timestamp=to_timestamp,
+            )
         return PartitionColumnFilters(mapping=mapping)
 
 
