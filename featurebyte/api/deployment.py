@@ -4,6 +4,7 @@ Deployment module
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import date, datetime
 from http import HTTPStatus
 from typing import Any, ClassVar, Dict, List, Optional, Union
@@ -17,14 +18,17 @@ from featurebyte.api.accessor.databricks import DataBricksAccessor
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
+from featurebyte.api.data_source import DataSource
 from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.use_case import UseCase
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.formatting_util import CodeStr
+from featurebyte.common.validator import get_table_expr_from_fully_qualified_table_name
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DeploymentDataBricksAccessorError,
@@ -32,13 +36,25 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.batch_request_table import BatchRequestInput
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import (
-    BatchFeaturesAppendFeatureTableCreate,
+    BatchExternalFeatureTableCreate,
     BatchFeatureTableCreate,
     OutputTableInfo,
 )
 from featurebyte.schema.deployment import DeploymentUpdate
+
+
+@dataclasses.dataclass
+class BatchFeatureRequestParams:
+    """
+    Parameters for batch feature request
+    """
+
+    request_input: Optional[BatchRequestInput]
+    feature_store_id: ObjectId
+    batch_request_table_id: Optional[ObjectId]
 
 
 class Deployment(DeletableApiObject):
@@ -201,10 +217,52 @@ class Deployment(DeletableApiObject):
         # call get to update the object cache
         self.get_by_id(self.id)
 
+    def _get_batch_feature_request_parameters(
+        self,
+        batch_request_table: Union[BatchRequestTable, SourceTable, View, str],
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+    ) -> BatchFeatureRequestParams:
+        request_input = None
+        batch_request_table_id = None
+
+        # if request table is a fully qualified table name, we need to create a source table object
+        if isinstance(batch_request_table, str):
+            # local import to avoid circular import issues
+            from featurebyte.api.catalog import Catalog
+
+            # validate table name
+            table_expr = get_table_expr_from_fully_qualified_table_name(
+                batch_request_table,
+                self.cached_model.store_info.type,  # type: ignore
+            )
+            catalog = Catalog.get_by_id(self.cached_model.catalog_id)  # type: ignore
+            feature_store_id = catalog.default_feature_store_ids[0]
+            feature_store = FeatureStore.get_by_id(feature_store_id)
+            batch_request_table = DataSource(feature_store).get_source_table(
+                database_name=table_expr.catalog,
+                schema_name=table_expr.db,
+                table_name=table_expr.name,
+            )
+
+        if isinstance(batch_request_table, BatchRequestTable):
+            feature_store_id = batch_request_table.location.feature_store_id
+            batch_request_table_id = batch_request_table.id
+        else:
+            feature_store_id = batch_request_table.feature_store.id
+            request_input = batch_request_table.get_batch_request_input(
+                columns=columns, columns_rename_mapping=columns_rename_mapping
+            )
+        return BatchFeatureRequestParams(
+            request_input=request_input,
+            feature_store_id=feature_store_id,
+            batch_request_table_id=batch_request_table_id,
+        )
+
     @typechecked
     def compute_batch_feature_table(
         self,
-        batch_request_table: Union[BatchRequestTable, SourceTable, View],
+        batch_request_table: Union[BatchRequestTable, SourceTable, View, str],
         batch_feature_table_name: str,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
@@ -216,8 +274,9 @@ class Deployment(DeletableApiObject):
 
         Parameters
         ----------
-        batch_request_table: Union[BatchRequestTable, SourceTable, View]
-            Batch request table object, source table object, or view object that contains required serving names columns
+        batch_request_table: Union[BatchRequestTable, SourceTable, View, str]
+            Batch request table object, source table object, view object, or fully qualified table name
+            that contains required serving names columns
         batch_feature_table_name: str
             Name of the batch feature table to be created
         columns: Optional[list[str]]
@@ -254,22 +313,16 @@ class Deployment(DeletableApiObject):
         ... )
         """
 
-        request_input = None
-        batch_request_table_id = None
-        if isinstance(batch_request_table, BatchRequestTable):
-            feature_store_id = batch_request_table.location.feature_store_id
-            batch_request_table_id = batch_request_table.id
-        else:
-            feature_store_id = batch_request_table.feature_store.id
-            request_input = batch_request_table.get_batch_request_input(
-                columns=columns, columns_rename_mapping=columns_rename_mapping
-            )
-
+        request_params = self._get_batch_feature_request_parameters(
+            batch_request_table,
+            columns=columns,
+            columns_rename_mapping=columns_rename_mapping,
+        )
         payload = BatchFeatureTableCreate(
             name=batch_feature_table_name,
-            feature_store_id=feature_store_id,
-            batch_request_table_id=batch_request_table_id,
-            request_input=request_input,
+            feature_store_id=request_params.feature_store_id,
+            batch_request_table_id=request_params.batch_request_table_id,
+            request_input=request_params.request_input,
             deployment_id=self.id,
             point_in_time=point_in_time,
         )
@@ -281,7 +334,7 @@ class Deployment(DeletableApiObject):
     @typechecked
     def compute_batch_features(
         self,
-        batch_request_table: Union[BatchRequestTable, SourceTable, View],
+        batch_request_table: Union[BatchRequestTable, SourceTable, View, str],
         output_table_name: str,
         output_table_snapshot_date: Optional[str | date] = date.today(),
         output_table_snapshot_date_name: str = "snapshot_date",
@@ -295,8 +348,9 @@ class Deployment(DeletableApiObject):
 
         Parameters
         ----------
-        batch_request_table: Union[BatchRequestTable, SourceTable, View]
-            Batch request table object, source table object, or view object that contains required serving names columns
+        batch_request_table: Union[BatchRequestTable, SourceTable, View, str]
+            Batch request table object, source table object, view object, or fully qualified table name
+            that contains required serving names columns
         output_table_name: str
             Fully qualified name of the output table to be created or appended in the data warehouse.
         output_table_snapshot_date: date
@@ -333,21 +387,15 @@ class Deployment(DeletableApiObject):
         ... )
         """
 
-        request_input = None
-        batch_request_table_id = None
-        if isinstance(batch_request_table, BatchRequestTable):
-            feature_store_id = batch_request_table.location.feature_store_id
-            batch_request_table_id = batch_request_table.id
-        else:
-            feature_store_id = batch_request_table.feature_store.id
-            request_input = batch_request_table.get_batch_request_input(
-                columns=columns, columns_rename_mapping=columns_rename_mapping
-            )
-
-        payload = BatchFeaturesAppendFeatureTableCreate(
-            feature_store_id=feature_store_id,
-            batch_request_table_id=batch_request_table_id,
-            request_input=request_input,
+        request_params = self._get_batch_feature_request_parameters(
+            batch_request_table,
+            columns=columns,
+            columns_rename_mapping=columns_rename_mapping,
+        )
+        payload = BatchExternalFeatureTableCreate(
+            feature_store_id=request_params.feature_store_id,
+            batch_request_table_id=request_params.batch_request_table_id,
+            request_input=request_params.request_input,
             deployment_id=self.id,
             point_in_time=point_in_time,
             output_table_info=OutputTableInfo(

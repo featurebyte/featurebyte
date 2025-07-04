@@ -14,12 +14,13 @@ from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.batch_feature_table import (
-    BatchFeaturesAppendFeatureTableCreate,
+    BatchExternalFeatureTableCreate,
     BatchFeatureTableCreate,
     BatchFeatureTableList,
 )
 from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
+from featurebyte.service.batch_external_feature_table import BatchExternalFeatureTableService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -46,6 +47,7 @@ class BatchFeatureTableController(
     def __init__(
         self,
         batch_feature_table_service: BatchFeatureTableService,
+        batch_external_feature_table_service: BatchExternalFeatureTableService,
         catalog_service: CatalogService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
@@ -62,6 +64,7 @@ class BatchFeatureTableController(
         )
         self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
+        self.batch_external_feature_table_service = batch_external_feature_table_service
         self.feature_list_service = feature_list_service
         self.feature_service = feature_service
         self.batch_request_table_service = batch_request_table_service
@@ -71,7 +74,7 @@ class BatchFeatureTableController(
 
     async def create_batch_feature_table(
         self,
-        data: Union[BatchFeatureTableCreate, BatchFeaturesAppendFeatureTableCreate],
+        data: Union[BatchFeatureTableCreate, BatchExternalFeatureTableCreate],
         parent_batch_feature_table_name: Optional[str] = None,
     ) -> Task:
         """
@@ -79,7 +82,7 @@ class BatchFeatureTableController(
 
         Parameters
         ----------
-        data: Union[BatchFeatureTableCreate, BatchFeaturesAppendFeatureTableCreate]
+        data: Union[BatchFeatureTableCreate, BatchExternalFeatureTableCreate]
             Request parameters
         parent_batch_feature_table_name: Optional[str]
             Parent BatchFeatureTable name
@@ -133,7 +136,7 @@ class BatchFeatureTableController(
                 feature_store=feature_store,
             )
 
-        if isinstance(data, BatchFeaturesAppendFeatureTableCreate):
+        if isinstance(data, BatchExternalFeatureTableCreate):
             # include feature names and dtypes from the feature list
             async for doc in self.feature_service.list_documents_as_dict_iterator(
                 projection={"name": 1, "dtype": 1},
@@ -142,11 +145,9 @@ class BatchFeatureTableController(
                 input_columns_and_dtypes[doc["name"]] = doc["dtype"]
 
             # prepare task payload for appending batch features to an unmanaged feature table
-            payload = (
-                await self.service.get_batch_feature_table_task_payload_for_unmanaged_feature_table(
-                    data=data,
-                    output_columns_and_dtypes=input_columns_and_dtypes,
-                )
+            payload = await self.batch_external_feature_table_service.get_batch_feature_table_task_payload(
+                data=data,
+                output_columns_and_dtypes=input_columns_and_dtypes,
             )
         else:
             # prepare task payload for creating a batch feature table
