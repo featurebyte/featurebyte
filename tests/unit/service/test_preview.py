@@ -530,7 +530,7 @@ async def mock_execute_query(query):
     result_column_names = [
         col.alias_or_name for col in parse_one(query, read="snowflake").expressions
     ]
-    # Make %missing stats None in all columns
+    # Make %missing stats null in all columns
     data = {col: ["some_value"] if "%missing" not in col else [None] for col in result_column_names}
     return pd.DataFrame(data)
 
