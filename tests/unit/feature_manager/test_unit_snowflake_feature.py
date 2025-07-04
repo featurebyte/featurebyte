@@ -19,6 +19,9 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     """
     mock_snowflake_feature.save()
     feature_model = mock_snowflake_feature.cached_model
+    # This is to test that legacy features which have aggregation_result_names are disabled properly
+    # (in test_online_disable)
+    feature_model.__dict__["aggregation_result_names"] = ["some_result_name"]
     return ExtendedFeatureModel(
         **feature_model.model_dump(exclude={"version": True}, by_alias=True),
         version=get_version(),

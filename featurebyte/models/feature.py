@@ -44,9 +44,6 @@ from featurebyte.query_graph.node.metadata.operation import GroupOperationStruct
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.online_store_compute_query import (
-    get_online_store_precompute_queries,
-)
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
@@ -554,17 +551,15 @@ class FeatureModel(BaseFeatureModel):
     feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
     deployed_feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
     aggregation_ids: List[str] = Field(default_factory=list)
-    aggregation_result_names: List[str] = Field(default_factory=list)
-    online_store_table_names: List[str] = Field(default_factory=list)
+    aggregation_result_names: List[str] = Field(default_factory=list)  # deprecated
+    online_store_table_names: List[str] = Field(default_factory=list)  # deprecated
     agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
     last_updated_by_scheduled_task_at: Optional[datetime] = Field(frozen=True, default=None)
 
     @model_validator(mode="after")
     def _add_tile_derived_attributes(self) -> "FeatureModel":
-        # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
-        # specific scheduled tile task. An aggregation_id can produce multiple aggregation results
-        # using different feature derivation windows.
-        if self.aggregation_ids and self.aggregation_result_names:
+        # Each aggregation_id refers to a set of columns in a tile table
+        if self.aggregation_ids:
             return self
 
         graph_dict = self.internal_graph
@@ -596,17 +591,6 @@ class FeatureModel(BaseFeatureModel):
         # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
         # validate_assign=True in model_config.
         self.__dict__["aggregation_ids"] = aggregation_ids
-        self.__dict__["aggregation_result_names"] = []
-        online_store_table_names = set()
-        for query in get_online_store_precompute_queries(
-            graph,
-            graph.get_node_by_name(node_name),
-            source_info,
-            self.agg_result_name_include_serving_names,
-        ):
-            self.__dict__["aggregation_result_names"].append(query.result_name)
-            online_store_table_names.add(query.table_name)
-        self.__dict__["online_store_table_names"] = sorted(online_store_table_names)
 
         return self
 

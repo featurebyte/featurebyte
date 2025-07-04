@@ -12,13 +12,30 @@ def query_graph():
     yield reset_global_graph()
 
 
+@pytest.fixture(name="has_timestamp_schema")
+def has_timestamp_schema_fixture(graph):
+    """
+    Fixture that determines if a timestamp node has a timestamp schema. Can be overridden by tests.
+    """
+    return False
+
+
 @pytest.fixture(name="node_input")
-def node_input_fixture(graph):
+def node_input_fixture(graph, has_timestamp_schema):
     """Fixture for a generic input node"""
+    ts_column_info = {"name": "ts", "dtype": "TIMESTAMP"}
+    if has_timestamp_schema:
+        ts_column_info["dtype"] = "VARCHAR"
+        ts_column_info["dtype_metadata"] = {
+            "timestamp_schema": {
+                "format_string": "%Y-%m-%d %H:%M:%S",
+                "timezone": "UTC",
+            }
+        }
     node_params = {
         "type": "event_table",
         "columns": [
-            {"name": "ts", "dtype": "TIMESTAMP"},
+            ts_column_info,
             {"name": "cust_id", "dtype": "VARCHAR"},
             {"name": "a", "dtype": "FLOAT"},
             {"name": "b", "dtype": "INT"},

@@ -60,8 +60,14 @@ def split_nodes(
         mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
         agg_specs = planner.get_aggregation_specs(mapped_node)
         agg_spec = agg_specs[0]
-
-        parts = [agg_spec.aggregation_type.value]
+        primary_table_ids = [
+            input_node.parameters.id
+            for input_node in QueryGraph.get_primary_input_nodes_from_graph_model(
+                graph=planner.graph, node_name=mapped_node.name
+            )
+        ]
+        primary_table_ids_key = ",".join([str(table_id) for table_id in primary_table_ids])
+        parts = [primary_table_ids_key, agg_spec.aggregation_type.value]
         if isinstance(agg_spec, TileBasedAggregationSpec):
             aggregation_id = agg_spec.aggregation_id
             if aggregation_id not in tile_compute_signature_mapping:

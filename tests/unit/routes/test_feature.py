@@ -982,18 +982,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{feature_create2.id}")
         assert response.status_code == HTTPStatus.OK
 
-    def test_aggregation_result_names_based_on_pruned_graph(self, create_success_response):
-        """
-        Test that aggregation_result_names are derived based on pruned graph.
-
-        The feature_sum_30m.json fixture's groupby node has unpruned parameters. If the
-        aggregation_result_names is derived from the graph directly without pruning, there will be
-        multiple items in aggregation_result_names which is wrong for this feature.
-        """
-        assert create_success_response.json()["aggregation_result_names"] == [
-            "_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
-        ]
-
     def test_request_sample_entity_serving_names(
         self,
         test_api_client_persistent,

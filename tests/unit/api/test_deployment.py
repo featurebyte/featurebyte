@@ -324,12 +324,8 @@ def test_deployment_with_unbounded_window(
     assert feat_latest_model.online_store_table_names == []
 
     # Check latest with window has associated aggregation result names
-    assert feat_latest_combined_model.aggregation_result_names == [
-        "_fb_internal_cust_id_window_w604800_latest_ac7aa941d28f489e56c9ab50a583a8c6c88eebe5"
-    ]
-    assert feat_latest_combined_model.online_store_table_names == [
-        "ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"
-    ]
+    assert feat_latest_combined_model.aggregation_result_names == []
+    assert feat_latest_combined_model.online_store_table_names == []
 
     offline_store_info = feat_latest.cached_model.offline_store_info
     assert offline_store_info.metadata.has_ttl is False
