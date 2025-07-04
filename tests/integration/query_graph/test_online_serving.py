@@ -7,7 +7,7 @@ import copy
 import threading
 import time
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import datetime
 from queue import Queue
 from unittest.mock import patch
 
@@ -302,12 +302,16 @@ def check_get_batch_features_feature_table(
     """
     Check get_batch_features_async that appends to an existing table
     """
-    table_details = copy.deepcopy(batch_request_table.location.table_details)
+    input_table_details = batch_request_table.location.table_details
+    table_details = copy.deepcopy(input_table_details)
     table_details.table_name = "BATCH_FEATURE_TABLE_APPEND_TO"
+    input_table_name = f'"{input_table_details.database_name}"."{input_table_details.schema_name}"."{input_table_details.table_name}"'
+    output_table_name = f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
     deployment.compute_batch_features(
         batch_request_table=batch_request_table,
-        output_table_name=f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"',
-        output_table_snapshot_date=date.fromisoformat("2001-01-02"),
+        output_table_name=output_table_name,
+        output_table_snapshot_date="2001-01-02",
+        output_table_snapshot_date_name="snapshot_dt",
         point_in_time="2001-01-02 13:15:00",
     )
     output_table = data_source.get_source_table(
@@ -325,16 +329,18 @@ def check_get_batch_features_feature_table(
 
     # check that the POINT_IN_TIME and snapshot_date columns are present
     assert "POINT_IN_TIME" in preview_df.columns
-    assert "snapshot_date" in preview_df.columns
+    assert "snapshot_dt" in preview_df.columns
     assert preview_df["POINT_IN_TIME"].iloc[0] == pd.Timestamp("2001-01-02 13:15:00")
-    assert preview_df["snapshot_date"].iloc[0] == pd.Timestamp("2001-01-02").date()
+    assert preview_df["snapshot_dt"].iloc[0] == "2001-01-02"
 
-    # append to the existing table
+    # append to the existing table using fully qualified table name
     deployment.compute_batch_features(
-        batch_request_table=batch_request_table,
-        output_table_name=f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"',
-        output_table_snapshot_date=date.fromisoformat("2001-01-03"),
+        batch_request_table=input_table_name,
+        output_table_name=output_table_name,
+        output_table_snapshot_date="2001-01-03",
+        output_table_snapshot_date_name="snapshot_dt",
         point_in_time="2001-01-03 13:15:00",
+        columns=["üser id"],
     )
     preview_df = output_table.preview(limit=50)
     assert preview_df.shape[0] == df_historical.shape[0] * 2

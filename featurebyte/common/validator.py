@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple, cast
+
+import sqlglot
+from sqlglot import expressions
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
-from featurebyte.enum import DBVarType, TargetType
-from featurebyte.exception import DocumentInconsistencyError
+from featurebyte.enum import DBVarType, SourceType, TargetType
+from featurebyte.exception import DocumentInconsistencyError, InvalidTableNameError
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.cleaning_operation import CleaningOperationType
+from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 
 @dataclass
@@ -330,3 +334,38 @@ def validate_target_type(target_type: Optional[TargetType], dtype: Optional[DBVa
     raise DocumentInconsistencyError(
         f"Target type {target_type} is not consistent with dtype {dtype}"
     )
+
+
+def get_table_expr_from_fully_qualified_table_name(
+    fully_qualified_table_name: str, source_type: SourceType
+) -> expressions.Table:
+    """
+    Get SQLGlot Table expression from a fully qualified table name.
+
+    Parameters
+    ----------
+    fully_qualified_table_name: str
+        Fully qualified table name in the format "catalog.schema.table"
+    source_type: SourceType
+        Source type of the table, used to determine the SQL dialect
+
+    Returns
+    -------
+    expressions.Table
+        SQLGlot Table expression representing the table
+
+    Raises
+    ------
+    InvalidTableNameError
+        If the table name is invalid and cannot be parsed by SQLGlot
+    """
+    try:
+        select_expr = sqlglot.parse_one(
+            f"SELECT * FROM {fully_qualified_table_name}",
+            dialect=get_dialect_from_source_type(source_type),
+        )
+    except sqlglot.errors.ParseError as exc:
+        raise InvalidTableNameError(
+            f"Invalid output table name: {fully_qualified_table_name}"
+        ) from exc
+    return cast(expressions.Table, select_expr.args["from"].this)
