@@ -19,11 +19,17 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.input import InputNode, InputNodeParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    PartitionColumnFilter,
+    PartitionColumnFilters,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.preview import DescribeQueries
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -175,6 +181,7 @@ class PreviewService:
         num_rows: int,
         seed: int,
         total_num_rows: Optional[int],
+        partition_column_filters: Optional[PartitionColumnFilters],
     ) -> GraphWithSampledPrimaryTable:
         # get primary table node & construct a new graph for sampling
         primary_table_input_node = payload.graph.get_sample_table_node(node_name=payload.node_name)
@@ -198,6 +205,7 @@ class PreviewService:
             total_num_rows=total_num_rows,
             skip_conversion=True,  # skip conversion to keep original table column types
             sample_on_primary_table=False,  # go through normal sampling process with single table
+            partition_column_filters=partition_column_filters,
             **other_kwargs,  # type: ignore
         )
         sampled_table_name, is_table_cached = await self._get_or_cache_table(
@@ -368,6 +376,17 @@ class PreviewService:
             node_name=sample.node_name,
             feature_store_id=sample.feature_store_id,
         )
+
+        if sample_on_primary_table:
+            partition_column_filters = self._get_partition_column_filters(
+                sample.graph,
+                sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+            )
+        else:
+            partition_column_filters = None
+
         if size > 0:
             total_num_rows = await self._get_row_count(
                 session,
@@ -380,6 +399,7 @@ class PreviewService:
                 timestamp_column=sample.timestamp_column,
                 allow_long_running=allow_long_running,
                 sample_on_primary_table=sample_on_primary_table,
+                partition_column_filters=partition_column_filters,
             )
         else:
             warnings.warn(
@@ -397,6 +417,7 @@ class PreviewService:
                 num_rows=size,
                 seed=seed,
                 total_num_rows=total_num_rows,
+                partition_column_filters=partition_column_filters,
             )
 
         sample_sql, type_conversions = GraphInterpreter(
@@ -472,6 +493,16 @@ class PreviewService:
             feature_store_id=sample.feature_store_id,
         )
 
+        if sample_on_primary_table:
+            partition_column_filters = self._get_partition_column_filters(
+                sample.graph,
+                sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+            )
+        else:
+            partition_column_filters = None
+
         if size > 0:
             total_num_rows = await self._get_row_count(
                 session,
@@ -484,6 +515,7 @@ class PreviewService:
                 timestamp_column=sample.timestamp_column,
                 allow_long_running=allow_long_running,
                 sample_on_primary_table=sample_on_primary_table,
+                partition_column_filters=partition_column_filters,
             )
         else:
             warnings.warn(
@@ -501,6 +533,7 @@ class PreviewService:
                 num_rows=size,
                 seed=seed,
                 total_num_rows=total_num_rows,
+                partition_column_filters=partition_column_filters,
             )
 
         graph_interpreter = GraphInterpreter(
@@ -669,7 +702,7 @@ class PreviewService:
 
     async def value_counts(  # pylint: disable=too-many-locals
         self,
-        preview: FeatureStorePreview,
+        payload: Union[FeatureStorePreview, FeatureStoreSample],
         column_names: list[str],
         num_rows: int,
         num_categories_limit: int,
@@ -682,8 +715,8 @@ class PreviewService:
 
         Parameters
         ----------
-        preview: FeatureStorePreview
-            FeatureStorePreview object
+        payload: Union[FeatureStorePreview, FeatureStoreSample]
+            FeatureStorePreview or FeatureStoreSample objectj
         column_names: list[str]
             Column names to get value counts for
         num_rows : int
@@ -703,20 +736,36 @@ class PreviewService:
         -------
         dict[str, dict[Any, int]]
         """
+        sample = FeatureStoreSample(**payload.model_dump())
+
         feature_store, session = await self._get_feature_store_session(
-            graph=preview.graph,
-            node_name=preview.node_name,
-            feature_store_id=preview.feature_store_id,
+            graph=sample.graph,
+            node_name=sample.node_name,
+            feature_store_id=sample.feature_store_id,
         )
+
+        if sample_on_primary_table:
+            partition_column_filters = self._get_partition_column_filters(
+                sample.graph,
+                sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+            )
+        else:
+            partition_column_filters = None
 
         if num_rows > 0:
             total_num_rows = await self._get_row_count(
                 session,
-                graph=preview.graph,
-                node_name=preview.node_name,
-                feature_store_id=preview.feature_store_id,
-                enable_query_cache=preview.enable_query_cache,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                feature_store_id=sample.feature_store_id,
+                enable_query_cache=sample.enable_query_cache,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
                 sample_on_primary_table=sample_on_primary_table,
+                partition_column_filters=partition_column_filters,
             )
         else:
             total_num_rows = None
@@ -726,30 +775,35 @@ class PreviewService:
             graph_info = await self._get_graph_using_sampled_primary_table(
                 feature_store=feature_store,
                 session=session,
-                payload=preview,
+                payload=sample,
                 num_rows=num_rows,
                 seed=seed,
                 total_num_rows=total_num_rows,
+                partition_column_filters=partition_column_filters,
             )
 
         interpreter = GraphInterpreter(
-            query_graph=graph_info.graph if graph_info else preview.graph,
+            query_graph=graph_info.graph if graph_info else sample.graph,
             source_info=feature_store.get_source_info(),
         )
-        op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
+        op_struct = interpreter.extract_operation_structure_for_node(sample.node_name)
         column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
         value_counts_queries = interpreter.construct_value_counts_sql(
-            node_name=preview.node_name,
+            node_name=sample.node_name,
             column_names=column_names,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
             seed=seed,
             total_num_rows=total_num_rows,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+            sample_on_primary_table=sample_on_primary_table,
         )
         input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
-            params=preview,
+            params=sample,
             table_expr=value_counts_queries.data.expr,
         )
         try:
@@ -780,8 +834,8 @@ class PreviewService:
                 coroutines.append(
                     self._process_value_counts_column(
                         session=session,
-                        feature_store_id=preview.feature_store_id,
-                        enable_query_cache=preview.enable_query_cache,
+                        feature_store_id=sample.feature_store_id,
+                        enable_query_cache=sample.enable_query_cache,
                         query=query,
                         column_name=column_query.column_name,
                         column_dtype=column_dtype,
@@ -791,7 +845,7 @@ class PreviewService:
             results = await run_coroutines(
                 coroutines,
                 self.redis,
-                str(preview.feature_store_id),
+                str(sample.feature_store_id),
                 feature_store.max_query_concurrency,
             )
         finally:
@@ -866,6 +920,7 @@ class PreviewService:
         timestamp_column: Optional[str] = None,
         allow_long_running: bool = True,
         sample_on_primary_table: bool = False,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ) -> int:
         graph, node_name = self._get_row_count_graph_and_node(
             graph=graph,
@@ -879,6 +934,7 @@ class PreviewService:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
+            partition_column_filters=partition_column_filters,
         )
         df_result = await self._get_or_cache_dataframe(
             session,
@@ -888,6 +944,28 @@ class PreviewService:
             allow_long_running=allow_long_running,
         )
         return df_result.iloc[0]["count"]  # type: ignore
+
+    @classmethod
+    def _get_partition_column_filters(
+        cls,
+        query_graph: QueryGraphModel,
+        node_name: str,
+        from_timestamp: Optional[datetime],
+        to_timestamp: Optional[datetime],
+    ) -> Optional[PartitionColumnFilters]:
+        if from_timestamp is None and to_timestamp is None:
+            return None
+        node = query_graph.get_node_by_name(node_name)
+        mapping = {}
+        for input_node in query_graph.iterate_nodes(node, NodeType.INPUT):
+            input_node_parameters = cast(InputNodeParameters, input_node.parameters)
+            table_id = input_node_parameters.id
+            if table_id is not None:
+                mapping[table_id] = PartitionColumnFilter(
+                    from_timestamp=from_timestamp,
+                    to_timestamp=to_timestamp,
+                )
+        return PartitionColumnFilters(mapping=mapping)
 
 
 class NonInteractivePreviewService(PreviewService):

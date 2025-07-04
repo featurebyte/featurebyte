@@ -3,6 +3,7 @@ Test preview service module
 """
 
 import textwrap
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -63,6 +64,14 @@ def feature_store_preview_fixture(feature_store):
                             {"name": "event_timestamp", "dtype": "TIMESTAMP"},
                             {"name": "created_at", "dtype": "TIMESTAMP"},
                             {"name": "cust_id", "dtype": "VARCHAR"},
+                            {
+                                "name": "partition_col",
+                                "dtype": "VARCHAR",
+                                "partition_metadata": {"is_partition_key": True},
+                                "dtype_metadata": {
+                                    "timestamp_schema": {"format_string": "%Y-%m-%d"},
+                                },
+                            },
                         ],
                         "table_details": {
                             "database_name": "sf_database",
@@ -117,6 +126,21 @@ def feature_store_sample_fixture(feature_store_preview):
     Fixture for a FeatureStoreSample
     """
     return FeatureStoreSample(**feature_store_preview.model_dump())
+
+
+@pytest.fixture(name="feature_store_sample_with_time_range")
+def feature_store_sample_with_time_range_fixture(feature_store_sample):
+    """
+    Fixture for a FeatureStoreSample with a time range
+    """
+    return FeatureStoreSample(
+        **feature_store_sample.model_dump(
+            exclude={"from_timestamp", "to_timestamp", "timestamp_column"}
+        ),
+        from_timestamp=datetime(2023, 1, 1),
+        to_timestamp=datetime(2025, 1, 1),
+        timestamp_column="event_timestamp",
+    )
 
 
 @pytest.mark.asyncio
@@ -514,7 +538,8 @@ def expected_create_sample_table_sql_fixture():
           "col_boolean",
           "event_timestamp",
           "created_at",
-          "cust_id"
+          "cust_id",
+          "partition_col"
         FROM (
           SELECT
             CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
@@ -526,7 +551,8 @@ def expected_create_sample_table_sql_fixture():
             "col_boolean",
             "event_timestamp",
             "created_at",
-            "cust_id"
+            "cust_id",
+            "partition_col"
           FROM (
             SELECT
               "col_int" AS "col_int",
@@ -537,7 +563,8 @@ def expected_create_sample_table_sql_fixture():
               "col_boolean" AS "col_boolean",
               "event_timestamp" AS "event_timestamp",
               "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
+              CAST("cust_id" AS VARCHAR) AS "cust_id",
+              CAST("partition_col" AS VARCHAR) AS "partition_col"
             FROM "sf_database"."sf_schema"."sf_table"
           )
         )
@@ -682,45 +709,16 @@ async def test_value_counts_with_sample_on_primary_table_enable(
         """
         CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000001" AS
         SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean",
-          "event_timestamp",
-          "created_at",
-          "cust_id"
-        FROM (
-          SELECT
-            CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-            "col_int",
-            "col_float",
-            "col_char",
-            "col_text",
-            "col_binary",
-            "col_boolean",
-            "event_timestamp",
-            "created_at",
-            "cust_id"
-          FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              CAST("col_text" AS VARCHAR) AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
-            FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
-          )
-        )
-        WHERE
-          "prob" <= 0.15000000000000002
-        ORDER BY
-          "prob"
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "created_at" AS "created_at",
+          CAST("cust_id" AS VARCHAR) AS "cust_id"
+        FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
         LIMIT 10
         """
     ).strip()
@@ -776,3 +774,74 @@ async def test_value_counts_with_sample_on_primary_table_enable(
             assert create_sample_table_sql == expected_create_sample_table_sql
         else:
             assert create_sample_table_sql != expected_create_sample_table_sql
+
+
+@pytest.mark.asyncio
+async def test_sample_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test sample with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.sample(
+        feature_store_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_sample_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_describe_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.describe(
+        feature_store_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_describe_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_value_counts_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
+    seed = 1234
+
+    await preview_service.value_counts(
+        feature_store_sample_with_time_range,
+        column_names=["col_char"],
+        num_rows=50,
+        num_categories_limit=5,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_value_counts_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)

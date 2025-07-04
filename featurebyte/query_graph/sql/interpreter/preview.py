@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     MISSING_VALUE_REPLACEMENT,
     CteStatement,
+    PartitionColumnFilters,
     SQLType,
     construct_cte_sql,
     get_column_expr_and_name,
@@ -149,6 +150,7 @@ class PreviewMixin(BaseGraphInterpreter):
         clip_timestamp_columns: bool = False,
         sample_on_primary_table: bool = False,
         sort_by_prob: bool = True,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -177,6 +179,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Whether to apply clipping to all the timestamp columns
         sample_on_primary_table: bool
             Whether the graph is already sampled on primary table
+        partition_column_filters: Optional[PartitionColumnFilters]
+            Partition column filters to apply when reading the tables
 
         Returns
         -------
@@ -188,6 +192,7 @@ class PreviewMixin(BaseGraphInterpreter):
             query_graph=self.query_graph,
             sql_type=SQLType.MATERIALIZE,
             source_info=self.source_info,
+            partition_column_filters=partition_column_filters,
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -1092,7 +1097,11 @@ class PreviewMixin(BaseGraphInterpreter):
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
         total_num_rows: Optional[int] = None,
+        sample_on_primary_table: bool = False,
     ) -> ValueCountsQueries:
         """
         Construct SQL to get value counts for a given node.
@@ -1110,8 +1119,16 @@ class PreviewMixin(BaseGraphInterpreter):
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to filter on
+        to_timestamp: Optional[datetime]
+            End of date range to filter on
+        timestamp_column: Optional[str]
+            Column to apply date range filtering on
         total_num_rows: Optional[int]
             Total number of rows before sampling
+        sample_on_primary_table: bool
+            Whether the graph is already sampled on primary table
 
         Returns
         -------
@@ -1122,6 +1139,10 @@ class PreviewMixin(BaseGraphInterpreter):
             num_rows=num_rows,
             seed=seed,
             total_num_rows=total_num_rows,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
+            sample_on_primary_table=sample_on_primary_table,
         )[0]
 
         queries = []
@@ -1155,6 +1176,7 @@ class PreviewMixin(BaseGraphInterpreter):
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ) -> str:
         """
         Construct SQL to get row counts for a given node.
@@ -1169,6 +1191,8 @@ class PreviewMixin(BaseGraphInterpreter):
             End of date range to filter on
         timestamp_column: Optional[str]
             Column to apply date range filtering on
+        partition_column_filters: Optional[PartitionColumnFilters]
+            Partition column filters to apply when reading the tables
 
         Returns
         -------
@@ -1188,6 +1212,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 to_timestamp=to_timestamp,
                 timestamp_column=timestamp_column,
                 skip_conversion=True,
+                partition_column_filters=partition_column_filters,
             )[0].subquery()
         )
         return sql_to_string(expr, source_type=self.adapter.source_type)

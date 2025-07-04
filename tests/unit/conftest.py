@@ -59,6 +59,7 @@ from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
@@ -1150,6 +1151,12 @@ def snowflake_event_table_with_timestamp_schema_id_fixture():
     return ObjectId("67c68ea033e0a38cbf517412")
 
 
+@pytest.fixture(name="snowflake_event_table_with_partition_column_id")
+def snowflake_event_table_with_partition_column_id_fixture():
+    """Snowflake event table ID with partition column schema"""
+    return ObjectId("68649bb0371e74d37cd68f2e")
+
+
 @pytest.fixture(name="snowflake_item_table_id")
 def snowflake_item_table_id_fixture():
     """Snowflake event table ID"""
@@ -1290,6 +1297,39 @@ def snowflake_event_table_with_timestamp_schema_fixture(
         ),
         record_creation_timestamp_column="created_at",
         _id=snowflake_event_table_with_timestamp_schema_id,
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
+@pytest.fixture(name="snowflake_event_table_with_partition_column")
+def snowflake_event_table_with_partition_column_fixture(
+    snowflake_database_table,
+    snowflake_event_table_with_partition_column_id,
+    transaction_entity,
+    cust_id_entity,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """EventTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+
+    # mark a column as partition key
+    snowflake_database_table.columns_info[0].partition_metadata = PartitionMetadata(
+        is_partition_key=True,
+    )
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+        datetime_partition_column="col_text",
+        datetime_partition_schema=TimestampSchema(
+            format_string="%Y-%m-%d %H:%M:%S",
+        ),
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
