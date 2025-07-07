@@ -48,6 +48,7 @@ from featurebyte.routes.common.primary_entity_validator import PrimaryEntityVali
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
+from featurebyte.routes.development_dataset.controller import DevelopmentDatasetController
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_table.controller import EventTableController
@@ -97,6 +98,7 @@ from featurebyte.service.deploy import (
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.deployed_tile_table_manager import DeployedTileTableManagerService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.dimension_table_validation import DimensionTableValidationService
 from featurebyte.service.entity import EntityService
@@ -293,6 +295,8 @@ app_container_config.register_class(DeployedTileTableService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
 app_container_config.register_class(DeploymentServingEntityService)
+app_container_config.register_class(DevelopmentDatasetService)
+app_container_config.register_class(DevelopmentDatasetController)
 app_container_config.register_class(DerivePrimaryEntityHelper)
 app_container_config.register_class(DimensionTableController)
 app_container_config.register_class(DimensionTableService)
