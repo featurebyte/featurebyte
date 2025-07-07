@@ -13,7 +13,7 @@ from featurebyte.models.query_cache import QueryCacheModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 
-STALE_THRESHOLD_SECONDS = 86400 * 7
+STALE_THRESHOLD_SECONDS = 86400 * 21
 STALE_CLEANUP_BUFFER_SECONDS = 3600 * 3
 
 
