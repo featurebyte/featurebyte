@@ -63,6 +63,8 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         self.batch_external_feature_table_service = batch_external_feature_table_service
 
     async def get_task_description(self, payload: BatchFeatureTableTaskPayload) -> str:
+        if payload.output_table_info is not None:
+            return f"Compute and append batch features to table {payload.output_table_info.name}"
         return f'Save batch feature table "{payload.name}"'
 
     async def execute(self, payload: BatchFeatureTableTaskPayload) -> Any:
