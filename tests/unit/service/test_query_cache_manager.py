@@ -320,14 +320,14 @@ async def test_cleanup_service(
         assert mock_snowflake_session.drop_table.call_args_list == []
 
     # Cleanup before stale (first document already not retrievable but not yet ready for cleanup)
-    with freeze_time("2024-01-08 03:00:00"):
+    with freeze_time("2024-01-22 03:00:00"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1
         assert mock_snowflake_session.drop_table.call_args_list == []
 
     # Cleanup after the first query was stale and ready for cleanup
-    with freeze_time("2024-01-08 03:00:01"):
+    with freeze_time("2024-01-22 03:00:01"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1
@@ -337,7 +337,7 @@ async def test_cleanup_service(
 
     # Cleanup after all the remaining query was stale
     mock_snowflake_session.drop_table.reset_mock()
-    with freeze_time("2024-01-10"):
+    with freeze_time("2024-01-24"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 0
@@ -377,7 +377,7 @@ async def test_cleanup_service_dataframes(
     storage_path = docs["data"][0]["cached_object"]["storage_path"]
     await app_container.storage.get_bytes(storage_path)
 
-    with freeze_time("2024-01-09"):
+    with freeze_time("2024-01-23"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 0
@@ -419,7 +419,7 @@ async def test_cleanup_service_error_handling(
 
     # Simulate error when cleaning up a query
     mock_snowflake_session.drop_table.reset_mock()
-    with freeze_time("2024-01-10"):
+    with freeze_time("2024-01-24"):
         mock_snowflake_session.drop_table.side_effect = _mock_drop_table
         await cleanup_service.run_cleanup(feature_store_id)
         # Check attempts to drop tables
@@ -435,7 +435,7 @@ async def test_cleanup_service_error_handling(
         assert stale_docs[0]["cached_object"]["table_name"] == "created_table_2"
 
     # Retry cleanup should work
-    with freeze_time("2024-01-11"):
+    with freeze_time("2024-01-25"):
         mock_snowflake_session.drop_table.reset_mock()
         mock_snowflake_session.drop_table.side_effect = None
         await cleanup_service.run_cleanup(feature_store_id)
