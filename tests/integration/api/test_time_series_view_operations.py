@@ -8,10 +8,11 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from tests.util.helper import fb_assert_frame_equal
+from tests.util.helper import create_observation_table_by_upload, fb_assert_frame_equal
 
 
 @pytest.fixture(name="time_series_window_aggregate_feature")
@@ -71,7 +72,9 @@ def check_preview_and_compute_historical_features(feature_list, preview_params, 
     df_features = feature_list.preview(preview_params)
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
-    df_features = feature_list.compute_historical_features(preview_params)
+    obs_table = create_observation_table_by_upload(preview_params)
+    df_feature_table = feature_list.compute_historical_feature_table(obs_table, str(ObjectId()))
+    df_features = df_feature_table.to_pandas()
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
