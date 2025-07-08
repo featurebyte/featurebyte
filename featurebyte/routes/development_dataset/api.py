@@ -4,6 +4,7 @@ DevelopmentDataset API routes
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Optional, cast
 
 from bson import ObjectId
@@ -23,13 +24,15 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.development_dataset.controller import DevelopmentDatasetController
-from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.development_dataset import (
+    DevelopmentDatasetAddTables,
     DevelopmentDatasetCreate,
     DevelopmentDatasetInfo,
     DevelopmentDatasetList,
     DevelopmentDatasetUpdate,
 )
+from featurebyte.schema.task import Task
 
 
 class DevelopmentDatasetRouter(
@@ -52,11 +55,35 @@ class DevelopmentDatasetRouter(
     def __init__(self) -> None:
         super().__init__("/development_dataset")
 
+        self.remove_routes({"/development_dataset": ["POST"]})
+        self.remove_routes({"/development_dataset/{development_dataset_id}": ["DELETE"]})
+
+        self.router.add_api_route(
+            "",
+            self.create_development_dataset,
+            methods=["POST"],
+            response_model=Task,
+            status_code=HTTPStatus.CREATED,
+        )
         self.router.add_api_route(
             "/{development_dataset_id}",
             self.update_development_dataset,
             methods=["PATCH"],
             response_model=self.object_model,
+        )
+        self.router.add_api_route(
+            "/{development_dataset_id}/development_table",
+            self.add_development_tables,
+            methods=["PATCH"],
+            response_model=Task,
+            status_code=HTTPStatus.ACCEPTED,
+        )
+        self.router.add_api_route(
+            "/{development_dataset_id}",
+            self.delete_development_dataset,
+            methods=["DELETE"],
+            response_model=Task,
+            status_code=HTTPStatus.ACCEPTED,
         )
         self.router.add_api_route(
             "/{development_dataset_id}/info",
@@ -65,17 +92,17 @@ class DevelopmentDatasetRouter(
             response_model=DevelopmentDatasetInfo,
         )
 
-    async def create_object(
+    async def create_development_dataset(
         self,
         request: Request,
         data: DevelopmentDatasetCreate,
-    ) -> DevelopmentDatasetModel:
+    ) -> Task:
         """
         Create Feature Store
         """
         controller = self.get_controller_for_request(request)
-        result: DevelopmentDatasetModel = await controller.create_development_dataset(data=data)
-        return result
+        task_submit: Task = await controller.create_development_dataset(data=data)
+        return task_submit
 
     async def get_object(
         self, request: Request, development_dataset_id: PyObjectId
@@ -136,9 +163,27 @@ class DevelopmentDatasetRouter(
         )
         return cast(DevelopmentDatasetInfo, info)
 
-    async def delete_object(
+    async def delete_development_dataset(
         self, request: Request, development_dataset_id: PyObjectId
-    ) -> DeleteResponse:
+    ) -> Task:
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=ObjectId(development_dataset_id))
-        return DeleteResponse()
+        task_submit: Task = await controller.delete_development_dataset(
+            document_id=ObjectId(development_dataset_id)
+        )
+        return task_submit
+
+    async def add_development_tables(
+        self,
+        request: Request,
+        development_dataset_id: PyObjectId,
+        data: DevelopmentDatasetAddTables,
+    ) -> Task:
+        """
+        Add development tables to a development dataset
+        """
+        controller = self.get_controller_for_request(request)
+        task_submit: Task = await controller.add_development_tables(
+            development_dataset_id=ObjectId(development_dataset_id),
+            development_tables=data.development_tables,
+        )
+        return task_submit

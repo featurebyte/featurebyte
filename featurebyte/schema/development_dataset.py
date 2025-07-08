@@ -54,9 +54,25 @@ class DevelopmentDatasetList(PaginationMixin):
     data: List[DevelopmentDatasetRead]
 
 
-class DevelopmentDatasetUpdate(BaseDocumentServiceUpdateSchema):
+class DevelopmentDatasetUpdate(FeatureByteBaseModel):
     """
     DevelopmentDataset update payload schema
+    """
+
+    name: Optional[NameStr] = Field(default=None)
+
+
+class DevelopmentDatasetAddTables(FeatureByteBaseModel):
+    """
+    DevelopmentDataset add tables payload schema
+    """
+
+    development_tables: List[DevelopmentTable] = Field(default_factory=list)
+
+
+class DevelopmentDatasetServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    DevelopmentDatasetService update payload schema
     """
 
     name: Optional[NameStr] = Field(default=None)

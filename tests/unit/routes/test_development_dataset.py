@@ -2,7 +2,6 @@
 Test for DevelopmentDataset route
 """
 
-import copy
 import json
 from http import HTTPStatus
 from unittest import mock
@@ -12,19 +11,59 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
-from tests.unit.routes.base import BaseCatalogApiTestSuite
+from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
-class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
+class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
     """
     Test for DevelopmentDataset route
     """
 
     class_name = "DevelopmentDataset"
     base_route = "/development_dataset"
-    payload = BaseCatalogApiTestSuite.load_payload(
+    payload = BaseAsyncApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/development_dataset.json"
     )
+
+    create_conflict_payload_expected_detail_pairs = [
+        (
+            payload,
+            f'DevelopmentDataset (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `DevelopmentDataset.get(name="{payload["name"]}")`.',
+        ),
+        (
+            {
+                **payload,
+                "_id": str(ObjectId()),
+            },
+            f'DevelopmentDataset (name: "{payload["name"]}") already exists. '
+            f'Get the existing object by `DevelopmentDataset.get(name="{payload["name"]}")`.',
+        ),
+    ]
+
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {
+                **payload,
+                "_id": str(ObjectId()),
+                "name": "My Development Dataset 2",
+                "development_tables": [
+                    {
+                        "location": {
+                            "feature_store_id": "646f6c190ed28a5271fb02a1",
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_table_sample",
+                            },
+                        },
+                        "table_id": "6337f9651050ee7d59806612",
+                    }
+                ],
+            },
+            "Development table source ids not found: 6337f9651050ee7d59806612",
+        )
+    ]
 
     def setup_creation_route(self, api_client):
         """Setup for post route"""
@@ -138,18 +177,6 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
             mock_execute_query.side_effect = side_effect
             yield mock_execute_query
 
-    def test_create__non_existent_table(self, test_api_client_persistent):
-        """Test create route (non-existent table)"""
-        test_api_client, _ = test_api_client_persistent
-        payload = self.payload.copy()
-        payload["development_tables"] = copy.deepcopy(payload["development_tables"])
-        payload["development_tables"][0]["table_id"] = str(ObjectId("686bd2de38662d2da67a08ec"))
-        response = self.post(test_api_client, payload)
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == (
-            'Table (id: "686bd2de38662d2da67a08ec") not found. Please save the Table object first.'
-        )
-
     def test_update_200(self, test_api_client_persistent, create_success_response):
         """Test update development dataset(success)"""
         test_api_client, _ = test_api_client_persistent
@@ -159,8 +186,26 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
         # check update function parameter
         update_response = test_api_client.patch(
             url=f"{self.base_route}/{doc_id}",
+            json={"name": "new name"},
+        )
+        assert update_response.status_code == HTTPStatus.OK
+        update_response_dict = update_response.json()
+        expected_response_dict = response_dict.copy()
+        expected_response_dict["updated_at"] = update_response_dict["updated_at"]
+        expected_response_dict["name"] = "new name"
+        assert update_response_dict == expected_response_dict
+
+    def test_add_development_tables_200(self, test_api_client_persistent, create_success_response):
+        """Test add development tables(success)"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        expected_response_dict = response_dict.copy()
+        doc_id = response_dict["_id"]
+
+        # add development tables
+        response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}/development_table",
             json={
-                "name": "new name",
                 "development_tables": [
                     {
                         "table_id": "6337f9651050ee7d1234660d",
@@ -176,11 +221,14 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
                 ],
             },
         )
-        assert update_response.status_code == HTTPStatus.OK
-        update_response_dict = update_response.json()
-        expected_response_dict = response_dict.copy()
-        expected_response_dict["updated_at"] = update_response_dict["updated_at"]
-        expected_response_dict["name"] = "new name"
+        assert response.status_code == HTTPStatus.ACCEPTED
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        expected_response_dict["updated_at"] = response_dict["updated_at"]
         expected_response_dict["development_tables"] = [
             {
                 "table_id": "6337f9651050ee7d5980660d",
@@ -205,7 +253,7 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
                 },
             },
         ]
-        assert update_response_dict == expected_response_dict
+        assert response_dict == expected_response_dict
 
     def test_update_404(self, test_api_client_persistent):
         """Test update development dataset(not found)"""
@@ -217,14 +265,16 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
         )
         assert update_response.status_code == HTTPStatus.NOT_FOUND
 
-    def test_update_422__duplicate_table(self, test_api_client_persistent, create_success_response):
+    def test_add_development_tables_422__duplicate_table(
+        self, test_api_client_persistent, create_success_response
+    ):
         """Test update development dataset(duplicate table)"""
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         doc_id = response_dict["_id"]
 
         update_response = test_api_client.patch(
-            url=f"{self.base_route}/{doc_id}",
+            url=f"{self.base_route}/{doc_id}/development_table",
             json={
                 "development_tables": [
                     {
@@ -244,18 +294,20 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert "Duplicate table IDs found in development tables" in update_response.json()["detail"]
 
-    def test_update_422__missing_columns(self, test_api_client_persistent, create_success_response):
+    def test_add_development_tables_failure__missing_columns(
+        self, test_api_client_persistent, create_success_response
+    ):
         """Test update development dataset(missing columns)"""
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         doc_id = response_dict["_id"]
 
-        update_response = test_api_client.patch(
-            url=f"{self.base_route}/{doc_id}",
+        response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}/development_table",
             json={
                 "development_tables": [
                     {
-                        "table_id": "6337f9651050ee7d5980660d",
+                        "table_id": "6337f9651050ee7d1234660d",
                         "location": {
                             "feature_store_id": "646f6c190ed28a5271fb02a1",
                             "table_details": {
@@ -268,13 +320,17 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
                 ]
             },
         )
-        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == HTTPStatus.ACCEPTED
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "FAILURE"
         assert (
-            'Development source for table "sf_event_table" missing required columns: col_binary, col_boolean,'
-            in update_response.json()["detail"]
+            'Development source for table "sf_dimension_table" missing required columns: '
+            "col_binary, col_boolean, col_char, col_float, col_int, col_text, created_at, cust_id, event_timestamp"
+            in response_dict["traceback"]
         )
 
-    def test_update_422__mismatch_column_dtype(
+    def test_add_development_tables_failure__mismatch_column_dtype(
         self, test_api_client_persistent, create_success_response
     ):
         """Test update development dataset(mismatched column dtype)"""
@@ -282,12 +338,12 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
         response_dict = create_success_response.json()
         doc_id = response_dict["_id"]
 
-        update_response = test_api_client.patch(
-            url=f"{self.base_route}/{doc_id}",
+        response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}/development_table",
             json={
                 "development_tables": [
                     {
-                        "table_id": "6337f9651050ee7d5980660d",
+                        "table_id": "6337f9651050ee7d1234660d",
                         "location": {
                             "feature_store_id": "646f6c190ed28a5271fb02a1",
                             "table_details": {
@@ -300,33 +356,37 @@ class TestDevelopmentDatasetApi(BaseCatalogApiTestSuite):
                 ]
             },
         )
-        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == HTTPStatus.ACCEPTED
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "FAILURE"
         assert (
-            'Development source for table "sf_event_table" column type mismatch: cust_id (expected INT, got TIMESTAMP_TZ)'
-            in update_response.json()["detail"]
+            'Development source for table "sf_dimension_table" column type mismatch: '
+            "cust_id (expected INT, got TIMESTAMP_TZ)" in response_dict["traceback"]
         )
 
     def test_delete_200(self, test_api_client_persistent, create_success_response):
-        """Test delete development dataset(success)"""
+        """Test delete route (success)"""
         test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.ACCEPTED, response.json()
 
-        # test delete development dataset
-        response = test_api_client.delete(
-            url=f"{self.base_route}/{create_success_response.json()['_id']}"
-        )
-        assert response.status_code == HTTPStatus.OK
+        # check that the task is completed with success
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["status"] == "SUCCESS", response_dict
 
-        # check the development datasetis deleted
-        response = test_api_client.get(f"{self.base_route}/{create_success_response.json()['_id']}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        # check that the table is deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
     def test_delete_404(self, test_api_client_persistent):
-        """Test delete development dataset(not found)"""
+        """Test delete route (404)"""
         test_api_client, _ = test_api_client_persistent
-
-        random_id = ObjectId()
-        response = test_api_client.delete(url=f"{self.base_route}/{random_id}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        response = test_api_client.delete(f"{self.base_route}/{str(ObjectId())}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
     def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test get info route (200)"""

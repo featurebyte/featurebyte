@@ -46,7 +46,7 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=None,
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
@@ -62,7 +62,7 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
             ]
         ]
 
-    @field_validator("development_tables")
+    @field_validator("development_tables", mode="after")
     @classmethod
     def _validate_development_tables(cls, value: List[DevelopmentTable]) -> List[DevelopmentTable]:
         """

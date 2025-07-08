@@ -228,6 +228,11 @@ from featurebyte.worker.task.catalog_cleanup import CatalogCleanupTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
+from featurebyte.worker.task.development_dataset import (
+    DevelopmentDatasetAddTablesTask,
+    DevelopmentDatasetCreateTask,
+    DevelopmentDatasetDeleteTask,
+)
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
     FeatureJobSettingAnalysisBacktestTask,
@@ -499,6 +504,9 @@ app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
 app_container_config.register_class(TableValidationTask)
 app_container_config.register_class(CatalogCleanupTask)
+app_container_config.register_class(DevelopmentDatasetCreateTask)
+app_container_config.register_class(DevelopmentDatasetDeleteTask)
+app_container_config.register_class(DevelopmentDatasetAddTablesTask)
 app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
 app_container_config.register_class(BlockModificationHandler)

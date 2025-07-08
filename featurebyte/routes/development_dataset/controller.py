@@ -8,20 +8,25 @@ from typing import cast
 
 from bson import ObjectId
 
+from featurebyte.exception import DocumentDeletionError
 from featurebyte.logging import get_logger
-from featurebyte.models.development_dataset import DevelopmentDatasetModel
+from featurebyte.models.development_dataset import DevelopmentDatasetModel, DevelopmentTable
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.development_dataset import (
     DevelopmentDatasetCreate,
     DevelopmentDatasetInfo,
     DevelopmentDatasetList,
+    DevelopmentDatasetServiceUpdate,
     DevelopmentDatasetUpdate,
     DevelopmentTableInfo,
 )
+from featurebyte.schema.task import Task
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.table import TableService
+from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
 
@@ -44,11 +49,15 @@ class DevelopmentDatasetController(
         table_service: TableService,
         feature_store_service: FeatureStoreService,
         catalog_service: CatalogService,
+        task_controller: TaskController,
+        task_manager: TaskManager,
     ):
         super().__init__(development_dataset_service)
         self.table_service = table_service
         self.feature_store_service = feature_store_service
         self.catalog_service = catalog_service
+        self.task_controller = task_controller
+        self.task_manager = task_manager
 
         # retrieve active catalog id and feature store id
         assert development_dataset_service.catalog_id is not None
@@ -68,7 +77,7 @@ class DevelopmentDatasetController(
     async def create_development_dataset(
         self,
         data: DevelopmentDatasetCreate,
-    ) -> DevelopmentDatasetModel:
+    ) -> Task:
         """
         Create Online Store at persistent
 
@@ -79,10 +88,11 @@ class DevelopmentDatasetController(
 
         Returns
         -------
-        DevelopmentDatasetModel
-            Newly created feature store document
+        Task
         """
-        return await self.service.create_document(data)
+        payload = await self.service.get_development_dataset_create_task_payload(data=data)
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
 
     async def update_development_dataset(
         self, development_dataset_id: ObjectId, data: DevelopmentDatasetUpdate
@@ -102,10 +112,62 @@ class DevelopmentDatasetController(
         DevelopmentDatasetModel
             Updated online store document
         """
+        update = DevelopmentDatasetServiceUpdate(**data.model_dump())
         return cast(
             DevelopmentDatasetModel,
-            await self.service.update_document(development_dataset_id, data),
+            await self.service.update_document(development_dataset_id, update),
         )
+
+    async def delete_development_dataset(self, document_id: ObjectId) -> Task:
+        """
+        Delete DevelopmentDataset
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        Task
+        """
+        # check if document exists
+        _ = await self.service.get_document(document_id=document_id)
+
+        # check if document is used by any other documents
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentDeletionError
+        )
+
+        # create task payload & submit task
+        payload = await self.service.get_development_dataset_delete_task_payload(
+            document_id=document_id
+        )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def add_development_tables(
+        self, development_dataset_id: ObjectId, development_tables: list[DevelopmentTable]
+    ) -> Task:
+        """
+        Add development tables to a development dataset
+
+        Parameters
+        ----------
+        development_dataset_id: ObjectId
+            Document ID of the development dataset to which tables will be added
+        development_tables: list[DevelopmentTable]
+            List of DevelopmentTableInfo to be added
+
+        Returns
+        -------
+        Task
+        """
+        payload = await self.service.get_development_dataset_add_tables_task_payload(
+            document_id=development_dataset_id, development_tables=development_tables
+        )
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> DevelopmentDatasetInfo:
         """
