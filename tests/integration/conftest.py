@@ -1913,6 +1913,8 @@ def time_series_table_fixture(
         reference_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
+        datetime_partition_column="reference_datetime_col",
+        datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
     )
     time_series_table.update_default_feature_job_setting(
         CronFeatureJobSetting(
@@ -1947,6 +1949,8 @@ def time_series_table_tz_column_fixture(
         ),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
+        datetime_partition_column="reference_datetime_col",
+        datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
     )
     time_series_table.update_default_feature_job_setting(
         CronFeatureJobSetting(
