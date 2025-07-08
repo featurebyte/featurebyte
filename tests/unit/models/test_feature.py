@@ -127,15 +127,11 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "user_defined_function_ids": [],
         "block_modification_by": [],
         "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
-        "aggregation_result_names": [
-            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-            "_fb_internal_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-            "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
-        ],
+        "aggregation_result_names": [],
         "agg_result_name_include_serving_names": False,
         "description": None,
         "definition_hash": None,
-        "online_store_table_names": ["ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"],
+        "online_store_table_names": [],
         "last_updated_by_scheduled_task_at": None,
         "is_deleted": False,
     }
