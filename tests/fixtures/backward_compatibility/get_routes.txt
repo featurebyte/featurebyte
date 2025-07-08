@@ -6,6 +6,7 @@
 /deployment
 /deployment/all/
 /deployment/summary/
+/development_dataset
 /dimension_table
 /entity
 /event_table
