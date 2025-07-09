@@ -2,6 +2,8 @@
 Tests for featurebyte.query_graph.feature_historical.py
 """
 
+from datetime import datetime
+
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
@@ -9,7 +11,12 @@ from pandas.testing import assert_frame_equal
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    REQUEST_TABLE_NAME,
+    PartitionColumnFilter,
+    PartitionColumnFilters,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     convert_point_in_time_dtype_if_needed,
@@ -228,5 +235,54 @@ def test_get_historical_feature_query_set__on_demand_tile_tables(
     assert_equal_with_expected_fixture(
         output_query,
         "tests/fixtures/expected_historical_requests_on_demand_tile_tables.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_historical_feature_query_set__partition_column_filters(
+    ts_window_aggregate_feature,
+    snowflake_time_series_table,
+    output_table_details,
+    update_fixtures,
+    source_info,
+):
+    """
+    Test historical features table when partition column filters are provided
+    """
+    feature = ts_window_aggregate_feature
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    partition_column_filters = PartitionColumnFilters(
+        mapping={
+            snowflake_time_series_table.id: PartitionColumnFilter(
+                from_timestamp=datetime(2023, 1, 1, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+            )
+        }
+    )
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=feature.graph,
+        nodes=[feature.node],
+        request_table_columns=request_table_columns,
+        source_info=source_info,
+        output_table_details=output_table_details,
+        output_feature_names=[feature.name],
+        output_include_row_index=True,
+        partition_column_filters=partition_column_filters,
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    )
+    assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
+    output_query = feature_query_set_to_string(query_set, [feature.node], source_info)
+    assert (
+        "\"date\" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')"
+        in output_query
+    )
+    assert (
+        "\"date\" <= TO_CHAR(CAST('2023-06-01 00:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')"
+        in output_query
+    )
+    assert_equal_with_expected_fixture(
+        output_query,
+        "tests/fixtures/expected_historical_requests_partition_column_filters.sql",
         update_fixture=update_fixtures,
     )

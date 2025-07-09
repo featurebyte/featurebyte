@@ -1516,6 +1516,10 @@ def snowflake_time_series_table_fixture(
         record_creation_timestamp_column="created_at",
         description="test time series table",
         _id=snowflake_time_series_table_id,
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
     )
     assert time_series_table.frame.node.parameters.id == time_series_table.id
     assert time_series_table.id == snowflake_time_series_table_id
