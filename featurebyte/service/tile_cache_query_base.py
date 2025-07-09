@@ -14,7 +14,7 @@ from featurebyte.models import FeatureStoreModel
 from featurebyte.models.tile_cache import OnDemandTileComputeRequestSet, TileInfoKey
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import apply_serving_names_mapping
+from featurebyte.query_graph.sql.common import PartitionColumnFilters, apply_serving_names_mapping
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
@@ -36,6 +36,7 @@ class BaseTileCacheQueryService:
         graph: QueryGraph,
         nodes: list[Node],
         request_table_name: str,
+        partition_column_filters: Optional[PartitionColumnFilters],
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
@@ -55,6 +56,8 @@ class BaseTileCacheQueryService:
             List of query graph node
         request_table_name : str
             Request table name to use
+        partition_column_filters : Optional[PartitionColumnFilters]
+            Optional partition column filters to apply
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -74,6 +77,7 @@ class BaseTileCacheQueryService:
             graph,
             nodes,
             session.get_source_info(),
+            partition_column_filters,
             serving_names_mapping,
             graph_progress,
         )
@@ -144,6 +148,7 @@ class BaseTileCacheQueryService:
         graph: QueryGraph,
         nodes: list[Node],
         source_info: SourceInfo,
+        partition_column_filters: Optional[PartitionColumnFilters],
         serving_names_mapping: dict[str, str] | None,
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> list[TileGenSql]:
@@ -157,6 +162,8 @@ class BaseTileCacheQueryService:
             List of query graph node
         source_info : SourceInfo
             Source information
+        partition_column_filters : Optional[PartitionColumnFilters]
+            Partition column filters to apply when constructing tile SQL
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -169,7 +176,9 @@ class BaseTileCacheQueryService:
         out = []
         interpreter = GraphInterpreter(graph, source_info=source_info)
         for i, node in enumerate(nodes):
-            infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
+            infos = interpreter.construct_tile_gen_sql(
+                node, is_on_demand=True, partition_column_filters=partition_column_filters
+            )
             for info in infos:
                 if serving_names_mapping is not None:
                     info.serving_names = apply_serving_names_mapping(

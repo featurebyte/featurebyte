@@ -27,7 +27,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, PartitionColumnFilters
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
@@ -72,6 +72,7 @@ async def compute_tiles_on_demand(
     feature_store_id: ObjectId,
     serving_names_mapping: Optional[dict[str, str]],
     temp_tile_tables_tag: str,
+    partition_column_filters: Optional[PartitionColumnFilters],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
@@ -102,6 +103,8 @@ async def compute_tiles_on_demand(
         columns than those defined in Entities
     temp_tile_tables_tag: str
         Tag to identify the temporary tile tables for cleanup purpose
+    partition_column_filters: Optional[PartitionColumnFilters]
+        Optional partition column filters to apply
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -140,6 +143,7 @@ async def compute_tiles_on_demand(
             feature_store_id=feature_store_id,
             serving_names_mapping=serving_names_mapping,
             temp_tile_tables_tag=temp_tile_tables_tag,
+            partition_column_filters=partition_column_filters,
             progress_callback=progress_callback,
             raise_on_error=raise_on_error,
         )
@@ -286,6 +290,7 @@ async def get_historical_features(
     # Get column statistics info
     column_statistics_info = await column_statistics_service.get_column_statistics_info()
 
+    # Get partition column filters if applicable (requires information from the observation table)
     if (
         observation_table_model is not None
         and observation_table_model.least_recent_point_in_time is not None
@@ -324,6 +329,7 @@ async def get_historical_features(
             feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
             temp_tile_tables_tag=temp_tile_tables_tag,
+            partition_column_filters=partition_column_filters,
             parent_serving_preparation=parent_serving_preparation,
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
