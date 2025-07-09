@@ -87,16 +87,18 @@ class BuildTileNode(TableNode):
         timestamp_column = TileTableInputColumn(
             name=self.timestamp, expr=self.input_node.columns_map[self.timestamp]
         )
-        if self.timestamp_metadata is None:
-            timestamp_expr = self.context.adapter.convert_to_utc_timestamp(
-                quoted_identifier(self.timestamp)
-            )
-        else:
-            assert self.timestamp_metadata.timestamp_schema is not None
+        if (
+            self.timestamp_metadata is not None
+            and self.timestamp_metadata.timestamp_schema is not None
+        ):
             timestamp_expr = convert_timestamp_to_utc(
                 quoted_identifier(self.timestamp),
                 self.timestamp_metadata.timestamp_schema,
                 self.adapter,
+            )
+        else:
+            timestamp_expr = self.context.adapter.convert_to_utc_timestamp(
+                quoted_identifier(self.timestamp)
             )
         tile_index_expr = alias_(
             self.adapter.call_udf(
