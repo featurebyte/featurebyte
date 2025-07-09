@@ -24,7 +24,13 @@ def get_relativedeltas_from_window_aggregate_params(
     parameters: BaseWindowAggregateParameters,
 ) -> Optional[list[relativedelta]]:
     """
-    Get relativedeltas from window aggregate parameters.
+    Get relativedeltas representing feature derivation window sizes from window aggregate
+    parameters.
+
+    Parameters
+    ----------
+    parameters: BaseWindowAggregateParameters
+        The window aggregate parameters containing the windows and optional offset.
 
     Returns
     -------
@@ -44,9 +50,14 @@ def get_relativedeltas_from_window_aggregate_params(
 
 def get_relativedeltas_from_time_series_params(
     parameters: TimeSeriesWindowAggregateParameters,
-) -> Optional[list[relativedelta]]:
+) -> list[relativedelta]:
     """
-    Get relativedeltas from time series window aggregate parameters.
+    Get relativedeltas representing feature derivation window sizes from time series parameters.
+
+    Parameters
+    ----------
+    parameters: TimeSeriesWindowAggregateParameters
+        The time series window aggregate parameters containing the windows and optional offset.
 
     Returns
     -------
@@ -123,6 +134,11 @@ def get_partition_filters_from_graph(
         The maximum point in time to consider for partition filtering
     buffer: Optional[relativedelta]
         A buffer to add to the partition filter range, defaults to 3 months if None
+
+    Returns
+    -------
+    PartitionColumnFilters
+        The partition column filters derived from the query graph.
     """
     if buffer is None:
         buffer = relativedelta(months=3)
@@ -149,6 +165,8 @@ def get_partition_filters_from_graph(
                 assert table_id is not None
                 input_node_infos[input_node.name] = InputNodeWindowInfo(table_id=table_id)
             if relativedeltas is None:
+                # If the get_relativedeltas functions return None, it means the windows are
+                # unbounded
                 input_node_infos[input_node.name].has_unbounded_window = True
             else:
                 for delta in relativedeltas:
@@ -162,7 +180,7 @@ def get_partition_filters_from_graph(
             from_timestamp = (
                 min_point_in_time + (-1 * input_node_info.largest_window) + (-1 * buffer)
             )
-            to_timestamp = max_point_in_time + input_node_info.largest_window + buffer
+            to_timestamp = max_point_in_time + buffer
             mapping[input_node_info.table_id] = PartitionColumnFilter(
                 from_timestamp=from_timestamp,
                 to_timestamp=to_timestamp,
