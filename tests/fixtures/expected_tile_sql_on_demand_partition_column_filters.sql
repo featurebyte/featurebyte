@@ -8,7 +8,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
     SELECT
       "event_timestamp" AS "event_timestamp",
       "cust_id" AS "cust_id",
-      "col_int" AS "input_col_sum_fd6e13fefe228f132931e13dbdc31b2b037c2b74"
+      "col_int" AS "input_col_sum_7243332f802124bbc68aa258dbf80f53599a0c5b"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
       "col_text" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')
@@ -21,7 +21,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
 SELECT
   index,
   "cust_id",
-  SUM("input_col_sum_fd6e13fefe228f132931e13dbdc31b2b037c2b74") AS value_sum_fd6e13fefe228f132931e13dbdc31b2b037c2b74
+  SUM("input_col_sum_7243332f802124bbc68aa258dbf80f53599a0c5b") AS value_sum_7243332f802124bbc68aa258dbf80f53599a0c5b
 FROM (
   SELECT
     *,

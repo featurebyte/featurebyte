@@ -60,7 +60,9 @@
                 "timestamp_tuple_schema": null
             },
             "name": "date",
-            "partition_metadata": null
+            "partition_metadata": {
+                "is_partition_key": true
+            }
         },
         {
             "description": null,

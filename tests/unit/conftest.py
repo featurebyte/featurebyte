@@ -1330,6 +1330,7 @@ def snowflake_event_table_with_partition_column_fixture(
         datetime_partition_schema=TimestampSchema(
             format_string="%Y-%m-%d %H:%M:%S",
         ),
+        _id=snowflake_event_table_with_partition_column_id,
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
