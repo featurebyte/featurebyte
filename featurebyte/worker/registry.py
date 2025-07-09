@@ -14,6 +14,11 @@ from featurebyte.worker.task.catalog_cleanup import CatalogCleanupTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
+from featurebyte.worker.task.development_dataset import (
+    DevelopmentDatasetAddTablesTask,
+    DevelopmentDatasetCreateTask,
+    DevelopmentDatasetDeleteTask,
+)
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
     FeatureJobSettingAnalysisBacktestTask,
@@ -66,6 +71,9 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TEST: TestTask,
     WorkerCommand.IO_TEST: TestIOTask,
     WorkerCommand.CATALOG_CLEANUP: CatalogCleanupTask,
+    WorkerCommand.DEVELOPMENT_DATASET_CREATE: DevelopmentDatasetCreateTask,
+    WorkerCommand.DEVELOPMENT_DATASET_DELETE: DevelopmentDatasetDeleteTask,
+    WorkerCommand.DEVELOPMENT_DATASET_ADD_TABLES: DevelopmentDatasetAddTablesTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
 }

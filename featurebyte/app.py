@@ -23,6 +23,7 @@ from featurebyte.routes.catalog.api import CatalogRouter
 from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
 from featurebyte.routes.deployment.api import DeploymentRouter
+from featurebyte.routes.development_dataset.api import DevelopmentDatasetRouter
 from featurebyte.routes.dimension_table.api import DimensionTableRouter
 from featurebyte.routes.entity.api import EntityRouter
 from featurebyte.routes.event_table.api import EventTableRouter
@@ -254,6 +255,7 @@ def get_app() -> FastAPI:
         UseCaseRouter(),
         UserDefinedFunctionRouter(),
         ManagedViewRouter(),
+        DevelopmentDatasetRouter(),
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in catalog_specific_routers:
