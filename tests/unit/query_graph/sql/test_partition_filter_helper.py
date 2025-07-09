@@ -10,6 +10,15 @@ from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionC
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 
 
+@pytest.fixture(name="input_node_has_id", autouse=True)
+def input_node_has_id_fixture():
+    """
+    Override the default value for this fixture so that input_node has an ID (required to activate
+    partition filters)
+    """
+    return True
+
+
 @pytest.fixture(name="min_max_point_in_time")
 def min_max_point_in_time_fixture():
     """
@@ -135,14 +144,12 @@ def test_scd_lookup_feature(global_graph, scd_lookup_feature_node, min_max_point
 
 def test_latest_feature_with_unbounded_window(
     global_graph,
-    window_aggregate_on_view_with_scd_join_feature_node,
     latest_value_offset_without_window_feature_node,
     min_max_point_in_time,
 ):
     """
     Test that partition filters are not generated for latest features with unbounded windows
     """
-    _ = window_aggregate_on_view_with_scd_join_feature_node
     _ = latest_value_offset_without_window_feature_node
     partition_column_filters = get_partition_filters_from_graph(
         global_graph,

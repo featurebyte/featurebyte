@@ -150,8 +150,16 @@ def entity_id_fixture():
     return ObjectId("63dbe68cd918ef71acffd127")
 
 
+@pytest.fixture(name="input_node_has_id")
+def input_node_has_id_fixture():
+    """
+    Fixture that determines whether the input node's parameters have an id field.
+    """
+    return False
+
+
 @pytest.fixture(name="input_node")
-def input_node_fixture(global_graph, input_details):
+def input_node_fixture(global_graph, input_details, input_node_has_id, event_table_id):
     """Fixture of a query with some operations ready to run groupby"""
 
     node_params = {
@@ -166,6 +174,8 @@ def input_node_fixture(global_graph, input_details):
         ],
         "timestamp_column": "ts",
     }
+    if input_node_has_id:
+        node_params["id"] = event_table_id
     node_params.update(input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
@@ -312,7 +322,6 @@ def event_table_input_node_parameters_fixture(global_graph, input_details):
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "order_id", "dtype": DBVarType.INT},
             {"name": "order_method", "dtype": DBVarType.VARCHAR},
-            {"name": "a", "dtype": DBVarType.FLOAT},
         ],
         "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
@@ -1463,10 +1472,10 @@ def latest_value_groupby_node_parameters_fixture():
 
 @pytest.fixture(name="latest_value_without_window_feature_node")
 def latest_value_without_window_feature_node_fixture(
-    global_graph, event_table_input_node_with_id, latest_value_groupby_node_parameters
+    global_graph, input_node, latest_value_groupby_node_parameters
 ):
     groupby_node = add_groupby_operation(
-        global_graph, latest_value_groupby_node_parameters, event_table_input_node_with_id
+        global_graph, latest_value_groupby_node_parameters, input_node
     )
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -1479,11 +1488,11 @@ def latest_value_without_window_feature_node_fixture(
 
 @pytest.fixture(name="latest_value_offset_without_window_feature_node")
 def latest_value_offset_without_window_feature_node_fixture(
-    global_graph, event_table_input_node_with_id, latest_value_groupby_node_parameters
+    global_graph, input_node, latest_value_groupby_node_parameters
 ):
     node_params = copy.deepcopy(latest_value_groupby_node_parameters)
     node_params.update({"offset": "48h", "names": ["a_latest_value_offset_48h"]})
-    groupby_node = add_groupby_operation(global_graph, node_params, event_table_input_node_with_id)
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_latest_value_offset_48h"]},
@@ -1494,7 +1503,7 @@ def latest_value_offset_without_window_feature_node_fixture(
 
 
 @pytest.fixture(name="window_aggregate_with_offset_feature_node")
-def window_aggregate_with_offset_feature_node(global_graph, event_table_input_node_with_id):
+def window_aggregate_with_offset_feature_node(global_graph, input_node):
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
@@ -1510,7 +1519,7 @@ def window_aggregate_with_offset_feature_node(global_graph, event_table_input_no
         "offset": "8h",
         "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
     }
-    groupby_node = add_groupby_operation(global_graph, node_params, event_table_input_node_with_id)
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_sum_24h_offset_8h"]},
