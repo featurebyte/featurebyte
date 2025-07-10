@@ -3,7 +3,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
-    SYSDATE() AS POINT_IN_TIME
+    CAST('2023-10-01 12:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
 ), "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
   SELECT

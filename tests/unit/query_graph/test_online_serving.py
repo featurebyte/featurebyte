@@ -2,6 +2,7 @@
 Tests for featurebyte.query_graph.sql.online_serving
 """
 
+from datetime import datetime
 from typing import List
 
 import pandas as pd
@@ -360,6 +361,7 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_name="MY_REQUEST_TABLE",
+        request_timestamp=datetime(2023, 10, 1, 12, 0, 0),
         versions=versions_mapping,
     )
     sql = feature_query_set_to_string(feature_query_set, nodes, source_info)
@@ -391,6 +393,7 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_name="REQUEST_TABLE_1234",
+        request_timestamp=datetime(2023, 10, 1, 12, 0, 0),
         versions=versions_mapping,
     )
     sql = feature_query_set_to_string(

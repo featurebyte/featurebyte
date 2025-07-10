@@ -23,7 +23,6 @@ from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import (
@@ -230,30 +229,22 @@ def get_online_store_retrieval_expr(
     return output
 
 
-def get_current_timestamp_expr(
-    request_timestamp: Optional[datetime], source_info: SourceInfo
-) -> Expression:
+def get_current_timestamp_expr(request_timestamp: datetime) -> Expression:
     """
     Get the sql expression to use for the current timestamp
 
     Parameters
     ----------
-    request_timestamp: Optional[datetime]
+    request_timestamp: datetime
         The timestamp value to use as the point-in-time
-    source_info: SourceInfo
-        Source information
 
     Returns
     -------
     Expression
     """
-    adapter = get_sql_adapter(source_info)
-    if request_timestamp is None:
-        current_timestamp_expr = adapter.current_timestamp()
-    else:
-        if request_timestamp.tzinfo is not None:
-            request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
-        current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
+    if request_timestamp.tzinfo is not None:
+        request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
+    current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     return current_timestamp_expr
 
 
@@ -400,9 +391,9 @@ def get_online_features_query_set(
     request_table_columns: list[str],
     output_feature_names: list[str],
     request_table_name: str,
+    request_timestamp: datetime,
     request_table_expr: Optional[expressions.Select] = None,
     request_table_details: Optional[TableDetails] = None,
-    request_timestamp: Optional[datetime] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
     output_include_row_index: bool = False,
@@ -433,12 +424,12 @@ def get_online_features_query_set(
         Whether to include the TABLE_ROW_INDEX column in the output
     request_table_name: str
         Name of the registered request table
+    request_timestamp: datetime
+        The timestamp value to use as the point-in-time
     request_table_expr: Optional[expressions.Select]
         Sql expression for the request table
     request_table_details: Optional[TableDetails]
         Location of the request table in the data warehouse
-    request_timestamp: Optional[datetime]
-        The timestamp value to use as the point-in-time
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     job_schedule_table_set: Optional[JobScheduleTableSet]
@@ -453,7 +444,7 @@ def get_online_features_query_set(
     -------
     FeatureQuerySet
     """
-    current_timestamp_expr = get_current_timestamp_expr(request_timestamp, source_info)
+    current_timestamp_expr = get_current_timestamp_expr(request_timestamp)
     feature_query_generator = OnlineFeatureQueryGenerator(
         graph=graph,
         nodes=nodes,
@@ -574,11 +565,15 @@ async def get_online_features(
         assert request_table_details is not None
         request_table_name = request_table_details.table_name
 
+    # Determine the request timestamp to use
+    if request_timestamp is None:
+        request_timestamp = datetime.utcnow()
+
     # Register job schedule tables if necessary
     cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
-        request_timestamp=request_timestamp or datetime.utcnow(),
+        request_timestamp=request_timestamp,
         cron_feature_job_settings=cron_feature_job_settings,
     )
 
@@ -593,10 +588,10 @@ async def get_online_features(
             request_table_columns=request_table_columns,
             output_feature_names=get_feature_names(graph, nodes),
             request_table_name=request_table_name,
+            request_timestamp=request_timestamp,
             request_table_expr=request_table_expr,
             request_table_details=request_table_details,
             parent_serving_preparation=parent_serving_preparation,
-            request_timestamp=request_timestamp,
             output_table_details=output_table_details,
             output_include_row_index=request_table_details is None,
             concatenate_serving_names=concatenate_serving_names,
