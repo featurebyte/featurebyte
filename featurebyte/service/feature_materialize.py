@@ -50,6 +50,7 @@ from featurebyte.query_graph.sql.online_serving import (
     get_online_features,
 )
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.deployment import DeploymentService
@@ -225,6 +226,7 @@ class FeatureMaterializeService:
         system_metrics_service: SystemMetricsService,
         deployed_tile_table_service: DeployedTileTableService,
         catalog_service: CatalogService,
+        column_statistics_service: ColumnStatisticsService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -241,6 +243,7 @@ class FeatureMaterializeService:
         self.system_metrics_service = system_metrics_service
         self.deployed_tile_table_service = deployed_tile_table_service
         self.catalog_service = catalog_service
+        self.column_statistics_service = column_statistics_service
         self.redis = redis
 
     @asynccontextmanager
@@ -357,6 +360,7 @@ class FeatureMaterializeService:
                     system_metrics_service=self.system_metrics_service,
                 ),
                 cron_helper=self.cron_helper,
+                column_statistics_service=self.column_statistics_service,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,

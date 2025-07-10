@@ -221,6 +221,7 @@ if __name__ == "__main__":
                     "featurebyte.session.time_formatter",  # featurebyte/query_graph/node/date.py
                     "featurebyte.service.online_store_table_version",  # query_graph/sql/online_serving.py
                     "featurebyte.service.cron_helper",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.column_statistics",  # query_graph/sql/online_serving.py
                 }
             ),
             "no_import_from": BACKEND_ONLY_MODS.union(CLIENT_ONLY_MODS),

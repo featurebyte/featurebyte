@@ -44,6 +44,7 @@ from featurebyte.query_graph.sql.entity import (
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.entity import EntityService
@@ -94,6 +95,7 @@ class OnlineServingService:
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         deployed_tile_table_service: DeployedTileTableService,
+        column_statistics_service: ColumnStatisticsService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -109,6 +111,7 @@ class OnlineServingService:
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.deployed_tile_table_service = deployed_tile_table_service
+        self.column_statistics_service = column_statistics_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -187,6 +190,7 @@ class OnlineServingService:
                 system_metrics_service=self.system_metrics_service,
             ),
             cron_helper=self.cron_helper,
+            column_statistics_service=self.column_statistics_service,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,
