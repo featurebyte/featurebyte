@@ -50,9 +50,9 @@ from featurebyte.query_graph.sql.feature_compute import (
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
-from featurebyte.service.column_statistics import ColumnStatisticsService
 
 if TYPE_CHECKING:
+    from featurebyte.service.column_statistics import ColumnStatisticsService
     from featurebyte.service.cron_helper import CronHelper
 
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
