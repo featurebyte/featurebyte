@@ -10,7 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import Query, Request, Response
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.catalog import CatalogModel, CatalogNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -99,13 +99,13 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             response_model=List[CatalogNameHistoryEntry],
         )
 
-    async def get_object(self, request: Request, catalog_id: PyObjectId) -> CatalogModel:
+    async def get_object(self, request: Request, catalog_id: PydanticObjectId) -> CatalogModel:
         return await super().get_object(request, catalog_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -117,7 +117,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         )
 
     async def update_description(
-        self, request: Request, catalog_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, catalog_id: PydanticObjectId, data: DescriptionUpdate
     ) -> CatalogModel:
         return await super().update_description(request, catalog_id, data)
 
@@ -134,7 +134,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def get_catalog_info(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         verbose: bool = VerboseQuery,
     ) -> CatalogInfo:
         """
@@ -150,7 +150,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def update_catalog(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         data: CatalogUpdate,
     ) -> CatalogModel:
         """
@@ -166,7 +166,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def update_catalog_online_store(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         data: CatalogOnlineStoreUpdate,
     ) -> CatalogModel:
         """
@@ -182,7 +182,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def update_catalog_online_store_async(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         data: CatalogOnlineStoreUpdate,
         response: Response,
     ) -> Optional[Task]:
@@ -203,7 +203,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def delete_catalog(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
         soft_delete: bool = Query(default=True),
     ) -> None:
         """
@@ -213,7 +213,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         ----------
         request: Request
             Request
-        catalog_id: PyObjectId
+        catalog_id: PydanticObjectId
             Catalog ID
         soft_delete: Optional[str]
             Soft delete
@@ -227,7 +227,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     async def list_name_history(
         self,
         request: Request,
-        catalog_id: PyObjectId,
+        catalog_id: PydanticObjectId,
     ) -> List[CatalogNameHistoryEntry]:
         """
         List catalog name history

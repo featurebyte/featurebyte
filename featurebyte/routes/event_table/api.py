@@ -10,7 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -103,13 +103,15 @@ class EventTableRouter(
             response_model=List[FeatureJobSettingHistoryEntry],
         )
 
-    async def get_object(self, request: Request, event_table_id: PyObjectId) -> EventTableModel:
+    async def get_object(
+        self, request: Request, event_table_id: PydanticObjectId
+    ) -> EventTableModel:
         return await super().get_object(request, event_table_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        event_table_id: PyObjectId,
+        event_table_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -127,7 +129,7 @@ class EventTableRouter(
         )
 
     async def update_description(
-        self, request: Request, event_table_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, event_table_id: PydanticObjectId, data: DescriptionUpdate
     ) -> EventTableModel:
         return await super().update_description(request, event_table_id, data)
 
@@ -136,7 +138,7 @@ class EventTableRouter(
         return await controller.create_table(data=data)
 
     async def get_event_table_info(
-        self, request: Request, event_table_id: PyObjectId, verbose: bool = VerboseQuery
+        self, request: Request, event_table_id: PydanticObjectId, verbose: bool = VerboseQuery
     ) -> EventTableInfo:
         """
         Retrieve event table info
@@ -149,7 +151,7 @@ class EventTableRouter(
         return info
 
     async def update_event_table(
-        self, request: Request, event_table_id: PyObjectId, data: EventTableUpdate
+        self, request: Request, event_table_id: PydanticObjectId, data: EventTableUpdate
     ) -> EventTableModel:
         """
         Update event table
@@ -162,7 +164,7 @@ class EventTableRouter(
         return event_table
 
     async def update_column_entity(
-        self, request: Request, event_table_id: PyObjectId, data: ColumnEntityUpdate
+        self, request: Request, event_table_id: PydanticObjectId, data: ColumnEntityUpdate
     ) -> EventTableModel:
         """
         Update column entity
@@ -178,7 +180,7 @@ class EventTableRouter(
     async def update_column_critical_data_info(
         self,
         request: Request,
-        event_table_id: PyObjectId,
+        event_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
     ) -> EventTableModel:
         """
@@ -195,7 +197,7 @@ class EventTableRouter(
     async def update_column_description(
         self,
         request: Request,
-        event_table_id: PyObjectId,
+        event_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
     ) -> EventTableModel:
         """
@@ -212,7 +214,7 @@ class EventTableRouter(
     async def list_default_feature_job_setting_history(
         self,
         request: Request,
-        event_table_id: PyObjectId,
+        event_table_id: PydanticObjectId,
     ) -> List[FeatureJobSettingHistoryEntry]:
         """
         List EventTable default feature job settings history
@@ -231,7 +233,9 @@ class EventTableRouter(
             for record in history_values
         ]
 
-    async def delete_object(self, request: Request, event_table_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(
+        self, request: Request, event_table_id: PydanticObjectId
+    ) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=ObjectId(event_table_id))
         return DeleteResponse()

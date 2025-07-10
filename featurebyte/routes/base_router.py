@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.routing import APIRoute
 from starlette.routing import BaseRoute
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
@@ -147,7 +147,7 @@ class BaseApiRouter(
         app_container: LazyAppContainer = request.state.app_container
         return cast(ControllerT, app_container.get(cls.controller))
 
-    async def get_object(self, request: Request, object_id: PyObjectId) -> ObjectModelT:
+    async def get_object(self, request: Request, object_id: PydanticObjectId) -> ObjectModelT:
         """
         Get table
         """
@@ -188,7 +188,7 @@ class BaseApiRouter(
             ),
         )
 
-    async def delete_object(self, request: Request, object_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(self, request: Request, object_id: PydanticObjectId) -> DeleteResponse:
         """
         Delete object
         """
@@ -199,7 +199,7 @@ class BaseApiRouter(
     async def list_audit_logs(
         self,
         request: Request,
-        object_id: PyObjectId,
+        object_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -220,7 +220,7 @@ class BaseApiRouter(
         return audit_doc_list
 
     async def update_description(
-        self, request: Request, object_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, object_id: PydanticObjectId, data: DescriptionUpdate
     ) -> ObjectModelT:
         """
         Update description

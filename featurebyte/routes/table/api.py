@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.proxy_table import TableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -59,7 +59,7 @@ async def list_table(
 
 
 @router.get("/{table_id}", response_model=TableModel)
-async def get_table(request: Request, table_id: PyObjectId) -> TableModel:
+async def get_table(request: Request, table_id: PydanticObjectId) -> TableModel:
     """
     Retrieve Table
     """

@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Query, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
@@ -40,12 +40,12 @@ async def list_metrics(
     sort_by: Optional[str] = SortByQuery,
     sort_dir: Optional[SortDir] = SortDirQuery,
     metrics_type: Optional[str] = Query(default=None),
-    historical_feature_table_id: Optional[PyObjectId] = Query(default=None),
+    historical_feature_table_id: Optional[PydanticObjectId] = Query(default=None),
     tile_table_id: Optional[str] = Query(default=None),
-    offline_store_feature_table_id: Optional[PyObjectId] = Query(default=None),
-    deployment_id: Optional[PyObjectId] = Query(default=None),
-    observation_table_id: Optional[PyObjectId] = Query(default=None),
-    batch_feature_table_id: Optional[PyObjectId] = Query(default=None),
+    offline_store_feature_table_id: Optional[PydanticObjectId] = Query(default=None),
+    deployment_id: Optional[PydanticObjectId] = Query(default=None),
+    observation_table_id: Optional[PydanticObjectId] = Query(default=None),
+    batch_feature_table_id: Optional[PydanticObjectId] = Query(default=None),
 ) -> SystemMetricsList:
     """
     List system metrics

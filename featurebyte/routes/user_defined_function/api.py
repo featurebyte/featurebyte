@@ -7,7 +7,7 @@ from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -56,7 +56,7 @@ async def create_user_defined_function(
 
 @router.get("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
 async def get_user_defined_function(
-    request: Request, user_defined_function_id: PyObjectId
+    request: Request, user_defined_function_id: PydanticObjectId
 ) -> UserDefinedFunctionResponse:
     """
     Get UserDefinedFunction
@@ -68,7 +68,7 @@ async def get_user_defined_function(
 
 @router.patch("/{user_defined_function_id}", response_model=UserDefinedFunctionResponse)
 async def update_user_defined_function(
-    request: Request, user_defined_function_id: PyObjectId, data: UserDefinedFunctionUpdate
+    request: Request, user_defined_function_id: PydanticObjectId, data: UserDefinedFunctionUpdate
 ) -> UserDefinedFunctionResponse:
     """
     Update UserDefinedFunction
@@ -82,7 +82,7 @@ async def update_user_defined_function(
 
 @router.delete("/{user_defined_function_id}", response_model=DeleteResponse)
 async def delete_user_defined_function(
-    request: Request, user_defined_function_id: PyObjectId
+    request: Request, user_defined_function_id: PydanticObjectId
 ) -> DeleteResponse:
     """
     Delete UserDefinedFunction
@@ -101,7 +101,7 @@ async def list_user_defined_functions(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-    feature_store_id: Optional[PyObjectId] = None,
+    feature_store_id: Optional[PydanticObjectId] = None,
 ) -> UserDefinedFunctionList:
     """
     List UserDefinedFunctions
@@ -121,7 +121,7 @@ async def list_user_defined_functions(
 @router.get("/audit/{user_defined_function_id}", response_model=AuditDocumentList)
 async def get_user_defined_function_audit_log(
     request: Request,
-    user_defined_function_id: PyObjectId,
+    user_defined_function_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -144,7 +144,7 @@ async def get_user_defined_function_audit_log(
 
 @router.get("/{user_defined_function_id}/info", response_model=UserDefinedFunctionInfo)
 async def get_user_defined_function_info(
-    request: Request, user_defined_function_id: PyObjectId, verbose: bool = VerboseQuery
+    request: Request, user_defined_function_id: PydanticObjectId, verbose: bool = VerboseQuery
 ) -> UserDefinedFunctionInfo:
     """
     Get UserDefinedFunction info
@@ -157,7 +157,7 @@ async def get_user_defined_function_info(
 @router.patch("/{user_defined_function_id}/description", response_model=UserDefinedFunctionResponse)
 async def update_user_defined_function_description(
     request: Request,
-    user_defined_function_id: PyObjectId,
+    user_defined_function_id: PydanticObjectId,
     data: DescriptionUpdate,
 ) -> UserDefinedFunctionResponse:
     """
