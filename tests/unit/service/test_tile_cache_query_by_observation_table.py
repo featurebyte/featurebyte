@@ -50,6 +50,7 @@ async def test_get_required_computation(
                 production_ready_feature.graph.get_node_by_name(production_ready_feature.node_name)
             ],
             request_table_name="my_request_table",
+            partition_column_filters=None,
         )
 
     request_set = await _get_required_computation()

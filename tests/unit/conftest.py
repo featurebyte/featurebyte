@@ -1330,6 +1330,7 @@ def snowflake_event_table_with_partition_column_fixture(
         datetime_partition_schema=TimestampSchema(
             format_string="%Y-%m-%d %H:%M:%S",
         ),
+        _id=snowflake_event_table_with_partition_column_id,
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
@@ -1516,6 +1517,10 @@ def snowflake_time_series_table_fixture(
         record_creation_timestamp_column="created_at",
         description="test time series table",
         _id=snowflake_time_series_table_id,
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
     )
     assert time_series_table.frame.node.parameters.id == time_series_table.id
     assert time_series_table.id == snowflake_time_series_table_id
@@ -2282,6 +2287,28 @@ def float_feature_with_event_timestamp_schema_fixture(
     """
     snowflake_event_table_with_timestamp_schema.cust_id.as_entity(cust_id_entity.name)
     event_view = snowflake_event_table_with_timestamp_schema.get_view()
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    feature = feature.astype(float)
+    feature.name = "sum_30m"
+    feature.save()
+    return feature
+
+
+@pytest.fixture(name="float_feature_with_partition_column")
+def float_feature_with_partition_column_fixture(
+    snowflake_event_table_with_partition_column, cust_id_entity, feature_group_feature_job_setting
+):
+    """
+    Get a non-time-based feature with event timestamp schema
+    """
+    snowflake_event_table_with_partition_column.cust_id.as_entity(cust_id_entity.name)
+    event_view = snowflake_event_table_with_partition_column.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="sum",

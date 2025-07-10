@@ -150,8 +150,16 @@ def entity_id_fixture():
     return ObjectId("63dbe68cd918ef71acffd127")
 
 
+@pytest.fixture(name="input_node_has_id")
+def input_node_has_id_fixture():
+    """
+    Fixture that determines whether the input node's parameters have an id field.
+    """
+    return False
+
+
 @pytest.fixture(name="input_node")
-def input_node_fixture(global_graph, input_details):
+def input_node_fixture(global_graph, input_details, input_node_has_id, event_table_id):
     """Fixture of a query with some operations ready to run groupby"""
 
     node_params = {
@@ -166,6 +174,8 @@ def input_node_fixture(global_graph, input_details):
         ],
         "timestamp_column": "ts",
     }
+    if input_node_has_id:
+        node_params["id"] = event_table_id
     node_params.update(input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
@@ -1712,10 +1722,10 @@ def non_tile_window_aggregation_complex_feature_node_fixture(global_graph, input
     return feature_node
 
 
-@pytest.fixture(name="time_series_window_aggregate_feature_node")
-def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_table_input_node):
+@pytest.fixture(name="time_series_window_aggregate_node_params")
+def time_series_window_aggregate_node_params_fixture():
     """
-    Fixture for a time series window aggregate feature node
+    Fixture for time series window aggregate node parameters
     """
     node_params = {
         "keys": ["cust_id"],
@@ -1740,6 +1750,19 @@ def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_
         },
         "time_interval": {"unit": "DAY", "value": 1},
     }
+    return node_params
+
+
+@pytest.fixture(name="time_series_window_aggregate_feature_node")
+def time_series_window_aggregate_feature_node_fixture(
+    global_graph,
+    time_series_table_input_node,
+    time_series_window_aggregate_node_params,
+):
+    """
+    Fixture for a time series window aggregate feature node
+    """
+    node_params = time_series_window_aggregate_node_params
     aggregate_node = global_graph.add_operation(
         node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
         node_params=node_params,
@@ -1798,6 +1821,33 @@ def time_series_window_aggregate_with_blind_spot_feature_node_fixture(
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_7d_sum_bs3d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="time_series_window_aggregate_with_offset_feature_node")
+def time_series_window_aggregate_with_offset_feature_node_fixture(
+    global_graph,
+    time_series_table_input_node,
+    time_series_window_aggregate_node_params,
+):
+    """
+    Fixture for a time series window aggregate feature node
+    """
+    node_params = copy.deepcopy(time_series_window_aggregate_node_params)
+    node_params["offset"] = {"unit": "DAY", "size": 3}
+    node_params["names"] = ["a_7d_sum_offset3d"]
+    aggregate_node = global_graph.add_operation(
+        node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[time_series_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_7d_sum_offset3d"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
     )
