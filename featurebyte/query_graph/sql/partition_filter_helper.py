@@ -146,15 +146,15 @@ def get_partition_filters_from_graph(
     input_node_infos = {}
     for node in query_graph.nodes:
         parameters = node.parameters
-        primary_input_nodes = QueryGraph.get_primary_input_nodes_from_graph_model(
-            query_graph, node.name
-        )
         if isinstance(parameters, BaseWindowAggregateParameters):
             relativedeltas = get_relativedeltas_from_window_aggregate_params(parameters)
         elif isinstance(parameters, TimeSeriesWindowAggregateParameters):
             relativedeltas = get_relativedeltas_from_time_series_params(parameters)
         else:
-            relativedeltas = []
+            continue
+        primary_input_nodes = QueryGraph.get_primary_input_nodes_from_graph_model(
+            query_graph, node.name
+        )
         for input_node in primary_input_nodes:
             if isinstance(input_node.parameters, SCDTableInputNodeParameters):
                 # Don't filter by partition for SCD tables
