@@ -99,14 +99,9 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."cust_id",
     CAST('2023-10-01 12:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
-), "VIEW_3f6757126bab95c0_BUCKET_COLUMN" AS (
+), "VIEW_6dddd417148232aa" AS (
   SELECT
-    *,
-    (
-      (
-        DATE_PART(year, TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS')) - 1970
-      ) * 12
-    ) + DATE_PART(month, TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS')) - 1 AS "__FB_VIEW_TIMESTAMP_EPOCH"
+    *
   FROM (
     SELECT
       "col_int" AS "col_int",
@@ -122,6 +117,21 @@ WITH ONLINE_REQUEST_TABLE AS (
     WHERE
       "date" >= TO_CHAR(CAST('2023-04-01 12:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')
       AND "date" <= TO_CHAR(CAST('2024-01-01 12:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')
+  )
+), "VIEW_6dddd417148232aa_DISTINCT_REFERENCE_DATETIME" AS (
+  SELECT
+    "date" AS "__FB_VIEW_REFERENCE_DATETIME",
+    (
+      (
+        DATE_PART(year, TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS')) - 1970
+      ) * 12
+    ) + DATE_PART(month, TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS')) - 1 AS "__FB_VIEW_TIMESTAMP_EPOCH"
+  FROM (
+    SELECT DISTINCT
+      "date"
+    FROM "VIEW_6dddd417148232aa"
+    WHERE
+      NOT "date" IS NULL
   )
 ), _FB_AGGREGATED AS (
   SELECT
@@ -143,30 +153,38 @@ WITH ONLINE_REQUEST_TABLE AS (
         SUM("col_float") AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1"
       FROM (
         SELECT
-          REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
-          REQ."cust_id",
-          VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
+          RANGE_JOINED."__FB_CRON_JOB_SCHEDULE_DATETIME",
+          RANGE_JOINED."__FB_VIEW_TIMESTAMP_EPOCH",
+          RANGE_JOINED."cust_id",
           VIEW."col_float"
-        FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
-        INNER JOIN "VIEW_3f6757126bab95c0_BUCKET_COLUMN" AS VIEW
-          ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
-          AND REQ."cust_id" = VIEW."store_id"
-        WHERE
-          VIEW."__FB_VIEW_TIMESTAMP_EPOCH" >= REQ."__FB_WINDOW_START_EPOCH"
-          AND VIEW."__FB_VIEW_TIMESTAMP_EPOCH" < REQ."__FB_WINDOW_END_EPOCH"
-        UNION ALL
-        SELECT
-          REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
-          REQ."cust_id",
-          VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
-          VIEW."col_float"
-        FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
-        INNER JOIN "VIEW_3f6757126bab95c0_BUCKET_COLUMN" AS VIEW
-          ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) - 1 = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
-          AND REQ."cust_id" = VIEW."store_id"
-        WHERE
-          VIEW."__FB_VIEW_TIMESTAMP_EPOCH" >= REQ."__FB_WINDOW_START_EPOCH"
-          AND VIEW."__FB_VIEW_TIMESTAMP_EPOCH" < REQ."__FB_WINDOW_END_EPOCH"
+        FROM (
+          SELECT
+            REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
+            REQ."cust_id",
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_REFERENCE_DATETIME",
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH"
+          FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
+          INNER JOIN "VIEW_6dddd417148232aa_DISTINCT_REFERENCE_DATETIME" AS BUCKETED_REFERENCE_DATETIME
+            ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) = FLOOR(BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
+          WHERE
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" >= REQ."__FB_WINDOW_START_EPOCH"
+            AND BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" < REQ."__FB_WINDOW_END_EPOCH"
+          UNION ALL
+          SELECT
+            REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
+            REQ."cust_id",
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_REFERENCE_DATETIME",
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH"
+          FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
+          INNER JOIN "VIEW_6dddd417148232aa_DISTINCT_REFERENCE_DATETIME" AS BUCKETED_REFERENCE_DATETIME
+            ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) - 1 = FLOOR(BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
+          WHERE
+            BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" >= REQ."__FB_WINDOW_START_EPOCH"
+            AND BUCKETED_REFERENCE_DATETIME."__FB_VIEW_TIMESTAMP_EPOCH" < REQ."__FB_WINDOW_END_EPOCH"
+        ) AS RANGE_JOINED
+        INNER JOIN "VIEW_6dddd417148232aa" AS VIEW
+          ON RANGE_JOINED."__FB_VIEW_REFERENCE_DATETIME" = VIEW."date"
+          AND RANGE_JOINED."cust_id" = VIEW."store_id"
       )
       GROUP BY
         "__FB_CRON_JOB_SCHEDULE_DATETIME",
