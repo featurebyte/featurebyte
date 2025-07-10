@@ -1673,7 +1673,9 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
         "POINT_IN_TIME": pd.to_datetime(["2001-02-01 10:00:00"] * 5),
         "üser id": [1, 2, 3, 4, 5],
     })
-    df_features = feature_list.compute_historical_features(observation_set=df_training_events)
+    obs_table = create_observation_table_by_upload(df_training_events)
+    feature_table = feature_list.compute_historical_feature_table(obs_table, str(ObjectId()))
+    df_features = feature_table.to_pandas()
     df_expected = df_training_events.copy()
     df_expected["event_table_with_timestamp_schema_count_7d"] = [124, 93, 106, 89, 95]
     df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = [5, 5, 5, 5, 5]

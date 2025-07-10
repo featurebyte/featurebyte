@@ -699,8 +699,12 @@ def transaction_data_with_timestamp_schema_fixture(transaction_data_upper_case):
     """
     data = transaction_data_upper_case.copy()
     event_timestamp_column = "ËVENT_TIMESTAMP"
+    original_event_timestamp = data[event_timestamp_column].copy()
     data[event_timestamp_column] = data[event_timestamp_column].apply(
         lambda x: x.tz_convert("UTC").tz_localize(None).strftime("%Y|%m|%d|%H:%M:%S")
+    )
+    data["partition_col"] = original_event_timestamp.apply(
+        lambda x: x.tz_convert("UTC").strftime("%Y|%m|%d")
     )
     yield data
 
@@ -1554,6 +1558,7 @@ def event_table_with_timestamp_schema_fixture(
     data_source,
     event_table_with_timestamp_schema_name,
     timestamp_format_string_with_time,
+    timestamp_format_string,
     user_entity,
     product_action_entity,
     customer_entity,
@@ -1578,6 +1583,10 @@ def event_table_with_timestamp_schema_fixture(
         event_id_column="TRANSACTION_ID",
         event_timestamp_column="ËVENT_TIMESTAMP",
         event_timestamp_schema=event_timestamp_schema,
+        datetime_partition_column="partition_col",
+        datetime_partition_schema=TimestampSchema(
+            format_string=timestamp_format_string,
+        ),
     )
     event_table.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
@@ -1913,6 +1922,8 @@ def time_series_table_fixture(
         reference_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
+        datetime_partition_column="reference_datetime_col",
+        datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
     )
     time_series_table.update_default_feature_job_setting(
         CronFeatureJobSetting(
@@ -1947,6 +1958,8 @@ def time_series_table_tz_column_fixture(
         ),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
+        datetime_partition_column="reference_datetime_col",
+        datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
     )
     time_series_table.update_default_feature_job_setting(
         CronFeatureJobSetting(
