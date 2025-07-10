@@ -366,7 +366,7 @@ def test_batch_features_from_deployment(
     Test batch feature table from deployment
     """
     feature = time_series_large_window_aggregate_feature
-    feature_list = FeatureList([feature], "time_series_feature_production_ready")
+    feature_list = FeatureList([feature], str(ObjectId()))
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
