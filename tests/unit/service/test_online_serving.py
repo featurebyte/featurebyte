@@ -57,6 +57,26 @@ async def deployed_feature_list_multiple_features(
     return feature_list_model
 
 
+@pytest_asyncio.fixture(name="deployed_time_series_feature_list")
+async def deployed_time_series_feature_list_fixture(
+    app_container,
+    ts_window_aggregate_feature,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed time series feature list
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+
+    ts_window_aggregate_feature.save()
+    feature_list_model = await deploy_feature_ids(
+        app_container, "deployed_time_series_feature_list", [ts_window_aggregate_feature.id]
+    )
+    return feature_list_model
+
+
 @pytest.fixture
 def entity_serving_names():
     """
@@ -327,3 +347,31 @@ async def test_get_online_features_multiple_queries__batch_request_table(
             timeout=86400,
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_online_features_with_partition_column_filters(
+    online_serving_service,
+    deployed_time_series_feature_list,
+    mock_session_for_online_serving,
+    batch_request_table,
+    update_fixtures,
+):
+    """
+    Test partition column filters are applied in batch features computation
+    """
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_time_series_feature_list,
+        request_data=batch_request_table,
+        output_table_details=TableDetails(
+            database_name="some_database", schema_name="some_schema", table_name="some_table"
+        ),
+    )
+
+    # Check queries used
+    queries = extract_session_executed_queries(mock_session_for_online_serving)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_get_online_features_partition_column_filters.sql",
+        update_fixture=update_fixtures,
+    )
