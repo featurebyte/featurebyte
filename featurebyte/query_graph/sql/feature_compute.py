@@ -44,6 +44,7 @@ from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    PartitionColumnFilters,
     SQLType,
     construct_cte_sql,
     quoted_identifier,
@@ -830,6 +831,7 @@ class FeatureExecutionPlanner:
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -859,6 +861,7 @@ class FeatureExecutionPlanner:
             self.on_demand_tile_tables_mapping = None
 
         self.column_statistics_info = column_statistics_info
+        self.partition_column_filters = partition_column_filters
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -1026,6 +1029,7 @@ class FeatureExecutionPlanner:
             is_online_serving=self.is_online_serving,
             agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
             column_statistics_info=self.column_statistics_info,
+            partition_column_filters=self.partition_column_filters,
         )
 
     def update_feature_specs(
