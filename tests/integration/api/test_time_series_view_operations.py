@@ -8,6 +8,8 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
@@ -31,6 +33,43 @@ def time_series_window_aggregate_feature_fixture(time_series_table):
         ),
     )["value_col_sum_7d"]
     return feature
+
+
+@pytest.fixture(name="time_series_large_window_aggregate_feature")
+def time_series_large_window_aggregate_feature_fixture(time_series_table):
+    """
+    Fixture for a feature derived from TimeSeriewView with a large feature window. This is not a
+    realistic feature and is primarily used for testing deployment without requiring to mock
+    datetimes.
+    """
+    view = time_series_table.get_view()
+    feature = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="YEAR", size=35)],
+        feature_names=["value_col_sum_35y"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["value_col_sum_35y"]
+    return feature
+
+
+@pytest_asyncio.fixture(name="batch_request_table")
+async def batch_request_table_fixture(session, data_source):
+    """
+    Fixture for a BatchRequestTable
+    """
+    df = pd.DataFrame({"series_id": ["S0"]})
+    table_name = f"request_table_{ObjectId()}"
+    await session.register_table(table_name, df)
+    source_table = data_source.get_source_table(
+        table_name=table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    return source_table.create_batch_request_table(f"Batch Request Table ({ObjectId()})")
 
 
 def test_times_series_view(time_series_table):
@@ -318,6 +357,26 @@ def test_deployment(config, time_series_window_aggregate_feature):
     df_feat = pd.DataFrame(res.json()["features"])
     df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_7d": np.nan}])
     fb_assert_frame_equal(df_feat, df_expected)
+
+
+def test_batch_features_from_deployment(
+    time_series_large_window_aggregate_feature, batch_request_table
+):
+    """
+    Test batch feature table from deployment
+    """
+    feature = time_series_large_window_aggregate_feature
+    feature_list = FeatureList([feature], str(ObjectId()))
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+    batch_feature_table = deployment.compute_batch_feature_table(
+        batch_request_table,
+        str(ObjectId()),
+    )
+    df_batch_feature_table = batch_feature_table.to_pandas()
+    df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_35y": 49.5}])
+    fb_assert_frame_equal(df_batch_feature_table, df_expected)
 
 
 def test_time_series_view_join_scd_view(time_series_table, scd_table):

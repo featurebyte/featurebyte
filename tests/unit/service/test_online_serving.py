@@ -4,6 +4,7 @@ Tests for OnlineServingService
 
 import json
 import os
+from datetime import datetime
 from unittest.mock import Mock, call, patch
 
 import pandas as pd
@@ -20,6 +21,18 @@ from tests.util.helper import (
     deploy_feature_ids,
     extract_session_executed_queries,
 )
+
+
+@pytest.fixture(name="patched_request_timestamp", autouse=True)
+def patched_request_timestamp_fixture():
+    """
+    Patch the request timestamp to a fixed value for testing purposes.
+    """
+    with patch(
+        "featurebyte.query_graph.sql.online_serving.datetime", autospec=True
+    ) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2023, 10, 1, 12, 0, 0)
+        yield
 
 
 @pytest_asyncio.fixture
