@@ -305,5 +305,5 @@ def test_event_view_with_timestamp_schema_sample_with_date_range(
         "to_timestamp": "2001-10-14",
     }
     sample_df = event_view.sample(**sample_params)
-    assert sample_df["ËVENT_TIMESTAMP"].min().startswith("2001|10|10")
-    assert sample_df["ËVENT_TIMESTAMP"].max().startswith("2001|10|13")
+    assert (sample_df["ËVENT_TIMESTAMP"] >= "2001|10|10").all()
+    assert (sample_df["ËVENT_TIMESTAMP"] <= "2001|10|14").all()
