@@ -17,13 +17,13 @@ from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.feature_query_set import FeatureQueryGenerator, FeatureQuerySet
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import (
@@ -52,6 +52,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 if TYPE_CHECKING:
+    from featurebyte.service.column_statistics import ColumnStatisticsService
     from featurebyte.service.cron_helper import CronHelper
 
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
@@ -167,6 +168,7 @@ def get_online_store_retrieval_expr(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
+    column_statistics_info: Optional[ColumnStatisticsInfo] = None,
 ) -> FeatureQueryPlan:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -194,6 +196,8 @@ def get_online_store_retrieval_expr(
         a cron-based feature job setting.
     on_demand_tile_tables: Optional[List[OnDemandTileTable]]
         List of on-demand tile tables to be used in the query
+    column_statistics_info: Optional[ColumnStatisticsInfo]
+        Column statistics information
 
     Returns
     -------
@@ -206,6 +210,7 @@ def get_online_store_retrieval_expr(
         parent_serving_preparation=parent_serving_preparation,
         job_schedule_table_set=job_schedule_table_set,
         on_demand_tile_tables=on_demand_tile_tables,
+        column_statistics_info=column_statistics_info,
     )
     plan = planner.generate_plan(nodes)
 
@@ -230,30 +235,22 @@ def get_online_store_retrieval_expr(
     return output
 
 
-def get_current_timestamp_expr(
-    request_timestamp: Optional[datetime], source_info: SourceInfo
-) -> Expression:
+def get_current_timestamp_expr(request_timestamp: datetime) -> Expression:
     """
     Get the sql expression to use for the current timestamp
 
     Parameters
     ----------
-    request_timestamp: Optional[datetime]
+    request_timestamp: datetime
         The timestamp value to use as the point-in-time
-    source_info: SourceInfo
-        Source information
 
     Returns
     -------
     Expression
     """
-    adapter = get_sql_adapter(source_info)
-    if request_timestamp is None:
-        current_timestamp_expr = adapter.current_timestamp()
-    else:
-        if request_timestamp.tzinfo is not None:
-            request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
-        current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
+    if request_timestamp.tzinfo is not None:
+        request_timestamp = request_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
+    current_timestamp_expr = make_literal_value(request_timestamp, cast_as_timestamp=True)
     return current_timestamp_expr
 
 
@@ -327,6 +324,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         concatenate_serving_names: Optional[list[str]] = None,
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+        column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     ):
         self.graph = graph
         self.nodes = nodes
@@ -340,6 +338,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         self.job_schedule_table_set = job_schedule_table_set
         self.concatenate_serving_names = concatenate_serving_names
         self.on_demand_tile_tables = on_demand_tile_tables
+        self.column_statistics_info = column_statistics_info
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -360,6 +359,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             parent_serving_preparation=self.parent_serving_preparation,
             job_schedule_table_set=self.job_schedule_table_set,
             on_demand_tile_tables=self.on_demand_tile_tables,
+            column_statistics_info=self.column_statistics_info,
         )
         feature_query_plan.transform(lambda x: fill_version_placeholders(x, self.versions))
         return feature_query_plan.get_feature_query(
@@ -400,15 +400,16 @@ def get_online_features_query_set(
     request_table_columns: list[str],
     output_feature_names: list[str],
     request_table_name: str,
+    request_timestamp: datetime,
     request_table_expr: Optional[expressions.Select] = None,
     request_table_details: Optional[TableDetails] = None,
-    request_timestamp: Optional[datetime] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
     output_include_row_index: bool = False,
     concatenate_serving_names: Optional[list[str]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
+    column_statistics_info: Optional[ColumnStatisticsInfo] = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -433,12 +434,12 @@ def get_online_features_query_set(
         Whether to include the TABLE_ROW_INDEX column in the output
     request_table_name: str
         Name of the registered request table
+    request_timestamp: datetime
+        The timestamp value to use as the point-in-time
     request_table_expr: Optional[expressions.Select]
         Sql expression for the request table
     request_table_details: Optional[TableDetails]
         Location of the request table in the data warehouse
-    request_timestamp: Optional[datetime]
-        The timestamp value to use as the point-in-time
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     job_schedule_table_set: Optional[JobScheduleTableSet]
@@ -448,12 +449,14 @@ def get_online_features_query_set(
         List of serving names to concatenate as a new column, if specified
     on_demand_tile_tables: Optional[List[OnDemandTileTable]]
         List of on-demand tile tables to be used in the query
+    column_statistics_info: Optional[ColumnStatisticsInfo]
+        Column statistics information
 
     Returns
     -------
     FeatureQuerySet
     """
-    current_timestamp_expr = get_current_timestamp_expr(request_timestamp, source_info)
+    current_timestamp_expr = get_current_timestamp_expr(request_timestamp)
     feature_query_generator = OnlineFeatureQueryGenerator(
         graph=graph,
         nodes=nodes,
@@ -467,6 +470,7 @@ def get_online_features_query_set(
         job_schedule_table_set=job_schedule_table_set,
         concatenate_serving_names=concatenate_serving_names,
         on_demand_tile_tables=on_demand_tile_tables,
+        column_statistics_info=column_statistics_info,
     )
     feature_query_set = OnlineFeatureQuerySet(
         feature_query_generator=feature_query_generator,
@@ -494,6 +498,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
 async def get_online_features(
     session_handler: SessionHandler,
     cron_helper: CronHelper,
+    column_statistics_service: ColumnStatisticsService,
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
@@ -514,6 +519,8 @@ async def get_online_features(
         SessionHandler to use for executing the query
     cron_helper: CronHelper
         Cron helper for simulating feature job schedules
+    column_statistics_service: ColumnStatisticsService
+        Column statistics service to get column statistics information
     graph: QueryGraph
         Query graph
     nodes: list[Node]
@@ -574,13 +581,20 @@ async def get_online_features(
         assert request_table_details is not None
         request_table_name = request_table_details.table_name
 
+    # Determine the request timestamp to use
+    if request_timestamp is None:
+        request_timestamp = datetime.utcnow()
+
     # Register job schedule tables if necessary
     cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
-        request_timestamp=request_timestamp or datetime.utcnow(),
+        request_timestamp=request_timestamp,
         cron_feature_job_settings=cron_feature_job_settings,
     )
+
+    # Get column statistics information
+    column_statistics_info = await column_statistics_service.get_column_statistics_info()
 
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
@@ -593,15 +607,16 @@ async def get_online_features(
             request_table_columns=request_table_columns,
             output_feature_names=get_feature_names(graph, nodes),
             request_table_name=request_table_name,
+            request_timestamp=request_timestamp,
             request_table_expr=request_table_expr,
             request_table_details=request_table_details,
             parent_serving_preparation=parent_serving_preparation,
-            request_timestamp=request_timestamp,
             output_table_details=output_table_details,
             output_include_row_index=request_table_details is None,
             concatenate_serving_names=concatenate_serving_names,
             job_schedule_table_set=job_schedule_table_set,
             on_demand_tile_tables=on_demand_tile_tables,
+            column_statistics_info=column_statistics_info,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
