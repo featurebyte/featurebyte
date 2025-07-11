@@ -12,6 +12,10 @@ WITH __FB_ENTITY_TABLE_NAME AS (
     FROM "sf_database"."sf_schema"."sf_table_no_tz"
   ) AS R
     ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+    AND (
+      R."event_timestamp" >= DATEADD(DAY, -7, __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE)
+      AND R."event_timestamp" <= DATEADD(DAY, 7, __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE)
+    )
 )
 SELECT
   index,

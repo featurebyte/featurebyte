@@ -9,10 +9,12 @@ from typing import Optional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.partition_filter import get_partition_filter
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -74,41 +76,62 @@ def get_table_filtered_by_entity(
         )
         join_conditions.append(condition)
 
-    # Only filter by timestamp if no transform has to be applied to the timestamp column
     if timestamp_column is not None:
+        # Check if the timestamp can be used for filtering directly.
         original_timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
+        format_string = None
         if timestamp_metadata is not None and timestamp_metadata.timestamp_schema is not None:
+            format_string = timestamp_metadata.timestamp_schema.format_string
             timestamp_for_filtering_expr = convert_timestamp_to_utc(
                 original_timestamp_expr,
                 timestamp_metadata.timestamp_schema,
                 adapter,
             )
-            should_filter_by_timestamp = timestamp_for_filtering_expr == original_timestamp_expr
+            filter_on_exact_timestamp = timestamp_for_filtering_expr == original_timestamp_expr
         else:
-            should_filter_by_timestamp = True
-    else:
-        should_filter_by_timestamp = False
+            filter_on_exact_timestamp = True
 
-    if should_filter_by_timestamp:
-        assert timestamp_column is not None
         timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
         normalized_timestamp_column = adapter.normalize_timestamp_before_comparison(timestamp_expr)
-        join_conditions.append(
-            expressions.GTE(
-                this=normalized_timestamp_column,
-                expression=get_qualified_column_identifier(
-                    start_date, entity_table, quote_column=False
-                ),
-            )
+        start_date_expr = get_qualified_column_identifier(
+            start_date, entity_table, quote_column=False
         )
-        join_conditions.append(
-            expressions.LT(
-                this=normalized_timestamp_column,
-                expression=get_qualified_column_identifier(
-                    end_date, entity_table, quote_column=False
-                ),
+        end_date_expr = get_qualified_column_identifier(end_date, entity_table, quote_column=False)
+        if filter_on_exact_timestamp:
+            join_conditions.append(
+                expressions.GTE(
+                    this=normalized_timestamp_column,
+                    expression=start_date_expr,
+                )
             )
-        )
+            join_conditions.append(
+                expressions.LT(
+                    this=normalized_timestamp_column,
+                    expression=end_date_expr,
+                )
+            )
+        else:
+            # Use a date range with buffer to account for timezone / format string without having to
+            # transform the source timestamp column. This works for historical features since the
+            # extra data doesn't have unintended side effects.
+            start_date_expr = adapter.dateadd_time_interval(
+                quantity_expr=make_literal_value(-7),
+                unit=TimeIntervalUnit.DAY,
+                timestamp_expr=start_date_expr,
+            )
+            end_date_expr = adapter.dateadd_time_interval(
+                quantity_expr=make_literal_value(7),
+                unit=TimeIntervalUnit.DAY,
+                timestamp_expr=end_date_expr,
+            )
+            timestamp_condition = get_partition_filter(
+                partition_column=normalized_timestamp_column,
+                from_timestamp=start_date_expr,
+                to_timestamp=end_date_expr,
+                format_string=format_string,
+                adapter=adapter,
+            )
+            join_conditions.append(timestamp_condition)
 
     join_conditions_expr = expressions.and_(*join_conditions)
 

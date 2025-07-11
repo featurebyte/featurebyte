@@ -14,7 +14,7 @@ from featurebyte.query_graph.sql.common import quoted_identifier
 
 
 def get_partition_filter(
-    partition_column: str,
+    partition_column: str | Expression,
     from_timestamp: Optional[datetime | Expression],
     to_timestamp: Optional[datetime | Expression],
     format_string: Optional[str],
@@ -25,7 +25,7 @@ def get_partition_filter(
 
     Parameters
     ----------
-    partition_column: str
+    partition_column: str | Expression
         The name of the partition column.
     from_timestamp: Optional[datetime | Expression]
         The start timestamp for the filter.
@@ -57,7 +57,10 @@ def get_partition_filter(
         from_timestamp is not None or to_timestamp is not None
     ), "At least one of from_timestamp or to_timestamp must be provided"
 
-    partition_column_expr = quoted_identifier(partition_column)
+    if isinstance(partition_column, str):
+        partition_column_expr = quoted_identifier(partition_column)
+    else:
+        partition_column_expr = partition_column
     conditions: list[Expression] = []
     if from_timestamp is not None:
         conditions.append(
