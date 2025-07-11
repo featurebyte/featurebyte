@@ -6,7 +6,7 @@ from typing import Generic, Type, TypeVar
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.routes.base_router import BaseRouter
 
@@ -34,7 +34,9 @@ class BaseMaterializedTableRouter(Generic[MaterializedTableModelT], BaseRouter):
             response_model=self.table_model,
         )
 
-    async def get_table(self, request: Request, table_id: PyObjectId) -> MaterializedTableModelT:
+    async def get_table(
+        self, request: Request, table_id: PydanticObjectId
+    ) -> MaterializedTableModelT:
         """
         Get table
         """

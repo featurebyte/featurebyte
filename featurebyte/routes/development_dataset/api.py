@@ -10,7 +10,7 @@ from typing import Optional, cast
 from bson import ObjectId
 from fastapi import Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.development_dataset import DevelopmentDatasetModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -105,14 +105,14 @@ class DevelopmentDatasetRouter(
         return task_submit
 
     async def get_object(
-        self, request: Request, development_dataset_id: PyObjectId
+        self, request: Request, development_dataset_id: PydanticObjectId
     ) -> DevelopmentDatasetModel:
         return await super().get_object(request, development_dataset_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        development_dataset_id: PyObjectId,
+        development_dataset_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -131,7 +131,7 @@ class DevelopmentDatasetRouter(
 
     @staticmethod
     async def update_development_dataset(
-        request: Request, development_dataset_id: PyObjectId, data: DevelopmentDatasetUpdate
+        request: Request, development_dataset_id: PydanticObjectId, data: DevelopmentDatasetUpdate
     ) -> DevelopmentDatasetModel:
         """
         Update online store
@@ -143,14 +143,14 @@ class DevelopmentDatasetRouter(
         return result
 
     async def update_description(
-        self, request: Request, development_dataset_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, development_dataset_id: PydanticObjectId, data: DescriptionUpdate
     ) -> DevelopmentDatasetModel:
         return await super().update_description(request, development_dataset_id, data)
 
     @staticmethod
     async def get_development_dataset_info(
         request: Request,
-        development_dataset_id: PyObjectId,
+        development_dataset_id: PydanticObjectId,
         verbose: bool = VerboseQuery,
     ) -> DevelopmentDatasetInfo:
         """
@@ -164,7 +164,7 @@ class DevelopmentDatasetRouter(
         return cast(DevelopmentDatasetInfo, info)
 
     async def delete_development_dataset(
-        self, request: Request, development_dataset_id: PyObjectId
+        self, request: Request, development_dataset_id: PydanticObjectId
     ) -> Task:
         controller = self.get_controller_for_request(request)
         task_submit: Task = await controller.delete_development_dataset(
@@ -175,7 +175,7 @@ class DevelopmentDatasetRouter(
     async def add_development_tables(
         self,
         request: Request,
-        development_dataset_id: PyObjectId,
+        development_dataset_id: PydanticObjectId,
         data: DevelopmentDatasetAddTables,
     ) -> Task:
         """

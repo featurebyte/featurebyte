@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, cast
 from fastapi import APIRouter, Query, Request
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -164,7 +164,7 @@ class BatchFeatureTableRouter(BaseRouter):
         return task_submit
 
     async def get_batch_feature_table(
-        self, request: Request, batch_feature_table_id: PyObjectId
+        self, request: Request, batch_feature_table_id: PydanticObjectId
     ) -> BatchFeatureTableModel:
         """
         Get BatchFeatureTable
@@ -176,7 +176,7 @@ class BatchFeatureTableRouter(BaseRouter):
         return batch_feature_table
 
     async def delete_batch_feature_table(
-        self, request: Request, batch_feature_table_id: PyObjectId
+        self, request: Request, batch_feature_table_id: PydanticObjectId
     ) -> Task:
         """
         Delete BatchFeatureTable
@@ -211,7 +211,7 @@ class BatchFeatureTableRouter(BaseRouter):
     async def list_batch_feature_table_audit_logs(
         self,
         request: Request,
-        batch_feature_table_id: PyObjectId,
+        batch_feature_table_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -232,7 +232,10 @@ class BatchFeatureTableRouter(BaseRouter):
         return audit_doc_list
 
     async def get_batch_feature_table_info(
-        self, request: Request, batch_feature_table_id: PyObjectId, verbose: bool = VerboseQuery
+        self,
+        request: Request,
+        batch_feature_table_id: PydanticObjectId,
+        verbose: bool = VerboseQuery,
     ) -> BatchFeatureTableInfo:
         """
         Get BatchFeatureTable info
@@ -242,7 +245,7 @@ class BatchFeatureTableRouter(BaseRouter):
         return cast(BatchFeatureTableInfo, info)
 
     async def download_table_as_pyarrow_table(
-        self, request: Request, batch_feature_table_id: PyObjectId
+        self, request: Request, batch_feature_table_id: PydanticObjectId
     ) -> StreamingResponse:
         """
         Download BatchFeatureTable as pyarrow table
@@ -254,7 +257,7 @@ class BatchFeatureTableRouter(BaseRouter):
         return result
 
     async def download_table_as_parquet(
-        self, request: Request, batch_feature_table_id: PyObjectId
+        self, request: Request, batch_feature_table_id: PydanticObjectId
     ) -> StreamingResponse:
         """
         Download BatchFeatureTable as parquet file
@@ -268,7 +271,7 @@ class BatchFeatureTableRouter(BaseRouter):
     async def update_batch_feature_table_description(
         self,
         request: Request,
-        batch_feature_table_id: PyObjectId,
+        batch_feature_table_id: PydanticObjectId,
         data: DescriptionUpdate,
     ) -> BatchFeatureTableModel:
         """
@@ -284,7 +287,7 @@ class BatchFeatureTableRouter(BaseRouter):
     async def preview_batch_feature_table(
         self,
         request: Request,
-        batch_feature_table_id: PyObjectId,
+        batch_feature_table_id: PydanticObjectId,
         limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
     ) -> Dict[str, Any]:
         """
@@ -300,7 +303,7 @@ class BatchFeatureTableRouter(BaseRouter):
     async def recreate_batch_feature_table(
         self,
         request: Request,
-        batch_feature_table_id: PyObjectId,
+        batch_feature_table_id: PydanticObjectId,
     ) -> Task:
         """
         Recreate a BatchFeatureTable from an existing one

@@ -9,7 +9,7 @@ from typing import Optional, cast
 from bson import ObjectId
 from fastapi import Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
@@ -74,7 +74,9 @@ class ManagedViewRouter(
         managed_view = await controller.create_managed_view(data=data)
         return ManagedViewRead(**managed_view.model_dump(by_alias=True))
 
-    async def get_object(self, request: Request, managed_view_id: PyObjectId) -> ManagedViewRead:
+    async def get_object(
+        self, request: Request, managed_view_id: PydanticObjectId
+    ) -> ManagedViewRead:
         managed_view = await super().get_object(request, managed_view_id)
         return ManagedViewRead(**managed_view.model_dump(by_alias=True))
 
@@ -87,7 +89,7 @@ class ManagedViewRouter(
         sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
-        feature_store_id: Optional[PyObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
     ) -> ManagedViewList:
         """
         List objects
@@ -105,7 +107,7 @@ class ManagedViewRouter(
     async def list_audit_logs(
         self,
         request: Request,
-        managed_view_id: PyObjectId,
+        managed_view_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -124,7 +126,7 @@ class ManagedViewRouter(
 
     @staticmethod
     async def update_managed_view(
-        request: Request, managed_view_id: PyObjectId, data: ManagedViewUpdate
+        request: Request, managed_view_id: PydanticObjectId, data: ManagedViewUpdate
     ) -> ManagedViewRead:
         """
         Update online store
@@ -134,7 +136,7 @@ class ManagedViewRouter(
         return ManagedViewRead(**document.model_dump(by_alias=True))
 
     async def update_description(
-        self, request: Request, managed_view_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, managed_view_id: PydanticObjectId, data: DescriptionUpdate
     ) -> ManagedViewRead:
         managed_view = await super().update_description(request, managed_view_id, data)
         return ManagedViewRead(**managed_view.model_dump(by_alias=True))
@@ -142,7 +144,7 @@ class ManagedViewRouter(
     @staticmethod
     async def get_managed_view_info(
         request: Request,
-        managed_view_id: PyObjectId,
+        managed_view_id: PydanticObjectId,
         verbose: bool = VerboseQuery,
     ) -> ManagedViewInfo:
         """
@@ -155,7 +157,9 @@ class ManagedViewRouter(
         )
         return cast(ManagedViewInfo, info)
 
-    async def delete_object(self, request: Request, managed_view_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(
+        self, request: Request, managed_view_id: PydanticObjectId
+    ) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=ObjectId(managed_view_id))
         return DeleteResponse()

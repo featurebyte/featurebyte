@@ -8,7 +8,7 @@ from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -44,7 +44,7 @@ class FeatureListNamespaceRouter(BaseRouter):
 
 @router.get("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModelResponse)
 async def get_feature_list_namespace(
-    request: Request, feature_list_namespace_id: PyObjectId
+    request: Request, feature_list_namespace_id: PydanticObjectId
 ) -> FeatureListNamespaceModelResponse:
     """
     Get FeatureListNamespace
@@ -62,7 +62,7 @@ async def get_feature_list_namespace(
 
 @router.patch("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModelResponse)
 async def update_feature_list_namespace(
-    request: Request, feature_list_namespace_id: PyObjectId, data: FeatureListNamespaceUpdate
+    request: Request, feature_list_namespace_id: PydanticObjectId, data: FeatureListNamespaceUpdate
 ) -> FeatureListNamespaceModelResponse:
     """
     Update FeatureListNamespace
@@ -104,7 +104,7 @@ async def list_feature_list_namespace(
 @router.get("/audit/{feature_list_namespace_id}", response_model=AuditDocumentList)
 async def list_feature_list_namespace_audit_logs(
     request: Request,
-    feature_list_namespace_id: PyObjectId,
+    feature_list_namespace_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -128,7 +128,7 @@ async def list_feature_list_namespace_audit_logs(
 @router.get("/{feature_list_namespace_id}/info", response_model=FeatureListNamespaceInfo)
 async def get_feature_list_namespace_info(
     request: Request,
-    feature_list_namespace_id: PyObjectId,
+    feature_list_namespace_id: PydanticObjectId,
     verbose: bool = VerboseQuery,
 ) -> FeatureListNamespaceInfo:
     """
@@ -147,7 +147,7 @@ async def get_feature_list_namespace_info(
 )
 async def update_feature_list_namespace_description(
     request: Request,
-    feature_list_namespace_id: PyObjectId,
+    feature_list_namespace_id: PydanticObjectId,
     data: DescriptionUpdate,
 ) -> FeatureListNamespaceModelResponse:
     """

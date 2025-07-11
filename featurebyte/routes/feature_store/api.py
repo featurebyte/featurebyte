@@ -12,7 +12,7 @@ from fastapi import Query, Request
 
 from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -164,13 +164,15 @@ class FeatureStoreRouter(
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.create_feature_store(data=data)
 
-    async def get_object(self, request: Request, feature_store_id: PyObjectId) -> FeatureStoreModel:
+    async def get_object(
+        self, request: Request, feature_store_id: PydanticObjectId
+    ) -> FeatureStoreModel:
         return await super().get_object(request, feature_store_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        feature_store_id: PyObjectId,
+        feature_store_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -188,14 +190,14 @@ class FeatureStoreRouter(
         )
 
     async def update_description(
-        self, request: Request, feature_store_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, feature_store_id: PydanticObjectId, data: DescriptionUpdate
     ) -> FeatureStoreModel:
         return await super().update_description(request, feature_store_id, data)
 
     @staticmethod
     async def get_feature_store_info(
         request: Request,
-        feature_store_id: PyObjectId,
+        feature_store_id: PydanticObjectId,
         verbose: bool = VerboseQuery,
     ) -> FeatureStoreInfo:
         """
@@ -389,7 +391,7 @@ class FeatureStoreRouter(
         sample: FeatureStoreSample,
         size: int = Query(default=0, gte=0, le=DESCRIPTION_SIZE_LIMIT),
         seed: int = Query(default=PREVIEW_SEED),
-        catalog_id: PyObjectId = Query(default=None),
+        catalog_id: Optional[PydanticObjectId] = Query(default=None),
     ) -> Task:
         """
         Submit data description task for query graph node
@@ -401,13 +403,15 @@ class FeatureStoreRouter(
         )
         return task_submit
 
-    async def delete_object(self, request: Request, feature_store_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(
+        self, request: Request, feature_store_id: PydanticObjectId
+    ) -> DeleteResponse:
         controller: FeatureStoreController = self.get_controller_for_request(request)
         await controller.delete(document_id=ObjectId(feature_store_id))
         return DeleteResponse()
 
     async def update_details(
-        self, request: Request, feature_store_id: PyObjectId, data: DatabaseDetailsUpdate
+        self, request: Request, feature_store_id: PydanticObjectId, data: DatabaseDetailsUpdate
     ) -> FeatureStoreModel:
         """Update details"""
         controller: FeatureStoreController = self.get_controller_for_request(request)
@@ -418,7 +422,7 @@ class FeatureStoreRouter(
     async def update(
         self,
         request: Request,
-        feature_store_id: PyObjectId,
+        feature_store_id: PydanticObjectId,
         data: FeatureStoreUpdate,
     ) -> FeatureStoreModel:
         """Update max_query_concurrency"""

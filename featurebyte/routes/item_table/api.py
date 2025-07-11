@@ -10,7 +10,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -95,13 +95,13 @@ class ItemTableRouter(
             status_code=HTTPStatus.OK,
         )
 
-    async def get_object(self, request: Request, item_table_id: PyObjectId) -> ItemTableModel:
+    async def get_object(self, request: Request, item_table_id: PydanticObjectId) -> ItemTableModel:
         return await super().get_object(request, item_table_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        item_table_id: PyObjectId,
+        item_table_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -119,7 +119,7 @@ class ItemTableRouter(
         )
 
     async def update_description(
-        self, request: Request, item_table_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, item_table_id: PydanticObjectId, data: DescriptionUpdate
     ) -> ItemTableModel:
         return await super().update_description(request, item_table_id, data)
 
@@ -128,7 +128,7 @@ class ItemTableRouter(
         return await controller.create_table(data=data)
 
     async def get_item_table_info(
-        self, request: Request, item_table_id: PyObjectId, verbose: bool = VerboseQuery
+        self, request: Request, item_table_id: PydanticObjectId, verbose: bool = VerboseQuery
     ) -> ItemTableInfo:
         """
         Retrieve item table info
@@ -141,7 +141,7 @@ class ItemTableRouter(
         return info
 
     async def update_item_table(
-        self, request: Request, item_table_id: PyObjectId, data: ItemTableUpdate
+        self, request: Request, item_table_id: PydanticObjectId, data: ItemTableUpdate
     ) -> ItemTableModel:
         """
         Update item table
@@ -154,7 +154,7 @@ class ItemTableRouter(
         return item_table
 
     async def update_column_entity(
-        self, request: Request, item_table_id: PyObjectId, data: ColumnEntityUpdate
+        self, request: Request, item_table_id: PydanticObjectId, data: ColumnEntityUpdate
     ) -> ItemTableModel:
         """
         Update column entity
@@ -170,7 +170,7 @@ class ItemTableRouter(
     async def update_column_critical_data_info(
         self,
         request: Request,
-        item_table_id: PyObjectId,
+        item_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
     ) -> ItemTableModel:
         """
@@ -187,7 +187,7 @@ class ItemTableRouter(
     async def update_column_description(
         self,
         request: Request,
-        item_table_id: PyObjectId,
+        item_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
     ) -> ItemTableModel:
         """
@@ -201,7 +201,9 @@ class ItemTableRouter(
         )
         return item_table
 
-    async def delete_object(self, request: Request, item_table_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(
+        self, request: Request, item_table_id: PydanticObjectId
+    ) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=ObjectId(item_table_id))
         return DeleteResponse()

@@ -10,7 +10,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.time_series_table import (
     CronFeatureJobSettingHistoryEntry,
@@ -113,14 +113,14 @@ class TimeSeriesTableRouter(
         )
 
     async def get_object(
-        self, request: Request, time_series_table_id: PyObjectId
+        self, request: Request, time_series_table_id: PydanticObjectId
     ) -> TimeSeriesTableModel:
         return await super().get_object(request, time_series_table_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        time_series_table_id: PyObjectId,
+        time_series_table_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -138,7 +138,7 @@ class TimeSeriesTableRouter(
         )
 
     async def update_description(
-        self, request: Request, time_series_table_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, time_series_table_id: PydanticObjectId, data: DescriptionUpdate
     ) -> TimeSeriesTableModel:
         return await super().update_description(request, time_series_table_id, data)
 
@@ -149,7 +149,7 @@ class TimeSeriesTableRouter(
         return await controller.create_table(data=data)
 
     async def get_time_series_table_info(
-        self, request: Request, time_series_table_id: PyObjectId, verbose: bool = VerboseQuery
+        self, request: Request, time_series_table_id: PydanticObjectId, verbose: bool = VerboseQuery
     ) -> TimeSeriesTableInfo:
         """
         Retrieve time series table info
@@ -162,7 +162,7 @@ class TimeSeriesTableRouter(
         return info
 
     async def update_time_series_table(
-        self, request: Request, time_series_table_id: PyObjectId, data: TimeSeriesTableUpdate
+        self, request: Request, time_series_table_id: PydanticObjectId, data: TimeSeriesTableUpdate
     ) -> TimeSeriesTableModel:
         """
         Update time series table
@@ -175,7 +175,7 @@ class TimeSeriesTableRouter(
         return time_series_table
 
     async def update_column_entity(
-        self, request: Request, time_series_table_id: PyObjectId, data: ColumnEntityUpdate
+        self, request: Request, time_series_table_id: PydanticObjectId, data: ColumnEntityUpdate
     ) -> TimeSeriesTableModel:
         """
         Update column entity
@@ -191,7 +191,7 @@ class TimeSeriesTableRouter(
     async def update_column_critical_data_info(
         self,
         request: Request,
-        time_series_table_id: PyObjectId,
+        time_series_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
     ) -> TimeSeriesTableModel:
         """
@@ -208,7 +208,7 @@ class TimeSeriesTableRouter(
     async def update_column_description(
         self,
         request: Request,
-        time_series_table_id: PyObjectId,
+        time_series_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
     ) -> TimeSeriesTableModel:
         """
@@ -225,7 +225,7 @@ class TimeSeriesTableRouter(
     async def list_default_feature_job_setting_history(
         self,
         request: Request,
-        time_series_table_id: PyObjectId,
+        time_series_table_id: PydanticObjectId,
     ) -> List[CronFeatureJobSettingHistoryEntry]:
         """
         List TimeSeriesTable default feature job settings history
@@ -245,7 +245,7 @@ class TimeSeriesTableRouter(
         ]
 
     async def delete_object(
-        self, request: Request, time_series_table_id: PyObjectId
+        self, request: Request, time_series_table_id: PydanticObjectId
     ) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
         await controller.delete(document_id=ObjectId(time_series_table_id))

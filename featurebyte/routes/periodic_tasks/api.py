@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
@@ -51,7 +51,9 @@ class PeriodicTaskRouter(BaseRouter):
         )
 
     @staticmethod
-    async def get_periodic_task(request: Request, periodic_task_id: PyObjectId) -> PeriodicTask:
+    async def get_periodic_task(
+        request: Request, periodic_task_id: PydanticObjectId
+    ) -> PeriodicTask:
         """
         Get Periodic Task
         """
@@ -85,7 +87,7 @@ class PeriodicTaskRouter(BaseRouter):
     @staticmethod
     async def update_periodic_task_description(
         request: Request,
-        periodic_task_id: PyObjectId,
+        periodic_task_id: PydanticObjectId,
         data: DescriptionUpdate,
     ) -> PeriodicTask:
         """

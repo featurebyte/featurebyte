@@ -12,7 +12,7 @@ from featurebyte.exception import (
     DocumentUpdateError,
     ObservationTableInvalidUseCaseError,
 )
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent.base import SortDir
@@ -287,7 +287,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         sort_by: Optional[List[Tuple[str, SortDir]]] = None,
         search: Optional[str] = None,
         name: Optional[str] = None,
-        feature_list_id: Optional[PyObjectId] = None,
+        feature_list_id: Optional[PydanticObjectId] = None,
     ) -> UseCaseList:
         """
         List UseCases
@@ -304,7 +304,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             Search string
         name: Optional[str]
             UseCase name
-        feature_list_id: Optional[PyObjectId]
+        feature_list_id: Optional[PydanticObjectId]
             FeatureList id
 
         Returns

@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, cast
 from fastapi import Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.persistent.base import SortDir
@@ -98,7 +98,9 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             methods=["POST"],
         )
 
-    async def get_table(self, request: Request, target_table_id: PyObjectId) -> TargetTableModel:
+    async def get_table(
+        self, request: Request, target_table_id: PydanticObjectId
+    ) -> TargetTableModel:
         """
         Test random string
         """
@@ -128,7 +130,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         return task_submit
 
     @staticmethod
-    async def delete_target_table(request: Request, target_table_id: PyObjectId) -> Task:
+    async def delete_target_table(request: Request, target_table_id: PydanticObjectId) -> Task:
         """
         Delete TargetTable
         """
@@ -162,7 +164,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     @staticmethod
     async def list_target_table_audit_logs(
         request: Request,
-        target_table_id: PyObjectId,
+        target_table_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -184,7 +186,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def get_target_table_info(
-        request: Request, target_table_id: PyObjectId, verbose: bool = VerboseQuery
+        request: Request, target_table_id: PydanticObjectId, verbose: bool = VerboseQuery
     ) -> TargetTableInfo:
         """
         Get TargetTable info
@@ -195,7 +197,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def download_table_as_pyarrow_table(
-        request: Request, target_table_id: PyObjectId
+        request: Request, target_table_id: PydanticObjectId
     ) -> StreamingResponse:
         """
         Download TargetTable as pyarrow table
@@ -208,7 +210,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
 
     @staticmethod
     async def download_table_as_parquet(
-        request: Request, target_table_id: PyObjectId
+        request: Request, target_table_id: PydanticObjectId
     ) -> StreamingResponse:
         """
         Download TargetTable as parquet file
@@ -222,7 +224,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     @staticmethod
     async def update_target_table_description(
         request: Request,
-        target_table_id: PyObjectId,
+        target_table_id: PydanticObjectId,
         data: DescriptionUpdate,
     ) -> TargetTableModel:
         """
@@ -238,7 +240,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     @staticmethod
     async def preview_target_table(
         request: Request,
-        target_table_id: PyObjectId,
+        target_table_id: PydanticObjectId,
         limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
     ) -> Dict[str, Any]:
         """

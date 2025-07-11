@@ -12,7 +12,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -72,7 +72,7 @@ async def create_historical_feature_table(
 
 @router.get("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
 async def get_historical_feature_table(
-    request: Request, historical_feature_table_id: PyObjectId
+    request: Request, historical_feature_table_id: PydanticObjectId
 ) -> HistoricalFeatureTableModel:
     """
     Get HistoricalFeatureTable
@@ -87,7 +87,7 @@ async def get_historical_feature_table(
     "/{historical_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED
 )
 async def delete_historical_feature_table(
-    request: Request, historical_feature_table_id: PyObjectId
+    request: Request, historical_feature_table_id: PydanticObjectId
 ) -> Task:
     """
     Delete HistoricalFeatureTable
@@ -127,7 +127,7 @@ async def list_historical_feature_tables(
 @router.get("/audit/{historical_feature_table_id}", response_model=AuditDocumentList)
 async def list_historical_feature_table_audit_logs(
     request: Request,
-    historical_feature_table_id: PyObjectId,
+    historical_feature_table_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -150,7 +150,7 @@ async def list_historical_feature_table_audit_logs(
 
 @router.get("/{historical_feature_table_id}/info", response_model=HistoricalFeatureTableInfo)
 async def get_historical_feature_table_info(
-    request: Request, historical_feature_table_id: PyObjectId, verbose: bool = VerboseQuery
+    request: Request, historical_feature_table_id: PydanticObjectId, verbose: bool = VerboseQuery
 ) -> HistoricalFeatureTableInfo:
     """
     Get HistoricalFeatureTable info
@@ -165,7 +165,7 @@ async def get_historical_feature_table_info(
 
 @router.get("/pyarrow_table/{historical_feature_table_id}")
 async def download_table_as_pyarrow_table(
-    request: Request, historical_feature_table_id: PyObjectId
+    request: Request, historical_feature_table_id: PydanticObjectId
 ) -> StreamingResponse:
     """
     Download HistoricalFeatureTable as pyarrow table
@@ -180,7 +180,7 @@ async def download_table_as_pyarrow_table(
 
 @router.get("/parquet/{historical_feature_table_id}")
 async def download_table_as_parquet(
-    request: Request, historical_feature_table_id: PyObjectId
+    request: Request, historical_feature_table_id: PydanticObjectId
 ) -> StreamingResponse:
     """
     Download HistoricalFeatureTable as parquet file
@@ -198,7 +198,7 @@ async def download_table_as_parquet(
 )
 async def update_historical_feature_table_description(
     request: Request,
-    historical_feature_table_id: PyObjectId,
+    historical_feature_table_id: PydanticObjectId,
     data: DescriptionUpdate,
 ) -> HistoricalFeatureTableModel:
     """
@@ -216,7 +216,7 @@ async def update_historical_feature_table_description(
 @router.patch("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
 async def update_historical_feature_table(
     request: Request,
-    historical_feature_table_id: PyObjectId,
+    historical_feature_table_id: PydanticObjectId,
     data: HistoricalFeatureTableUpdate,
 ) -> HistoricalFeatureTableModel:
     """
@@ -235,7 +235,7 @@ async def update_historical_feature_table(
 @router.post("/{historical_feature_table_id}/preview", response_model=Dict[str, Any])
 async def preview_historical_feature_table(
     request: Request,
-    historical_feature_table_id: PyObjectId,
+    historical_feature_table_id: PydanticObjectId,
     limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
 ) -> Dict[str, Any]:
     """
@@ -254,8 +254,8 @@ async def preview_historical_feature_table(
 )
 async def preview_historical_feature_table_feature(
     request: Request,
-    historical_feature_table_id: PyObjectId,
-    feature_id: PyObjectId,
+    historical_feature_table_id: PydanticObjectId,
+    feature_id: PydanticObjectId,
     limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
 ) -> Dict[str, Any]:
     """

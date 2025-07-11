@@ -10,7 +10,7 @@ from bson import ObjectId
 
 from featurebyte.enum import ViewNamePrefix
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.managed_view import ManagedViewModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
@@ -66,7 +66,7 @@ class ManagedViewController(
         sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
-        feature_store_id: PyObjectId | None = None,
+        feature_store_id: PydanticObjectId | None = None,
     ) -> ManagedViewList:
         """
         List ManagedView stored in persistent
@@ -83,7 +83,7 @@ class ManagedViewController(
             Search token to be used in filtering
         name: str | None
             Feature name to be used in filtering
-        feature_store_id: PyObjectId | None
+        feature_store_id: PydanticObjectId | None
             FeatureStore id to be used in filtering
 
         Returns
