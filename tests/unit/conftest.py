@@ -887,6 +887,10 @@ def snowflake_query_map_fixture():
                 "cust_id": [1, 2, 3],
             }
         ],
+        # For time series table validation
+        'SELECT\n  COUNT(DISTINCT "date") AS "date"\nFROM "sf_database"."sf_schema"."time_series_table"': [
+            {"date": 10}
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
