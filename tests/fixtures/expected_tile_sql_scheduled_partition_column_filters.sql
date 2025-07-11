@@ -13,8 +13,8 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
         AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
       )
       AND (
-        "col_text" >= DATEADD(DAY, -7, CAST(__FB_START_DATE AS TIMESTAMP))
-        AND "col_text" <= DATEADD(DAY, 7, CAST(__FB_END_DATE AS TIMESTAMP))
+        "col_text" >= TO_CHAR(DATEADD(DAY, -7, CAST(__FB_START_DATE AS TIMESTAMP)), '%Y-%m-%d %H:%M:%S')
+        AND "col_text" <= TO_CHAR(DATEADD(DAY, 7, CAST(__FB_END_DATE AS TIMESTAMP)), '%Y-%m-%d %H:%M:%S')
       )
   )
   WHERE
