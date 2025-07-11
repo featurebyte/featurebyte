@@ -15,8 +15,8 @@ from featurebyte.query_graph.sql.common import quoted_identifier
 
 def get_partition_filter(
     partition_column: str,
-    from_timestamp: Optional[datetime],
-    to_timestamp: Optional[datetime],
+    from_timestamp: Optional[datetime | Expression],
+    to_timestamp: Optional[datetime | Expression],
     format_string: Optional[str],
     adapter: BaseAdapter,
 ) -> Expression:
@@ -27,9 +27,9 @@ def get_partition_filter(
     ----------
     partition_column: str
         The name of the partition column.
-    from_timestamp: Optional[datetime]
+    from_timestamp: Optional[datetime | Expression]
         The start timestamp for the filter.
-    to_timestamp: Optional[datetime]
+    to_timestamp: Optional[datetime | Expression]
         The end timestamp for the filter.
     format_string: Optional[str]
         Format string for the timestamp, if applicable.
@@ -42,7 +42,11 @@ def get_partition_filter(
         The SQL expression representing the partition filter.
     """
 
-    def _get_boundary_value_expr(value: datetime) -> Optional[Expression]:
+    def _get_boundary_value_expr(value: datetime | Expression) -> Optional[Expression]:
+        if isinstance(value, Expression):
+            # If value is already an Expression, return it directly (e.g. a placeholder in scheduled
+            # tile sql)
+            return value
         expr = make_literal_value(value, cast_as_timestamp=True)
         if format_string is not None:
             # If a format string is provided, use it to format the timestamp

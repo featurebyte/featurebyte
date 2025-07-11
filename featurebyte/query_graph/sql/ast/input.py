@@ -10,7 +10,7 @@ from typing import Any
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, InternalName, TableDataType
+from featurebyte.enum import DBVarType, InternalName, TableDataType, TimeIntervalUnit
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
@@ -105,6 +105,28 @@ class InputNode(TableNode):
                 )
             )
 
+            # Add filter on partition column with a buffer if available
+            buffered_from_timestamp = self.context.adapter.dateadd_time_interval(
+                quantity_expr=make_literal_value(-7),
+                unit=TimeIntervalUnit.DAY,
+                timestamp_expr=_maybe_cast(start_date_placeholder),
+            )
+            buffered_to_timestamp = self.context.adapter.dateadd_time_interval(
+                quantity_expr=make_literal_value(7),
+                unit=TimeIntervalUnit.DAY,
+                timestamp_expr=_maybe_cast(end_date_placeholder),
+            )
+            partition_column_filter = PartitionColumnFilter(
+                from_timestamp=buffered_from_timestamp,
+                to_timestamp=buffered_to_timestamp,
+            )
+            select_expr = self._apply_partition_column_filter(
+                select_expr=select_expr,
+                columns=self.context.parameters["columns"],
+                partition_column_filter=partition_column_filter,
+                adapter=self.context.adapter,
+            )
+
         return select_expr
 
     def _select_from_dbtable(self, select_expr: Select, dbtable: Expression) -> Select:
@@ -118,7 +140,7 @@ class InputNode(TableNode):
         else:
             partition_column_filter = None
         if partition_column_filter:
-            select_expr = self._apply_partition_column_filters(
+            select_expr = self._apply_partition_column_filter(
                 select_expr=select_expr,
                 columns=self.context.parameters["columns"],
                 partition_column_filter=partition_column_filter,
@@ -228,7 +250,7 @@ class InputNode(TableNode):
         return column_expr
 
     @classmethod
-    def _apply_partition_column_filters(
+    def _apply_partition_column_filter(
         cls,
         select_expr: Select,
         columns: list[dict[str, Any]],
