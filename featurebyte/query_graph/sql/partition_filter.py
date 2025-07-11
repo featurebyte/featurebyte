@@ -44,10 +44,10 @@ def get_partition_filter(
 
     def _get_boundary_value_expr(value: datetime | Expression) -> Optional[Expression]:
         if isinstance(value, Expression):
-            # If value is already an Expression, return it directly (e.g. a placeholder in scheduled
-            # tile sql)
-            return value
-        expr = make_literal_value(value, cast_as_timestamp=True)
+            # E.g. a placeholder in scheduled tile sql
+            expr = value
+        else:
+            expr = make_literal_value(value, cast_as_timestamp=True)
         if format_string is not None:
             # If a format string is provided, use it to format the timestamp
             expr = adapter.format_timestamp(expr, format_string)
