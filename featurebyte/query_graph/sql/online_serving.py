@@ -31,6 +31,7 @@ from featurebyte.query_graph.sql.batch_helper import (
 )
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
+    PartitionColumnFilters,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
 )
@@ -48,6 +49,7 @@ from featurebyte.query_graph.sql.feature_compute import (
     FeatureQueryPlan,
 )
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
+from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
@@ -169,6 +171,7 @@ def get_online_store_retrieval_expr(
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
+    partition_column_filters: Optional[PartitionColumnFilters] = None,
 ) -> FeatureQueryPlan:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -198,6 +201,8 @@ def get_online_store_retrieval_expr(
         List of on-demand tile tables to be used in the query
     column_statistics_info: Optional[ColumnStatisticsInfo]
         Column statistics information
+    partition_column_filters: Optional[PartitionColumnFilters]
+        Partition column filters to apply to source tables
 
     Returns
     -------
@@ -211,6 +216,7 @@ def get_online_store_retrieval_expr(
         job_schedule_table_set=job_schedule_table_set,
         on_demand_tile_tables=on_demand_tile_tables,
         column_statistics_info=column_statistics_info,
+        partition_column_filters=partition_column_filters,
     )
     plan = planner.generate_plan(nodes)
 
@@ -325,6 +331,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         concatenate_serving_names: Optional[list[str]] = None,
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
     ):
         self.graph = graph
         self.nodes = nodes
@@ -339,6 +346,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         self.concatenate_serving_names = concatenate_serving_names
         self.on_demand_tile_tables = on_demand_tile_tables
         self.column_statistics_info = column_statistics_info
+        self.partition_column_filters = partition_column_filters
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -360,6 +368,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             job_schedule_table_set=self.job_schedule_table_set,
             on_demand_tile_tables=self.on_demand_tile_tables,
             column_statistics_info=self.column_statistics_info,
+            partition_column_filters=self.partition_column_filters,
         )
         feature_query_plan.transform(lambda x: fill_version_placeholders(x, self.versions))
         return feature_query_plan.get_feature_query(
@@ -410,6 +419,7 @@ def get_online_features_query_set(
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
+    partition_column_filters: Optional[PartitionColumnFilters] = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -451,6 +461,8 @@ def get_online_features_query_set(
         List of on-demand tile tables to be used in the query
     column_statistics_info: Optional[ColumnStatisticsInfo]
         Column statistics information
+    partition_column_filters: Optional[PartitionColumnFilters]
+        Partition column filters to apply to source tables
 
     Returns
     -------
@@ -471,6 +483,7 @@ def get_online_features_query_set(
         concatenate_serving_names=concatenate_serving_names,
         on_demand_tile_tables=on_demand_tile_tables,
         column_statistics_info=column_statistics_info,
+        partition_column_filters=partition_column_filters,
     )
     feature_query_set = OnlineFeatureQuerySet(
         feature_query_generator=feature_query_generator,
@@ -596,6 +609,12 @@ async def get_online_features(
     # Get column statistics information
     column_statistics_info = await column_statistics_service.get_column_statistics_info()
 
+    partition_column_filters = get_partition_filters_from_graph(
+        query_graph=graph,
+        min_point_in_time=request_timestamp,
+        max_point_in_time=request_timestamp,
+    )
+
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
         versions = await online_store_table_version_service.get_versions(aggregation_result_names)
@@ -617,6 +636,7 @@ async def get_online_features(
             job_schedule_table_set=job_schedule_table_set,
             on_demand_tile_tables=on_demand_tile_tables,
             column_statistics_info=column_statistics_info,
+            partition_column_filters=partition_column_filters,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
