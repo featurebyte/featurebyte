@@ -9,9 +9,8 @@ from typing import Optional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
-from featurebyte.enum import InternalName, TimeIntervalUnit
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
-from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import (
     PartitionColumnFilter,
@@ -19,7 +18,9 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
-from featurebyte.query_graph.sql.partition_filter_helper import DEFAULT_BUFFER_NUM_DAYS
+from featurebyte.query_graph.sql.partition_filter_helper import (
+    get_default_partition_column_filter_buffer,
+)
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -122,10 +123,7 @@ def get_table_filtered_by_entity(
             partition_column_filter = PartitionColumnFilter(
                 from_timestamp=start_date_expr,
                 to_timestamp=end_date_expr,
-                buffer=TimeInterval(
-                    unit=TimeIntervalUnit.DAY,
-                    value=DEFAULT_BUFFER_NUM_DAYS,
-                ),
+                buffer=get_default_partition_column_filter_buffer(),
             )
             timestamp_condition = get_partition_filter(
                 partition_column=normalized_timestamp_column,

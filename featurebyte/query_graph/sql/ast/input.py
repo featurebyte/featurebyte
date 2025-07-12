@@ -10,10 +10,9 @@ from typing import Any
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, InternalName, TableDataType, TimeIntervalUnit
+from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
-from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
 )
@@ -28,7 +27,9 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
-from featurebyte.query_graph.sql.partition_filter_helper import DEFAULT_BUFFER_NUM_DAYS
+from featurebyte.query_graph.sql.partition_filter_helper import (
+    get_default_partition_column_filter_buffer,
+)
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -111,10 +112,7 @@ class InputNode(TableNode):
             partition_column_filter = PartitionColumnFilter(
                 from_timestamp=_maybe_cast(start_date_placeholder),
                 to_timestamp=_maybe_cast(end_date_placeholder),
-                buffer=TimeInterval(
-                    unit=TimeIntervalUnit.DAY,
-                    value=DEFAULT_BUFFER_NUM_DAYS,
-                ),
+                buffer=get_default_partition_column_filter_buffer(),
             )
             select_expr = self._apply_partition_column_filter(
                 select_expr=select_expr,

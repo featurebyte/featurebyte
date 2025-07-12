@@ -21,7 +21,16 @@ from featurebyte.query_graph.node.generic import (
 from featurebyte.query_graph.node.input import SCDTableInputNodeParameters
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
 
-DEFAULT_BUFFER_NUM_DAYS = 7
+
+def get_default_partition_column_filter_buffer() -> TimeInterval:
+    """
+    Get the default buffer for partition filters when a conservative filtering is required
+
+    Returns
+    -------
+    TimeInterval
+    """
+    return TimeInterval(unit=TimeIntervalUnit.DAY, value=7)
 
 
 def get_relativedeltas_from_window_aggregate_params(
