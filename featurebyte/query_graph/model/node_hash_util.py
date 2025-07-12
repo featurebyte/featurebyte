@@ -103,8 +103,7 @@ def exclude_partition_metadata_from_node_parameters(
         return node_parameters
 
     for column_spec in node_parameters["columns"]:
-        if "partition_metadata" in column_spec and column_spec["partition_metadata"] is None:
-            column_spec.pop("partition_metadata", None)
+        column_spec.pop("partition_metadata", None)
 
     return node_parameters
 
