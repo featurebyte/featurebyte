@@ -5,7 +5,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     SELECT
       "event_timestamp" AS "event_timestamp",
       "cust_id" AS "cust_id",
-      "col_int" AS "input_col_sum_7243332f802124bbc68aa258dbf80f53599a0c5b"
+      "col_int" AS "input_col_sum_fdc816077d38834dc58adacbef5311dc2e559aed"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
       (
@@ -24,7 +24,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
 SELECT
   index,
   "cust_id",
-  SUM("input_col_sum_7243332f802124bbc68aa258dbf80f53599a0c5b") AS value_sum_7243332f802124bbc68aa258dbf80f53599a0c5b
+  SUM("input_col_sum_fdc816077d38834dc58adacbef5311dc2e559aed") AS value_sum_fdc816077d38834dc58adacbef5311dc2e559aed
 FROM (
   SELECT
     *,
