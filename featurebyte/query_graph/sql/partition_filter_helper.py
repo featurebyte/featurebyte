@@ -10,14 +10,18 @@ from bson import ObjectId
 from dateutil.relativedelta import relativedelta
 
 from featurebyte.common.model_util import parse_duration_string
+from featurebyte.enum import TimeIntervalUnit
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.node.generic import (
     BaseWindowAggregateParameters,
     TimeSeriesWindowAggregateParameters,
 )
 from featurebyte.query_graph.node.input import SCDTableInputNodeParameters
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
+
+DEFAULT_BUFFER_NUM_DAYS = 7
 
 
 def get_relativedeltas_from_window_aggregate_params(
@@ -119,7 +123,6 @@ def get_partition_filters_from_graph(
     query_graph: QueryGraphModel,
     min_point_in_time: datetime,
     max_point_in_time: datetime,
-    buffer: Optional[relativedelta] = None,
 ) -> PartitionColumnFilters:
     """
     Get partition filters from the query graph.
@@ -132,17 +135,12 @@ def get_partition_filters_from_graph(
         The minimum point in time to consider for partition filtering
     max_point_in_time: datetime
         The maximum point in time to consider for partition filtering
-    buffer: Optional[relativedelta]
-        A buffer to add to the partition filter range, defaults to 3 months if None
 
     Returns
     -------
     PartitionColumnFilters
         The partition column filters derived from the query graph.
     """
-    if buffer is None:
-        buffer = relativedelta(months=3)
-
     input_node_infos = {}
     for node in query_graph.nodes:
         parameters = node.parameters
@@ -177,13 +175,12 @@ def get_partition_filters_from_graph(
     mapping = {}
     for input_node_info in input_node_infos.values():
         if not input_node_info.has_unbounded_window and input_node_info.largest_window is not None:
-            from_timestamp = (
-                min_point_in_time + (-1 * input_node_info.largest_window) + (-1 * buffer)
-            )
-            to_timestamp = max_point_in_time + buffer
+            from_timestamp = min_point_in_time + (-1 * input_node_info.largest_window)
+            to_timestamp = max_point_in_time
             mapping[input_node_info.table_id] = PartitionColumnFilter(
                 from_timestamp=from_timestamp,
                 to_timestamp=to_timestamp,
+                buffer=TimeInterval(unit=TimeIntervalUnit.MONTH, value=3),
             )
 
     return PartitionColumnFilters(mapping=mapping)

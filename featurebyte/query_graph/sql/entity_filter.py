@@ -11,10 +11,15 @@ from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.sql.adapter import BaseAdapter
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    PartitionColumnFilter,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
+from featurebyte.query_graph.sql.partition_filter_helper import DEFAULT_BUFFER_NUM_DAYS
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -114,20 +119,17 @@ def get_table_filtered_by_entity(
             # Use a date range with buffer to account for timezone / format string without having to
             # transform the source timestamp column. This works for historical features since the
             # extra data doesn't have unintended side effects.
-            start_date_expr = adapter.dateadd_time_interval(
-                quantity_expr=make_literal_value(-7),
-                unit=TimeIntervalUnit.DAY,
-                timestamp_expr=start_date_expr,
-            )
-            end_date_expr = adapter.dateadd_time_interval(
-                quantity_expr=make_literal_value(7),
-                unit=TimeIntervalUnit.DAY,
-                timestamp_expr=end_date_expr,
+            partition_column_filter = PartitionColumnFilter(
+                from_timestamp=start_date_expr,
+                to_timestamp=end_date_expr,
+                buffer=TimeInterval(
+                    unit=TimeIntervalUnit.DAY,
+                    value=DEFAULT_BUFFER_NUM_DAYS,
+                ),
             )
             timestamp_condition = get_partition_filter(
                 partition_column=normalized_timestamp_column,
-                from_timestamp=start_date_expr,
-                to_timestamp=end_date_expr,
+                partition_column_filter=partition_column_filter,
                 format_string=format_string,
                 adapter=adapter,
             )

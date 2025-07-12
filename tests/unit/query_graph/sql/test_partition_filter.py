@@ -6,9 +6,9 @@ from datetime import datetime
 
 import pytest
 
-from featurebyte import SourceType
+from featurebyte import SourceType, TimeInterval, TimeIntervalUnit
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import PartitionColumnFilter, sql_to_string
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -18,24 +18,48 @@ from tests.util.helper import assert_equal_with_expected_fixture
     "source_type", [SourceType.SNOWFLAKE, SourceType.DATABRICKS_UNITY, SourceType.BIGQUERY]
 )
 @pytest.mark.parametrize(
-    "test_case, from_timestamp, to_timestamp, format_string",
+    "test_case, from_timestamp, to_timestamp, format_string, buffer",
     [
-        ("timestamp", datetime(2023, 2, 1, 0, 0, 0), datetime(2023, 5, 1, 0, 0, 0), None),
-        ("varchar", datetime(2023, 2, 1, 0, 0, 0), datetime(2023, 5, 1, 0, 0, 0), "yyyy-MM-dd"),
-        ("from_only", datetime(2023, 2, 1, 0, 0, 0), None, None),
-        ("to_only", None, datetime(2023, 5, 1, 0, 0, 0), None),
+        ("timestamp", datetime(2023, 2, 1, 0, 0, 0), datetime(2023, 5, 1, 0, 0, 0), None, None),
+        (
+            "varchar",
+            datetime(2023, 2, 1, 0, 0, 0),
+            datetime(2023, 5, 1, 0, 0, 0),
+            "yyyy-MM-dd",
+            None,
+        ),
+        ("from_only", datetime(2023, 2, 1, 0, 0, 0), None, None, None),
+        ("to_only", None, datetime(2023, 5, 1, 0, 0, 0), None, None),
+        (
+            "varchar_2d",
+            datetime(2023, 2, 1, 0, 0, 0),
+            datetime(2023, 5, 1, 0, 0, 0),
+            "yyyy-MM-dd",
+            TimeInterval(unit=TimeIntervalUnit.DAY, value=2),
+        ),
+        (
+            "varchar_2m",
+            datetime(2023, 2, 1, 0, 0, 0),
+            datetime(2023, 5, 1, 0, 0, 0),
+            "yyyy-MM-dd",
+            TimeInterval(unit=TimeIntervalUnit.MONTH, value=2),
+        ),
     ],
 )
 def test_get_partition_filter(
-    test_case, from_timestamp, to_timestamp, format_string, source_type, update_fixtures
+    test_case, from_timestamp, to_timestamp, format_string, buffer, source_type, update_fixtures
 ):
     """
     Test get_partition_filter
     """
-    expr = get_partition_filter(
-        partition_column="partition_col",
+    partition_column_filter = PartitionColumnFilter(
         from_timestamp=from_timestamp,
         to_timestamp=to_timestamp,
+        buffer=buffer,
+    )
+    expr = get_partition_filter(
+        partition_column="partition_col",
+        partition_column_filter=partition_column_filter,
         format_string=format_string,
         adapter=get_sql_adapter(
             source_info=SourceInfo(
