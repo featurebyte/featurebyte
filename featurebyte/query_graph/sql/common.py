@@ -346,8 +346,8 @@ class PartitionColumnFilter:
     Information about the partition column filter to be applied when selecting from a table
     """
 
-    from_timestamp: Optional[datetime] = None
-    to_timestamp: Optional[datetime] = None
+    from_timestamp: Optional[datetime | Expression] = None
+    to_timestamp: Optional[datetime | Expression] = None
 
 
 @dataclass

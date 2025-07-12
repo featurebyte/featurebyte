@@ -186,3 +186,29 @@ def test_on_demand_tile_sql_partition_column_filters(
         "tests/fixtures/expected_tile_sql_on_demand_partition_column_filters.sql",
         update_fixtures,
     )
+
+
+def test_scheduled_tile_sql_partition_column_filters(
+    float_feature_with_partition_column,
+    snowflake_event_table_with_partition_column,
+    source_info,
+    update_fixtures,
+):
+    """
+    Test scheduled tile sql for feature with partition column filters
+    """
+    query_graph = float_feature_with_partition_column.cached_model.graph
+    interpreter = GraphInterpreter(query_graph, source_info)
+    groupby_node = query_graph.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop("tile_compute_spec")
+    tile_sql = tile_gen_sqls[0].sql
+    assert_equal_with_expected_fixture(
+        tile_sql,
+        "tests/fixtures/expected_tile_sql_scheduled_partition_column_filters.sql",
+        update_fixtures,
+    )
