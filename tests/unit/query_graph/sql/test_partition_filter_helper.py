@@ -51,7 +51,7 @@ def test_tile_based_window_aggregate(
             event_table_id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="MONTH", value=3),
+                buffer=TimeInterval(unit="DAY", value=7),
             )
         }
     )
@@ -77,7 +77,7 @@ def test_tile_based_window_aggregate_with_offset(
             event_table_id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 30, 16, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0),
-                buffer=TimeInterval(unit="MONTH", value=3),
+                buffer=TimeInterval(unit="DAY", value=7),
             )
         }
     )
@@ -103,7 +103,7 @@ def test_time_series_window_aggregate(
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 25, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="MONTH", value=3),
+                buffer=TimeInterval(unit="DAY", value=7),
             )
         }
     )
@@ -128,6 +128,33 @@ def test_time_series_window_aggregate_with_offset(
         mapping={
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="DAY", value=7),
+            )
+        }
+    )
+
+
+@pytest.mark.parametrize("time_series_table_time_interval", [{"unit": "MONTH", "value": 1}])
+def test_time_series_window_aggregate_monthly_interval(
+    global_graph,
+    time_series_window_aggregate_feature_node,
+    time_series_table_input_node,
+    min_max_point_in_time,
+):
+    """
+    Test partition filters for a time series table with monthly interval
+    """
+    # A feature with calendar window of 7 month
+    _ = time_series_window_aggregate_feature_node
+    partition_column_filters = get_partition_filters_from_graph(
+        global_graph,
+        *min_max_point_in_time,
+    )
+    assert partition_column_filters == PartitionColumnFilters(
+        mapping={
+            time_series_table_input_node.parameters.id: PartitionColumnFilter(
+                from_timestamp=datetime(2022, 6, 1, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
                 buffer=TimeInterval(unit="MONTH", value=3),
             )
@@ -187,12 +214,12 @@ def test_mixed_features(
             event_table_input_node_with_id.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="MONTH", value=3),
+                buffer=TimeInterval(unit="DAY", value=7),
             ),
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="MONTH", value=3),
+                buffer=TimeInterval(unit="DAY", value=7),
             ),
         }
     )
