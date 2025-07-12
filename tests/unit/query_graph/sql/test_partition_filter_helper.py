@@ -6,6 +6,7 @@ from datetime import datetime
 
 import pytest
 
+from featurebyte import TimeInterval
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 
@@ -48,8 +49,9 @@ def test_tile_based_window_aggregate(
     assert partition_column_filters == PartitionColumnFilters(
         mapping={
             event_table_id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 7, 3, 0, 0, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0, 0),
+                from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             )
         }
     )
@@ -73,8 +75,9 @@ def test_tile_based_window_aggregate_with_offset(
     assert partition_column_filters == PartitionColumnFilters(
         mapping={
             event_table_id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 9, 30, 16, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0),
+                from_timestamp=datetime(2022, 12, 30, 16, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             )
         }
     )
@@ -98,8 +101,9 @@ def test_time_series_window_aggregate(
     assert partition_column_filters == PartitionColumnFilters(
         mapping={
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 9, 25, 0, 0, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0, 0),
+                from_timestamp=datetime(2022, 12, 25, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             )
         }
     )
@@ -123,8 +127,9 @@ def test_time_series_window_aggregate_with_offset(
     assert partition_column_filters == PartitionColumnFilters(
         mapping={
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 9, 22, 0, 0, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0, 0),
+                from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             )
         }
     )
@@ -180,12 +185,14 @@ def test_mixed_features(
     assert partition_column_filters == PartitionColumnFilters(
         mapping={
             event_table_input_node_with_id.parameters.id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 7, 3, 0, 0, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0, 0),
+                from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             ),
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
-                from_timestamp=datetime(2022, 9, 22, 0, 0, 0),
-                to_timestamp=datetime(2023, 9, 1, 0, 0, 0),
+                from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
+                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                buffer=TimeInterval(unit="MONTH", value=3),
             ),
         }
     )
