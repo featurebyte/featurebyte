@@ -14,6 +14,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
@@ -348,6 +349,7 @@ class PartitionColumnFilter:
 
     from_timestamp: Optional[datetime | Expression] = None
     to_timestamp: Optional[datetime | Expression] = None
+    buffer: Optional[TimeInterval] = None
 
 
 @dataclass
