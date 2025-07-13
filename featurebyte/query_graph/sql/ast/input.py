@@ -10,7 +10,7 @@ from typing import Any
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, InternalName, TableDataType, TimeIntervalUnit
+from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
@@ -27,6 +27,9 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
+from featurebyte.query_graph.sql.partition_filter_helper import (
+    get_default_partition_column_filter_buffer,
+)
 from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
@@ -106,19 +109,10 @@ class InputNode(TableNode):
             )
 
             # Add filter on partition column with a buffer if available
-            buffered_from_timestamp = self.context.adapter.dateadd_time_interval(
-                quantity_expr=make_literal_value(-7),
-                unit=TimeIntervalUnit.DAY,
-                timestamp_expr=_maybe_cast(start_date_placeholder),
-            )
-            buffered_to_timestamp = self.context.adapter.dateadd_time_interval(
-                quantity_expr=make_literal_value(7),
-                unit=TimeIntervalUnit.DAY,
-                timestamp_expr=_maybe_cast(end_date_placeholder),
-            )
             partition_column_filter = PartitionColumnFilter(
-                from_timestamp=buffered_from_timestamp,
-                to_timestamp=buffered_to_timestamp,
+                from_timestamp=_maybe_cast(start_date_placeholder),
+                to_timestamp=_maybe_cast(end_date_placeholder),
+                buffer=get_default_partition_column_filter_buffer(),
             )
             select_expr = self._apply_partition_column_filter(
                 select_expr=select_expr,
@@ -279,8 +273,7 @@ class InputNode(TableNode):
         if partition_column is not None:
             partition_filter_condition = get_partition_filter(
                 partition_column=partition_column,
-                from_timestamp=partition_column_filter.from_timestamp,
-                to_timestamp=partition_column_filter.to_timestamp,
+                partition_column_filter=partition_column_filter,
                 format_string=format_string,
                 adapter=adapter,
             )
