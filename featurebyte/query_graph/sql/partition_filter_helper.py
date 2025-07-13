@@ -204,7 +204,7 @@ def get_partition_filters_from_graph(
             ):
                 buffer = TimeInterval(unit=TimeIntervalUnit.MONTH, value=3)
             else:
-                buffer = get_default_partition_column_filter_buffer()
+                buffer = TimeInterval(unit=TimeIntervalUnit.MONTH, value=1)
             mapping[input_node_info.table_id] = PartitionColumnFilter(
                 from_timestamp=from_timestamp,
                 to_timestamp=to_timestamp,

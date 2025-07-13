@@ -51,7 +51,7 @@ def test_tile_based_window_aggregate(
             event_table_id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             )
         }
     )
@@ -77,7 +77,7 @@ def test_tile_based_window_aggregate_with_offset(
             event_table_id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 30, 16, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             )
         }
     )
@@ -103,7 +103,7 @@ def test_time_series_window_aggregate(
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 25, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             )
         }
     )
@@ -129,7 +129,7 @@ def test_time_series_window_aggregate_with_offset(
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             )
         }
     )
@@ -214,12 +214,12 @@ def test_mixed_features(
             event_table_input_node_with_id.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 10, 3, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             ),
             time_series_table_input_node.parameters.id: PartitionColumnFilter(
                 from_timestamp=datetime(2022, 12, 22, 0, 0, 0),
                 to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
-                buffer=TimeInterval(unit="DAY", value=7),
+                buffer=TimeInterval(unit="MONTH", value=1),
             ),
         }
     )
