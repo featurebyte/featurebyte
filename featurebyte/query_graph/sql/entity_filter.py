@@ -126,7 +126,9 @@ def get_table_filtered_by_entity(
                 buffer=get_default_partition_column_filter_buffer(),
             )
             timestamp_condition = get_partition_filter(
-                partition_column=normalized_timestamp_column,
+                partition_column=(
+                    timestamp_expr if format_string is not None else normalized_timestamp_column
+                ),
                 partition_column_filter=partition_column_filter,
                 format_string=format_string,
                 adapter=adapter,
