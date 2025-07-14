@@ -18,7 +18,10 @@ from featurebyte.query_graph.node.generic import (
     BaseWindowAggregateParameters,
     TimeSeriesWindowAggregateParameters,
 )
-from featurebyte.query_graph.node.input import SCDTableInputNodeParameters
+from featurebyte.query_graph.node.input import (
+    SCDTableInputNodeParameters,
+    TimeSeriesTableInputNodeParameters,
+)
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
 
 
@@ -124,6 +127,7 @@ class InputNodeWindowInfo:
     """
 
     table_id: ObjectId
+    table_time_interval: Optional[TimeInterval]
     largest_window: Optional[relativedelta] = None
     has_unbounded_window: bool = False
 
@@ -170,7 +174,14 @@ def get_partition_filters_from_graph(
                 parameters_dict = input_node.parameters.model_dump()
                 table_id = ObjectId(parameters_dict.get("id"))
                 assert table_id is not None
-                input_node_infos[input_node.name] = InputNodeWindowInfo(table_id=table_id)
+                if isinstance(input_node.parameters, TimeSeriesTableInputNodeParameters):
+                    table_time_interval = input_node.parameters.time_interval
+                else:
+                    table_time_interval = None
+                input_node_infos[input_node.name] = InputNodeWindowInfo(
+                    table_id=table_id,
+                    table_time_interval=table_time_interval,
+                )
             if relativedeltas is None:
                 # If the get_relativedeltas functions return None, it means the windows are
                 # unbounded
@@ -186,10 +197,18 @@ def get_partition_filters_from_graph(
         if not input_node_info.has_unbounded_window and input_node_info.largest_window is not None:
             from_timestamp = min_point_in_time + (-1 * input_node_info.largest_window)
             to_timestamp = max_point_in_time
+            table_time_interval = input_node_info.table_time_interval
+            if (
+                table_time_interval is not None
+                and table_time_interval.unit == TimeIntervalUnit.MONTH
+            ):
+                buffer = TimeInterval(unit=TimeIntervalUnit.MONTH, value=3)
+            else:
+                buffer = TimeInterval(unit=TimeIntervalUnit.MONTH, value=1)
             mapping[input_node_info.table_id] = PartitionColumnFilter(
                 from_timestamp=from_timestamp,
                 to_timestamp=to_timestamp,
-                buffer=TimeInterval(unit=TimeIntervalUnit.MONTH, value=3),
+                buffer=buffer,
             )
 
     return PartitionColumnFilters(mapping=mapping)
