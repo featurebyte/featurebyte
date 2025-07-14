@@ -5,6 +5,7 @@ Common helpers and data structures for feature SQL generation
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, Sequence, Tuple, Union
 
@@ -13,6 +14,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
@@ -337,3 +339,23 @@ class OnDemandEntityFilters:
         entity_filter = self.mapping[table_id]
         entity_filter.entity_columns.append(entity_column_name)
         entity_filter.table_columns.append(table_column_name)
+
+
+@dataclass
+class PartitionColumnFilter:
+    """
+    Information about the partition column filter to be applied when selecting from a table
+    """
+
+    from_timestamp: Optional[datetime | Expression] = None
+    to_timestamp: Optional[datetime | Expression] = None
+    buffer: Optional[TimeInterval] = None
+
+
+@dataclass
+class PartitionColumnFilters:
+    """
+    Collection of partition column filters for different tables
+    """
+
+    mapping: Dict[ObjectId, PartitionColumnFilter] = field(default_factory=dict)

@@ -80,6 +80,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -89,6 +90,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": "Float column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -98,6 +100,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": "Char column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -107,6 +110,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": "Text column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -116,6 +120,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -125,6 +130,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -134,6 +140,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": "Date column",
                 "dtype_metadata": {"timestamp_schema": ts_schema, "timestamp_tuple_schema": None},
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -143,6 +150,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -152,6 +160,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "critical_data_info": None,
@@ -161,6 +170,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "entity_id": None,
                 "name": "another_timestamp_col",
                 "semantic_id": None,
+                "partition_metadata": None,
             },
         ],
         "series_id_column": "col_int",

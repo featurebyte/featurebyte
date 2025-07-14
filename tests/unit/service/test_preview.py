@@ -3,6 +3,7 @@ Test preview service module
 """
 
 import textwrap
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -63,6 +64,14 @@ def feature_store_preview_fixture(feature_store):
                             {"name": "event_timestamp", "dtype": "TIMESTAMP"},
                             {"name": "created_at", "dtype": "TIMESTAMP"},
                             {"name": "cust_id", "dtype": "VARCHAR"},
+                            {
+                                "name": "partition_col",
+                                "dtype": "VARCHAR",
+                                "partition_metadata": {"is_partition_key": True},
+                                "dtype_metadata": {
+                                    "timestamp_schema": {"format_string": "%Y-%m-%d"},
+                                },
+                            },
                         ],
                         "table_details": {
                             "database_name": "sf_database",
@@ -117,6 +126,257 @@ def feature_store_sample_fixture(feature_store_preview):
     Fixture for a FeatureStoreSample
     """
     return FeatureStoreSample(**feature_store_preview.model_dump())
+
+
+@pytest.fixture(name="feature_store_sample_with_time_range")
+def feature_store_sample_with_time_range_fixture(feature_store_sample):
+    """
+    Fixture for a FeatureStoreSample with a time range
+    """
+    return FeatureStoreSample(
+        **feature_store_sample.model_dump(
+            exclude={"from_timestamp", "to_timestamp", "timestamp_column"}
+        ),
+        from_timestamp=datetime(2023, 1, 1),
+        to_timestamp=datetime(2025, 1, 1),
+        timestamp_column="event_timestamp",
+    )
+
+
+@pytest.fixture(name="scd_join_sample_with_time_range")
+def scd_join_sample_with_time_range_fixture(feature_store):
+    """
+    Fixture for an SCD join sample with a time range
+    """
+    graph_dict = {
+        "edges": [
+            {"source": "input_1", "target": "graph_1"},
+            {"source": "input_2", "target": "graph_2"},
+            {"source": "graph_1", "target": "join_1"},
+            {"source": "graph_2", "target": "join_1"},
+        ],
+        "nodes": [
+            {
+                "name": "input_1",
+                "type": "input",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {
+                            "name": "event_partition_col",
+                            "dtype": "VARCHAR",
+                            "partition_metadata": {"is_partition_key": True},
+                            "dtype_metadata": {
+                                "timestamp_schema": {"format_string": "%Y-%m-%d"},
+                            },
+                        },
+                        {
+                            "name": "ts",
+                            "dtype": "TIMESTAMP",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                        {
+                            "name": "cust_id",
+                            "dtype": "INT",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                        {
+                            "name": "event_id",
+                            "dtype": "INT",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                    ],
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "EVENT",
+                    },
+                    "feature_store_details": {"type": "snowflake", "details": None},
+                    "type": "event_table",
+                    "id": "6867f9d7b6058fa2167035d0",
+                    "timestamp_column": "ts",
+                    "id_column": "event_id",
+                    "event_timestamp_timezone_offset": None,
+                    "event_timestamp_timezone_offset_column": None,
+                    "event_timestamp_schema": None,
+                },
+            },
+            {
+                "name": "graph_1",
+                "type": "graph",
+                "output_type": "frame",
+                "parameters": {
+                    "graph": {
+                        "edges": [{"source": "proxy_input_1", "target": "project_1"}],
+                        "nodes": [
+                            {
+                                "name": "proxy_input_1",
+                                "type": "proxy_input",
+                                "output_type": "frame",
+                                "parameters": {"input_order": 0},
+                            },
+                            {
+                                "name": "project_1",
+                                "type": "project",
+                                "output_type": "frame",
+                                "parameters": {"columns": ["ts", "cust_id", "event_id"]},
+                            },
+                        ],
+                    },
+                    "output_node_name": "project_1",
+                    "type": "event_view",
+                    "metadata": {
+                        "view_mode": "auto",
+                        "drop_column_names": [],
+                        "column_cleaning_operations": [],
+                        "table_id": "6867f9d7b6058fa2167035d0",
+                    },
+                },
+            },
+            {
+                "name": "input_2",
+                "type": "input",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {
+                            "name": "scd_partition_col",
+                            "dtype": "VARCHAR",
+                            "partition_metadata": {"is_partition_key": True},
+                            "dtype_metadata": {
+                                "timestamp_schema": {"format_string": "%Y-%m-%d"},
+                            },
+                        },
+                        {
+                            "name": "effective_ts",
+                            "dtype": "TIMESTAMP",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                        {
+                            "name": "end_ts",
+                            "dtype": "VARCHAR",
+                            "dtype_metadata": {
+                                "timestamp_schema": {
+                                    "format_string": "YYYY|MM|DD|HH24:MI:SS",
+                                    "is_utc_time": True,
+                                    "timezone": None,
+                                },
+                                "timestamp_tuple_schema": None,
+                            },
+                            "partition_metadata": None,
+                        },
+                        {
+                            "name": "scd_cust_id",
+                            "dtype": "INT",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                        {
+                            "name": "scd_value",
+                            "dtype": "INT",
+                            "dtype_metadata": None,
+                            "partition_metadata": None,
+                        },
+                    ],
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "SCD",
+                    },
+                    "feature_store_details": {"type": "snowflake", "details": None},
+                    "type": "scd_table",
+                    "id": "6867f9d9b6058fa2167035dc",
+                    "natural_key_column": "scd_cust_id",
+                    "effective_timestamp_column": "effective_ts",
+                    "surrogate_key_column": None,
+                    "end_timestamp_column": "end_ts",
+                    "current_flag_column": None,
+                },
+            },
+            {
+                "name": "graph_2",
+                "type": "graph",
+                "output_type": "frame",
+                "parameters": {
+                    "graph": {
+                        "edges": [{"source": "proxy_input_1", "target": "project_1"}],
+                        "nodes": [
+                            {
+                                "name": "proxy_input_1",
+                                "type": "proxy_input",
+                                "output_type": "frame",
+                                "parameters": {"input_order": 0},
+                            },
+                            {
+                                "name": "project_1",
+                                "type": "project",
+                                "output_type": "frame",
+                                "parameters": {
+                                    "columns": [
+                                        "effective_ts",
+                                        "end_ts",
+                                        "scd_cust_id",
+                                        "scd_value",
+                                    ]
+                                },
+                            },
+                        ],
+                    },
+                    "output_node_name": "project_1",
+                    "type": "scd_view",
+                    "metadata": {
+                        "view_mode": "auto",
+                        "drop_column_names": [],
+                        "column_cleaning_operations": [],
+                        "table_id": "6867f9d9b6058fa2167035dc",
+                    },
+                },
+            },
+            {
+                "name": "join_1",
+                "type": "join",
+                "output_type": "frame",
+                "parameters": {
+                    "left_on": "cust_id",
+                    "right_on": "scd_cust_id",
+                    "left_input_columns": ["ts", "cust_id", "event_id"],
+                    "left_output_columns": ["ts", "cust_id", "event_id"],
+                    "right_input_columns": ["scd_value"],
+                    "right_output_columns": ["scd_value_latest"],
+                    "join_type": "left",
+                    "scd_parameters": {
+                        "effective_timestamp_column": "effective_ts",
+                        "natural_key_column": "scd_cust_id",
+                        "current_flag_column": None,
+                        "end_timestamp_column": "end_ts",
+                        "effective_timestamp_metadata": None,
+                        "end_timestamp_metadata": {
+                            "timestamp_schema": {
+                                "format_string": "YYYY|MM|DD|HH24:MI:SS",
+                                "is_utc_time": True,
+                                "timezone": None,
+                            },
+                            "timestamp_tuple_schema": None,
+                        },
+                        "left_timestamp_column": "ts",
+                        "left_timestamp_metadata": None,
+                    },
+                    "metadata": {"type": "join", "rsuffix": "_latest", "rprefix": ""},
+                },
+            },
+        ],
+    }
+    return FeatureStoreSample(
+        graph=graph_dict,
+        node_name="join_1",
+        from_timestamp=datetime(2023, 1, 1),
+        to_timestamp=datetime(2025, 1, 1),
+        timestamp_column="ts",
+    )
 
 
 @pytest.mark.asyncio
@@ -514,7 +774,8 @@ def expected_create_sample_table_sql_fixture():
           "col_boolean",
           "event_timestamp",
           "created_at",
-          "cust_id"
+          "cust_id",
+          "partition_col"
         FROM (
           SELECT
             CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
@@ -526,7 +787,8 @@ def expected_create_sample_table_sql_fixture():
             "col_boolean",
             "event_timestamp",
             "created_at",
-            "cust_id"
+            "cust_id",
+            "partition_col"
           FROM (
             SELECT
               "col_int" AS "col_int",
@@ -537,7 +799,8 @@ def expected_create_sample_table_sql_fixture():
               "col_boolean" AS "col_boolean",
               "event_timestamp" AS "event_timestamp",
               "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
+              CAST("cust_id" AS VARCHAR) AS "cust_id",
+              CAST("partition_col" AS VARCHAR) AS "partition_col"
             FROM "sf_database"."sf_schema"."sf_table"
           )
         )
@@ -682,45 +945,16 @@ async def test_value_counts_with_sample_on_primary_table_enable(
         """
         CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000001" AS
         SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean",
-          "event_timestamp",
-          "created_at",
-          "cust_id"
-        FROM (
-          SELECT
-            CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-            "col_int",
-            "col_float",
-            "col_char",
-            "col_text",
-            "col_binary",
-            "col_boolean",
-            "event_timestamp",
-            "created_at",
-            "cust_id"
-          FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              CAST("col_text" AS VARCHAR) AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "created_at" AS "created_at",
-              CAST("cust_id" AS VARCHAR) AS "cust_id"
-            FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
-          )
-        )
-        WHERE
-          "prob" <= 0.15000000000000002
-        ORDER BY
-          "prob"
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "created_at" AS "created_at",
+          CAST("cust_id" AS VARCHAR) AS "cust_id"
+        FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
         LIMIT 10
         """
     ).strip()
@@ -776,3 +1010,96 @@ async def test_value_counts_with_sample_on_primary_table_enable(
             assert create_sample_table_sql == expected_create_sample_table_sql
         else:
             assert create_sample_table_sql != expected_create_sample_table_sql
+
+
+@pytest.mark.asyncio
+async def test_sample_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test sample with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.sample(
+        feature_store_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_sample_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_describe_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.describe(
+        feature_store_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_describe_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_value_counts_with_partition_column_filters(
+    preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
+    seed = 1234
+
+    await preview_service.value_counts(
+        feature_store_sample_with_time_range,
+        column_names=["col_char"],
+        num_rows=50,
+        num_categories_limit=5,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_value_counts_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_scd_join_with_partition_column_filters(
+    preview_service, scd_join_sample_with_time_range, mock_snowflake_session, update_fixtures
+):
+    """Test partition column filtering is applied only on primary table"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.sample(
+        scd_join_sample_with_time_range,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_scd_join_with_partition_column_filters.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)

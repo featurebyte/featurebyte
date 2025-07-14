@@ -30,6 +30,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_table import EventTableModel
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -68,6 +69,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -77,6 +79,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": "Float column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -86,6 +89,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": "Char column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -95,6 +99,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": "Text column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -104,6 +109,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -113,6 +119,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -122,6 +129,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": "Timestamp column",
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -131,6 +139,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
             {
                 "entity_id": None,
@@ -140,6 +149,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "critical_data_info": None,
                 "description": None,
                 "dtype_metadata": None,
+                "partition_metadata": None,
             },
         ],
         "event_timestamp_column": "event_timestamp",
@@ -1503,3 +1513,107 @@ def test_event_table_with_event_timestamp_schema(snowflake_event_table_with_time
         "is_utc_time": False,
         "timezone": {"column_name": "tz_offset", "type": "offset"},
     }
+
+
+def test_create_with_datetime_partition_column_non_existing_column(snowflake_database_table):
+    """
+    Test creating EventTable with datetime partition column
+    """
+    with pytest.raises(ValidationError) as exc:
+        # Attempt to create an event table with a non-existing datetime partition column
+        # This should raise an exception since the column does not exist in the source table
+        snowflake_database_table.create_event_table(
+            name="sf_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            record_creation_timestamp_column="created_at",
+            description="Some description",
+            datetime_partition_column="non_existing_column",
+        )
+    assert "Column not found in table: non_existing_column" in str(exc.value)
+
+
+def test_create_with_datetime_partition_column_missing_format_string(
+    snowflake_database_table, catalog
+):
+    """
+    Test creating EventTable with datetime partition column with missing format string
+    """
+    _ = catalog
+    with pytest.raises(ValidationError) as exc:
+        # Attempt to create an event table with a datetime partition column with missing format string
+        # This should raise an exception since the column is expected to have a format string
+        snowflake_database_table.create_event_table(
+            name="sf_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            record_creation_timestamp_column="created_at",
+            description="Some description",
+            datetime_partition_column="col_text",
+        )
+    assert "timestamp_schema is required for col_text with ambiguous timestamp type VARCHAR" in str(
+        exc.value
+    )
+
+
+def test_create_event_table_partition_column_success(
+    snowflake_event_table_with_partition_column, catalog
+):
+    """
+    Test EventTable creation using tabular source
+    """
+    _ = catalog
+    event_table = snowflake_event_table_with_partition_column
+
+    # check that node parameter is set properly
+    node_params = event_table.frame.node.parameters
+    assert node_params.id == event_table.id
+    assert node_params.type == TableDataType.EVENT_TABLE
+
+    # check that event table columns for autocompletion
+    assert set(event_table.columns).issubset(dir(event_table))
+    assert event_table._ipython_key_completions_() == set(event_table.columns)
+
+    # check partition metadata is set properly
+    assert event_table.columns_info[3].partition_metadata.is_partition_key is True
+    assert event_table.columns_info[3].dtype_metadata.timestamp_schema == TimestampSchema(
+        format_string="%Y-%m-%d %H:%M:%S", is_utc_time=None, timezone=None
+    )
+
+    # expect partition metadata to be cleared for other columns
+    for col_info in event_table.columns_info:
+        if col_info.name != "col_text":
+            assert col_info.partition_metadata is None
+
+
+def test_create_event_table_partition_column_shared_column(
+    snowflake_database_table, event_table_dict, catalog
+):
+    """
+    Test EventTable creation specifying partition column with the same column as event timestamp column
+    """
+    _ = catalog
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="col_text",
+        event_timestamp_schema=TimestampSchema(
+            format_string="%Y-%m-%d %H:%M:%S",
+        ),
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+        datetime_partition_column="col_text",
+        datetime_partition_schema=TimestampSchema(
+            format_string="%Y-%m-%d",
+        ),
+    )
+
+    # expect col_text to be marked as partition key but uses event_timestamp_schema for dtype_metadata
+    assert (
+        event_table.columns_info[3].dtype_metadata.timestamp_schema.format_string
+        == "%Y-%m-%d %H:%M:%S"
+    )
+    assert event_table.columns_info[3].partition_metadata == PartitionMetadata(
+        is_partition_key=True
+    )

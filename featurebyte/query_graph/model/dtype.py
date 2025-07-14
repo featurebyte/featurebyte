@@ -46,6 +46,20 @@ class DBVarTypeInfo(FeatureByteBaseModel):
             return None
         return self.metadata.timestamp_schema
 
+    @property
+    def timestamp_format_string(self) -> Optional[str]:
+        """
+        Timestamp format string from the DBVarTypeInfo
+
+        Returns
+        -------
+        Optional[str]
+        """
+        timestamp_schema = self.timestamp_schema
+        if timestamp_schema is None:
+            return None
+        return timestamp_schema.format_string
+
     def remap_column_name(self, column_name_map: dict[str, str]) -> "DBVarTypeInfo":
         """
         Remap column name in the DBVarTypeInfo
@@ -81,3 +95,11 @@ class DBVarTypeInfo(FeatureByteBaseModel):
                 )
 
         return self
+
+
+class PartitionMetadata(FeatureByteBaseModel):
+    """
+    Metadata for PartitionMetadata
+    """
+
+    is_partition_key: bool

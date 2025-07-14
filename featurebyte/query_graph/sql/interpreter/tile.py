@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     EventTableTimestampFilter,
     OnDemandEntityFilters,
+    PartitionColumnFilters,
     SQLType,
     sql_to_string,
 )
@@ -197,7 +198,9 @@ class TileSQLGenerator:
         self.is_on_demand = is_on_demand
         self.source_info = source_info
 
-    def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
+    def construct_tile_gen_sql(
+        self, starting_node: Node, partition_column_filters: Optional[PartitionColumnFilters]
+    ) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         There can be more than one tile table to build if the feature depends on more than one
@@ -208,6 +211,8 @@ class TileSQLGenerator:
         ----------
         starting_node : Node
             Starting node (typically corresponding to selected features) to search from
+        partition_column_filters : Optional[PartitionColumnFilters]
+            Optional partition column filters to apply to the tile building SQLs
 
         Returns
         -------
@@ -226,7 +231,10 @@ class TileSQLGenerator:
                 on_demand_entity_filters = None
 
             info = self.make_one_tile_sql(
-                groupby_node, event_table_timestamp_filter, on_demand_entity_filters
+                groupby_node,
+                event_table_timestamp_filter,
+                on_demand_entity_filters,
+                partition_column_filters=partition_column_filters,
             )
             sqls.append(info)
 
@@ -366,6 +374,7 @@ class TileSQLGenerator:
         groupby_node: GroupByNode,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
         on_demand_entity_filters: Optional[OnDemandEntityFilters],
+        partition_column_filters: Optional[PartitionColumnFilters],
     ) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
@@ -377,6 +386,8 @@ class TileSQLGenerator:
             Event table timestamp filter to apply if applicable
         on_demand_entity_filters: Optional[OnDemandEntityFilters]
             On demand entity filters to apply if applicable
+        partition_column_filters: Optional[PartitionColumnFilters]
+            Partition column filters to apply if applicable
 
         Returns
         -------
@@ -392,6 +403,7 @@ class TileSQLGenerator:
             source_info=self.source_info,
             event_table_timestamp_filter=event_table_timestamp_filter,
             on_demand_entity_filters=on_demand_entity_filters,
+            partition_column_filters=partition_column_filters,
         ).build(groupby_node)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
@@ -434,7 +446,12 @@ class TileGenMixin(BaseGraphInterpreter):
         Data source type information
     """
 
-    def construct_tile_gen_sql(self, starting_node: Node, is_on_demand: bool) -> list[TileGenSql]:
+    def construct_tile_gen_sql(
+        self,
+        starting_node: Node,
+        is_on_demand: bool,
+        partition_column_filters: Optional[PartitionColumnFilters] = None,
+    ) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         Parameters
@@ -443,6 +460,8 @@ class TileGenMixin(BaseGraphInterpreter):
             Starting node (typically corresponding to selected features) to search from
         is_on_demand : bool
             Whether the SQL is for on-demand tile building for historical features
+        partition_column_filters : Optional[PartitionColumnFilters]
+            Optional partition column filters to apply to the tile building SQLs
 
         Returns
         -------
@@ -452,4 +471,6 @@ class TileGenMixin(BaseGraphInterpreter):
         generator = TileSQLGenerator(
             self.query_graph, is_on_demand=is_on_demand, source_info=self.source_info
         )
-        return generator.construct_tile_gen_sql(flat_starting_node)
+        return generator.construct_tile_gen_sql(
+            flat_starting_node, partition_column_filters=partition_column_filters
+        )

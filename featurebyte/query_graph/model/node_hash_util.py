@@ -84,6 +84,30 @@ def exclude_aggregation_and_lookup_node_timestamp_metadata(
     return node_parameters
 
 
+def exclude_partition_metadata_from_node_parameters(
+    node_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Exclude partition metadata from node parameters if it is None.
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters
+
+    Returns
+    -------
+    Dict[str, Any]
+    """
+    if "columns" not in node_parameters:
+        return node_parameters
+
+    for column_spec in node_parameters["columns"]:
+        column_spec.pop("partition_metadata", None)
+
+    return node_parameters
+
+
 def exclude_non_aggregation_with_timestamp_node_timestamp_metadata(
     node_type: NodeType, node_parameters: Dict[str, Any]
 ) -> Dict[str, Any]:

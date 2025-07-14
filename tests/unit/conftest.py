@@ -59,6 +59,7 @@ from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
@@ -886,6 +887,10 @@ def snowflake_query_map_fixture():
                 "cust_id": [1, 2, 3],
             }
         ],
+        # For time series table validation
+        'SELECT\n  COUNT(DISTINCT "date") AS "date"\nFROM "sf_database"."sf_schema"."time_series_table"': [
+            {"date": 10}
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
@@ -1150,6 +1155,12 @@ def snowflake_event_table_with_timestamp_schema_id_fixture():
     return ObjectId("67c68ea033e0a38cbf517412")
 
 
+@pytest.fixture(name="snowflake_event_table_with_partition_column_id")
+def snowflake_event_table_with_partition_column_id_fixture():
+    """Snowflake event table ID with partition column schema"""
+    return ObjectId("68649bb0371e74d37cd68f2e")
+
+
 @pytest.fixture(name="snowflake_item_table_id")
 def snowflake_item_table_id_fixture():
     """Snowflake event table ID"""
@@ -1290,6 +1301,40 @@ def snowflake_event_table_with_timestamp_schema_fixture(
         ),
         record_creation_timestamp_column="created_at",
         _id=snowflake_event_table_with_timestamp_schema_id,
+    )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["cust_id"].as_entity(cust_id_entity.name)
+    yield event_table
+
+
+@pytest.fixture(name="snowflake_event_table_with_partition_column")
+def snowflake_event_table_with_partition_column_fixture(
+    snowflake_database_table,
+    snowflake_event_table_with_partition_column_id,
+    transaction_entity,
+    cust_id_entity,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """EventTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+
+    # mark a column as partition key
+    snowflake_database_table.columns_info[0].partition_metadata = PartitionMetadata(
+        is_partition_key=True,
+    )
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+        datetime_partition_column="col_text",
+        datetime_partition_schema=TimestampSchema(
+            format_string="%Y-%m-%d %H:%M:%S",
+        ),
+        _id=snowflake_event_table_with_partition_column_id,
     )
     event_table["col_int"].as_entity(transaction_entity.name)
     event_table["cust_id"].as_entity(cust_id_entity.name)
@@ -1476,6 +1521,10 @@ def snowflake_time_series_table_fixture(
         record_creation_timestamp_column="created_at",
         description="test time series table",
         _id=snowflake_time_series_table_id,
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
     )
     assert time_series_table.frame.node.parameters.id == time_series_table.id
     assert time_series_table.id == snowflake_time_series_table_id
@@ -2242,6 +2291,28 @@ def float_feature_with_event_timestamp_schema_fixture(
     """
     snowflake_event_table_with_timestamp_schema.cust_id.as_entity(cust_id_entity.name)
     event_view = snowflake_event_table_with_timestamp_schema.get_view()
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    feature = feature.astype(float)
+    feature.name = "sum_30m"
+    feature.save()
+    return feature
+
+
+@pytest.fixture(name="float_feature_with_partition_column")
+def float_feature_with_partition_column_fixture(
+    snowflake_event_table_with_partition_column, cust_id_entity, feature_group_feature_job_setting
+):
+    """
+    Get a non-time-based feature with event timestamp schema
+    """
+    snowflake_event_table_with_partition_column.cust_id.as_entity(cust_id_entity.name)
+    event_view = snowflake_event_table_with_partition_column.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="sum",

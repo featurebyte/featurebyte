@@ -42,6 +42,7 @@ class SCDTableCreate(TableCreate):
         "effective_timestamp_column",
         "end_timestamp_column",
         "current_flag_column",
+        "datetime_partition_column",
     )(TableCreate._special_column_validator)
 
     @model_validator(mode="after")

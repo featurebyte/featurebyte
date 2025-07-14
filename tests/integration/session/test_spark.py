@@ -9,6 +9,8 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import PartitionMetadata
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base_spark import BaseSparkSession
 
 
@@ -112,3 +114,59 @@ async def test_register_table(session):
     await session.register_table(table_name=table_name, dataframe=df_training_events)
     df_retrieve = await session.execute_query(f"SELECT * FROM {table_name}")
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
+
+
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_partitioned_table_column_info(session):
+    """
+    Test list columns of a partitioned table.
+    """
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(
+            ["2001-01-02 10:00:00.123456789"] * 2 + ["2001-01-03 10:00:00.123456789"] * 3
+        ),
+        "üser id": [1, 2, 3, 4, 5],
+    })
+    table_name = "test_table_test_register_table"
+    await session.register_table(table_name=table_name, dataframe=df_training_events)
+
+    partitioned_table_name = "test_table_test_partitioned_table"
+    source_info = session.get_source_info()
+    await session.create_table_as(
+        table_details=TableDetails(
+            database_name=source_info.database_name,
+            schema_name=source_info.schema_name,
+            table_name=partitioned_table_name,
+        ),
+        select_expr=f"SELECT * FROM `{source_info.database_name}`.`{source_info.schema_name}`.{table_name}",
+        partition_keys=["POINT_IN_TIME"],
+    )
+    columns = await session.list_table_schema(
+        database_name=source_info.database_name,
+        schema_name=source_info.schema_name,
+        table_name=partitioned_table_name,
+    )
+    assert "POINT_IN_TIME" in columns
+    assert "üser id" in columns
+    assert columns == OrderedDict([
+        (
+            "POINT_IN_TIME",
+            ColumnSpecWithDescription(
+                name="POINT_IN_TIME",
+                dtype="TIMESTAMP",
+                dtype_metadata=None,
+                partition_metadata=PartitionMetadata(is_partition_key=True),
+                description=None,
+            ),
+        ),
+        (
+            "üser id",
+            ColumnSpecWithDescription(
+                name="üser id",
+                dtype="INT",
+                dtype_metadata=None,
+                description=None,
+            ),
+        ),
+    ])

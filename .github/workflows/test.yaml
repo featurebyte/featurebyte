@@ -293,8 +293,9 @@ jobs:
         pytest-group:
           - 1
           - 2
+          - 3
     env:
-      PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
+      PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2

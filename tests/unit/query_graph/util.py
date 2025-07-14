@@ -177,6 +177,7 @@ def make_context(
         event_table_timestamp_filter=None,
         aggregation_specs=None,
         on_demand_entity_filters=None,
+        partition_column_filters=None,
     )
     return context
 

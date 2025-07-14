@@ -25,7 +25,10 @@ class ItemTableCreate(TableCreate):
 
     # pydantic validators
     _special_columns_validator = field_validator(
-        "record_creation_timestamp_column", "event_id_column", "item_id_column"
+        "record_creation_timestamp_column",
+        "event_id_column",
+        "item_id_column",
+        "datetime_partition_column",
     )(TableCreate._special_column_validator)
 
 
