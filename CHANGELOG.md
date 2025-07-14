@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.1.0 (2025-07-14)
+
+### 💡 Enhancements
+
++ `service` Implement Development Datasets for faster experimentation.
++ `service` Add datetime partition column and schema fields to event and time series table creation parameters
+
+### 🐛 Bug Fixes
+
++ `service` Fix inconsistent request timestamp causing missing values in time series batch features
+
 ## v3.1.0 (2025-06-28)
 
 ### 💡 Enhancements
