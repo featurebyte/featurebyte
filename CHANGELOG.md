@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.1.0 (2025-07-14)
+## v3.1.2 (2025-07-14)
 
 ### 💡 Enhancements
 
@@ -10,6 +10,10 @@
 ### 🐛 Bug Fixes
 
 + `service` Fix inconsistent request timestamp causing missing values in time series batch features
+
+## v3.1.1 (2025-07-14) YANKED
+
+Publishing error
 
 ## v3.1.0 (2025-06-28)
 
