@@ -9,7 +9,7 @@ from fastapi import Request
 
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models import FeatureStoreModel
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import (
@@ -96,14 +96,14 @@ class CredentialController(
         return CredentialRead(**saved_credentials.model_dump(by_alias=True))
 
     async def update_credential(
-        self, credential_id: PyObjectId, data: CredentialUpdate
+        self, credential_id: PydanticObjectId, data: CredentialUpdate
     ) -> CredentialRead:
         """
         Update credential
 
         Parameters
         ----------
-        credential_id: PyObjectId
+        credential_id: PydanticObjectId
             credential id
         data: CredentialUpdate
             CredentialUpdate object
@@ -133,13 +133,13 @@ class CredentialController(
         assert document is not None
         return CredentialRead(**document.model_dump(by_alias=True))
 
-    async def delete_credential(self, credential_id: PyObjectId) -> None:
+    async def delete_credential(self, credential_id: PydanticObjectId) -> None:
         """
         Delete credential
 
         Parameters
         ----------
-        credential_id: PyObjectId
+        credential_id: PydanticObjectId
             Credential ID
 
         Raises

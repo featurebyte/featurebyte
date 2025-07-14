@@ -10,7 +10,7 @@ from typing import Optional, cast
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -70,7 +70,7 @@ async def list_feature_job_setting_analysis(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-    event_table_id: Optional[PyObjectId] = None,
+    event_table_id: Optional[PydanticObjectId] = None,
 ) -> FeatureJobSettingAnalysisList:
     """
     List Feature Job Setting Analysis
@@ -94,7 +94,7 @@ async def list_feature_job_setting_analysis(
 @router.get("/{feature_job_setting_analysis_id}", response_model=FeatureJobSettingAnalysisModel)
 async def get_feature_job_setting_analysis(
     request: Request,
-    feature_job_setting_analysis_id: PyObjectId,
+    feature_job_setting_analysis_id: PydanticObjectId,
 ) -> FeatureJobSettingAnalysisModel:
     """
     Retrieve Feature Job Setting Analysis
@@ -109,7 +109,7 @@ async def get_feature_job_setting_analysis(
 @router.get("/{feature_job_setting_analysis_id}/info", response_model=FeatureJobSettingAnalysisInfo)
 async def get_feature_job_setting_analysis_info(
     request: Request,
-    feature_job_setting_analysis_id: PyObjectId,
+    feature_job_setting_analysis_id: PydanticObjectId,
     verbose: bool = VerboseQuery,
 ) -> FeatureJobSettingAnalysisInfo:
     """
@@ -125,7 +125,7 @@ async def get_feature_job_setting_analysis_info(
 
 @router.get("/{feature_job_setting_analysis_id}/report")
 async def get_feature_job_setting_analysis_report(
-    request: Request, feature_job_setting_analysis_id: PyObjectId
+    request: Request, feature_job_setting_analysis_id: PydanticObjectId
 ) -> StreamingResponse:
     """
     Retrieve FeatureJobSettingAnalysis pdf report
@@ -142,7 +142,7 @@ async def get_feature_job_setting_analysis_report(
 @router.get("/audit/{feature_job_setting_analysis_id}", response_model=AuditDocumentList)
 async def list_feature_job_setting_analysis_audit_logs(
     request: Request,
-    feature_job_setting_analysis_id: PyObjectId,
+    feature_job_setting_analysis_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = AuditLogSortByQuery,
@@ -188,7 +188,7 @@ async def run_backtest(
 )
 async def update_feature_job_setting_analysis_description(
     request: Request,
-    feature_job_setting_analysis_id: PyObjectId,
+    feature_job_setting_analysis_id: PydanticObjectId,
     data: DescriptionUpdate,
 ) -> FeatureJobSettingAnalysisModel:
     """
@@ -206,7 +206,7 @@ async def update_feature_job_setting_analysis_description(
 
 @router.delete("/{feature_job_setting_analysis_id}")
 async def delete_feature_job_setting_analysis(
-    request: Request, feature_job_setting_analysis_id: PyObjectId
+    request: Request, feature_job_setting_analysis_id: PydanticObjectId
 ) -> None:
     """
     Delete Feature Job Setting Analysis

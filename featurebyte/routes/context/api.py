@@ -10,7 +10,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import Request
 
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
@@ -67,13 +67,13 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             response_model=ContextInfo,
         )
 
-    async def get_object(self, request: Request, context_id: PyObjectId) -> ContextModel:
+    async def get_object(self, request: Request, context_id: PydanticObjectId) -> ContextModel:
         return await super().get_object(request, context_id)
 
     async def list_audit_logs(
         self,
         request: Request,
-        context_id: PyObjectId,
+        context_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
         sort_by: Optional[str] = AuditLogSortByQuery,
@@ -85,7 +85,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         )
 
     async def update_description(
-        self, request: Request, context_id: PyObjectId, data: DescriptionUpdate
+        self, request: Request, context_id: PydanticObjectId, data: DescriptionUpdate
     ) -> ContextModel:
         return await super().update_description(request, context_id, data)
 
@@ -101,7 +101,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         result: ContextModel = await controller.create_context(data=data)
         return result
 
-    async def delete_object(self, request: Request, context_id: PyObjectId) -> DeleteResponse:
+    async def delete_object(self, request: Request, context_id: PydanticObjectId) -> DeleteResponse:
         """
         Delete Context
         """
@@ -110,7 +110,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         return DeleteResponse()
 
     async def update_context(
-        self, request: Request, context_id: PyObjectId, data: ContextUpdate
+        self, request: Request, context_id: PydanticObjectId, data: ContextUpdate
     ) -> ContextModel:
         """
         Update Context
@@ -124,7 +124,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
     @staticmethod
     async def list_context_observation_tables(
         request: Request,
-        context_id: PyObjectId,
+        context_id: PydanticObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
     ) -> ObservationTableList:
@@ -139,7 +139,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         )
         return observation_table_list
 
-    async def context_info(self, request: Request, context_id: PyObjectId) -> ContextInfo:
+    async def context_info(self, request: Request, context_id: PydanticObjectId) -> ContextInfo:
         """
         Get Context Info
         """

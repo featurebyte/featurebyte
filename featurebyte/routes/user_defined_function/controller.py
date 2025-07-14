@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple, cast
 from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
-from featurebyte.models.base import PyObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
@@ -129,7 +129,7 @@ class UserDefinedFunctionController(
 
     async def update_user_defined_function(
         self,
-        document_id: PyObjectId,
+        document_id: PydanticObjectId,
         data: UserDefinedFunctionUpdate,
     ) -> UserDefinedFunctionModel:
         """
@@ -137,7 +137,7 @@ class UserDefinedFunctionController(
 
         Parameters
         ----------
-        document_id: PyObjectId
+        document_id: PydanticObjectId
             UserDefinedFunction id
         data: UserDefinedFunctionUpdate
             UserDefinedFunction update payload
@@ -203,7 +203,7 @@ class UserDefinedFunctionController(
         sort_by: list[tuple[str, SortDir]] | None = None,
         search: str | None = None,
         name: str | None = None,
-        feature_store_id: PyObjectId | None = None,
+        feature_store_id: PydanticObjectId | None = None,
     ) -> UserDefinedFunctionList:
         """
         List UserDefinedFunction stored in persistent
@@ -220,7 +220,7 @@ class UserDefinedFunctionController(
             Search token to be used in filtering
         name: str | None
             Feature name to be used in filtering
-        feature_store_id: PyObjectId | None
+        feature_store_id: PydanticObjectId | None
             FeatureStore id to be used in filtering
 
         Returns
