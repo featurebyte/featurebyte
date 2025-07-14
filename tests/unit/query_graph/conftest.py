@@ -362,8 +362,18 @@ def event_table_input_node_with_id_fixture(
     return node_input
 
 
+@pytest.fixture(name="time_series_table_time_interval")
+def time_series_table_time_interval_fixture():
+    """
+    Fixture for time series table time interval. Default to 1 day and can be overwritten by tests.
+    """
+    return {"unit": "DAY", "value": 1}
+
+
 @pytest.fixture(name="time_series_table_input_node")
-def time_series_table_input_node_fixture(global_graph, input_details):
+def time_series_table_input_node_fixture(
+    global_graph, input_details, time_series_table_time_interval
+):
     """Fixture of an input node for a time series table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "customer_snapshot"
@@ -380,7 +390,7 @@ def time_series_table_input_node_fixture(global_graph, input_details):
         ],
         "reference_datetime_column": "snapshot_date",
         "reference_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
-        "time_interval": {"unit": "DAY", "value": 1},
+        "time_interval": time_series_table_time_interval,
         "id": ObjectId("67643eeab0f7b5c9c7683e46"),
     }
     node_params.update(input_details)
@@ -1723,10 +1733,11 @@ def non_tile_window_aggregation_complex_feature_node_fixture(global_graph, input
 
 
 @pytest.fixture(name="time_series_window_aggregate_node_params")
-def time_series_window_aggregate_node_params_fixture():
+def time_series_window_aggregate_node_params_fixture(time_series_table_time_interval):
     """
     Fixture for time series window aggregate node parameters
     """
+    unit = time_series_table_time_interval["unit"]
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
@@ -1739,7 +1750,7 @@ def time_series_window_aggregate_node_params_fixture():
             "reference_timezone": "Asia/Singapore",
         },
         "names": ["a_7d_sum"],
-        "windows": [{"unit": "DAY", "size": 7}],
+        "windows": [{"unit": unit, "size": 7}],
         "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
         "reference_datetime_column": "snapshot_date",
         "reference_datetime_metadata": {
