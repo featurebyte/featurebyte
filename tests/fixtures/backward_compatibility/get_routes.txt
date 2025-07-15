@@ -4,8 +4,8 @@
 /context
 /credential
 /deployment
-/deployment/all/
-/deployment/summary/
+/deployment/all
+/deployment/summary
 /development_dataset
 /dimension_table
 /entity
@@ -28,6 +28,7 @@
 /static_source_table
 /status
 /system_metrics
+/system_metrics/download
 /table
 /target
 /target_namespace

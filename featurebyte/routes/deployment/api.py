@@ -222,7 +222,7 @@ async def list_all_deployments(
     return deployment_list
 
 
-@router.get("/summary/", response_model=DeploymentSummary)
+@router.get("/summary", response_model=DeploymentSummary)
 async def get_deployment_summary(
     request: Request,
 ) -> DeploymentSummary:
