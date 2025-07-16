@@ -106,19 +106,19 @@ def test_list_deployment(deployment, snowflake_feature_store):
     deployment.enable()
 
     original_catalog = fb.Catalog.get_active()
-    response = client.get("/deployment/summary/")
+    response = client.get("/deployment/summary")
     assert response.status_code == 200
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
     # make sure deployment can be retrieved in different catalog
     catalog = fb.Catalog.create("another_catalog", feature_store_name=snowflake_feature_store.name)
     fb.Catalog.activate(catalog.name)
-    response = client.get("/deployment/summary/")
+    response = client.get("/deployment/summary")
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
     # change back to original catalog
     fb.Catalog.activate(original_catalog.name)
-    response = client.get("/deployment/summary/")
+    response = client.get("/deployment/summary")
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
 

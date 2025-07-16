@@ -60,6 +60,40 @@ async def create_deployment(request: Request, data: DeploymentCreate) -> Task:
     return task
 
 
+@router.get("/all")
+async def list_all_deployments(
+    request: Request,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[SortDir] = SortDirQuery,
+    enabled: Optional[bool] = Query(default=None),
+) -> AllDeploymentList:
+    """
+    List All Deployments (Regardless of Catalog)
+    """
+    controller = request.state.app_container.all_deployment_controller
+    deployment_list: AllDeploymentList = await controller.list_all_deployments(
+        page=page,
+        page_size=page_size,
+        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
+        enabled=enabled,
+    )
+    return deployment_list
+
+
+@router.get("/summary", response_model=DeploymentSummary)
+async def get_deployment_summary(
+    request: Request,
+) -> DeploymentSummary:
+    """
+    Get Deployment Summary
+    """
+    controller = request.state.app_container.all_deployment_controller
+    deployment_summary: DeploymentSummary = await controller.get_deployment_summary()
+    return deployment_summary
+
+
 @router.get("/{deployment_id}", response_model=DeploymentModel)
 async def get_deployment(request: Request, deployment_id: PydanticObjectId) -> DeploymentModel:
     """
@@ -198,40 +232,6 @@ async def get_deployment_job_history(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     return await controller.get_deployment_job_history(ObjectId(deployment_id), num_runs)
-
-
-@router.get("/all/")
-async def list_all_deployments(
-    request: Request,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    enabled: Optional[bool] = Query(default=None),
-) -> AllDeploymentList:
-    """
-    List All Deployments (Regardless of Catalog)
-    """
-    controller = request.state.app_container.all_deployment_controller
-    deployment_list: AllDeploymentList = await controller.list_all_deployments(
-        page=page,
-        page_size=page_size,
-        sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
-        enabled=enabled,
-    )
-    return deployment_list
-
-
-@router.get("/summary/", response_model=DeploymentSummary)
-async def get_deployment_summary(
-    request: Request,
-) -> DeploymentSummary:
-    """
-    Get Deployment Summary
-    """
-    controller = request.state.app_container.all_deployment_controller
-    deployment_summary: DeploymentSummary = await controller.get_deployment_summary()
-    return deployment_summary
 
 
 @router.patch("/{deployment_id}/description", response_model=DeploymentModel)

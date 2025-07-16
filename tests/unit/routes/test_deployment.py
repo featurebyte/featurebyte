@@ -294,11 +294,11 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         # should work without active catalog id
         del test_api_client.headers["active-catalog-id"]
-        response = test_api_client.get("/deployment/all/?enabled=true")
+        response = test_api_client.get("/deployment/all?enabled=true")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"page": 1, "page_size": 10, "total": 0, "data": []}
 
-        response = test_api_client.get("/deployment/all/")
+        response = test_api_client.get("/deployment/all")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == expected_response
 
@@ -306,7 +306,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id)
 
         # check all deployments again
-        response = test_api_client.get("/deployment/all/?enabled=true")
+        response = test_api_client.get("/deployment/all?enabled=true")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == expected_response
 
@@ -317,7 +317,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"page": 1, "page_size": 10, "total": 0, "data": []}
 
-        response = test_api_client.get("/deployment/all/?enabled=true")
+        response = test_api_client.get("/deployment/all?enabled=true")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == expected_response
 

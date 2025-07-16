@@ -136,7 +136,7 @@ def list_deployments(
     """
     output = []
     for item_dict in iterate_api_object_using_paginated_routes(
-        route="/deployment/all/", params={"enabled": True}
+        route="/deployment/all", params={"enabled": True}
     ):
         output.append(item_dict)
     columns = ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
