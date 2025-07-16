@@ -9,6 +9,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.tile import JoinKeysLineage
@@ -157,8 +158,12 @@ def test_on_demand_tile_sql_partition_column_filters(
     partition_column_filters = PartitionColumnFilters(
         mapping={
             snowflake_event_table_with_partition_column.id: PartitionColumnFilter(
-                from_timestamp=datetime(2023, 1, 1, 0, 0, 0),
-                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                from_timestamp=make_literal_value(
+                    datetime(2023, 1, 1, 0, 0, 0), cast_as_timestamp=True
+                ),
+                to_timestamp=make_literal_value(
+                    datetime(2023, 6, 1, 0, 0, 0), cast_as_timestamp=True
+                ),
             )
         }
     )
