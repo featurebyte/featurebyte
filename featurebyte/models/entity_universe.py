@@ -46,6 +46,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
+from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
@@ -235,7 +236,14 @@ class BaseEntityUniverseConstructor:
         flat_node = flat_graph.get_node_by_name(node_name_map[node.name])
         self.graph = flat_graph
         self.node = flat_node
+        self.adapter = get_sql_adapter(source_info)
 
+        partition_column_filters = get_partition_filters_from_graph(
+            query_graph=flat_graph,
+            min_point_in_time=expressions.Identifier(this=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+            max_point_in_time=expressions.Identifier(this=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+            adapter=self.adapter,
+        )
         sql_graph = SQLOperationGraph(
             self.graph,
             SQLType.AGGREGATION,
@@ -244,6 +252,7 @@ class BaseEntityUniverseConstructor:
                 graph=graph,
                 node=node,
             ),
+            partition_column_filters=partition_column_filters,
         )
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
@@ -256,8 +265,6 @@ class BaseEntityUniverseConstructor:
         self.aggregate_input_column_dtypes = {
             source_col.name: source_col.dtype for source_col in op_struct.source_columns
         }
-
-        self.adapter = get_sql_adapter(source_info)
 
     @abstractmethod
     def get_entity_universe_template(self) -> List[Expression]:

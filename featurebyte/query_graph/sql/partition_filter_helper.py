@@ -2,12 +2,14 @@
 Helpers to derive partition filers from query graph
 """
 
+import math
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
 from bson import ObjectId
 from dateutil.relativedelta import relativedelta
+from sqlglot.expressions import Expression
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import TimeIntervalUnit
@@ -22,6 +24,8 @@ from featurebyte.query_graph.node.input import (
     SCDTableInputNodeParameters,
     TimeSeriesTableInputNodeParameters,
 )
+from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
 
 
@@ -57,10 +61,10 @@ def get_relativedeltas_from_window_aggregate_params(
     for window in parameters.windows:
         if window is None:
             return None
-        duration_seconds = parse_duration_string(window)
+        duration_minutes = math.ceil(parse_duration_string(window) / 60)
         if parameters.offset is not None:
-            duration_seconds += parse_duration_string(parameters.offset)
-        out.append(relativedelta(seconds=duration_seconds))
+            duration_minutes += math.ceil(parse_duration_string(parameters.offset) / 60)
+        out.append(relativedelta(minutes=duration_minutes))
     return out
 
 
@@ -120,6 +124,30 @@ def get_larger_window(current: Optional[relativedelta], new_value: relativedelta
     return current
 
 
+def convert_relativedelta_to_time_interval(delta: relativedelta) -> TimeInterval:
+    """
+    Convert a relativedelta to a TimeInterval.
+
+    Parameters
+    ----------
+    delta: relativedelta
+        The relativedelta to convert.
+
+    Returns
+    -------
+    TimeInterval
+        The corresponding TimeInterval.
+    """
+    # The relativedelta is either in months or minutes since we only produce these units in the
+    # helper functions above. But relativedelta normalizes the values internally, so we need to
+    # calculate the total months and minutes.
+    total_months = delta.years * 12 + delta.months
+    total_minutes = delta.days * 24 * 60 + delta.hours * 60 + delta.minutes
+    if total_months:
+        return TimeInterval(unit=TimeIntervalUnit.MONTH, value=total_months)
+    return TimeInterval(unit=TimeIntervalUnit.MINUTE, value=total_minutes)
+
+
 @dataclass
 class InputNodeWindowInfo:
     """
@@ -134,8 +162,9 @@ class InputNodeWindowInfo:
 
 def get_partition_filters_from_graph(
     query_graph: QueryGraphModel,
-    min_point_in_time: datetime,
-    max_point_in_time: datetime,
+    min_point_in_time: Expression,
+    max_point_in_time: Expression,
+    adapter: BaseAdapter,
 ) -> PartitionColumnFilters:
     """
     Get partition filters from the query graph.
@@ -144,10 +173,12 @@ def get_partition_filters_from_graph(
     ----------
     query_graph: QueryGraphModel
         The query graph model
-    min_point_in_time: datetime
+    min_point_in_time: Expression
         The minimum point in time to consider for partition filtering
-    max_point_in_time: datetime
+    max_point_in_time: Expression
         The maximum point in time to consider for partition filtering
+    adapter: BaseAdapter
+        The SQL adapter to use for generating expressions
 
     Returns
     -------
@@ -195,7 +226,14 @@ def get_partition_filters_from_graph(
     mapping = {}
     for input_node_info in input_node_infos.values():
         if not input_node_info.has_unbounded_window and input_node_info.largest_window is not None:
-            from_timestamp = min_point_in_time + (-1 * input_node_info.largest_window)
+            largest_window_interval = convert_relativedelta_to_time_interval(
+                input_node_info.largest_window
+            )
+            from_timestamp = adapter.dateadd_time_interval(
+                quantity_expr=make_literal_value(-1 * largest_window_interval.value),
+                unit=largest_window_interval.unit,
+                timestamp_expr=min_point_in_time,
+            )
             to_timestamp = max_point_in_time
             table_time_interval = input_node_info.table_time_interval
             if (

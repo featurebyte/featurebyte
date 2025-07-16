@@ -10,6 +10,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
@@ -254,8 +255,12 @@ def test_get_historical_feature_query_set__partition_column_filters(
     partition_column_filters = PartitionColumnFilters(
         mapping={
             snowflake_time_series_table.id: PartitionColumnFilter(
-                from_timestamp=datetime(2023, 1, 1, 0, 0, 0),
-                to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+                from_timestamp=make_literal_value(
+                    datetime(2023, 1, 1, 0, 0, 0), cast_as_timestamp=True
+                ),
+                to_timestamp=make_literal_value(
+                    datetime(2023, 6, 1, 0, 0, 0), cast_as_timestamp=True
+                ),
             )
         }
     )

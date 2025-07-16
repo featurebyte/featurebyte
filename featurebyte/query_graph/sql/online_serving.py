@@ -611,8 +611,9 @@ async def get_online_features(
 
     partition_column_filters = get_partition_filters_from_graph(
         query_graph=graph,
-        min_point_in_time=request_timestamp,
-        max_point_in_time=request_timestamp,
+        min_point_in_time=make_literal_value(request_timestamp, cast_as_timestamp=True),
+        max_point_in_time=make_literal_value(request_timestamp, cast_as_timestamp=True),
+        adapter=session.adapter,
     )
 
     try:
