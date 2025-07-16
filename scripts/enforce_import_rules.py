@@ -115,6 +115,7 @@ if __name__ == "__main__":
         "inspect",
         "io",
         "json",
+        "math",
         "operator",
         "os",
         "packaging.version",

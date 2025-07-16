@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     OnDemandEntityFilter,
@@ -111,8 +112,8 @@ def test_partition_column_filters(global_graph, input_details, update_fixtures):
     partition_column_filters = PartitionColumnFilters(
         mapping={
             node_params["id"]: PartitionColumnFilter(
-                from_timestamp=datetime(2023, 1, 1),
-                to_timestamp=datetime(2023, 6, 1),
+                from_timestamp=make_literal_value(datetime(2023, 1, 1), cast_as_timestamp=True),
+                to_timestamp=make_literal_value(datetime(2023, 6, 1), cast_as_timestamp=True),
             )
         }
     )
@@ -167,8 +168,8 @@ def test_partition_column_filters_with_on_demand_entity_filters(
     partition_column_filters = PartitionColumnFilters(
         mapping={
             node_params["id"]: PartitionColumnFilter(
-                from_timestamp=datetime(2023, 1, 1),
-                to_timestamp=datetime(2023, 6, 1),
+                from_timestamp=make_literal_value(datetime(2023, 1, 1), cast_as_timestamp=True),
+                to_timestamp=make_literal_value(datetime(2023, 6, 1), cast_as_timestamp=True),
             )
         }
     )
