@@ -72,7 +72,7 @@ def get_partition_filter(
 
         Parameters
         ----------
-        value: datetime | Expression
+        value: Expression
             The boundary value to convert into an SQL expression.
 
         Returns
