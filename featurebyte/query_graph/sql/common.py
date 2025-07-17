@@ -364,7 +364,7 @@ class PartitionColumnFilters:
 @dataclass
 class DevelopmentDatasets:
     """
-    Collection of development datasets and their associated tables
+    Information about the development dataset to be used for generating SQL queries
     """
 
     mapping: Dict[ObjectId, TableDetails] = field(default_factory=dict)
