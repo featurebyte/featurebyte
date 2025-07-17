@@ -177,8 +177,7 @@ class InputNode(TableNode):
             context.development_datasets is not None
             and table_id in context.development_datasets.mapping
         ):
-            # If the input node is a development dataset, we need to use the development dataset
-            # table details instead of the original table details.
+            # If development datasets are provided, use the table details from there
             table_details = context.development_datasets.mapping[table_id].model_dump()
         else:
             table_details = context.parameters["table_details"]
