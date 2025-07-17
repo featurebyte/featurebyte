@@ -10,8 +10,8 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     DevelopmentDatasets,

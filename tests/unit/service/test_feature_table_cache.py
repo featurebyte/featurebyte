@@ -6,7 +6,7 @@ Test FeatureTableCacheService
 
 import json
 import os
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -516,6 +516,34 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
         WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
         """,
     )
+
+
+@pytest.mark.asyncio
+async def test_update_feature_table_cache__development_dataset(
+    feature_store,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    observation_table,
+    feature_list,
+    mock_get_historical_features,
+    mock_snowflake_session,
+):
+    """
+    Test development_dataset is passed to get_historical_features if provided
+    """
+    # create feature table cache
+    development_dataset = Mock(name="development_dataset")
+    await feature_table_cache_service.create_or_update_feature_table_cache(
+        feature_store=feature_store,
+        observation_table=observation_table,
+        graph=feature_list.feature_clusters[0].graph,
+        nodes=feature_list.feature_clusters[0].nodes[:1],
+        feature_list_id=feature_list.id,
+        development_dataset=development_dataset,
+    )
+    assert mock_get_historical_features.await_count == 1
+    args, kwargs = mock_get_historical_features.call_args
+    assert kwargs["development_dataset"] is development_dataset
 
 
 @pytest.mark.asyncio
