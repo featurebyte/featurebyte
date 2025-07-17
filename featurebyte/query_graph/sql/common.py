@@ -5,7 +5,6 @@ Common helpers and data structures for feature SQL generation
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, Sequence, Tuple, Union
 
@@ -347,8 +346,8 @@ class PartitionColumnFilter:
     Information about the partition column filter to be applied when selecting from a table
     """
 
-    from_timestamp: Optional[datetime | Expression] = None
-    to_timestamp: Optional[datetime | Expression] = None
+    from_timestamp: Optional[Expression] = None
+    to_timestamp: Optional[Expression] = None
     buffer: Optional[TimeInterval] = None
 
 

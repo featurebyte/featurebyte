@@ -24,6 +24,7 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     PartitionColumnFilter,
     PartitionColumnFilters,
@@ -958,8 +959,16 @@ class PreviewService:
         mapping = {}
         if primary_table_node.parameters.id is not None:
             mapping[primary_table_node.parameters.id] = PartitionColumnFilter(
-                from_timestamp=from_timestamp,
-                to_timestamp=to_timestamp,
+                from_timestamp=(
+                    make_literal_value(from_timestamp, cast_as_timestamp=True)
+                    if from_timestamp
+                    else None
+                ),
+                to_timestamp=(
+                    make_literal_value(to_timestamp, cast_as_timestamp=True)
+                    if to_timestamp
+                    else None
+                ),
             )
         return PartitionColumnFilters(mapping=mapping)
 

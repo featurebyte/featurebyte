@@ -26,6 +26,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, PartitionColumnFilters
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
@@ -300,7 +301,10 @@ async def get_historical_features(
         )
         max_point_in_time = dateutil_parser.parse(observation_table_model.most_recent_point_in_time)
         partition_column_filters = get_partition_filters_from_graph(
-            graph, min_point_in_time, max_point_in_time
+            graph,
+            make_literal_value(min_point_in_time, cast_as_timestamp=True),
+            make_literal_value(max_point_in_time, cast_as_timestamp=True),
+            session.adapter,
         )
     else:
         partition_column_filters = None

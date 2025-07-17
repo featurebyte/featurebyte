@@ -8,6 +8,7 @@ import pytest
 
 from featurebyte import SourceType, TimeInterval, TimeIntervalUnit
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import PartitionColumnFilter, sql_to_string
 from featurebyte.query_graph.sql.partition_filter import get_partition_filter
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -53,8 +54,12 @@ def test_get_partition_filter(
     Test get_partition_filter
     """
     partition_column_filter = PartitionColumnFilter(
-        from_timestamp=from_timestamp,
-        to_timestamp=to_timestamp,
+        from_timestamp=(
+            make_literal_value(from_timestamp, cast_as_timestamp=True) if from_timestamp else None
+        ),
+        to_timestamp=(
+            make_literal_value(to_timestamp, cast_as_timestamp=True) if to_timestamp else None
+        ),
         buffer=buffer,
     )
     expr = get_partition_filter(
