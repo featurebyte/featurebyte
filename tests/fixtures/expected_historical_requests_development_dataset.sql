@@ -53,19 +53,19 @@ WITH "VIEW_3eb0e88b24e00e8d_BUCKET_COLUMN" AS (
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1" AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1"
+    "T0"."_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_4" AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_4"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       DISTINCT_POINT_IN_TIME."POINT_IN_TIME",
       DISTINCT_POINT_IN_TIME."cust_id",
-      AGGREGATED."_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1"
+      AGGREGATED."_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_4"
     FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_point_in_time" AS DISTINCT_POINT_IN_TIME
     LEFT JOIN (
       SELECT
         "__FB_CRON_JOB_SCHEDULE_DATETIME" AS "__FB_CRON_JOB_SCHEDULE_DATETIME",
         "cust_id" AS "cust_id",
-        SUM("col_float") AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1"
+        SUM("col_float") AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_4"
       FROM (
         SELECT
           REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
@@ -106,7 +106,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  CAST("_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1" AS DOUBLE) AS "col_float_sum_3month"
+  CAST("_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_4" AS DOUBLE) AS "col_float_sum_3month"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "SOME_HISTORICAL_FEATURE_TABLE" AS
