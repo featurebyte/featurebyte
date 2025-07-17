@@ -172,10 +172,20 @@ class InputNode(TableNode):
     def build(cls, context: SQLNodeContext) -> InputNode | None:
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
+        table_id = context.parameters.get("id")
+        if (
+            context.development_datasets is not None
+            and table_id in context.development_datasets.mapping
+        ):
+            # If the input node is a development dataset, we need to use the development dataset
+            # table details instead of the original table details.
+            table_details = context.development_datasets.mapping[table_id].model_dump()
+        else:
+            table_details = context.parameters["table_details"]
         sql_node = InputNode(
             context=context,
             columns_map=columns_map,
-            dbtable=context.parameters["table_details"],
+            dbtable=table_details,
             feature_store=feature_store,
         )
         return sql_node

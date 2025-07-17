@@ -15,6 +15,7 @@ from sqlglot.expressions import Expression, select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
@@ -358,3 +359,12 @@ class PartitionColumnFilters:
     """
 
     mapping: Dict[ObjectId, PartitionColumnFilter] = field(default_factory=dict)
+
+
+@dataclass
+class DevelopmentDatasets:
+    """
+    Collection of development datasets and their associated tables
+    """
+
+    mapping: Dict[ObjectId, TableDetails] = field(default_factory=dict)
