@@ -291,3 +291,40 @@ def test_get_historical_feature_query_set__partition_column_filters(
         "tests/fixtures/expected_historical_requests_partition_column_filters.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_historical_feature_query_set__development_dataset(
+    ts_window_aggregate_feature,
+    snowflake_time_series_table,
+    snowflake_time_series_table_development_dataset,
+    output_table_details,
+    update_fixtures,
+    source_info,
+):
+    """
+    Test historical features table when development datasets are provided
+    """
+    feature = ts_window_aggregate_feature
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    development_datasets = snowflake_time_series_table_development_dataset.to_development_datasets()
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=feature.graph,
+        nodes=[feature.node],
+        request_table_columns=request_table_columns,
+        source_info=source_info,
+        output_table_details=output_table_details,
+        output_feature_names=[feature.name],
+        output_include_row_index=True,
+        development_datasets=development_datasets,
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    )
+    assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
+    output_query = feature_query_set_to_string(query_set, [feature.node], source_info)
+    assert '"db"."schema"."sf_time_series_table_dev_sampled"' in output_query
+    assert '"db"."schema"."sf_time_series_table"' not in output_query
+    assert_equal_with_expected_fixture(
+        output_query,
+        "tests/fixtures/expected_historical_requests_development_dataset.sql",
+        update_fixture=update_fixtures,
+    )

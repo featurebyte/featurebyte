@@ -92,8 +92,7 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
             raise ValueError("Duplicate table IDs found in development tables")
         return value
 
-    @classmethod
-    def to_development_datasets(cls) -> DevelopmentDatasets:
+    def to_development_datasets(self) -> DevelopmentDatasets:
         """
         Convert the model to a DevelopmentDatasets object.
 
@@ -104,6 +103,6 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
         return DevelopmentDatasets(
             mapping={
                 dev_table.table_id: dev_table.location.table_details
-                for dev_table in cls.development_tables
+                for dev_table in self.development_tables
             },
         )
