@@ -36,7 +36,7 @@ from featurebyte.service.catalog import AllCatalogService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.preview import NonCatalogSpecificPreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
@@ -55,7 +55,7 @@ class FeatureStoreController(
     def __init__(
         self,
         feature_store_service: FeatureStoreService,
-        preview_service: PreviewService,
+        non_catalog_specific_preview_service: NonCatalogSpecificPreviewService,
         session_manager_service: SessionManagerService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         credential_service: CredentialService,
@@ -63,7 +63,7 @@ class FeatureStoreController(
         task_controller: TaskController,
     ):
         super().__init__(feature_store_service)
-        self.preview_service = preview_service
+        self.preview_service = non_catalog_specific_preview_service
         self.session_manager_service = session_manager_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.credential_service = credential_service

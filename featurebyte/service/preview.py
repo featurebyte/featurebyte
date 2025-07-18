@@ -69,9 +69,13 @@ class GraphWithSampledPrimaryTable:
     is_table_cached: bool
 
 
-class PreviewService:
+class NonCatalogSpecificPreviewService:
     """
-    PreviewService class
+    NonCatalogSpecificPreviewService class
+
+    This service deliberately does not depend on any catalog-specific services since it is used by
+    FeatureStoreController, which is not catalog-specific. In most other cases, PreviewService
+    should be used directly for full functionality.
     """
 
     session_initialization_timeout = INTERACTIVE_SESSION_TIMEOUT_SECONDS
@@ -81,13 +85,11 @@ class PreviewService:
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
         query_cache_manager_service: QueryCacheManagerService,
-        development_dataset_service: DevelopmentDatasetService,
         redis: Redis[Any],
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.query_cache_manager_service = query_cache_manager_service
-        self.development_dataset_service = development_dataset_service
         self.redis = redis
 
     async def _get_feature_store_session(
@@ -981,11 +983,6 @@ class PreviewService:
         Optional[DevelopmentDatasets]
             Development datasets if available, otherwise None
         """
-        if payload.development_dataset_id is not None:
-            development_dataset_model = await self.development_dataset_service.get_document(
-                payload.development_dataset_id
-            )
-            return development_dataset_model.to_development_datasets()
         return None
 
     @classmethod
@@ -1014,6 +1011,51 @@ class PreviewService:
                 ),
             )
         return PartitionColumnFilters(mapping=mapping)
+
+
+class PreviewService(NonCatalogSpecificPreviewService):
+    """
+    PreviewService class with catalog-specific functionality
+    """
+
+    def __init__(
+        self,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+        query_cache_manager_service: QueryCacheManagerService,
+        development_dataset_service: DevelopmentDatasetService,
+        redis: Redis[Any],
+    ):
+        super().__init__(
+            session_manager_service=session_manager_service,
+            feature_store_service=feature_store_service,
+            query_cache_manager_service=query_cache_manager_service,
+            redis=redis,
+        )
+        self.development_dataset_service = development_dataset_service
+
+    async def _get_development_datasets(
+        self, payload: FeatureStorePreview
+    ) -> Optional[DevelopmentDatasets]:
+        """
+        Get development datasets from the payload
+
+        Parameters
+        ----------
+        payload: FeatureStorePreview
+            FeatureStorePreview object
+
+        Returns
+        -------
+        Optional[DevelopmentDatasets]
+            Development datasets if available, otherwise None
+        """
+        if payload.development_dataset_id is not None:
+            development_dataset_model = await self.development_dataset_service.get_document(
+                payload.development_dataset_id
+            )
+            return development_dataset_model.to_development_datasets()
+        return None
 
 
 class NonInteractivePreviewService(PreviewService):
