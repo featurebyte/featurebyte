@@ -29,6 +29,7 @@ from featurebyte.query_graph.node.generic import (
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
     EventTableTimestampFilter,
     PartitionColumnFilters,
     apply_serving_names_mapping,
@@ -350,6 +351,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         to_filter_scd_by_current_flag: bool,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
         partition_column_filters: Optional[PartitionColumnFilters],
+        development_datasets: Optional[DevelopmentDatasets],
     ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
@@ -368,6 +370,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Event table timestamp filter to apply if applicable
         partition_column_filters: Optional[PartitionColumnFilters]
             Partition column filters to apply if applicable
+        development_datasets: Optional[DevelopmentDatasets]
+            Development datasets to apply if applicable
 
         Returns
         -------
@@ -386,6 +390,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
             event_table_timestamp_filter=event_table_timestamp_filter,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
         ).build(node)
 
         sql_node = cast(Aggregate, sql_node)
@@ -548,6 +553,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -573,6 +579,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Column statistics information
         partition_column_filters: Optional[PartitionColumnFilters]
             Partition column filters to apply if applicable
+        development_datasets: Optional[DevelopmentDatasets]
+            Development datasets to apply if applicable
 
         Returns
         -------
@@ -592,6 +600,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
                 to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
                 event_table_timestamp_filter=event_table_timestamp_filter,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
 
         return cls.construct_specs(

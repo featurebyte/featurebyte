@@ -19,6 +19,7 @@ from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.development_dataset import DevelopmentDatasetModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.feature_table_cache_metadata import (
     CachedDefinitionWithTable,
@@ -399,6 +400,7 @@ class FeatureTableCacheService:
         raise_on_error: bool,
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        development_dataset: Optional[DevelopmentDatasetModel] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -447,6 +449,7 @@ class FeatureTableCacheService:
                 output_table_details=output_table_details,
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
+                development_dataset=development_dataset,
                 progress_callback=progress_callback,
                 raise_on_error=raise_on_error,
             )
@@ -617,6 +620,7 @@ class FeatureTableCacheService:
         raise_on_error: bool,
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        development_dataset: Optional[DevelopmentDatasetModel] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -636,6 +640,7 @@ class FeatureTableCacheService:
                 nodes=non_cached_nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
+                development_dataset=development_dataset,
                 progress_callback=progress_callback,
                 raise_on_error=raise_on_error,
             )
@@ -689,6 +694,7 @@ class FeatureTableCacheService:
         is_target: bool = False,
         feature_list_id: Optional[PydanticObjectId] = None,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        development_dataset: Optional[DevelopmentDatasetModel] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -717,6 +723,8 @@ class FeatureTableCacheService:
         serving_names_mapping: Optional[Dict[str, str]]
             Optional serving names mapping if the observations set has different serving name columns
             than those defined in Entities
+        development_dataset: Optional[DevelopmentDatasetModel]
+            Optional development dataset to use for the request
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
         raise_on_error: bool
@@ -769,6 +777,7 @@ class FeatureTableCacheService:
                 non_cached_nodes=non_cached_nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
+                development_dataset=development_dataset,
                 progress_callback=remaining_progress_callback,
                 raise_on_error=raise_on_error,
             )

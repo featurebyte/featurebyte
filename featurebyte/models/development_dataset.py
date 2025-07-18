@@ -16,6 +16,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.sql.common import DevelopmentDatasets
 
 
 class DevelopmentTable(FeatureByteBaseModel):
@@ -90,3 +91,18 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
         if len(set(table_ids)) != len(table_ids):
             raise ValueError("Duplicate table IDs found in development tables")
         return value
+
+    def to_development_datasets(self) -> DevelopmentDatasets:
+        """
+        Convert the model to a DevelopmentDatasets object.
+
+        Returns
+        -------
+        DevelopmentDatasets
+        """
+        return DevelopmentDatasets(
+            mapping={
+                dev_table.table_id: dev_table.location.table_details
+                for dev_table in self.development_tables
+            },
+        )

@@ -52,6 +52,7 @@ from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
+from featurebyte.models.development_dataset import DevelopmentDatasetModel, DevelopmentTable
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
@@ -59,6 +60,7 @@ from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
@@ -3331,3 +3333,29 @@ def feature_query_generator_fixture(saved_features_set, source_info):
         output_feature_names=feature_names,
     )
     return generator
+
+
+@pytest.fixture(name="snowflake_time_series_table_development_dataset")
+def snowflake_time_series_table_development_dataset_fixture(
+    snowflake_feature_store,
+    snowflake_time_series_table,
+):
+    """TimeSeriesTable object fixture"""
+    development_dataset = DevelopmentDatasetModel(
+        sample_from_timestamp=datetime(2023, 1, 1, 0, 0, 0),
+        sample_to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+        development_tables=[
+            DevelopmentTable(
+                table_id=snowflake_time_series_table.id,
+                location=TabularSource(
+                    feature_store_id=snowflake_feature_store.id,
+                    table_details=TableDetails(
+                        database_name="db",
+                        schema_name="schema",
+                        table_name="sf_time_series_table_dev_sampled",
+                    ),
+                ),
+            )
+        ],
+    )
+    return development_dataset

@@ -28,6 +28,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
     PartitionColumnFilters,
     get_fully_qualified_table_name,
 )
@@ -265,6 +266,7 @@ def get_historical_features_expr(
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     partition_column_filters: Optional[PartitionColumnFilters] = None,
+    development_datasets: Optional[DevelopmentDatasets] = None,
 ) -> FeatureQueryPlan:
     """Construct the SQL code that extracts historical features
 
@@ -293,6 +295,8 @@ def get_historical_features_expr(
         Column statistics information
     partition_column_filters: Optional[PartitionColumnFilters]
         Partition column filters to apply to the source tables
+    development_datasets: Optional[DevelopmentDatasets]
+        Development datasets to use when reading the source tables
 
     Returns
     -------
@@ -308,6 +312,7 @@ def get_historical_features_expr(
         job_schedule_table_set=job_schedule_table_set,
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
+        development_datasets=development_datasets,
     )
     plan = planner.generate_plan(nodes)
 
@@ -340,6 +345,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ):
         self.request_table_name = request_table_name
         self.graph = graph
@@ -355,6 +361,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         self.output_include_row_index = output_include_row_index
         self.column_statistics_info = column_statistics_info
         self.partition_column_filters = partition_column_filters
+        self.development_datasets = development_datasets
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -376,6 +383,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             job_schedule_table_set=self.job_schedule_table_set,
             column_statistics_info=self.column_statistics_info,
             partition_column_filters=self.partition_column_filters,
+            development_datasets=self.development_datasets,
         )
         feature_query = feature_set_sql.get_feature_query(
             table_name=table_name,
@@ -399,6 +407,7 @@ def get_historical_features_query_set(
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     partition_column_filters: Optional[PartitionColumnFilters] = None,
+    development_datasets: Optional[DevelopmentDatasets] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:
@@ -433,6 +442,8 @@ def get_historical_features_query_set(
         Column statistics information
     partition_column_filters: Optional[PartitionColumnFilters]
         Partition column filters to apply to the source tables
+    development_datasets: Optional[DevelopmentDatasets]
+        Development datasets to use when reading the source tables
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
@@ -457,6 +468,7 @@ def get_historical_features_query_set(
         job_schedule_table_set=job_schedule_table_set,
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
+        development_datasets=development_datasets,
     )
     feature_query_set = FeatureQuerySet(
         feature_query_generator=feature_query_generator,

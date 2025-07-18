@@ -10,9 +10,11 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
     OnDemandEntityFilter,
     OnDemandEntityFilters,
     PartitionColumnFilter,
@@ -192,4 +194,50 @@ def test_partition_column_filters_with_on_demand_entity_filters(
     )
     actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
     fixture_filename = f"tests/fixtures/query_graph/test_input/partition_column_filters_with_entity_filters_{source_type}.sql"
+    assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
+
+
+def test_development_datasets(global_graph, input_details, update_fixtures):
+    """
+    Test that development datasets are used correctly in the SQL AST for input nodes
+    """
+    source_type = SourceType.DATABRICKS_UNITY
+    node_params = {
+        "id": ObjectId(),
+        "type": "event_table",
+        "columns": [
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "a", "dtype": DBVarType.FLOAT},
+        ],
+    }
+    node_params.update(input_details)
+    input_node = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    source_info = SourceInfo(
+        database_name="my_db", schema_name="my_schema", source_type=source_type
+    )
+    development_datasets = DevelopmentDatasets(
+        mapping={
+            node_params["id"]: TableDetails(
+                database_name="db",
+                schema_name="schema",
+                table_name="dev_table",
+            )
+        }
+    )
+    sql_graph = SQLOperationGraph(
+        global_graph,
+        sql_type=SQLType.MATERIALIZE,
+        development_datasets=development_datasets,
+        source_info=source_info,
+    )
+    actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
+    fixture_filename = (
+        f"tests/fixtures/query_graph/test_input/development_datasets_{source_type}.sql"
+    )
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)

@@ -16,6 +16,7 @@ from redis import Redis
 from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
+from featurebyte.models.development_dataset import DevelopmentDatasetModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -28,7 +29,11 @@ from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, PartitionColumnFilters
+from featurebyte.query_graph.sql.common import (
+    REQUEST_TABLE_NAME,
+    DevelopmentDatasets,
+    PartitionColumnFilters,
+)
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
@@ -75,6 +80,7 @@ async def compute_tiles_on_demand(
     temp_tile_tables_tag: str,
     partition_column_filters: Optional[PartitionColumnFilters],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    development_datasets: Optional[DevelopmentDatasets] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
 ) -> OnDemandTileComputeResult:
@@ -108,6 +114,8 @@ async def compute_tiles_on_demand(
         Optional partition column filters to apply
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    development_datasets: Optional[DevelopmentDatasets]
+        Optional development datasets to use if applicable
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
     raise_on_error: bool
@@ -145,6 +153,7 @@ async def compute_tiles_on_demand(
             serving_names_mapping=serving_names_mapping,
             temp_tile_tables_tag=temp_tile_tables_tag,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
             progress_callback=progress_callback,
             raise_on_error=raise_on_error,
         )
@@ -213,6 +222,7 @@ async def get_historical_features(
     output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    development_dataset: Optional[DevelopmentDatasetModel] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
 ) -> FeaturesComputationResult:
@@ -245,6 +255,8 @@ async def get_historical_features(
         than those defined in Entities
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    development_dataset: Optional[DevelopmentDatasetModel]
+        Optional development dataset to use if applicable
     output_table_details: TableDetails
         Output table details to write the results to
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -309,6 +321,11 @@ async def get_historical_features(
     else:
         partition_column_filters = None
 
+    if development_dataset is not None:
+        development_datasets = development_dataset.to_development_datasets()
+    else:
+        development_datasets = None
+
     temp_tile_tables_tag = f"historical_features_{output_table_details.table_name}"
     try:
         # Compute tiles on demand if required
@@ -335,6 +352,7 @@ async def get_historical_features(
             temp_tile_tables_tag=temp_tile_tables_tag,
             partition_column_filters=partition_column_filters,
             parent_serving_preparation=parent_serving_preparation,
+            development_datasets=development_datasets,
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
             ),
@@ -380,6 +398,7 @@ async def get_historical_features(
             job_schedule_table_set=job_schedule_table_set,
             column_statistics_info=column_statistics_info,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )

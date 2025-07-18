@@ -9,8 +9,13 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import PartitionColumnFilter, PartitionColumnFilters
+from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
+    PartitionColumnFilter,
+    PartitionColumnFilters,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.tile import JoinKeysLineage
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -215,5 +220,45 @@ def test_scheduled_tile_sql_partition_column_filters(
     assert_equal_with_expected_fixture(
         tile_sql,
         "tests/fixtures/expected_tile_sql_scheduled_partition_column_filters.sql",
+        update_fixtures,
+    )
+
+
+def test_on_demand_tile_sql_development_datasets(
+    float_feature_with_partition_column,
+    snowflake_event_table_with_partition_column,
+    source_info,
+    update_fixtures,
+):
+    """
+    Test on demand tile sql with development datasets
+    """
+    query_graph = float_feature_with_partition_column.cached_model.graph
+    interpreter = GraphInterpreter(query_graph, source_info)
+    groupby_node = query_graph.get_node_by_name("groupby_1")
+    development_datasets = DevelopmentDatasets(
+        mapping={
+            snowflake_event_table_with_partition_column.id: TableDetails(
+                database_name="db",
+                schema_name="schema",
+                table_name="dev_table",
+            )
+        }
+    )
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        groupby_node,
+        is_on_demand=True,
+        development_datasets=development_datasets,
+    )
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop("tile_compute_spec")
+    tile_sql = tile_gen_sqls[0].sql
+    assert 'FROM "db"."schema"."dev_table"' in tile_sql
+    assert_equal_with_expected_fixture(
+        tile_sql,
+        "tests/fixtures/expected_tile_sql_on_demand_development_datasets.sql",
         update_fixtures,
     )

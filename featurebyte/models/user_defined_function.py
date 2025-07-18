@@ -310,6 +310,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 aggregation_specs=None,
                 on_demand_entity_filters=None,
                 partition_column_filters=None,
+                development_datasets=None,
             )
         )
         sql_tree = select(sql_node.sql)

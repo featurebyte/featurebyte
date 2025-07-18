@@ -17,7 +17,7 @@ from featurebyte.models.tile import OnDemandTileComputeResult
 from featurebyte.models.tile_cache import OnDemandTileComputeRequest, OnDemandTileComputeRequestSet
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import PartitionColumnFilters
+from featurebyte.query_graph.sql.common import DevelopmentDatasets, PartitionColumnFilters
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.tile_cache_query_base import BaseTileCacheQueryService
 from featurebyte.service.tile_cache_query_by_observation_table import (
@@ -57,6 +57,7 @@ class TileCacheService:
         feature_store_id: ObjectId,
         temp_tile_tables_tag: str,
         partition_column_filters: Optional[PartitionColumnFilters],
+        development_datasets: Optional[DevelopmentDatasets],
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
         raise_on_error: bool = True,
@@ -82,6 +83,8 @@ class TileCacheService:
             Tag to identify the temporary tile tables for cleanup purpose
         partition_column_filters: Optional[PartitionColumnFilters]
             Optional partition column filters to apply
+        development_datasets: Optional[DevelopmentDatasets]
+            Optional development datasets to use for the request
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -113,6 +116,7 @@ class TileCacheService:
             nodes=nodes,
             request_table_name=request_table_name,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
             serving_names_mapping=serving_names_mapping,
             progress_callback=tile_check_progress_callback,
         )

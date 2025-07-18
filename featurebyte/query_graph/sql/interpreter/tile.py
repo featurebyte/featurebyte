@@ -19,6 +19,7 @@ from featurebyte.query_graph.node.generic import GroupByNode, JoinNodeParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, SourceDataColumn
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
     EventTableTimestampFilter,
     OnDemandEntityFilters,
     PartitionColumnFilters,
@@ -199,7 +200,10 @@ class TileSQLGenerator:
         self.source_info = source_info
 
     def construct_tile_gen_sql(
-        self, starting_node: Node, partition_column_filters: Optional[PartitionColumnFilters]
+        self,
+        starting_node: Node,
+        partition_column_filters: Optional[PartitionColumnFilters],
+        development_datasets: Optional[DevelopmentDatasets],
     ) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
@@ -213,6 +217,8 @@ class TileSQLGenerator:
             Starting node (typically corresponding to selected features) to search from
         partition_column_filters : Optional[PartitionColumnFilters]
             Optional partition column filters to apply to the tile building SQLs
+        development_datasets : Optional[DevelopmentDatasets]
+            Optional development datasets to use when constructing tile SQLs
 
         Returns
         -------
@@ -235,6 +241,7 @@ class TileSQLGenerator:
                 event_table_timestamp_filter,
                 on_demand_entity_filters,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
             sqls.append(info)
 
@@ -375,6 +382,7 @@ class TileSQLGenerator:
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
         on_demand_entity_filters: Optional[OnDemandEntityFilters],
         partition_column_filters: Optional[PartitionColumnFilters],
+        development_datasets: Optional[DevelopmentDatasets],
     ) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
@@ -388,6 +396,8 @@ class TileSQLGenerator:
             On demand entity filters to apply if applicable
         partition_column_filters: Optional[PartitionColumnFilters]
             Partition column filters to apply if applicable
+        development_datasets: Optional[DevelopmentDatasets]
+            Development datasets to use when constructing tile SQL
 
         Returns
         -------
@@ -404,6 +414,7 @@ class TileSQLGenerator:
             event_table_timestamp_filter=event_table_timestamp_filter,
             on_demand_entity_filters=on_demand_entity_filters,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
         ).build(groupby_node)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
@@ -451,6 +462,7 @@ class TileGenMixin(BaseGraphInterpreter):
         starting_node: Node,
         is_on_demand: bool,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
@@ -462,6 +474,8 @@ class TileGenMixin(BaseGraphInterpreter):
             Whether the SQL is for on-demand tile building for historical features
         partition_column_filters : Optional[PartitionColumnFilters]
             Optional partition column filters to apply to the tile building SQLs
+        development_datasets : Optional[DevelopmentDatasets]
+            Optional development datasets to use when constructing tile SQLs
 
         Returns
         -------
@@ -472,5 +486,7 @@ class TileGenMixin(BaseGraphInterpreter):
             self.query_graph, is_on_demand=is_on_demand, source_info=self.source_info
         )
         return generator.construct_tile_gen_sql(
-            flat_starting_node, partition_column_filters=partition_column_filters
+            flat_starting_node,
+            partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
         )
