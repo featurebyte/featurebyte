@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     MISSING_VALUE_REPLACEMENT,
     CteStatement,
+    DevelopmentDatasets,
     PartitionColumnFilters,
     SQLType,
     construct_cte_sql,
@@ -151,6 +152,7 @@ class PreviewMixin(BaseGraphInterpreter):
         sample_on_primary_table: bool = False,
         sort_by_prob: bool = True,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -181,6 +183,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Whether the graph is already sampled on primary table
         partition_column_filters: Optional[PartitionColumnFilters]
             Partition column filters to apply when reading the tables
+        development_datasets: Optional[DevelopmentDatasets]
+            Development datasets to use for sampling
 
         Returns
         -------
@@ -193,6 +197,7 @@ class PreviewMixin(BaseGraphInterpreter):
             sql_type=SQLType.MATERIALIZE,
             source_info=self.source_info,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -1197,6 +1202,7 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> str:
         """
         Construct SQL to get row counts for a given node.
@@ -1213,6 +1219,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Column to apply date range filtering on
         partition_column_filters: Optional[PartitionColumnFilters]
             Partition column filters to apply when reading the tables
+        development_datasets: Optional[DevelopmentDatasets]
+            Development datasets to use for the row counts
 
         Returns
         -------
@@ -1233,6 +1241,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 timestamp_column=timestamp_column,
                 skip_conversion=True,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )[0].subquery()
         )
         return sql_to_string(expr, source_type=self.adapter.source_type)
