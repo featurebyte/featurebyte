@@ -230,6 +230,12 @@ def feature_preview_service_fixture(app_container):
     return app_container.feature_preview_service
 
 
+@pytest.fixture(name="development_dataset_service")
+def development_dataset_service_fixture(app_container):
+    """DevelopmentDatasetService fixture"""
+    return app_container.development_dataset_service
+
+
 @pytest.fixture(name="historical_features_service")
 def historical_features_service_fixture(app_container):
     """HistoricalFeaturesService fixture"""

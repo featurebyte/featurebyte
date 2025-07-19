@@ -26,6 +26,7 @@ from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
+    DevelopmentDatasets,
     PartitionColumnFilter,
     PartitionColumnFilters,
     quoted_identifier,
@@ -38,6 +39,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreSample,
     FeatureStoreShape,
 )
+from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.session_manager import SessionManagerService
@@ -67,9 +69,13 @@ class GraphWithSampledPrimaryTable:
     is_table_cached: bool
 
 
-class PreviewService:
+class NonCatalogSpecificPreviewService:
     """
-    PreviewService class
+    NonCatalogSpecificPreviewService class
+
+    This service deliberately does not depend on any catalog-specific services since it is used by
+    FeatureStoreController, which is not catalog-specific. In most other cases, PreviewService
+    should be used directly for full functionality.
     """
 
     session_initialization_timeout = INTERACTIVE_SESSION_TIMEOUT_SECONDS
@@ -182,6 +188,7 @@ class PreviewService:
         seed: int,
         total_num_rows: Optional[int],
         partition_column_filters: Optional[PartitionColumnFilters],
+        development_datasets: Optional[DevelopmentDatasets],
     ) -> GraphWithSampledPrimaryTable:
         # get primary table node & construct a new graph for sampling
         primary_table_input_node = payload.graph.get_sample_table_node(node_name=payload.node_name)
@@ -206,6 +213,7 @@ class PreviewService:
             skip_conversion=True,  # skip conversion to keep original table column types
             sample_on_primary_table=False,  # go through normal sampling process with single table
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
             **other_kwargs,  # type: ignore
         )
         sampled_table_name, is_table_cached = await self._get_or_cache_table(
@@ -387,6 +395,8 @@ class PreviewService:
         else:
             partition_column_filters = None
 
+        development_datasets = await self._get_development_datasets(sample)
+
         if size > 0:
             total_num_rows = await self._get_row_count(
                 session,
@@ -400,6 +410,7 @@ class PreviewService:
                 allow_long_running=allow_long_running,
                 sample_on_primary_table=sample_on_primary_table,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
         else:
             warnings.warn(
@@ -418,6 +429,7 @@ class PreviewService:
                 seed=seed,
                 total_num_rows=total_num_rows,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
 
         sample_sql, type_conversions = GraphInterpreter(
@@ -503,6 +515,8 @@ class PreviewService:
         else:
             partition_column_filters = None
 
+        development_datasets = await self._get_development_datasets(sample)
+
         if size > 0:
             total_num_rows = await self._get_row_count(
                 session,
@@ -516,6 +530,7 @@ class PreviewService:
                 allow_long_running=allow_long_running,
                 sample_on_primary_table=sample_on_primary_table,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
         else:
             warnings.warn(
@@ -534,6 +549,7 @@ class PreviewService:
                 seed=seed,
                 total_num_rows=total_num_rows,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
 
         graph_interpreter = GraphInterpreter(
@@ -754,6 +770,8 @@ class PreviewService:
         else:
             partition_column_filters = None
 
+        development_datasets = await self._get_development_datasets(sample)
+
         if num_rows > 0:
             total_num_rows = await self._get_row_count(
                 session,
@@ -766,6 +784,7 @@ class PreviewService:
                 timestamp_column=sample.timestamp_column,
                 sample_on_primary_table=sample_on_primary_table,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
         else:
             total_num_rows = None
@@ -780,6 +799,7 @@ class PreviewService:
                 seed=seed,
                 total_num_rows=total_num_rows,
                 partition_column_filters=partition_column_filters,
+                development_datasets=development_datasets,
             )
 
         interpreter = GraphInterpreter(
@@ -921,6 +941,7 @@ class PreviewService:
         allow_long_running: bool = True,
         sample_on_primary_table: bool = False,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> int:
         graph, node_name = self._get_row_count_graph_and_node(
             graph=graph,
@@ -935,6 +956,7 @@ class PreviewService:
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
             partition_column_filters=partition_column_filters,
+            development_datasets=development_datasets,
         )
         df_result = await self._get_or_cache_dataframe(
             session,
@@ -944,6 +966,24 @@ class PreviewService:
             allow_long_running=allow_long_running,
         )
         return df_result.iloc[0]["count"]  # type: ignore
+
+    async def _get_development_datasets(
+        self, payload: FeatureStorePreview
+    ) -> Optional[DevelopmentDatasets]:
+        """
+        Get development datasets from the payload
+
+        Parameters
+        ----------
+        payload: FeatureStorePreview
+            FeatureStorePreview object
+
+        Returns
+        -------
+        Optional[DevelopmentDatasets]
+            Development datasets if available, otherwise None
+        """
+        return None
 
     @classmethod
     def _get_partition_column_filters(
@@ -971,6 +1011,51 @@ class PreviewService:
                 ),
             )
         return PartitionColumnFilters(mapping=mapping)
+
+
+class PreviewService(NonCatalogSpecificPreviewService):
+    """
+    PreviewService class with catalog-specific functionality
+    """
+
+    def __init__(
+        self,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+        query_cache_manager_service: QueryCacheManagerService,
+        development_dataset_service: DevelopmentDatasetService,
+        redis: Redis[Any],
+    ):
+        super().__init__(
+            session_manager_service=session_manager_service,
+            feature_store_service=feature_store_service,
+            query_cache_manager_service=query_cache_manager_service,
+            redis=redis,
+        )
+        self.development_dataset_service = development_dataset_service
+
+    async def _get_development_datasets(
+        self, payload: FeatureStorePreview
+    ) -> Optional[DevelopmentDatasets]:
+        """
+        Get development datasets from the payload
+
+        Parameters
+        ----------
+        payload: FeatureStorePreview
+            FeatureStorePreview object
+
+        Returns
+        -------
+        Optional[DevelopmentDatasets]
+            Development datasets if available, otherwise None
+        """
+        if payload.development_dataset_id is not None:
+            development_dataset_model = await self.development_dataset_service.get_document(
+                payload.development_dataset_id
+            )
+            return development_dataset_model.to_development_datasets()
+        return None
 
 
 class NonInteractivePreviewService(PreviewService):

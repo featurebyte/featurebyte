@@ -166,7 +166,11 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.service.preview import NonInteractivePreviewService, PreviewService
+from featurebyte.service.preview import (
+    NonCatalogSpecificPreviewService,
+    NonInteractivePreviewService,
+    PreviewService,
+)
 from featurebyte.service.query_cache import QueryCacheDocumentService
 from featurebyte.service.query_cache_cleanup import QueryCacheCleanupService
 from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
@@ -359,6 +363,7 @@ app_container_config.register_class(ItemTableService)
 app_container_config.register_class(ManagedViewController)
 app_container_config.register_class(ManagedViewService)
 app_container_config.register_class(NamespaceHandler)
+app_container_config.register_class(NonCatalogSpecificPreviewService)
 app_container_config.register_class(NonInteractivePreviewService)
 app_container_config.register_class(NonInteractiveFeatureStoreWarehouseService)
 app_container_config.register_class(ObservationSetHelper)

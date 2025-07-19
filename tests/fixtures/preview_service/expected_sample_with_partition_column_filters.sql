@@ -12,7 +12,7 @@ FROM (
     "created_at" AS "created_at",
     CAST("cust_id" AS VARCHAR) AS "cust_id",
     CAST("partition_col" AS VARCHAR) AS "partition_col"
-  FROM "sf_database"."sf_schema"."sf_table"
+  FROM "db"."schema"."dev_table"
   WHERE
     (
       "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
@@ -61,7 +61,7 @@ FROM (
       "created_at" AS "created_at",
       CAST("cust_id" AS VARCHAR) AS "cust_id",
       CAST("partition_col" AS VARCHAR) AS "partition_col"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "db"."schema"."dev_table"
     WHERE
       (
         "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')

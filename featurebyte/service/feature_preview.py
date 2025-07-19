@@ -33,6 +33,7 @@ from featurebyte.schema.feature_list import (
 from featurebyte.schema.preview import FeatureOrTargetPreview, FeaturePreview, TargetPreview
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
+from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -69,10 +70,15 @@ class FeaturePreviewService(PreviewService):
         query_cache_manager_service: QueryCacheManagerService,
         cron_helper: CronHelper,
         column_statistics_service: ColumnStatisticsService,
+        development_dataset_service: DevelopmentDatasetService,
         redis: Redis[Any],
     ):
         super().__init__(
-            session_manager_service, feature_store_service, query_cache_manager_service, redis
+            session_manager_service,
+            feature_store_service,
+            query_cache_manager_service,
+            development_dataset_service,
+            redis,
         )
         self.entity_validation_service = entity_validation_service
         self.feature_list_service = feature_list_service

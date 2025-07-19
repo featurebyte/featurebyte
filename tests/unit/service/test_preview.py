@@ -4,10 +4,12 @@ Test preview service module
 
 import textwrap
 from datetime import datetime
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 from sqlglot import parse_one
 
@@ -19,9 +21,12 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
 )
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.development_dataset import DevelopmentDatasetModel, DevelopmentTable
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
@@ -128,18 +133,53 @@ def feature_store_sample_fixture(feature_store_preview):
     return FeatureStoreSample(**feature_store_preview.model_dump())
 
 
+@pytest_asyncio.fixture(name="development_dataset")
+async def development_dataset_fixture(
+    development_dataset_service,
+    feature_store_preview,
+):
+    """
+    Fixture for a DevelopmentDatasetModel
+    """
+    input_node = feature_store_preview.graph.get_node_by_name("input_1")
+    table_id = input_node.parameters.id
+    development_dataset = DevelopmentDatasetModel(
+        sample_from_timestamp=datetime(2023, 1, 1, 0, 0, 0),
+        sample_to_timestamp=datetime(2023, 6, 1, 0, 0, 0),
+        development_tables=[
+            DevelopmentTable(
+                table_id=table_id,
+                location=TabularSource(
+                    feature_store_id=ObjectId(),
+                    table_details=TableDetails(
+                        database_name="db",
+                        schema_name="schema",
+                        table_name="dev_table",
+                    ),
+                ),
+            )
+        ],
+    )
+    # Patch the validation method to avoid unnecessary checks
+    with patch(
+        "featurebyte.service.development_dataset.DevelopmentDatasetService._validate_development_tables"
+    ):
+        return await development_dataset_service.create_document(development_dataset)
+
+
 @pytest.fixture(name="feature_store_sample_with_time_range")
-def feature_store_sample_with_time_range_fixture(feature_store_sample):
+def feature_store_sample_with_time_range_fixture(feature_store_sample, development_dataset):
     """
     Fixture for a FeatureStoreSample with a time range
     """
     return FeatureStoreSample(
         **feature_store_sample.model_dump(
-            exclude={"from_timestamp", "to_timestamp", "timestamp_column"}
+            exclude={"from_timestamp", "to_timestamp", "timestamp_column", "development_dataset_id"}
         ),
         from_timestamp=datetime(2023, 1, 1),
         to_timestamp=datetime(2025, 1, 1),
         timestamp_column="event_timestamp",
+        development_dataset_id=development_dataset.id,
     )
 
 
