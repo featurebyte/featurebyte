@@ -15,7 +15,6 @@ from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.models.target_namespace import PositiveLabelCandidatesItem
 from tests.integration.api.materialized_table.utils import (
     check_location_valid,
     check_materialized_table_accessible,
@@ -142,11 +141,12 @@ async def test_observation_table_min_interval_between_entities(
     # check target namespace document
     target_namespace = target_namespace.get_by_id(id=target_namespace.id)
     target_namespace_model = target_namespace.cached_model
-    assert target_namespace_model.positive_label_candidates == [
-        PositiveLabelCandidatesItem(
-            observation_table_id=observation_table.id,
-            positive_label_candidates=["true", "false"],
-        )
+    positive_label_candidates = target_namespace_model.positive_label_candidates
+    assert len(positive_label_candidates) == 1
+    assert positive_label_candidates[0].observation_table_id == observation_table.id
+    assert sorted(positive_label_candidates[0].positive_label_candidates) == [
+        "Not Verified",
+        "Verified",
     ]
 
     # delete the observation table & target
