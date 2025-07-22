@@ -23,6 +23,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
@@ -44,12 +45,14 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
+        target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
+        self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
@@ -226,7 +229,16 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 **override_model_params,
             }
             observation_table = ObservationTableModel(**observation_table_params)
-            await self.observation_table_service.create_document(observation_table)
+            observation_table = await self.observation_table_service.create_document(
+                observation_table
+            )
+            if payload.target_namespace_id:
+                # update the target namespace with the unique target values if applicable
+                await self.target_namespace_service.update_target_namespace_classification_metadata(
+                    target_namespace_id=payload.target_namespace_id,
+                    observation_table=observation_table,
+                    db_session=db_session,
+                )
 
     async def execute(self, payload: ObservationTableTaskPayload) -> Any:
         await self.create_observation_table(payload)

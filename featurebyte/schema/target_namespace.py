@@ -11,7 +11,7 @@ from featurebyte.common.validator import validate_target_type
 from featurebyte.enum import DBVarType, TargetType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_namespace import DefaultVersionMode
-from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.models.target_namespace import PositiveLabelCandidatesItem, TargetNamespaceModel
 from featurebyte.schema.common.base import (
     BaseDocumentServiceUpdateSchema,
     BaseInfo,
@@ -58,6 +58,7 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     default_version_mode: Optional[DefaultVersionMode] = Field(default=None)
     target_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     default_target_id: Optional[PydanticObjectId] = Field(default=None)
+    positive_label_candidates: Optional[List[PositiveLabelCandidatesItem]] = Field(default=None)
 
 
 class TargetNamespaceList(PaginationMixin):

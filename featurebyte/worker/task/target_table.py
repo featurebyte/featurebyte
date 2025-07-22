@@ -27,6 +27,7 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
@@ -50,6 +51,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         session_manager_service: SessionManagerService,
         observation_set_helper: ObservationSetHelper,
         observation_table_service: ObservationTableService,
+        target_namespace_service: TargetNamespaceService,
         target_computer: TargetComputer,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_service: TargetService,
@@ -59,6 +61,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.session_manager_service = session_manager_service
         self.observation_set_helper = observation_set_helper
         self.observation_table_service = observation_table_service
+        self.target_namespace_service = target_namespace_service
         self.target_computer = target_computer
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.target_service = target_service
@@ -263,4 +266,14 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 table_with_missing_data=table_with_missing_data,
                 **additional_metadata,
             )
-            await self.observation_table_service.create_document(observation_table)
+            observation_table = await self.observation_table_service.create_document(
+                observation_table
+            )
+
+            if target_namespace_id is not None:
+                # update target namespace with unique target values if applicable
+                await self.target_namespace_service.update_target_namespace_classification_metadata(
+                    target_namespace_id=target_namespace_id,
+                    observation_table=observation_table,
+                    db_session=db_session,
+                )

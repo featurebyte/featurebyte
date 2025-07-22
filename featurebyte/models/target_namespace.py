@@ -2,15 +2,24 @@
 Target namespace module
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pymongo
 from pydantic import Field, field_validator
 
 from featurebyte.common.validator import construct_sort_validator, duration_string_validator
 from featurebyte.enum import DBVarType, TargetType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
+
+
+class PositiveLabelCandidatesItem(FeatureByteBaseModel):
+    """
+    Positive label candidates for a target namespace
+    """
+
+    observation_table_id: PydanticObjectId
+    positive_label_candidates: Union[List[str], List[int]]
 
 
 class TargetNamespaceModel(BaseFeatureNamespaceModel):
@@ -46,6 +55,9 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(frozen=True)
     default_target_id: Optional[PydanticObjectId] = Field(default=None, frozen=True)
+
+    # positive label candidates for the target namespace
+    positive_label_candidates: List[PositiveLabelCandidatesItem] = Field(default_factory=list)
 
     # pydantic validators
     _sort_ids_validator = field_validator("target_ids", "entity_ids")(construct_sort_validator())
