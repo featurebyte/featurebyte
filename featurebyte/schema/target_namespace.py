@@ -77,7 +77,7 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     target_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     default_target_id: Optional[PydanticObjectId] = Field(default=None)
     positive_label_candidates: Optional[List[PositiveLabelCandidatesItem]] = Field(default=None)
-    positive_label: Optional[Union[str, int, bool]] = Field(default=None)
+    positive_label: Optional[Union[str, int, bool]] = Field(default=None)  # type: ignore
 
 
 class TargetNamespaceList(PaginationMixin):
