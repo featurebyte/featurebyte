@@ -2,7 +2,7 @@
 Target namespace schema
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from bson import ObjectId
 from pydantic import Field, model_validator
@@ -41,6 +41,15 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
         return self
 
 
+class PositiveLabelUpdate(FeatureByteBaseModel):
+    """
+    Positive label update schema - used by server side only, not exposed to client
+    """
+
+    observation_table_id: PydanticObjectId
+    value: Union[str, float, bool]
+
+
 class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     """
     TargetNamespace update schema - exposed to client
@@ -48,6 +57,7 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
 
     window: Optional[str] = Field(default=None)
     target_type: Optional[TargetType] = Field(default=None)
+    positive_label: Optional[PositiveLabelUpdate] = Field(default=None)
 
 
 class TargetNamespaceClassificationMetadataUpdate(FeatureByteBaseModel):
@@ -67,6 +77,7 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     target_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     default_target_id: Optional[PydanticObjectId] = Field(default=None)
     positive_label_candidates: Optional[List[PositiveLabelCandidatesItem]] = Field(default=None)
+    positive_label: Optional[Union[str, int, bool]] = Field(default=None)
 
 
 class TargetNamespaceList(PaginationMixin):

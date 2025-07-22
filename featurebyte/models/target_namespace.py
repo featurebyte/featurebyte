@@ -19,7 +19,7 @@ class PositiveLabelCandidatesItem(FeatureByteBaseModel):
     """
 
     observation_table_id: PydanticObjectId
-    positive_label_candidates: Union[List[str], List[int]]
+    positive_label_candidates: Union[List[str], List[int], List[bool]]
 
 
 class TargetNamespaceModel(BaseFeatureNamespaceModel):
@@ -58,6 +58,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
 
     # positive label candidates for the target namespace
     positive_label_candidates: List[PositiveLabelCandidatesItem] = Field(default_factory=list)
+    positive_label: Optional[Union[str, int, bool]] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("target_ids", "entity_ids")(construct_sort_validator())

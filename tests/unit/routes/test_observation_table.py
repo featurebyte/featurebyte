@@ -591,6 +591,37 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             },
         ]
 
+        # test update positive label
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={
+                "positive_label": {
+                    "observation_table_id": observation_table_id,
+                    "value": "true",
+                }
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["positive_label"] == "true"
+
+        # check update non-valid positive label
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={
+                "positive_label": {
+                    "observation_table_id": observation_table_id,
+                    "value": "invalid_label",
+                }
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            'Value "invalid_label" is not a valid candidate for observation '
+            "table (ID: 646f6c1c0ed28a5271fb02d7). Valid candidates are: ['true', 'false']."
+        )
+
         # create another observation table without target column
         payload = copy.deepcopy(self.payload)
         new_observation_table_id = str(ObjectId())
@@ -610,6 +641,23 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "Observation table [observation_table_without_target] does not associate with any target namespace."
         )
 
+        # try to update target namespace classification metadata with non associated observation table
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={
+                "positive_label": {
+                    "observation_table_id": new_observation_table_id,
+                    "value": "true",
+                }
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            "Please run target namespace classification metadata update task to extract positive label "
+            "candidates before setting the positive label."
+        )
+
     @pytest.mark.asyncio
     @patch(
         "featurebyte.models.observation_table.SourceTableObservationInput.get_column_names_and_dtypes"
@@ -627,6 +675,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
         # test with multiple primary entity ids
         payload["name"] = "target"
+        payload["dtype"] = "VARCHAR"
         entity_ids = [
             BaseMaterializedTableTestSuite.load_payload(
                 "tests/fixtures/request_payloads/entity.json"
@@ -709,16 +758,33 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
         assert response.status_code == HTTPStatus.OK, response_dict
         response_dict = response.json()
+        observation_table_id = response_dict["_id"]
         assert response_dict["target_namespace_id"] == target_namespace_id
 
         # attempt to update classification metadata
         response = test_api_client.patch(
             f"/target_namespace/{target_namespace_id}/classification_metadata",
-            json={"observation_table_id": response_dict["_id"]},
+            json={"observation_table_id": observation_table_id},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             "Target namespace [target] is not of classification type, it is regression type."
+        )
+
+        # attempt to set positive label
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={
+                "positive_label": {
+                    "observation_table_id": observation_table_id,
+                    "value": "1.0",
+                }
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            "Positive label can only be set for target namespace of type classification, but got regression."
         )
 
         # test delete target namespace

@@ -198,8 +198,39 @@ class TargetNamespaceController(
             raise DocumentUpdateError("Updating target type after setting it is not supported.")
 
         validate_target_type(target_type=target_namespace.target_type, dtype=target_namespace.dtype)
+
+        positive_label = None
+        if data.positive_label:
+            if target_namespace.target_type != TargetType.CLASSIFICATION:
+                raise DocumentUpdateError(
+                    f"Positive label can only be set for target namespace of type "
+                    f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
+                )
+
+            matched_candidate = None
+            for candidate in target_namespace.positive_label_candidates:
+                if candidate.observation_table_id == data.positive_label.observation_table_id:
+                    matched_candidate = candidate
+
+            if matched_candidate is None:
+                raise DocumentUpdateError(
+                    "Please run target namespace classification metadata update task "
+                    "to extract positive label candidates before setting the positive label."
+                )
+            elif data.positive_label.value not in matched_candidate.positive_label_candidates:
+                raise DocumentUpdateError(
+                    f'Value "{data.positive_label.value}" is not a valid candidate for '
+                    f"observation table (ID: {matched_candidate.observation_table_id}). "
+                    f"Valid candidates are: {matched_candidate.positive_label_candidates}."
+                )
+            else:
+                positive_label = data.positive_label.value
+
+        data = TargetNamespaceServiceUpdate(**{
+            **data.model_dump(by_alias=True, exclude={"positive_label": True}),
+            "positive_label": positive_label,
+        })
         updated_namespace = await self.service.update_document(
-            document_id=target_namespace_id,
-            data=TargetNamespaceServiceUpdate(**data.model_dump(by_alias=True)),
+            document_id=target_namespace_id, data=data
         )
         return cast(TargetNamespaceModel, updated_namespace)
