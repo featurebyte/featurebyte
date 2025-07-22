@@ -1,0 +1,14 @@
+prune *
+exclude *
+
+include pyproject.toml
+include README.md
+include LICENSE
+recursive-include featurebyte *.py
+recursive-include featurebyte *.sql
+recursive-include featurebyte *.tpl
+recursive-include featurebyte *.jar
+
+# Consider removing
+include featurebyte/docker/featurebyte.yml
+

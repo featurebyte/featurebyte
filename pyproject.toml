@@ -75,17 +75,13 @@ server = [
   "google-cloud-bigquery-storage",
   "aioboto3"
 ]
-build = [
-  "setuptools",
-  "setuptools-scm",
-]
 
 [dependency-groups]
 dev = [
   { include-group = "test" },
   { include-group = "lint" },
   { include-group = "docs" },
-  { include-group = "vulnerabilities" }
+  { include-group = "build" },
 ]
 test = [
   "jupyterlab",
@@ -162,31 +158,11 @@ docs = [
   "mkdocs-section-index",
   "mkdocs-table-reader-plugin",
 ]
+build = [
+  "setuptools",
+  "setuptools-scm",
+]
 
-[tool.setuptools]
-packages = ["featurebyte"]
-include-package-data = false
-exclude-package-data = ["assets", "docker", "hive-udf", "scripts", "tests", "docs"]
 
-# See https://setuptools.pypa.io/en/latest/userguide/package_discovery.html
-#[tool.setuptools.packages.find]
-#exclude = [
-#  "tests",
-#  "docs",
-#  "hive-udf",
-#  "scripts",
-#  "assets",
-#  "docker",
-#  "tests*",
-#  "docs*",
-#  "hive-udf*",
-#  "scripts*",
-#  "assets*",
-#  "docker*",
-#]
-#include = [
-#  "featurebyte",
-#  "featurebyte.*",
-#]
-#where = ["."]
-#namespaces = true
+[tool.setuptools.packages.find]
+namespaces = true
