@@ -258,6 +258,9 @@ from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.table_validation import TableValidationTask
+from featurebyte.worker.task.target_namespace_classification_metadata_update import (
+    TargetNamespaceClassificationMetadataUpdateTask,
+)
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
@@ -507,6 +510,7 @@ app_container_config.register_class(TestIOTask)
 app_container_config.register_class(TestTask)
 app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
+app_container_config.register_class(TargetNamespaceClassificationMetadataUpdateTask)
 app_container_config.register_class(TableValidationTask)
 app_container_config.register_class(CatalogCleanupTask)
 app_container_config.register_class(DevelopmentDatasetCreateTask)

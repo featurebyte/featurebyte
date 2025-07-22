@@ -50,6 +50,14 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     target_type: Optional[TargetType] = Field(default=None)
 
 
+class TargetNamespaceClassificationMetadataUpdate(FeatureByteBaseModel):
+    """
+    TargetNamespace classification metadata update schema - used by server side only, not exposed to client
+    """
+
+    observation_table_id: PydanticObjectId
+
+
 class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     """
     TargetNamespaceService update schema - used by server side only, not exposed to client

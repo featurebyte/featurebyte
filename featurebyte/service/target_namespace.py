@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import List, Union
 
-from bson import ObjectId
 from sqlglot import expressions
 
 from featurebyte.enum import TargetType
@@ -19,6 +18,9 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
+from featurebyte.schema.worker.task.target_namespace_classification_metadata_update import (
+    TargetNamespaceClassificationMetadataUpdateTaskPayload,
+)
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.session.base import BaseSession
 
@@ -31,6 +33,33 @@ class TargetNamespaceService(
     """
 
     document_class = TargetNamespaceModel
+
+    async def get_target_namespace_classification_metadata_update_task_payload(
+        self,
+        target_namespace_id: PydanticObjectId,
+        observation_table_id: PydanticObjectId,
+    ) -> TargetNamespaceClassificationMetadataUpdateTaskPayload:
+        """
+        Get task payload to update classification metadata for a target namespace.
+
+        Parameters
+        ----------
+        target_namespace_id: PydanticObjectId
+            ID of the target namespace to update
+        observation_table_id: PydanticObjectId
+            ID of the observation table with target values
+
+        Returns
+        -------
+        TargetNamespaceClassificationMetadataUpdateTaskPayload
+            Task payload for updating classification metadata
+        """
+        return TargetNamespaceClassificationMetadataUpdateTaskPayload(
+            target_namespace_id=target_namespace_id,
+            observation_table_id=observation_table_id,
+            user_id=self.user.id,
+            catalog_id=self.catalog_id,
+        )
 
     async def _add_positive_label_candidate(
         self, document_id: PydanticObjectId, new_candidate: PositiveLabelCandidatesItem
@@ -67,7 +96,7 @@ class TargetNamespaceService(
 
     async def update_target_namespace_classification_metadata(
         self,
-        target_namespace_id: ObjectId,
+        target_namespace_id: PydanticObjectId,
         observation_table: ObservationTableModel,
         db_session: BaseSession,
     ) -> None:
@@ -76,7 +105,7 @@ class TargetNamespaceService(
 
         Parameters
         ----------
-        target_namespace_id: ObjectId
+        target_namespace_id: PydanticObjectId
             ID of the target namespace to update
         observation_table: ObservationTableModel
             Newly created observation table with target values

@@ -545,6 +545,71 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             response_dict["detail"] == 'Target "target" does not have matching primary entity ids.'
         )
 
+    def check_target_namespace_classification_metadata_update_task(
+        self, test_api_client, observation_table_id, target_namespace_id
+    ):
+        """Check if the task to update classification metadata is created"""
+        target_namespace = test_api_client.get(f"/target_namespace/{target_namespace_id}").json()
+        assert target_namespace["target_type"] is None
+
+        # try to update classification metadata
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}/classification_metadata",
+            json={"observation_table_id": observation_table_id},
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            f"Target namespace [{target_namespace['name']}] has not been set to classification type."
+        )
+
+        # set target type to classification
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}", json={"target_type": "classification"}
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["target_type"] == "classification"
+
+        # try to update classification metadata again
+        with patch(
+            "featurebyte.service.target_namespace.TargetNamespaceService._get_unique_target_values"
+        ) as mock_get_unique_target_values:
+            mock_get_unique_target_values.return_value = ["true", "false"]
+            response = test_api_client.patch(
+                f"/target_namespace/{target_namespace_id}/classification_metadata",
+                json={"observation_table_id": observation_table_id},
+            )
+            assert response.status_code == HTTPStatus.ACCEPTED, response.json()
+
+        # check target namespace
+        target_namespace = test_api_client.get(f"/target_namespace/{target_namespace_id}").json()
+        assert target_namespace["positive_label_candidates"] == [
+            {
+                "observation_table_id": observation_table_id,
+                "positive_label_candidates": ["true", "false"],
+            },
+        ]
+
+        # create another observation table without target column
+        payload = copy.deepcopy(self.payload)
+        new_observation_table_id = str(ObjectId())
+        payload["_id"] = new_observation_table_id
+        payload["name"] = "observation_table_without_target"
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # try to update classification metadata again with another observation table
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}/classification_metadata",
+            json={"observation_table_id": new_observation_table_id},
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == (
+            "Observation table [observation_table_without_target] does not associate with any target namespace."
+        )
+
     @pytest.mark.asyncio
     @patch(
         "featurebyte.models.observation_table.SourceTableObservationInput.get_column_names_and_dtypes"
@@ -573,8 +638,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["entity_ids"] = entity_ids
         payload["default_target_id"] = None
         payload["target_ids"] = []
+        payload["target_type"] = None
         response = test_api_client.post("/target_namespace", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
+        target_namespace_id = response.json()["_id"]
 
         patch_get_column_names_and_dtypes.return_value = {
             "cust_id": "INT",
@@ -588,6 +655,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["primary_entity_ids"] = entity_ids[::-1]
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        self.check_target_namespace_classification_metadata_update_task(
+            test_api_client,
+            observation_table_id=self.payload["_id"],
+            target_namespace_id=target_namespace_id,
+        )
 
     @pytest.mark.asyncio
     async def test_create_with_target_column_definition_exists_422(
@@ -618,8 +691,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["default_target_id"] = None
         payload["target_ids"] = []
         response = test_api_client.post("/target_namespace", json=payload)
-        assert response.status_code == HTTPStatus.CREATED, response.json()
-        target_namespace_id = response.json()["_id"]
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        target_namespace_id = response_dict["_id"]
+        assert response_dict["target_type"] == "regression"
 
         payload = copy.deepcopy(self.payload)
         payload["target_column"] = "target"
@@ -635,6 +710,16 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         response_dict = response.json()
         assert response_dict["target_namespace_id"] == target_namespace_id
+
+        # attempt to update classification metadata
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}/classification_metadata",
+            json={"observation_table_id": response_dict["_id"]},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Target namespace [target] is not of classification type, it is regression type."
+        )
 
         # test delete target namespace
         response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
