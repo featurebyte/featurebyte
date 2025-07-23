@@ -40,6 +40,9 @@ from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.table_validation import TableValidationTask
+from featurebyte.worker.task.target_namespace_classification_metadata_update import (
+    TargetNamespaceClassificationMetadataUpdateTask,
+)
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
@@ -74,6 +77,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.DEVELOPMENT_DATASET_CREATE: DevelopmentDatasetCreateTask,
     WorkerCommand.DEVELOPMENT_DATASET_DELETE: DevelopmentDatasetDeleteTask,
     WorkerCommand.DEVELOPMENT_DATASET_ADD_TABLES: DevelopmentDatasetAddTablesTask,
+    WorkerCommand.TARGET_NAMESPACE_CLASSIFICATION_METADATA_UPDATE: TargetNamespaceClassificationMetadataUpdateTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
 }

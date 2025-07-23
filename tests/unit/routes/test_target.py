@@ -108,6 +108,8 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "description": None,
             "is_deleted": False,
             "target_type": None,
+            "positive_label_candidates": [],
+            "positive_label": None,
         }
 
     def test_request_sample_entity_serving_names(

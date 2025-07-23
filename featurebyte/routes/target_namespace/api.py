@@ -26,11 +26,13 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.target_namespace import (
+    TargetNamespaceClassificationMetadataUpdate,
     TargetNamespaceCreate,
     TargetNamespaceInfo,
     TargetNamespaceList,
     TargetNamespaceUpdate,
 )
+from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/target_namespace")
 
@@ -71,6 +73,26 @@ async def get_target_namespace(
         ),
     )
     return target_namespace
+
+
+@router.patch(
+    "/{target_namespace_id}/classification_metadata",
+    response_model=Task,
+    status_code=HTTPStatus.ACCEPTED,
+)
+async def update_target_namespace_classification_metadata(
+    request: Request,
+    target_namespace_id: PydanticObjectId,
+    data: TargetNamespaceClassificationMetadataUpdate,
+) -> Task:
+    """
+    Update TargetNamespace classification metadata
+    """
+    controller = request.state.app_container.target_namespace_controller
+    task: Task = await controller.create_target_namespace_classification_metadata_update_task(
+        target_namespace_id=target_namespace_id, data=data
+    )
+    return task
 
 
 @router.patch("/{target_namespace_id}", response_model=TargetNamespaceModel)

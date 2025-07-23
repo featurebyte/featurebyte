@@ -11,7 +11,7 @@ import pytest
 from featurebyte import TargetNamespace
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
@@ -108,7 +108,10 @@ async def test_observation_table_min_interval_between_entities(
     # create a target namespace
     target_name = "Target"
     target_namespace = TargetNamespace.create(
-        name=target_name, primary_entity=[], dtype=DBVarType.FLOAT
+        name=target_name,
+        primary_entity=[],
+        dtype=DBVarType.VARCHAR,
+        target_type=TargetType.CLASSIFICATION,
     )
 
     # create the observation table with target column
@@ -134,6 +137,17 @@ async def test_observation_table_min_interval_between_entities(
             "Target": [np.nan],
         }),
     )
+
+    # check target namespace document
+    target_namespace = target_namespace.get_by_id(id=target_namespace.id)
+    target_namespace_model = target_namespace.cached_model
+    positive_label_candidates = target_namespace_model.positive_label_candidates
+    assert len(positive_label_candidates) == 1
+    assert positive_label_candidates[0].observation_table_id == observation_table.id
+    assert sorted(positive_label_candidates[0].positive_label_candidates) == [
+        "Not Verified",
+        "Verified",
+    ]
 
     # delete the observation table & target
     observation_table.delete()
