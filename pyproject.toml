@@ -51,6 +51,22 @@ dependencies = [
 # Use this for overriding vulnerable dependencies
 override-dependencies = []
 
+[[tool.uv.index]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+# Username = '__token__'
+# Password = 'pypi-<TOKEN>'
+
+[[tool.uv.index]]
+name = "featurebyte_np"
+url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
+publish-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/"
+explicit = true
+# Username = '_json_key_base64'
+# Password = 'base64-encoded-service-account-key'
+
 
 [project.optional-dependencies]
 server = [
