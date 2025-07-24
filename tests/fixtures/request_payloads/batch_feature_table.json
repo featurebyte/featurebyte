@@ -10,5 +10,6 @@
     "feature_store_id": "646f6c190ed28a5271fb02a1",
     "name": "batch_feature_table",
     "point_in_time": null,
-    "request_input": null
+    "request_input": null,
+    "use_deployed_tile_tables": true
 }

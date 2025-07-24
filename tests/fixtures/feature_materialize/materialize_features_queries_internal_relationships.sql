@@ -105,7 +105,7 @@ WITH ONLINE_REQUEST_TABLE AS (
               REQ."__FB_TABLE_ROW_INDEX",
               REQ."cust_id",
               REQ."POINT_IN_TIME"
-            FROM ONLINE_REQUEST_TABLE AS REQ
+            FROM "ONLINE_REQUEST_TABLE" AS REQ
           )
           UNION ALL
           SELECT
