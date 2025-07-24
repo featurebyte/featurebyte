@@ -179,9 +179,6 @@ class OnlineServingService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
         )
-        on_demand_tile_tables = (
-            await self.deployed_tile_table_service.get_deployed_tile_table_info()
-        ).on_demand_tile_tables
         features = await get_online_features(
             session_handler=SessionHandler(
                 session=db_session,
@@ -191,6 +188,7 @@ class OnlineServingService:
             ),
             cron_helper=self.cron_helper,
             column_statistics_service=self.column_statistics_service,
+            deployed_tile_table_service=self.deployed_tile_table_service,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,
@@ -199,7 +197,6 @@ class OnlineServingService:
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
-            on_demand_tile_tables=on_demand_tile_tables,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(

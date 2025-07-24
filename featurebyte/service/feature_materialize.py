@@ -349,9 +349,6 @@ class FeatureMaterializeService:
                 request_column_names=set(feature_table_model.serving_names),
                 feature_store=feature_store,
             )
-            on_demand_tile_tables = (
-                await self.deployed_tile_table_service.get_deployed_tile_table_info()
-            ).on_demand_tile_tables
             await get_online_features(
                 session_handler=SessionHandler(
                     session=session,
@@ -361,6 +358,7 @@ class FeatureMaterializeService:
                 ),
                 cron_helper=self.cron_helper,
                 column_statistics_service=self.column_statistics_service,
+                deployed_tile_table_service=self.deployed_tile_table_service,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
@@ -370,7 +368,6 @@ class FeatureMaterializeService:
                 request_timestamp=feature_timestamp,
                 parent_serving_preparation=parent_serving_preparation,
                 concatenate_serving_names=feature_table_model.serving_names,
-                on_demand_tile_tables=on_demand_tile_tables,
             )
 
             column_names = []

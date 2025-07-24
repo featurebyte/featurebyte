@@ -52,6 +52,7 @@ from featurebyte.query_graph.sql.online_serving_util import get_version_placehol
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 
 if TYPE_CHECKING:
     from featurebyte.service.column_statistics import ColumnStatisticsService
@@ -512,6 +513,7 @@ async def get_online_features(
     session_handler: SessionHandler,
     cron_helper: CronHelper,
     column_statistics_service: ColumnStatisticsService,
+    deployed_tile_table_service: DeployedTileTableService,
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
@@ -521,7 +523,6 @@ async def get_online_features(
     output_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
     concatenate_serving_names: Optional[list[str]] = None,
-    on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -534,6 +535,8 @@ async def get_online_features(
         Cron helper for simulating feature job schedules
     column_statistics_service: ColumnStatisticsService
         Column statistics service to get column statistics information
+    deployed_tile_table_service: DeployedTileTableService
+        Deployed tile table service to retrieve deployed tile tables
     graph: QueryGraph
         Query graph
     nodes: list[Node]
@@ -553,8 +556,6 @@ async def get_online_features(
         Request timestamp to use if provided
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
-    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
-        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -615,6 +616,11 @@ async def get_online_features(
         max_point_in_time=make_literal_value(request_timestamp, cast_as_timestamp=True),
         adapter=session.adapter,
     )
+
+    # Get deployed tile tables
+    on_demand_tile_tables = (
+        await deployed_tile_table_service.get_deployed_tile_table_info()
+    ).on_demand_tile_tables
 
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
