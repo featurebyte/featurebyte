@@ -55,17 +55,17 @@ from featurebyte.query_graph.sql.online_serving_util import get_version_placehol
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
-from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.historical_features_and_target import (
     cleanup_features_temp_tables,
     compute_tiles_on_demand,
 )
-from featurebyte.service.tile_cache import TileCacheService
-from featurebyte.service.warehouse_table_service import WarehouseTableService
 
 if TYPE_CHECKING:
     from featurebyte.service.column_statistics import ColumnStatisticsService
     from featurebyte.service.cron_helper import CronHelper
+    from featurebyte.service.deployed_tile_table import DeployedTileTableService
+    from featurebyte.service.tile_cache import TileCacheService
+    from featurebyte.service.warehouse_table_service import WarehouseTableService
 
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
