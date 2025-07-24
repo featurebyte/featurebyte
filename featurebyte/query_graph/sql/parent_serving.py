@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, select
+from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.entity_lookup_feature_table import (
@@ -25,6 +25,7 @@ from featurebyte.query_graph.sql.common import (
     SQLType,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
+    quoted_identifier,
 )
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specs import AggregationSource
@@ -57,6 +58,7 @@ def construct_request_table_with_parent_entities(
     join_steps: list[EntityLookupStep],
     feature_store_details: FeatureStoreDetails,
     request_table_details: Optional[TableDetails] = None,
+    request_timestamp_expr: Optional[Expression] = None,
 ) -> ParentEntityLookupResult:
     """
     Construct a query to join parent entities into the request table
@@ -74,6 +76,8 @@ def construct_request_table_with_parent_entities(
         Information about the feature store
     request_table_details: Optional[TableDetails]
         Location of the request table if it is a table in the warehouse
+    request_timestamp_expr: Optional[Expression]
+        Request timestamp expression to be used as the point in time column
 
     Returns
     -------
@@ -82,8 +86,21 @@ def construct_request_table_with_parent_entities(
     table_expr = select(*[
         get_qualified_column_identifier(col, "REQ") for col in request_table_columns
     ])
+    if request_timestamp_expr is not None:
+        table_expr = table_expr.select(
+            expressions.alias_(
+                request_timestamp_expr,
+                alias=SpecialColumnName.POINT_IN_TIME,
+                quoted=True,
+            )
+        )
     if request_table_name is not None:
-        table_expr = table_expr.from_(expressions.alias_(request_table_name, "REQ"))
+        table_expr = table_expr.from_(
+            expressions.Table(
+                this=quoted_identifier(request_table_name),
+                alias=expressions.TableAlias(this="REQ"),
+            )
+        )
     else:
         assert request_table_details is not None
         table_expr = table_expr.from_(

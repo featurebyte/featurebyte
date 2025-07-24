@@ -642,15 +642,14 @@ async def get_online_features(
     )
 
     # Get deployed tile tables
-    request_id = str(ObjectId())
-    temp_tile_tables_tag = (
-        f"online_features_{output_table_details.table_name if output_table_details else request_id}"
-    )
+    request_id = str(ObjectId()).upper()
+    temp_tile_tables_tag = f"online_features_{request_id}"
     if use_deployed_tile_tables:
         on_demand_tile_tables = (
             await deployed_tile_table_service.get_deployed_tile_table_info()
         ).on_demand_tile_tables
     else:
+        request_timestamp_expr = get_current_timestamp_expr(request_timestamp)
         tile_compute_result = await compute_tiles_on_demand(
             session=session,
             tile_cache_service=tile_cache_service,
@@ -664,6 +663,7 @@ async def get_online_features(
             serving_names_mapping=None,
             partition_column_filters=partition_column_filters,
             parent_serving_preparation=parent_serving_preparation,
+            request_timestamp_expr=request_timestamp_expr,
             progress_callback=None,
         )
         on_demand_tile_tables = tile_compute_result.on_demand_tile_tables

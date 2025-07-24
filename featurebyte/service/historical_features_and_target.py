@@ -12,6 +12,7 @@ import pandas as pd
 from bson import ObjectId
 from dateutil import parser as dateutil_parser
 from redis import Redis
+from sqlglot import Expression
 
 from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import get_ranged_progress_callback
@@ -81,6 +82,7 @@ async def compute_tiles_on_demand(
     partition_column_filters: Optional[PartitionColumnFilters],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     development_datasets: Optional[DevelopmentDatasets] = None,
+    request_timestamp_expr: Optional[Expression] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
 ) -> OnDemandTileComputeResult:
@@ -116,6 +118,8 @@ async def compute_tiles_on_demand(
         Preparation required for serving parent features
     development_datasets: Optional[DevelopmentDatasets]
         Optional development datasets to use if applicable
+    request_timestamp_expr: Optional[Expression]
+        Request timestamp expression to use as the point in time column
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
     raise_on_error: bool
@@ -126,6 +130,9 @@ async def compute_tiles_on_demand(
     TileComputeMetrics
     """
     if parent_serving_preparation is None:
+        # We can assume that request_timestamp_expr is always provided with parent serving
+        # preparation (only used in batch serving).
+        assert request_timestamp_expr is None
         effective_request_table_name = request_table_name
     else:
         # Lookup parent entities and join them with the request table since tile computation
@@ -135,6 +142,7 @@ async def compute_tiles_on_demand(
             request_table_columns=request_table_columns,
             join_steps=parent_serving_preparation.join_steps,
             feature_store_details=parent_serving_preparation.feature_store_details,
+            request_timestamp_expr=request_timestamp_expr,
         )
         effective_request_table_name = parent_serving_result.new_request_table_name
         await session.create_table_as(
