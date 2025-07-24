@@ -217,6 +217,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                                 "table_name": "sf_dim_table_sample",
                             },
                         },
+                        "deleted": False,
                     },
                 ],
             },
@@ -240,6 +241,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                         "table_name": "sf_table_sample",
                     },
                 },
+                "deleted": False,
             },
             {
                 "table_id": "6337f9651050ee7d1234660d",
@@ -251,6 +253,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                         "table_name": "sf_dim_table_sample",
                     },
                 },
+                "deleted": False,
             },
         ]
         assert response_dict == expected_response_dict
@@ -287,6 +290,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                                 "table_name": "sf_dim_table_sample",
                             },
                         },
+                        "deleted": False,
                     },
                 ]
             },
@@ -316,6 +320,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                                 "table_name": "sf_other_table_sample",
                             },
                         },
+                        "deleted": False,
                     },
                 ]
             },
@@ -352,6 +357,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                                 "table_name": "sf_mismatch_table_sample",
                             },
                         },
+                        "deleted": False,
                     },
                 ]
             },
@@ -412,6 +418,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                         "table_name": "sf_table_sample",
                     },
                     "table_name": "sf_event_table",
+                    "deleted": False,
                 }
             ],
             "sample_from_timestamp": "2022-01-01T00:00:00",
@@ -449,6 +456,135 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                         },
                     },
                     "table_id": "6337f9651050ee7d5980660d",
+                    "deleted": False,
                 }
             ],
+        }
+
+    def test_deleted_table(self, test_api_client_persistent, create_success_response):
+        """Test get routes when development table is deleted"""
+        test_api_client, _ = test_api_client_persistent
+        model_response_dict = create_success_response.json()
+        doc_id = model_response_dict["_id"]
+
+        # add development table
+        response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}/development_table",
+            json={
+                "development_tables": [
+                    {
+                        "table_id": "6337f9651050ee7d1234660d",
+                        "location": {
+                            "feature_store_id": "646f6c190ed28a5271fb02a1",
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_dim_table_sample",
+                            },
+                        },
+                        "deleted": False,
+                    },
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.ACCEPTED
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        # delete table used in development dataset
+        response = test_api_client.delete(
+            url=f"/event_table/{model_response_dict['development_tables'][0]['table_id']}"
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # test get record should have table marked as deleted
+        response = test_api_client.get(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}"
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response_dict = response.json()
+        assert response_dict["development_tables"] == [
+            {
+                "location": {
+                    "feature_store_id": "646f6c190ed28a5271fb02a1",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_table_sample",
+                    },
+                },
+                "table_id": "6337f9651050ee7d5980660d",
+                "deleted": True,
+            },
+            {
+                "location": {
+                    "feature_store_id": "646f6c190ed28a5271fb02a1",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_dim_table_sample",
+                    },
+                },
+                "table_id": "6337f9651050ee7d1234660d",
+                "deleted": False,
+            },
+        ]
+
+        # test list records should have table marked as deleted
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response_dict = response.json()
+        assert response_dict["data"][0]["development_tables"] == [
+            {
+                "location": {
+                    "feature_store_id": "646f6c190ed28a5271fb02a1",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_table_sample",
+                    },
+                },
+                "table_id": "6337f9651050ee7d5980660d",
+                "deleted": True,
+            },
+            {
+                "location": {
+                    "feature_store_id": "646f6c190ed28a5271fb02a1",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_dim_table_sample",
+                    },
+                },
+                "table_id": "6337f9651050ee7d1234660d",
+                "deleted": False,
+            },
+        ]
+
+        # test get info should have table excluded
+        response = test_api_client.get(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}/info"
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response_dict = response.json()
+        assert response_dict == {
+            "name": "My Development Dataset",
+            "created_at": model_response_dict["created_at"],
+            "description": "This is a development dataset",
+            "updated_at": response_dict["updated_at"],
+            "development_tables": [
+                {
+                    "feature_store_name": "sf_featurestore",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_dim_table_sample",
+                    },
+                    "table_name": "sf_dimension_table",
+                    "deleted": False,
+                }
+            ],
+            "sample_from_timestamp": "2022-01-01T00:00:00",
+            "sample_to_timestamp": "2024-12-31T00:00:00",
         }

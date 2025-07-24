@@ -8,7 +8,19 @@ import copy
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import numpy as np
 import pandas as pd
@@ -339,6 +351,21 @@ class BaseDocumentService(
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
         return kwargs
 
+    async def construct_get_pipeline(self, **kwargs: Any) -> List[Dict[str, Any]] | None:
+        """
+        Construct pipeline used in get route
+
+        Parameters
+        ----------
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        List[Dict[str, Any]] | None
+        """
+        return kwargs.get("pipeline", None)
+
     async def get_document_as_dict(
         self,
         document_id: ObjectId,
@@ -371,15 +398,35 @@ class BaseDocumentService(
         ------
         DocumentNotFoundError
             If the requested document not found
+        QueryNotSupportedError
+            If the persistent query is not supported
         """
         query_filter = await self.construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        document_dict = await self.persistent.find_one(
-            collection_name=self.collection_name,
-            query_filter=query_filter,
-            projection=projection,
-        )
+        pipeline = await self.construct_get_pipeline(**kwargs)
+        try:
+            if pipeline is None:
+                document_dict = await self.persistent.find_one(
+                    collection_name=self.collection_name,
+                    query_filter=query_filter,
+                    projection=projection,
+                )
+            else:
+                pipeline = cast(
+                    List[Dict[str, Any]], self.inject_query_filter(pipeline, query_filter)
+                )
+                docs, total = await self.persistent.aggregate_find(
+                    pipeline=pipeline,
+                    collection_name=self.collection_name,
+                )
+                if total == 0:
+                    document_dict = None
+                else:
+                    document_dict = cast(Dict[str, Any], docs[0])
+        except NotImplementedError as exc:
+            raise QueryNotSupportedError from exc
+
         if document_dict is None:
             exception_detail = exception_detail or (
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
@@ -510,9 +557,14 @@ class BaseDocumentService(
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,
         )
+        pipeline = await self.construct_list_pipeline(
+            **kwargs,
+        )
 
         document_dicts = []
-        async for document_dict in self.list_documents_as_dict_iterator(query_filter=query_filter):
+        async for document_dict in self.list_documents_as_dict_iterator(
+            query_filter=query_filter, pipeline=pipeline
+        ):
             # check if document is modifiable
             self._check_document_modifiable(document=document_dict)
             document_dicts.append(document_dict)
@@ -626,6 +678,56 @@ class BaseDocumentService(
 
         return output
 
+    async def construct_list_pipeline(
+        self,
+        **kwargs: Any,
+    ) -> List[Dict[str, Any]] | None:
+        """
+        Construct query filter used in list route
+
+        Parameters
+        ----------
+        kwargs: Any
+            Keyword arguments passed to the list controller
+
+        Returns
+        -------
+        List[Dict[str, Any]] | None
+            Pipeline to use for the list route, or None if no pipeline is needed
+        """
+        return kwargs.get("pipeline", None)
+
+    @staticmethod
+    def inject_query_filter(pipeline: Any, query_filter: QueryFilter) -> Any:
+        """
+        Inject
+
+        Parameters
+        ----------
+        pipeline: Any
+            Pipeline to inject query filter
+
+        Returns
+        -------
+        Any
+            Pipeline with injected query_filter
+        """
+        if isinstance(pipeline, list):
+            return [
+                (
+                    {"$match": query_filter}
+                    if str(value) == "$query_filter"
+                    else BaseDocumentService.inject_query_filter(value, query_filter)
+                )
+                for value in pipeline
+            ]
+        if isinstance(pipeline, dict):
+            return {
+                key: BaseDocumentService.inject_query_filter(value, query_filter)
+                for key, value in pipeline.items()
+            }
+        return pipeline
+
     async def list_documents_as_dict(
         self,
         page: int = 1,
@@ -667,15 +769,31 @@ class BaseDocumentService(
         query_filter = await self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
+        pipeline = await self.construct_list_pipeline(
+            **kwargs,
+        )
         try:
-            docs, total = await self.persistent.find(
-                collection_name=self.collection_name,
-                query_filter=query_filter,
-                projection=projection,
-                sort_by=sort_by,
-                page=page,
-                page_size=page_size,
-            )
+            if pipeline is None:
+                docs, total = await self.persistent.find(
+                    collection_name=self.collection_name,
+                    query_filter=query_filter,
+                    projection=projection,
+                    sort_by=sort_by,
+                    page=page,
+                    page_size=page_size,
+                )
+            else:
+                pipeline = cast(
+                    List[Dict[str, Any]], self.inject_query_filter(pipeline, query_filter)
+                )
+                docs, total = await self.persistent.aggregate_find(
+                    pipeline=pipeline,
+                    collection_name=self.collection_name,
+                    sort_by=sort_by,
+                    page=page,
+                    page_size=page_size,
+                    skip_facet=kwargs.get("skip_facet", False),
+                )
         except NotImplementedError as exc:
             raise QueryNotSupportedError from exc
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
@@ -715,11 +833,14 @@ class BaseDocumentService(
         query_filter = await self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
+        pipeline = await self.construct_list_pipeline(
+            **kwargs,
+        )
         try:
             docs = await self.persistent.get_iterator(
                 collection_name=self.collection_name,
                 query_filter=query_filter,
-                pipeline=kwargs.get("pipeline"),
+                pipeline=pipeline,
                 projection=projection,
                 sort_by=sort_by,
             )

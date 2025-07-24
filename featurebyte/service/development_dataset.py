@@ -4,7 +4,7 @@ DevelopmentDatasetService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type, cast
 
 from bson import ObjectId
 from redis import Redis
@@ -17,6 +17,7 @@ from featurebyte.exception import (
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.development_dataset import DevelopmentDatasetModel, DevelopmentTable
+from featurebyte.models.feature_store import TableModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -35,6 +36,50 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.table import TableService
 from featurebyte.storage import Storage
+
+DEV_TABLE_DELETION_MARKING_PIPELINE = [
+    "$query_filter",
+    # Unwind the development_tables array, keeping documents even if it's empty
+    {
+        "$unwind": {
+            "path": "$development_tables",
+            "preserveNullAndEmptyArrays": True,
+        }
+    },
+    # Lookup to check if table_id exists in the table collection
+    {
+        "$lookup": {
+            "from": TableModel.collection_name(),
+            "localField": "development_tables.table_id",
+            "foreignField": "_id",
+            "as": "matched_table",
+        }
+    },
+    # Add "deleted": true if there is no match
+    {
+        "$addFields": {
+            "development_tables.deleted": {
+                "$cond": {
+                    "if": {"$eq": [{"$size": "$matched_table"}, 0]},
+                    "then": True,
+                    "else": False,
+                }
+            }
+        }
+    },
+    # Reconstruct the full document while collecting the updated development_tables
+    {
+        "$group": {
+            "_id": "$_id",
+            "fullDocument": {"$first": "$$ROOT"},
+            "development_tables": {"$push": "$development_tables"},
+        }
+    },
+    # Replace the original development_tables with updated ones
+    {"$set": {"fullDocument.development_tables": "$development_tables"}},
+    # Replace root to return the final modified document
+    {"$replaceRoot": {"newRoot": "$fullDocument"}},
+]
 
 
 class DevelopmentDatasetService(
@@ -304,3 +349,18 @@ class DevelopmentDatasetService(
                 populate_remote_attributes=populate_remote_attributes,
             ),
         )
+
+    async def construct_get_pipeline(self, **kwargs: Any) -> List[Dict[str, Any]] | None:
+        pipeline = await super().construct_get_pipeline(**kwargs) or []
+        # add pipeline stages to flag deleted tables
+        pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)
+        return pipeline
+
+    async def construct_list_pipeline(
+        self,
+        **kwargs: Any,
+    ) -> List[Dict[str, Any]] | None:
+        pipeline = await super().construct_list_pipeline(**kwargs) or []
+        # add pipeline stages to flag deleted tables
+        pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)
+        return pipeline
