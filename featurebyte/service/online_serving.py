@@ -59,6 +59,8 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
+from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.session_helper import SessionHandler
 
 logger = get_logger(__name__)
@@ -96,6 +98,8 @@ class OnlineServingService:
         system_metrics_service: SystemMetricsService,
         deployed_tile_table_service: DeployedTileTableService,
         column_statistics_service: ColumnStatisticsService,
+        tile_cache_service: TileCacheService,
+        warehouse_table_service: WarehouseTableService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -112,6 +116,8 @@ class OnlineServingService:
         self.system_metrics_service = system_metrics_service
         self.deployed_tile_table_service = deployed_tile_table_service
         self.column_statistics_service = column_statistics_service
+        self.tile_cache_service = tile_cache_service
+        self.warehouse_table_service = warehouse_table_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -189,6 +195,9 @@ class OnlineServingService:
             cron_helper=self.cron_helper,
             column_statistics_service=self.column_statistics_service,
             deployed_tile_table_service=self.deployed_tile_table_service,
+            tile_cache_service=self.tile_cache_service,
+            warehouse_table_service=self.warehouse_table_service,
+            feature_store=feature_store,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,

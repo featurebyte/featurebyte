@@ -297,7 +297,12 @@ async def test_get_online_features_multiple_queries__dataframe(
             if_exists=True,
             timeout=86400,
         ),
-        call(table_name="REQUEST_TABLE_1", schema_name="sf_schema", database_name="sf_db"),
+        call(
+            table_name="REQUEST_TABLE_1",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
     ]
 
 
