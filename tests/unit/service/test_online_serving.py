@@ -380,3 +380,32 @@ async def test_get_online_features_with_partition_column_filters(
         "tests/fixtures/expected_get_online_features_partition_column_filters.sql",
         update_fixture=update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_get_online_features_without_deployed_tile_tables(
+    online_serving_service,
+    deployed_feature_list,
+    mock_session_for_online_serving,
+    batch_request_table,
+    update_fixtures,
+):
+    """
+    Test computing batch features without using deployed tile tables
+    """
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list,
+        request_data=batch_request_table,
+        output_table_details=TableDetails(
+            database_name="some_database", schema_name="some_schema", table_name="some_table"
+        ),
+        use_deployed_tile_tables=False,
+    )
+
+    # Check queries used
+    queries = extract_session_executed_queries(mock_session_for_online_serving)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_get_online_features_without_deployed_tile_tables.sql",
+        update_fixture=update_fixtures,
+    )

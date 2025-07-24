@@ -126,6 +126,7 @@ class OnlineServingService:
         output_table_details: Optional[TableDetails] = None,
         batch_feature_table_id: Optional[PydanticObjectId] = None,
         point_in_time: Optional[datetime] = None,
+        use_deployed_tile_tables: bool = True,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -142,6 +143,8 @@ class OnlineServingService:
             Batch feature table ID to track the time taken for the online serving request
         point_in_time: Optional[datetime]
             Point in time to use for the request. If not provided, the current time will be used.
+        use_deployed_tile_tables: bool
+            Whether to use deployed tile tables for online serving
 
         Returns
         -------
@@ -206,6 +209,7 @@ class OnlineServingService:
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
+            use_deployed_tile_tables=use_deployed_tile_tables,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(
