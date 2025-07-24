@@ -223,6 +223,10 @@ if __name__ == "__main__":
                     "featurebyte.service.online_store_table_version",  # query_graph/sql/online_serving.py
                     "featurebyte.service.cron_helper",  # query_graph/sql/online_serving.py
                     "featurebyte.service.column_statistics",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.deployed_tile_table",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.historical_features_and_target",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.tile_cache",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.warehouse_table_service",  # query_graph/sql/online_serving.py
                 }
             ),
             "no_import_from": BACKEND_ONLY_MODS.union(CLIENT_ONLY_MODS),
