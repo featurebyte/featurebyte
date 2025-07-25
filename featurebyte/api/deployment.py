@@ -291,7 +291,8 @@ class Deployment(DeletableApiObject):
             Optional point in time to use for computing the batch feature table. If None, the
             current time is used.
         use_deployed_tile_tables: bool
-            Whether to use deployed tile tables for computing the batch feature table.
+            Whether to use deployed tile tables for computing the batch feature table. If False,
+            tiles will be computed on demand.
 
         Returns
         -------
@@ -373,7 +374,8 @@ class Deployment(DeletableApiObject):
             Optional point in time to use for computing the batch feature table. If None, the
             current time is used.
         use_deployed_tile_tables: bool
-            Whether to use deployed tile tables for computing the batch feature table.
+            Whether to use deployed tile tables for computing the batch feature table. If False,
+            tiles will be computed on demand.
 
         Examples
         --------
