@@ -9,12 +9,15 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
+from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
@@ -52,10 +55,17 @@ from featurebyte.query_graph.sql.online_serving_util import get_version_placehol
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.service.historical_features_and_target import (
+    cleanup_features_temp_tables,
+    compute_tiles_on_demand,
+)
 
 if TYPE_CHECKING:
     from featurebyte.service.column_statistics import ColumnStatisticsService
     from featurebyte.service.cron_helper import CronHelper
+    from featurebyte.service.deployed_tile_table import DeployedTileTableService
+    from featurebyte.service.tile_cache import TileCacheService
+    from featurebyte.service.warehouse_table_service import WarehouseTableService
 
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
@@ -512,16 +522,20 @@ async def get_online_features(
     session_handler: SessionHandler,
     cron_helper: CronHelper,
     column_statistics_service: ColumnStatisticsService,
+    deployed_tile_table_service: DeployedTileTableService,
+    tile_cache_service: TileCacheService,
+    warehouse_table_service: WarehouseTableService,
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
+    feature_store: FeatureStoreModel,
     source_info: SourceInfo,
     online_store_table_version_service: OnlineStoreTableVersionService,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
     concatenate_serving_names: Optional[list[str]] = None,
-    on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
+    use_deployed_tile_tables: bool = True,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -534,12 +548,20 @@ async def get_online_features(
         Cron helper for simulating feature job schedules
     column_statistics_service: ColumnStatisticsService
         Column statistics service to get column statistics information
+    deployed_tile_table_service: DeployedTileTableService
+        Deployed tile table service to retrieve deployed tile tables
+    tile_cache_service: TileCacheService
+        Tile cache service
+    warehouse_table_service: WarehouseTableService
+        Warehouse table service to manage warehouse tables
     graph: QueryGraph
         Query graph
     nodes: list[Node]
         List of query graph nodes
     request_data: Union[pd.DataFrame, BatchRequestTableModel]
         Request data as a dataframe or a BatchRequestTableModel
+    feature_store: FeatureStoreModel
+        Feature store model
     source_info: SourceInfo
         Source information
     online_store_table_version_service: OnlineStoreTableVersionService
@@ -553,8 +575,9 @@ async def get_online_features(
         Request timestamp to use if provided
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
-    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
-        List of on-demand tile tables to be used in the query
+    use_deployed_tile_tables: bool
+        Whether to use deployed tile tables when computing features. If False, temporary tile tables
+        will be generated and used.
 
     Returns
     -------
@@ -587,8 +610,10 @@ async def get_online_features(
 
     # If using multiple queries, FeatureQuerySet requires request table to be registered as a
     # table beforehand.
+    request_table_name_for_cleanup = None
     if isinstance(request_data, pd.DataFrame):
         request_table_name = f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}"
+        request_table_name_for_cleanup = request_table_name
         await session.register_table(request_table_name, request_data)
     else:
         assert request_table_details is not None
@@ -615,6 +640,33 @@ async def get_online_features(
         max_point_in_time=make_literal_value(request_timestamp, cast_as_timestamp=True),
         adapter=session.adapter,
     )
+
+    # Get deployed tile tables
+    request_id = str(ObjectId()).upper()
+    temp_tile_tables_tag = f"online_features_{request_id}"
+    if use_deployed_tile_tables:
+        on_demand_tile_tables = (
+            await deployed_tile_table_service.get_deployed_tile_table_info()
+        ).on_demand_tile_tables
+    else:
+        request_timestamp_expr = get_current_timestamp_expr(request_timestamp)
+        tile_compute_result = await compute_tiles_on_demand(
+            session=session,
+            tile_cache_service=tile_cache_service,
+            graph=graph,
+            nodes=nodes,
+            request_id=request_id,
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            feature_store_id=feature_store.id,
+            temp_tile_tables_tag=temp_tile_tables_tag,
+            serving_names_mapping=None,
+            partition_column_filters=partition_column_filters,
+            parent_serving_preparation=parent_serving_preparation,
+            request_timestamp_expr=request_timestamp_expr,
+            progress_callback=None,
+        )
+        on_demand_tile_tables = tile_compute_result.on_demand_tile_tables
 
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
@@ -651,19 +703,15 @@ async def get_online_features(
         )
         df_features = feature_query_set_result.dataframe
     finally:
-        if request_table_name is not None and request_table_details is None:
-            await session.drop_table(
-                table_name=request_table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
+        if not is_feature_query_debug_enabled():
+            await cleanup_features_temp_tables(
+                session=session,
+                feature_store=feature_store,
+                warehouse_table_service=warehouse_table_service,
+                request_table_name=request_table_name_for_cleanup,
+                temp_tile_tables_tag=temp_tile_tables_tag,
+                job_schedule_table_set=job_schedule_table_set,
             )
-        if job_schedule_table_set:
-            for job_schedule_table in job_schedule_table_set.tables:
-                await session.drop_table(
-                    table_name=job_schedule_table.table_name,
-                    schema_name=session.schema_name,
-                    database_name=session.database_name,
-                )
 
     if output_table_details is None:
         assert df_features is not None

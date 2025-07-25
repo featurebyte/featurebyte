@@ -267,6 +267,7 @@ class Deployment(DeletableApiObject):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
+        use_deployed_tile_tables: bool = True,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features
@@ -289,6 +290,9 @@ class Deployment(DeletableApiObject):
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
             current time is used.
+        use_deployed_tile_tables: bool
+            Whether to use deployed tile tables for computing the batch feature table. If False,
+            tiles will be computed on demand.
 
         Returns
         -------
@@ -325,6 +329,7 @@ class Deployment(DeletableApiObject):
             request_input=request_params.request_input,
             deployment_id=self.id,
             point_in_time=point_in_time,
+            use_deployed_tile_tables=use_deployed_tile_tables,
         )
         batch_feature_table_doc = self.post_async_task(
             route="/batch_feature_table", payload=payload.json_dict()
@@ -341,6 +346,7 @@ class Deployment(DeletableApiObject):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
+        use_deployed_tile_tables: bool = True,
     ) -> None:
         """
         Compute batch features asynchronously using a batch request table. The batch request features
@@ -367,6 +373,9 @@ class Deployment(DeletableApiObject):
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
             current time is used.
+        use_deployed_tile_tables: bool
+            Whether to use deployed tile tables for computing the batch feature table. If False,
+            tiles will be computed on demand.
 
         Examples
         --------
@@ -398,6 +407,7 @@ class Deployment(DeletableApiObject):
             request_input=request_params.request_input,
             deployment_id=self.id,
             point_in_time=point_in_time,
+            use_deployed_tile_tables=use_deployed_tile_tables,
             output_table_info=OutputTableInfo(
                 name=output_table_name,
                 snapshot_date=output_table_snapshot_date,

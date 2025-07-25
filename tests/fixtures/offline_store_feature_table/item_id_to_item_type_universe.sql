@@ -26,7 +26,7 @@ WITH ENTITY_UNIVERSE AS (
       REQ."POINT_IN_TIME",
       REQ."item_id",
       "T0"."item_type" AS "item_type"
-    FROM ENTITY_UNIVERSE AS REQ
+    FROM "ENTITY_UNIVERSE" AS REQ
     LEFT JOIN (
       SELECT
         "item_id",

@@ -63,6 +63,8 @@ from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureT
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
+from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import SessionHandler
 
@@ -227,6 +229,8 @@ class FeatureMaterializeService:
         deployed_tile_table_service: DeployedTileTableService,
         catalog_service: CatalogService,
         column_statistics_service: ColumnStatisticsService,
+        tile_cache_service: TileCacheService,
+        warehouse_table_service: WarehouseTableService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -244,6 +248,8 @@ class FeatureMaterializeService:
         self.deployed_tile_table_service = deployed_tile_table_service
         self.catalog_service = catalog_service
         self.column_statistics_service = column_statistics_service
+        self.tile_cache_service = tile_cache_service
+        self.warehouse_table_service = warehouse_table_service
         self.redis = redis
 
     @asynccontextmanager
@@ -349,9 +355,6 @@ class FeatureMaterializeService:
                 request_column_names=set(feature_table_model.serving_names),
                 feature_store=feature_store,
             )
-            on_demand_tile_tables = (
-                await self.deployed_tile_table_service.get_deployed_tile_table_info()
-            ).on_demand_tile_tables
             await get_online_features(
                 session_handler=SessionHandler(
                     session=session,
@@ -361,16 +364,19 @@ class FeatureMaterializeService:
                 ),
                 cron_helper=self.cron_helper,
                 column_statistics_service=self.column_statistics_service,
+                deployed_tile_table_service=self.deployed_tile_table_service,
+                tile_cache_service=self.tile_cache_service,
+                warehouse_table_service=self.warehouse_table_service,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
+                feature_store=feature_store,
                 source_info=session.get_source_info(),
                 online_store_table_version_service=self.online_store_table_version_service,
                 output_table_details=output_table_details,
                 request_timestamp=feature_timestamp,
                 parent_serving_preparation=parent_serving_preparation,
                 concatenate_serving_names=feature_table_model.serving_names,
-                on_demand_tile_tables=on_demand_tile_tables,
             )
 
             column_names = []
