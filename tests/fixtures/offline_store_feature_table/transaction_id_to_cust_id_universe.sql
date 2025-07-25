@@ -38,7 +38,7 @@ WITH ENTITY_UNIVERSE AS (
         THEN NULL
         ELSE "T0"."cust_id"
       END AS "cust_id"
-    FROM ENTITY_UNIVERSE AS REQ
+    FROM "ENTITY_UNIVERSE" AS REQ
     LEFT JOIN (
       SELECT
         "transaction_id",

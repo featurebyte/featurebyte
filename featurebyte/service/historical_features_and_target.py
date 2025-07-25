@@ -12,6 +12,7 @@ import pandas as pd
 from bson import ObjectId
 from dateutil import parser as dateutil_parser
 from redis import Redis
+from sqlglot import Expression
 
 from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import get_ranged_progress_callback
@@ -81,6 +82,7 @@ async def compute_tiles_on_demand(
     partition_column_filters: Optional[PartitionColumnFilters],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     development_datasets: Optional[DevelopmentDatasets] = None,
+    request_timestamp_expr: Optional[Expression] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
 ) -> OnDemandTileComputeResult:
@@ -116,6 +118,8 @@ async def compute_tiles_on_demand(
         Preparation required for serving parent features
     development_datasets: Optional[DevelopmentDatasets]
         Optional development datasets to use if applicable
+    request_timestamp_expr: Optional[Expression]
+        Request timestamp expression to use as the point in time column
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
     raise_on_error: bool
@@ -126,6 +130,9 @@ async def compute_tiles_on_demand(
     TileComputeMetrics
     """
     if parent_serving_preparation is None:
+        # We can assume that request_timestamp_expr is always provided with parent serving
+        # preparation (only used in batch serving).
+        assert request_timestamp_expr is None
         effective_request_table_name = request_table_name
     else:
         # Lookup parent entities and join them with the request table since tile computation
@@ -135,6 +142,7 @@ async def compute_tiles_on_demand(
             request_table_columns=request_table_columns,
             join_steps=parent_serving_preparation.join_steps,
             feature_store_details=parent_serving_preparation.feature_store_details,
+            request_timestamp_expr=request_timestamp_expr,
         )
         effective_request_table_name = parent_serving_result.new_request_table_name
         await session.create_table_as(
@@ -426,7 +434,7 @@ async def get_historical_features(
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
         if not is_feature_query_debug_enabled():
-            await cleanup_historical_features_temp_tables(
+            await cleanup_features_temp_tables(
                 session=session,
                 feature_store=feature_store,
                 warehouse_table_service=warehouse_table_service,
@@ -447,16 +455,16 @@ async def get_historical_features(
     )
 
 
-async def cleanup_historical_features_temp_tables(
+async def cleanup_features_temp_tables(
     session: BaseSession,
     feature_store: FeatureStoreModel,
     warehouse_table_service: WarehouseTableService,
-    request_table_name: str,
-    temp_tile_tables_tag: str,
+    request_table_name: Optional[str],
+    temp_tile_tables_tag: Optional[str],
     job_schedule_table_set: JobScheduleTableSet,
 ) -> None:
     """
-    Cleanup historical features temporary tables
+    Cleanup temporary tables generated when computing features.
 
     Parameters
     ----------
@@ -466,31 +474,33 @@ async def cleanup_historical_features_temp_tables(
         Feature store
     warehouse_table_service: WarehouseTableService
         Warehouse table service
-    request_table_name: str
+    request_table_name: Optional[str]
         Name of request table
-    temp_tile_tables_tag: str
+    temp_tile_tables_tag: Optional[str]
         Tag to identify the temporary tile tables for cleanup purpose
     job_schedule_table_set: JobScheduleTableSet
         Job schedule table set
     """
     logger.info("Cleaning up tables in get_historical_features")
-    await session.drop_table(
-        table_name=request_table_name,
-        schema_name=session.schema_name,
-        database_name=session.database_name,
-        if_exists=True,
-    )
-    async for warehouse_table in warehouse_table_service.list_warehouse_tables_by_tag(
-        temp_tile_tables_tag
-    ):
-        await warehouse_table_service.drop_table_with_session(
-            session=session,
-            feature_store_id=feature_store.id,
-            table_name=warehouse_table.location.table_details.table_name,
-            schema_name=warehouse_table.location.table_details.schema_name,
-            database_name=warehouse_table.location.table_details.database_name,
+    if request_table_name is not None:
+        await session.drop_table(
+            table_name=request_table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
             if_exists=True,
         )
+    if temp_tile_tables_tag is not None:
+        async for warehouse_table in warehouse_table_service.list_warehouse_tables_by_tag(
+            temp_tile_tables_tag
+        ):
+            await warehouse_table_service.drop_table_with_session(
+                session=session,
+                feature_store_id=feature_store.id,
+                table_name=warehouse_table.location.table_details.table_name,
+                schema_name=warehouse_table.location.table_details.schema_name,
+                database_name=warehouse_table.location.table_details.database_name,
+                if_exists=True,
+            )
     await session.drop_tables(
         table_names=[
             job_schedule_table.table_name for job_schedule_table in job_schedule_table_set.tables

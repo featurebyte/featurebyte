@@ -59,6 +59,8 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
+from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.session_helper import SessionHandler
 
 logger = get_logger(__name__)
@@ -96,6 +98,8 @@ class OnlineServingService:
         system_metrics_service: SystemMetricsService,
         deployed_tile_table_service: DeployedTileTableService,
         column_statistics_service: ColumnStatisticsService,
+        tile_cache_service: TileCacheService,
+        warehouse_table_service: WarehouseTableService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -112,6 +116,8 @@ class OnlineServingService:
         self.system_metrics_service = system_metrics_service
         self.deployed_tile_table_service = deployed_tile_table_service
         self.column_statistics_service = column_statistics_service
+        self.tile_cache_service = tile_cache_service
+        self.warehouse_table_service = warehouse_table_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -120,6 +126,7 @@ class OnlineServingService:
         output_table_details: Optional[TableDetails] = None,
         batch_feature_table_id: Optional[PydanticObjectId] = None,
         point_in_time: Optional[datetime] = None,
+        use_deployed_tile_tables: bool = True,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -136,6 +143,8 @@ class OnlineServingService:
             Batch feature table ID to track the time taken for the online serving request
         point_in_time: Optional[datetime]
             Point in time to use for the request. If not provided, the current time will be used.
+        use_deployed_tile_tables: bool
+            Whether to use deployed tile tables for online serving
 
         Returns
         -------
@@ -179,9 +188,6 @@ class OnlineServingService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
         )
-        on_demand_tile_tables = (
-            await self.deployed_tile_table_service.get_deployed_tile_table_info()
-        ).on_demand_tile_tables
         features = await get_online_features(
             session_handler=SessionHandler(
                 session=db_session,
@@ -191,6 +197,10 @@ class OnlineServingService:
             ),
             cron_helper=self.cron_helper,
             column_statistics_service=self.column_statistics_service,
+            deployed_tile_table_service=self.deployed_tile_table_service,
+            tile_cache_service=self.tile_cache_service,
+            warehouse_table_service=self.warehouse_table_service,
+            feature_store=feature_store,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,
@@ -199,7 +209,7 @@ class OnlineServingService:
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
-            on_demand_tile_tables=on_demand_tile_tables,
+            use_deployed_tile_tables=use_deployed_tile_tables,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(
