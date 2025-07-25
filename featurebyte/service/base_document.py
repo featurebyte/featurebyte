@@ -351,7 +351,7 @@ class BaseDocumentService(
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
         return kwargs
 
-    async def construct_get_pipeline(self, **kwargs: Any) -> List[Dict[str, Any]] | None:
+    async def construct_get_pipeline(self, **kwargs: Any) -> List[Any] | None:
         """
         Construct pipeline used in get route
 
@@ -362,7 +362,7 @@ class BaseDocumentService(
 
         Returns
         -------
-        List[Dict[str, Any]] | None
+        List[Any] | None
         """
         return kwargs.get("pipeline", None)
 
@@ -678,10 +678,7 @@ class BaseDocumentService(
 
         return output
 
-    async def construct_list_pipeline(
-        self,
-        **kwargs: Any,
-    ) -> List[Dict[str, Any]] | None:
+    async def construct_list_pipeline(self, **kwargs: Any) -> List[Any] | None:
         """
         Construct query filter used in list route
 
@@ -692,7 +689,7 @@ class BaseDocumentService(
 
         Returns
         -------
-        List[Dict[str, Any]] | None
+        List[Any] | None
             Pipeline to use for the list route, or None if no pipeline is needed
         """
         return kwargs.get("pipeline", None)
@@ -706,6 +703,8 @@ class BaseDocumentService(
         ----------
         pipeline: Any
             Pipeline to inject query filter
+        query_filter: QueryFilter
+            Query filter to inject into the pipeline
 
         Returns
         -------

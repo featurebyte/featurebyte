@@ -4,7 +4,7 @@ DevelopmentDatasetService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from bson import ObjectId
 from redis import Redis
@@ -24,6 +24,7 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.development_dataset import (
     DevelopmentDatasetCreate,
     DevelopmentDatasetServiceUpdate,
+    DevelopmentTableCreate,
 )
 from featurebyte.schema.worker.task.development_dataset import (
     DevelopmentDatasetAddTablesTaskPayload,
@@ -120,14 +121,14 @@ class DevelopmentDatasetService(
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def _validate_development_tables_source(
-        self, development_tables: list[DevelopmentTable]
+        self, development_tables: list[DevelopmentTableCreate] | list[DevelopmentTable]
     ) -> None:
         """
         Validate source tables in development tables.
 
         Parameters
         ----------
-        development_tables: list[DevelopmentTable]
+        development_tables: list[DevelopmentTableCreate] | list[DevelopmentTable]
             List of development tables to validate.
 
         Raises
@@ -162,14 +163,14 @@ class DevelopmentDatasetService(
             )
 
     async def _validate_development_tables(
-        self, development_tables: list[DevelopmentTable]
+        self, development_tables: list[DevelopmentTableCreate] | list[DevelopmentTable]
     ) -> None:
         """
         Validate development tables
 
         Parameters
         ----------
-        development_tables: list[DevelopmentTable]
+        development_tables: list[DevelopmentTableCreate] | list[DevelopmentTable]
             List of development tables to validate.
 
         Raises
@@ -350,16 +351,13 @@ class DevelopmentDatasetService(
             ),
         )
 
-    async def construct_get_pipeline(self, **kwargs: Any) -> List[Dict[str, Any]] | None:
+    async def construct_get_pipeline(self, **kwargs: Any) -> List[Any] | None:
         pipeline = await super().construct_get_pipeline(**kwargs) or []
         # add pipeline stages to flag deleted tables
         pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)
         return pipeline
 
-    async def construct_list_pipeline(
-        self,
-        **kwargs: Any,
-    ) -> List[Dict[str, Any]] | None:
+    async def construct_list_pipeline(self, **kwargs: Any) -> List[Any] | None:
         pipeline = await super().construct_list_pipeline(**kwargs) or []
         # add pipeline stages to flag deleted tables
         pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)

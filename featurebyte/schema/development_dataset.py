@@ -28,7 +28,6 @@ class DevelopmentDatasetBase(FeatureByteBaseModel):
     description: Optional[StrictStr] = Field(default=None)
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
-    development_tables: List[DevelopmentTable]
 
 
 class DevelopmentTableCreate(FeatureByteBaseModel):
@@ -55,6 +54,7 @@ class DevelopmentDatasetRead(DevelopmentDatasetBase):
     """
 
     id: PydanticObjectId = Field(alias="_id")
+    development_tables: List[DevelopmentTable]
 
 
 class DevelopmentDatasetList(PaginationMixin):
