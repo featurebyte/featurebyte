@@ -230,5 +230,6 @@ class DevelopmentDatasetController(
                     table_details=dev_table.location.table_details,
                 )
                 for dev_table in document.development_tables
+                if dev_table.deleted is False
             ],
         )

@@ -797,7 +797,7 @@ class Persistent(ABC):
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> Tuple[List[Document], int]:
         """
         Execute aggregation pipeline
 
@@ -818,7 +818,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        Tuple[Iterable[Document], int]
+        Tuple[List[Document], int]
             Retrieved documents and total count
         """
 

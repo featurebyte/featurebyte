@@ -298,7 +298,7 @@ class BaseApiTestSuite:
             response = self.post(test_api_client, payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
             if self.async_create:
-                assert response.json()["status"] == "SUCCESS"
+                assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
             else:
                 assert response.json()["_id"] == payload["_id"]
             output.append(response)
