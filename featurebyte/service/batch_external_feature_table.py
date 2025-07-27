@@ -236,7 +236,7 @@ class BatchExternalFeatureTableService:
                     f"ALTER TABLE {output_feature_table_name} ALTER COLUMN {quoted_col} SET NOT NULL"
                 )
             primary_key_args = ", ".join(
-                [f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns
+                quoted_primary_key_columns + [f"{quoted_timestamp_column} TIMESERIES"]
             )
             await db_session.execute_query_long_running(
                 textwrap.dedent(
