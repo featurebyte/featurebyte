@@ -262,3 +262,64 @@ def test_on_demand_tile_sql_development_datasets(
         "tests/fixtures/expected_tile_sql_on_demand_development_datasets.sql",
         update_fixtures,
     )
+
+
+def test_joined_event_tables_partition_column_filters(
+    snowflake_event_table_with_partition_column,
+    related_event_table_with_entity,
+    arbitrary_default_feature_job_setting,
+    source_info,
+    update_fixtures,
+):
+    """
+    Test partition column filters for joined event tables
+    """
+    view_1 = snowflake_event_table_with_partition_column.get_view()
+    view_2 = related_event_table_with_entity.get_view()
+    joined_view = view_1.join(view_2, rsuffix="_joined")
+    joined_view["x"] = joined_view["col_float"] + joined_view["col_float_joined"]
+
+    # Create a feature that aggregates over the joined view. In this case, any partition column
+    # filters should only be applied to the primary table (table for view_1).
+    feature = joined_view.groupby("cust_id").aggregate_over(
+        value_column="x",
+        method="sum",
+        windows=["30m"],
+        feature_names=["my_feature"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["my_feature"]
+    feature.save()
+
+    query_graph = feature.cached_model.graph
+    interpreter = GraphInterpreter(query_graph, source_info)
+    groupby_node = query_graph.get_node_by_name("groupby_1")
+
+    # Simulate the scenario where partition column filters were detected for both tables. While the
+    # above feature will only generate partition column filters for the first table, there can be
+    # another feature in the feature list that uses the second table as the primary table.
+    partition_column_filter = PartitionColumnFilter(
+        from_timestamp=make_literal_value(datetime(2023, 1, 1, 0, 0, 0), cast_as_timestamp=True),
+        to_timestamp=make_literal_value(datetime(2023, 6, 1, 0, 0, 0), cast_as_timestamp=True),
+    )
+    partition_column_filters = PartitionColumnFilters(
+        mapping={
+            snowflake_event_table_with_partition_column.id: partition_column_filter,
+            related_event_table_with_entity.id: partition_column_filter,
+        }
+    )
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        groupby_node,
+        is_on_demand=True,
+        partition_column_filters=partition_column_filters,
+    )
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop("tile_compute_spec")
+    tile_sql = tile_gen_sqls[0].sql
+    assert_equal_with_expected_fixture(
+        tile_sql,
+        "tests/fixtures/expected_tile_sql_partition_column_filters_with_join.sql",
+        update_fixtures,
+    )
