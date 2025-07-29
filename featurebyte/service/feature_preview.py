@@ -125,8 +125,6 @@ class FeaturePreviewService(PreviewService):
 
         Raises
         ------
-        LimitExceededError
-            raised if the observation table has more than 50 rows
         MissingPointInTimeColumnError
             raised if the point in time column is not provided in the dictionary for a time based feature
         """
