@@ -1262,3 +1262,73 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         # check that feature list is deleted
         response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_preview_using_observation_table_exceed_row_limit(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+        mock_get_session,
+    ):
+        """Test feature list preview for observation table that exceeds row limit"""
+        test_api_client, _ = test_api_client_persistent
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.list_table_schema.return_value = OrderedDict({
+            "cust_id": ColumnSpecWithDescription(
+                name="cust_id",
+                dtype=DBVarType.INT,
+                description=None,
+            ),
+            "POINT_IN_TIME": ColumnSpecWithDescription(
+                name="POINT_IN_TIME",
+                dtype=DBVarType.TIMESTAMP,
+                description=None,
+            ),
+        })
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        async def mocked_get_additional_metadata(*args, **kwargs):
+            _ = args
+            _ = kwargs
+            return {
+                "columns_info": [
+                    {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+                    {"name": "cust_id", "dtype": "INT"},
+                ],
+                "num_rows": 100,
+                "most_recent_point_in_time": "2023-01-15 10:00:00",
+            }
+
+        with patch(
+            "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
+            Mock(side_effect=mocked_get_additional_metadata),
+        ):
+            payload = self.load_payload("tests/fixtures/request_payloads/observation_table.json")
+            response = test_api_client.post("/observation_table", json=payload)
+            assert response.status_code == HTTPStatus.CREATED, response.json()
+            response = self.wait_for_results(test_api_client, response)
+            assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
+            obs_table_df = pd.DataFrame({
+                "POINT_IN_TIME": pd.to_datetime(["2022-04-01"]),
+                "cust_id": ["C1"],
+            })
+            mock_session.execute_query.side_effect = (obs_table_df, expected_df)
+
+        featurelist_preview_payload.pop("point_in_time_and_serving_name_list")
+        featurelist_preview_payload["observation_table_id"] = "646f6c1c0ed28a5271fb02d7"
+        response = test_api_client.post(
+            f"{self.base_route}/preview", json=featurelist_preview_payload
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+        assert (
+            mock_session.execute_query.call_args_list[0][0][0]
+            == textwrap.dedent(
+                """
+            SELECT
+              *
+            FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
+            LIMIT 50
+            """
+            ).strip()
+        )

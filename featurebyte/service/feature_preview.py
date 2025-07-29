@@ -135,11 +135,6 @@ class FeaturePreviewService(PreviewService):
             observation_table = await self.observation_table_service.get_document(
                 document_id=preview_observation_set.observation_table_id
             )
-            if observation_table.num_rows > FEATURE_PREVIEW_ROW_LIMIT:
-                raise LimitExceededError(
-                    f"Observation table must have {FEATURE_PREVIEW_ROW_LIMIT} rows or less"
-                )
-
             # TODO: Ideally, we shouldn't have to download the observation table and then
             #  re-register it as a request table. Instead we should use the materialized observation
             #  table as the request table directly.
@@ -149,7 +144,9 @@ class FeaturePreviewService(PreviewService):
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
             )
-            sql_expr = get_source_expr(source=observation_table.location.table_details)
+            sql_expr = get_source_expr(source=observation_table.location.table_details).limit(
+                FEATURE_PREVIEW_ROW_LIMIT
+            )
             sql = sql_to_string(
                 sql_expr,
                 source_type=db_session.source_type,
