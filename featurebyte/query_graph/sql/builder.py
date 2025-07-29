@@ -7,10 +7,16 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Type
 
+from bson import ObjectId
+
 from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import (
+    BaseWindowAggregateParameters,
+)
 from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import (
     handle_filter_node,
@@ -101,6 +107,24 @@ class NodeRegistry:
 NODE_REGISTRY = NodeRegistry()
 
 
+class SQLNodeKey:
+    """Key for SQLNode, used to identify nodes in the SQL operation graph"""
+
+    def __init__(self, node_name: str, primary_table_ids: Optional[list[ObjectId]]):
+        self.node_name = node_name
+        self.primary_table_ids = tuple(primary_table_ids) if primary_table_ids is not None else None
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SQLNodeKey):
+            return False
+        return (
+            self.node_name == other.node_name and self.primary_table_ids == other.primary_table_ids
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.node_name, self.primary_table_ids))
+
+
 class SQLOperationGraph:
     """Construct a tree of SQL operations given a QueryGraph
 
@@ -124,7 +148,7 @@ class SQLOperationGraph:
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
     ) -> None:
-        self.sql_nodes: dict[str, SQLNode | TableNode] = {}
+        self.sql_nodes: dict[SQLNodeKey, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
         self.source_info = source_info
@@ -134,6 +158,43 @@ class SQLOperationGraph:
         self.on_demand_entity_filters = on_demand_entity_filters
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
+        self.aggregate_node_to_primary_table_ids = self._get_aggregate_node_to_primary_table_ids(
+            query_graph
+        )
+
+    @classmethod
+    def _get_aggregate_node_to_primary_table_ids(
+        cls, query_graph: QueryGraphModel
+    ) -> dict[str, list[ObjectId]]:
+        """
+        Helper to initialize aggregate_node_to_primary_table_ids
+
+        Parameters
+        ----------
+        query_graph : QueryGraphModel
+            Query Graph to extract aggregate nodes and their primary table ids
+
+        Returns
+        -------
+        dict[str, list[ObjectId]]
+        """
+        aggregate_node_to_primary_table_ids: dict[str, list[ObjectId]] = {}
+        for node in query_graph.nodes:
+            if isinstance(node.parameters, BaseWindowAggregateParameters):
+                aggregate_node = node
+                primary_input_nodes = QueryGraph.get_primary_input_nodes_from_graph_model(
+                    query_graph, aggregate_node.name
+                )
+                for input_node in primary_input_nodes:
+                    parameters_dict = input_node.parameters.model_dump()
+                    if "id" in parameters_dict:
+                        table_id = ObjectId(parameters_dict["id"])
+                        if aggregate_node.name not in aggregate_node_to_primary_table_ids:
+                            aggregate_node_to_primary_table_ids[aggregate_node.name] = []
+                        aggregate_node_to_primary_table_ids[aggregate_node.name].append(table_id)
+        for node_id, table_ids in aggregate_node_to_primary_table_ids.items():
+            aggregate_node_to_primary_table_ids[node_id] = sorted(table_ids)
+        return aggregate_node_to_primary_table_ids
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -148,16 +209,27 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        sql_node = self._construct_sql_nodes(target_node)
+        if isinstance(target_node.parameters, BaseWindowAggregateParameters):
+            primary_table_ids = self.aggregate_node_to_primary_table_ids.get(target_node.name)
+        else:
+            primary_table_ids = None
+        sql_node = self._construct_sql_nodes(target_node, primary_table_ids)
         return sql_node
 
-    def _construct_sql_nodes(self, cur_node: Node) -> Any:
+    def _construct_sql_nodes(
+        self, cur_node: Node, primary_table_ids: Optional[list[ObjectId]]
+    ) -> Any:
         """Recursively construct the nodes
 
         Parameters
         ----------
         cur_node : Node
-            Dictionary representation of Query Graph Node
+            Current query graph node to construct SQLNode for
+        primary_table_ids : Optional[list[ObjectId]]
+            List of primary table ids for the current node. For post-aggregation nodes, this is set
+            as None. For aggregation nodes and their inputs, this is set to the list of primary
+            table ids. The resulting SQLNode is a function of both the current node and the
+            primary_table_ids. This will influence partition column filters in the InputNode.
 
         Returns
         -------
@@ -169,21 +241,32 @@ class SQLOperationGraph:
             If a query node is not yet supported
         """
 
-        cur_node_id = cur_node.name
-        assert cur_node_id not in self.sql_nodes
+        sql_node_key = SQLNodeKey(node_name=cur_node.name, primary_table_ids=primary_table_ids)
+        assert sql_node_key not in self.sql_nodes
 
         # Recursively build input sql nodes first
-        inputs = self.query_graph.backward_edges_map.get(cur_node_id, [])
+        inputs = self.query_graph.backward_edges_map.get(cur_node.name, [])
         input_sql_nodes = []
         for input_node_id in inputs:
-            if input_node_id not in self.sql_nodes:
-                input_node = self.query_graph.get_node_by_name(input_node_id)
-                self._construct_sql_nodes(input_node)
-            input_sql_node = self.sql_nodes[input_node_id]
+            input_node = self.query_graph.get_node_by_name(input_node_id)
+            if primary_table_ids is None and isinstance(
+                input_node.parameters, BaseWindowAggregateParameters
+            ):
+                # Initialize primary_table_ids for aggregate nodes
+                next_primary_table_ids = self.aggregate_node_to_primary_table_ids.get(
+                    input_node_id, None
+                )
+            else:
+                next_primary_table_ids = primary_table_ids
+            next_sql_node_key = SQLNodeKey(
+                node_name=input_node_id, primary_table_ids=next_primary_table_ids
+            )
+            if next_sql_node_key not in self.sql_nodes:
+                self._construct_sql_nodes(input_node, next_primary_table_ids)
+            input_sql_node = self.sql_nodes[next_sql_node_key]
             input_sql_nodes.append(input_sql_node)
 
         # Now that input sql nodes are ready, build the current sql node
-        node_id = cur_node.name
         node_type = cur_node.type
 
         sql_node: Any = None
@@ -200,6 +283,7 @@ class SQLOperationGraph:
             on_demand_entity_filters=self.on_demand_entity_filters,
             partition_column_filters=self.partition_column_filters,
             development_datasets=self.development_datasets,
+            primary_table_ids=primary_table_ids,
         )
 
         # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry
@@ -224,5 +308,5 @@ class SQLOperationGraph:
             else:
                 raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 
-        self.sql_nodes[node_id] = sql_node
+        self.sql_nodes[sql_node_key] = sql_node
         return sql_node

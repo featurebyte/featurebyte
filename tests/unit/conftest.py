@@ -1637,6 +1637,40 @@ def snowflake_event_table_with_entity_fixture(
     yield snowflake_event_table
 
 
+@pytest.fixture(name="related_event_table_with_entity")
+def related_event_table_with_entity_fixture(
+    snowflake_database_table,
+    snowflake_data_source,
+    transaction_entity,
+    another_entity,
+    mock_api_object_cache,
+    mock_detect_and_update_column_dtypes,
+    patch_initialize_entity_dtype,
+):
+    """
+    Fixture for an EventTable that is related to another EventTable
+    """
+    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
+    with patch(
+        "featurebyte.service.base_document.BaseDocumentService._check_document_unique_constraint"
+    ):
+        event_table = snowflake_database_table.create_event_table(
+            name="related_event_table",
+            event_id_column="col_int",
+            event_timestamp_column="event_timestamp",
+            record_creation_timestamp_column="created_at",
+            description="Some description",
+            datetime_partition_column="col_text",
+            datetime_partition_schema=TimestampSchema(
+                format_string="%Y-%m-%d %H:%M:%S",
+            ),
+            _id=ObjectId("6887258db73d336a2f65d021"),
+        )
+    event_table["col_int"].as_entity(transaction_entity.name)
+    event_table["col_text"].as_entity(another_entity.name)
+    return event_table
+
+
 @pytest.fixture(name="snowflake_time_series_table_with_entity")
 def snowflake_time_series_table_with_entity_fixture(
     snowflake_time_series_table,
