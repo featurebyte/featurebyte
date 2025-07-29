@@ -267,7 +267,7 @@ class Deployment(DeletableApiObject):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
-        use_deployed_tile_tables: bool = True,
+        use_deployed_tile_tables: bool = False,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features
@@ -346,7 +346,7 @@ class Deployment(DeletableApiObject):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
-        use_deployed_tile_tables: bool = True,
+        use_deployed_tile_tables: bool = False,
     ) -> None:
         """
         Compute batch features asynchronously using a batch request table. The batch request features
