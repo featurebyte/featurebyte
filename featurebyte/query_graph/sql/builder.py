@@ -158,6 +158,26 @@ class SQLOperationGraph:
         self.on_demand_entity_filters = on_demand_entity_filters
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
+        self.aggregate_node_to_primary_table_ids = self._get_aggregate_node_to_primary_table_ids(
+            query_graph
+        )
+
+    @classmethod
+    def _get_aggregate_node_to_primary_table_ids(
+        cls, query_graph: QueryGraphModel
+    ) -> dict[str, list[ObjectId]]:
+        """
+        Helper to initialize aggregate_node_to_primary_table_ids
+
+        Parameters
+        ----------
+        query_graph : QueryGraphModel
+            Query Graph to extract aggregate nodes and their primary table ids
+
+        Returns
+        -------
+        dict[str, list[ObjectId]]
+        """
         aggregate_node_to_primary_table_ids: dict[str, list[ObjectId]] = {}
         for node in query_graph.nodes:
             if isinstance(node.parameters, BaseWindowAggregateParameters):
@@ -174,7 +194,7 @@ class SQLOperationGraph:
                         aggregate_node_to_primary_table_ids[aggregate_node.name].append(table_id)
         for node_id, table_ids in aggregate_node_to_primary_table_ids.items():
             aggregate_node_to_primary_table_ids[node_id] = sorted(table_ids)
-        self.aggregate_node_to_primary_table_ids = aggregate_node_to_primary_table_ids
+        return aggregate_node_to_primary_table_ids
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
