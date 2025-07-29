@@ -9,6 +9,7 @@ from copy import copy
 from dataclasses import dataclass, field
 from typing import Optional, Type, TypeVar, cast
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
@@ -58,6 +59,7 @@ class SQLNodeContext:
     aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
     on_demand_entity_filters: Optional[OnDemandEntityFilters]
     partition_column_filters: Optional[PartitionColumnFilters]
+    primary_table_ids: Optional[list[ObjectId]] = None
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.model_dump()
