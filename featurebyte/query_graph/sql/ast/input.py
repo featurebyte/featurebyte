@@ -127,12 +127,14 @@ class InputNode(TableNode):
         select_expr = select_expr.from_(dbtable)
 
         # Apply partition column filters if available
+        partition_column_filter = None
         if self.context.partition_column_filters is not None:
-            partition_column_filter = self.context.partition_column_filters.mapping.get(
-                self.context.parameters["id"]
-            )
-        else:
-            partition_column_filter = None
+            table_id = self.context.parameters["id"]
+            if self.context.primary_table_ids is None or table_id in self.context.primary_table_ids:
+                # Only apply partition column filter if this is a primary table
+                partition_column_filter = self.context.partition_column_filters.mapping.get(
+                    table_id
+                )
         if partition_column_filter:
             select_expr = self._apply_partition_column_filter(
                 select_expr=select_expr,

@@ -65,9 +65,6 @@ WITH __FB_ENTITY_TABLE_NAME AS (
           "event_timestamp" AS "event_timestamp",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."sf_table"
-        WHERE
-          "col_text" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')
-          AND "col_text" <= TO_CHAR(CAST('2023-06-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')
       )
       GROUP BY
         "col_int"
