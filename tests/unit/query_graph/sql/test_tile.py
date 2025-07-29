@@ -318,6 +318,12 @@ def test_joined_event_tables_partition_column_filters(
     info_dict = asdict(info)
     info_dict.pop("tile_compute_spec")
     tile_sql = tile_gen_sqls[0].sql
+
+    # Filter condition should only be applied to the primary table
+    filter_condition = (
+        "\"col_text\" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')"
+    )
+    assert tile_sql.count(filter_condition) == 1
     assert_equal_with_expected_fixture(
         tile_sql,
         "tests/fixtures/expected_tile_sql_partition_column_filters_with_join.sql",
