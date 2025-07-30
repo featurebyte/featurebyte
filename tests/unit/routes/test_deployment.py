@@ -156,6 +156,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                     "store_info": None,
                     "is_deleted": False,
+                    "compute_option_value": None,
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
@@ -177,6 +178,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                     "store_info": None,
                     "is_deleted": False,
+                    "compute_option_value": None,
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
@@ -198,6 +200,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                     "store_info": None,
                     "is_deleted": False,
+                    "compute_option_value": None,
                 },
             ],
             "page": 1,
@@ -243,6 +246,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
                     "store_info": None,
                     "is_deleted": False,
+                    "compute_option_value": None,
                 }
             ],
             "page": 1,
@@ -775,3 +779,62 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                 },
             ]
         }
+
+    def test_updated_compute_option_value_200(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update compute option value"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, _ = test_api_client_persistent
+
+        # update compute option value
+        response = test_api_client.patch(
+            f"{self.base_route}/{deployment_id}",
+            json={"compute_option_value": "alt_warehouse"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # get the updated deployment
+        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response_dict = response.json()
+        assert response_dict["compute_option_value"] == "alt_warehouse"
+
+    def test_updated_compute_option_value_422__invalid_value(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update compute option value invalid value"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, _ = test_api_client_persistent
+
+        # update compute option value
+        response = test_api_client.patch(
+            f"{self.base_route}/{deployment_id}",
+            json={"compute_option_value": "some_invalid_value"},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        response_dict = response.json()
+        assert response_dict["detail"] == (
+            "Invalid compute option value: some_invalid_value. Valid options are: ['sf_warehouse', 'alt_warehouse']"
+        )
+
+    def test_updated_compute_option_value_422__deployment_enabled(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
+        """Test update compute option value on enabled deployment"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, _ = test_api_client_persistent
+
+        # enable deployment
+        self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id)
+
+        # update compute option value
+        response = test_api_client.patch(
+            f"{self.base_route}/{deployment_id}",
+            json={"compute_option_value": "sf_warehouse"},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        response_dict = response.json()
+        assert response_dict["detail"] == (
+            "Cannot update compute option for an enabled deployment. Please disable the deployment first."
+        )

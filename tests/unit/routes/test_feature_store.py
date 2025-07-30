@@ -29,6 +29,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_store import (
+    ComputeOption,
     FeatureStorePreview,
     FeatureStoreQueryPreview,
     FeatureStoreSample,
@@ -1142,3 +1143,34 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response_dict["user_id"] == str(user_id)
         assert response_dict["name"] == self.payload["name"]
         assert response_dict["max_query_concurrency"] is None
+
+    @patch("featurebyte.service.session_manager.SessionManagerService.list_compute_options")
+    def test_list_compute_options_200(
+        self, mock_list_compute_options, test_api_client_persistent, create_success_response
+    ):
+        """Test list compute options (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        mock_list_compute_options.return_value = [
+            ComputeOption(name="option1", value="Option 1"),
+            ComputeOption(name="option2", value="Option 2"),
+        ]
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/compute_option")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response_dict = response.json()
+        assert len(response_dict) == 2
+        assert response_dict == [
+            {
+                "name": "option1",
+                "value": "Option 1",
+                "details": {},
+            },
+            {
+                "name": "option2",
+                "value": "Option 2",
+                "details": {},
+            },
+        ]

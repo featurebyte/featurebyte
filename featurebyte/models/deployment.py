@@ -49,6 +49,7 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     use_case_id: Optional[PydanticObjectId] = Field(default=None)
     registry_info: Optional[FeastRegistryInfo] = Field(default=None)
     serving_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    compute_option_value: Optional[str] = Field(default=None)
 
     # store info contains the warehouse specific info for the deployment
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
