@@ -14,11 +14,13 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import SourceType
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.exception import (
     DataWarehouseOperationError,
     QueryExecutionTimeOut,
 )
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import QueryMetadata
 from tests.util.helper import truncate_timestamps
 
@@ -325,3 +327,63 @@ async def test_execute_query_long_running_with_query_id(config, test_session):
     # check query ID is present and a valid UUID
     assert query_metadata.query_id is not None
     UUID(query_metadata.query_id)
+
+
+@pytest.mark.parametrize(
+    "source_type", ["spark", "databricks_unity", "snowflake", "bigquery"], indirect=True
+)
+@pytest.mark.asyncio
+async def test_list_compute_options(feature_store, feature_store_credential):
+    """
+    Test list compute options.
+    """
+    compute_options = await SessionManagerService.list_compute_options(
+        feature_store, feature_store_credential
+    )
+    if feature_store.type == SourceType.DATABRICKS_UNITY:
+        assert len(compute_options) >= 1
+        # All purpose clusters have a common set of details
+        assert set(compute_options[0].details.keys()) == {
+            "autoscale",
+            "autotermination_minutes",
+            "cluster_cores",
+            "cluster_memory_mb",
+            "creator_user_name",
+            "data_security_mode",
+            "driver_node_type_id",
+            "node_type_id",
+            "num_workers",
+            "policy_id",
+            "runtime_engine",
+            "single_user_name",
+            "spark_version",
+            "state",
+            "state_message",
+            "workload_type",
+        }
+        # SQL warehouses have a different set of details
+        assert set(compute_options[-1].details.keys()) == {
+            "auto_stop_mins",
+            "cluster_size",
+            "creator_name",
+            "enable_photon",
+            "enable_serverless_compute",
+            "max_num_clusters",
+            "min_num_clusters",
+            "num_clusters",
+            "spot_instance_policy",
+            "state",
+            "warehouse_type",
+        }
+    elif feature_store.type == SourceType.SNOWFLAKE:
+        assert len(compute_options) >= 1
+        assert set(compute_options[0].details.keys()) == {
+            "state",
+            "type",
+            "size",
+            "auto_suspend",
+            "auto_resume",
+            "owner",
+        }
+    else:
+        assert compute_options == []

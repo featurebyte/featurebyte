@@ -43,6 +43,18 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
         -------
         """
 
+    @property
+    def compute_option_field(self) -> str | None:
+        """
+        Returns the field representing compute resource for the database details.
+
+        Returns
+        -------
+        str
+            The field representing compute resource, or None if not applicable.
+        """
+        return None
+
 
 class SnowflakeDetails(BaseDatabaseDetails):
     """
@@ -103,6 +115,10 @@ class SnowflakeDetails(BaseDatabaseDetails):
     def updatable_fields(self) -> set[str]:
         return {"warehouse"}
 
+    @property
+    def compute_option_field(self) -> str | None:
+        return "warehouse"
+
     def get_source_info(self) -> SourceInfo:
         return SourceInfo(
             database_name=self.database_name,
@@ -148,6 +164,10 @@ class BaseDatabricksDetails(BaseDatabaseDetails):
     @property
     def updatable_fields(self) -> set[str]:
         return {"http_path"}
+
+    @property
+    def compute_option_field(self) -> str | None:
+        return "http_path"
 
 
 class DatabricksDetails(BaseDatabricksDetails):
@@ -316,6 +336,14 @@ class SparkDetails(BaseDatabaseDetails):
             schema_name=self.schema_name,
             source_type=SourceType.SPARK,
         )
+
+    @property
+    def updatable_fields(self) -> set[str]:
+        return {"http_path"}
+
+    @property
+    def compute_option_field(self) -> str | None:
+        return "http_path"
 
 
 class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
