@@ -11,5 +11,5 @@
     "name": "batch_feature_table",
     "point_in_time": null,
     "request_input": null,
-    "use_deployed_tile_tables": true
+    "use_deployed_tile_tables": false
 }

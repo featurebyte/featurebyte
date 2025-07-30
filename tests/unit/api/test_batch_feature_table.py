@@ -23,7 +23,7 @@ def batch_feature_table_fixture(
     """BatchFeatureTable fixture"""
     deployment.enable()
     batch_feature_table = deployment.compute_batch_feature_table(
-        batch_request_table_from_view, "my_batch_feature_table"
+        batch_request_table_from_view, "my_batch_feature_table", use_deployed_tile_tables=True
     )
     return batch_feature_table
 
@@ -146,6 +146,7 @@ def test_batch_feature_table_with_point_in_time(
         batch_request_table_from_view,
         "my_batch_feature_table_with_point_in_time",
         point_in_time=point_in_time,
+        use_deployed_tile_tables=True,
     )
     query = None
     for execute_query_call_args in snowflake_execute_query_for_materialized_table.call_args_list:
