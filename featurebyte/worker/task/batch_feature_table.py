@@ -129,6 +129,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     output_table_details=location.table_details,
                     batch_feature_table_id=payload.output_document_id,
                     point_in_time=payload.point_in_time,
+                    use_deployed_tile_tables=payload.use_deployed_tile_tables,
                 )
                 (
                     columns_info,

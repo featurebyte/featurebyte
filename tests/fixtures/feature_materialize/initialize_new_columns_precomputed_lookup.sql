@@ -165,7 +165,7 @@ WITH ENTITY_UNIVERSE AS (
             SELECT
               REQ."POINT_IN_TIME",
               REQ."cust_id"
-            FROM ENTITY_UNIVERSE AS REQ
+            FROM "ENTITY_UNIVERSE" AS REQ
           )
           UNION ALL
           SELECT

@@ -18,7 +18,7 @@ WITH JOINED_PARENTS_REQUEST_TABLE AS (
         REQ."b",
         REQ."c",
         "T0"."COL_INT" AS "COL_INT"
-      FROM REQUEST_TABLE AS REQ
+      FROM "REQUEST_TABLE" AS REQ
       LEFT JOIN (
         SELECT
           "COL_TEXT",

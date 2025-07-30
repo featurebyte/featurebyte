@@ -30,6 +30,7 @@ def random_task_class_fixture():
         # Register the RANDOM_COMMAND in TASK_REGISTRY_MAP
         TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND] = RandomTask
         yield RandomTask
+        TASK_REGISTRY_MAP.pop(TestCommand.RANDOM_COMMAND)
 
 
 def test_extend_base_task_payload():

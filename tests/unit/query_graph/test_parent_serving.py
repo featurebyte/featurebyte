@@ -26,7 +26,7 @@ def test_construct_request_table_with_parent_entities(parent_serving_preparation
             REQ."a",
             REQ."b",
             "T0"."COL_INT" AS "COL_INT"
-          FROM REQUEST_TABLE AS REQ
+          FROM "REQUEST_TABLE" AS REQ
           LEFT JOIN (
             SELECT
               "COL_TEXT",

@@ -170,6 +170,13 @@ async def test_online_serving_sql(
             df_historical,
             columns,
         )
+        check_get_batch_features(
+            deployment,
+            batch_request_table,
+            df_historical,
+            columns,
+            use_deployed_tile_tables=False,
+        )
         with patch("featurebyte.session.session_helper.NUM_FEATURES_PER_QUERY", 4):
             check_get_batch_features(
                 deployment,
@@ -270,7 +277,9 @@ def check_online_features_route(deployment, config, df_historical, columns):
     )
 
 
-def check_get_batch_features(deployment, batch_request_table, df_historical, columns):
+def check_get_batch_features(
+    deployment, batch_request_table, df_historical, columns, use_deployed_tile_tables=True
+):
     """
     Check get_batch_features_async
     """
@@ -278,6 +287,7 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
         batch_request_table=batch_request_table,
         batch_feature_table_name=f"batch_feature_table_{ObjectId()}",
         point_in_time="2001-01-02 13:15:00",
+        use_deployed_tile_tables=use_deployed_tile_tables,
     )
     preview_df = batch_feature_table.preview(limit=df_historical.shape[0])
     fb_assert_frame_equal(
