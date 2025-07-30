@@ -9,9 +9,9 @@ tasks:
     run: once
     sources:
       - pyproject.toml
-      - poetry.lock
+      - uv.lock
     cmds:
-      - poetry install -n --sync --extras=server
+      - uv install -n --sync --extras=server
 
   default:
     desc: "Run ALL the linter checks."
@@ -26,7 +26,7 @@ tasks:
     sources:
       - featurebyte/**/*
       - tests/**/*
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
     deps:
       - task: install
@@ -37,12 +37,12 @@ tasks:
   format:toml:
     desc: "Format the toml files"
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
     deps:
       - task: install
     cmds:
-      - poetry run toml-sort --in-place poetry.lock pyproject.toml
+      - uv run toml-sort --in-place uv.lock pyproject.toml
 
   format:ruff:
     desc: "Format the toml files"
@@ -52,9 +52,9 @@ tasks:
     deps:
       - task: install
     cmds:
-      - poetry run ruff check --select I --diff || poetry run ruff check --select I --fix
-      - poetry run ruff check --diff || poetry run ruff check --fix
-      - poetry run ruff format --diff || poetry run ruff format
+      - uv run ruff check --select I --diff || uv run ruff check --select I --fix
+      - uv run ruff check --diff || uv run ruff check --fix
+      - uv run ruff format --diff || uv run ruff format
 
   pr:
     desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."

@@ -38,13 +38,14 @@ permissions:
   contents: write
 env:
   SERVER_IMAGE_REPO: featurebyte/featurebyte-server
+  UV_INDEX_FEATUREBYTE_NP_USERNAME: _json_key_base64
+  UV_INDEX_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
 jobs:
   publish:
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
       matrix:
@@ -54,13 +55,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          version: 3.x
       - name: Check User
         run: |-
-          # TODO: Change the allowed deployment user methodology
           if [[ "${{ github.event.sender.login }}" != "bushwhackr" && "${{ github.event.sender.login }}" != "admin-featurebyte" ]]; then
             exit 1
           fi
@@ -79,25 +75,15 @@ jobs:
             exit 1
           fi
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 3.x
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-      - name: Additional Configure Poetry
-        run: |-
-          poetry config repositories.test-pypi https://test.pypi.org/legacy/
-          poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
-          poetry config pypi-token.test-pypi ${{ secrets.TEST_PYPI_API_TOKEN }}
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -114,14 +100,18 @@ jobs:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - if: ${{ github.event.inputs.test-pypi == 'true' }}
         name: Publish to Test-PyPI
+        env:
+          UV_PUBLISH_USERNAME: __token__
+          UV_PUBLISH_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |-
-          task install
-          poetry publish --build -r test-pypi
+          uv publish --index test-pypi
       - if: ${{ github.event.inputs.pypi == 'true' }}
         name: Publish to PyPI
+        env:
+          UV_PUBLISH_USERNAME: __token__
+          UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |-
-          task install
-          poetry publish --build
+          uv publish
       - name: Set Github Committer Settings
         run: |-
           git config --global user.name "featurebyte[bot]"
