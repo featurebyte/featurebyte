@@ -27,7 +27,7 @@ class BatchFeatureTableCreateBase(FeatureByteBaseModel):
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
     point_in_time: Optional[datetime] = Field(default=None)
-    use_deployed_tile_tables: bool = Field(default=True)
+    use_deployed_tile_tables: bool = Field(default=False)
 
     @model_validator(mode="after")
     def _validate_input(self) -> Any:

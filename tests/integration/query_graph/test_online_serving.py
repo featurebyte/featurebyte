@@ -169,6 +169,7 @@ async def test_online_serving_sql(
             batch_request_table,
             df_historical,
             columns,
+            use_deployed_tile_tables=True,
         )
         check_get_batch_features(
             deployment,
@@ -183,6 +184,7 @@ async def test_online_serving_sql(
                 batch_request_table,
                 df_historical,
                 columns,
+                use_deployed_tile_tables=True,
             )
         check_get_batch_features_feature_table(
             data_source,
@@ -323,6 +325,7 @@ def check_get_batch_features_feature_table(
         output_table_snapshot_date="2001-01-02",
         output_table_snapshot_date_name="snapshot_dt",
         point_in_time="2001-01-02 13:15:00",
+        use_deployed_tile_tables=True,
     )
     output_table = data_source.get_source_table(
         table_name=table_details.table_name,
@@ -351,6 +354,7 @@ def check_get_batch_features_feature_table(
         output_table_snapshot_date_name="snapshot_dt",
         point_in_time="2001-01-03 13:15:00",
         columns=["üser id"],
+        use_deployed_tile_tables=True,
     )
     preview_df = output_table.preview(limit=50)
     assert preview_df.shape[0] == df_historical.shape[0] * 2
