@@ -210,4 +210,4 @@ ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ALTER COLUMN `snapshot_da
 ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ALTER COLUMN `cust_id` SET NOT NULL;
 
 ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ADD CONSTRAINT `pk_new_batch_prediction_table`
-PRIMARY KEY(`cust_id`, `snapshot_date`);
+PRIMARY KEY(`cust_id`, `snapshot_date` TIMESERIES);

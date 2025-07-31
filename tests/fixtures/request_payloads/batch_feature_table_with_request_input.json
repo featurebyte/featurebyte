@@ -23,5 +23,5 @@
         },
         "type": "source_table"
     },
-    "use_deployed_tile_tables": true
+    "use_deployed_tile_tables": false
 }

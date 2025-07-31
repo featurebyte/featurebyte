@@ -27,7 +27,7 @@ class BatchFeatureTableCreateBase(FeatureByteBaseModel):
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
     point_in_time: Optional[datetime] = Field(default=None)
-    use_deployed_tile_tables: bool = Field(default=True)
+    use_deployed_tile_tables: bool = Field(default=False)
 
     @model_validator(mode="after")
     def _validate_input(self) -> Any:
@@ -63,6 +63,10 @@ class OutputTableInfo(FeatureByteBaseModel):
     snapshot_date: date = Field(
         default_factory=date.today,
         description="Snapshot date value to be used for the features to be written to the table",
+    )
+    snapshot_date_as_timeseries_key: bool = Field(
+        default=False,
+        description="Whether to use snapshot date as a timeseries key in the table",
     )
 
 
