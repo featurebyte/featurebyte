@@ -12,7 +12,6 @@ from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
 from featurebyte.models.credential import UsernamePasswordCredential
-from featurebyte.models.development_dataset import DevelopmentTable
 from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.static_source_table import SourceTableStaticSourceInput
@@ -27,7 +26,7 @@ from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.deployment import DeploymentCreate
-from featurebyte.schema.development_dataset import DevelopmentDatasetCreate
+from featurebyte.schema.development_dataset import DevelopmentDatasetCreate, DevelopmentTableCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.feature_store import FeatureStoreSample
@@ -286,7 +285,7 @@ def test_save_payload_fixtures(
         sample_from_timestamp="2022-01-01",
         sample_to_timestamp="2024-12-31",
         development_tables=[
-            DevelopmentTable(
+            DevelopmentTableCreate(
                 table_id=ObjectId("6337f9651050ee7d5980660d"),
                 location=TabularSource(
                     feature_store_id=snowflake_feature_store.id,

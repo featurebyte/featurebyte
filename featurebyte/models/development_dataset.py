@@ -26,6 +26,7 @@ class DevelopmentTable(FeatureByteBaseModel):
 
     table_id: PydanticObjectId
     location: TabularSource
+    deleted: bool = Field(default=False, description="Indicates if the table is deleted")
 
 
 class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
