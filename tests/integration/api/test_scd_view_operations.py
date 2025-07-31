@@ -379,7 +379,7 @@ def test_event_view_join_scd_view__preview_view(
     event_view = event_table.get_view()
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="ÜSER ID")
-    df = event_view.preview(1000)
+    df = event_view[["ËVENT_TIMESTAMP", "ÜSER ID", "User Status"]].preview(1000)
     df_expected = expected_dataframe_scd_join
 
     # Check correctness of joined view
