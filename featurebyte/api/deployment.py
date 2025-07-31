@@ -343,6 +343,7 @@ class Deployment(DeletableApiObject):
         output_table_name: str,
         output_table_snapshot_date: Optional[str | date] = date.today(),
         output_table_snapshot_date_name: str = "snapshot_date",
+        output_table_snapshot_date_as_timeseries_key: bool = False,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
@@ -363,6 +364,9 @@ class Deployment(DeletableApiObject):
             Snapshot date for the output table.
         output_table_snapshot_date_name: str
             Name of the snapshot date column in the output table.
+        output_table_snapshot_date_as_timeseries_key: bool
+            Whether to add the snapshot date as a timeseries key in the output table (only applicable for DataBricks).
+            If False, the snapshot date will be added as a regular primary key along with entity columns.
         columns: Optional[list[str]]
             Include only these columns when creating the batch feature table. If None, all columns
             are included. Not applicable when batch_request_table is a BatchRequestTable.
@@ -412,6 +416,7 @@ class Deployment(DeletableApiObject):
                 name=output_table_name,
                 snapshot_date=output_table_snapshot_date,
                 snapshot_date_name=output_table_snapshot_date_name,
+                snapshot_date_as_timeseries_key=output_table_snapshot_date_as_timeseries_key,
             ),
         )
         self.post_async_task(
