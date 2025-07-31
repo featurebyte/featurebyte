@@ -64,6 +64,10 @@ class OutputTableInfo(FeatureByteBaseModel):
         default_factory=date.today,
         description="Snapshot date value to be used for the features to be written to the table",
     )
+    snapshot_date_as_timeseries_key: bool = Field(
+        default=False,
+        description="Whether to use snapshot date as a timeseries key in the table",
+    )
 
 
 class BatchExternalFeatureTableCreate(BatchFeatureTableCreateBase):

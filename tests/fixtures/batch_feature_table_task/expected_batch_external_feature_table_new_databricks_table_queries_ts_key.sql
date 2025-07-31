@@ -38,6 +38,72 @@ SELECT
   COUNT(*) AS "row_count"
 FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000001";
 
+CREATE TABLE "JOINED_PARENTS_BATCH_REQUEST_TABLE_000000000000000000000001" AS
+SELECT
+  REQ."cust_id",
+  REQ."target",
+  CAST('2025-06-19 03:00:00' AS TIMESTAMP) AS "POINT_IN_TIME"
+FROM "BATCH_REQUEST_TABLE_000000000000000000000001" AS REQ;
+
+CREATE TABLE "sf_database"."sf_schema"."ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000" AS
+SELECT
+  "cust_id" AS "cust_id",
+  CAST(FLOOR((
+    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 300
+  ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
+  DATEADD(
+    MICROSECOND,
+    (
+      (
+        300 - 600
+      ) * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+    ),
+    CAST('1970-01-01' AS TIMESTAMP)
+  ) AS __FB_ENTITY_TABLE_START_DATE
+FROM "JOINED_PARENTS_BATCH_REQUEST_TABLE_000000000000000000000001"
+GROUP BY
+  "cust_id";
+
+CREATE TABLE "__TEMP_TILE_TABLE_000000000000000000000000" AS
+SELECT * FROM (
+            select
+                index,
+                "cust_id", value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295,
+                current_timestamp() as created_at
+            from (WITH __FB_ENTITY_TABLE_NAME AS (
+  SELECT
+    *
+  FROM "ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000"
+), __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+  SELECT
+    R.*
+  FROM __FB_ENTITY_TABLE_NAME
+  INNER JOIN (
+    SELECT
+      "event_timestamp" AS "event_timestamp",
+      "cust_id" AS "cust_id",
+      "col_float" AS "input_col_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+    FROM "sf_database"."sf_schema"."sf_table"
+  ) AS R
+    ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+    AND R."event_timestamp" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+    AND R."event_timestamp" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+)
+SELECT
+  index,
+  "cust_id",
+  SUM("input_col_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295") AS value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
+FROM (
+  SELECT
+    *,
+    F_TIMESTAMP_TO_INDEX(CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP), 300, 600, 30) AS index
+  FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
+)
+GROUP BY
+  index,
+  "cust_id")
+        );
+
 CREATE TABLE "__TEMP_000000000000000000000000_0" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
@@ -82,7 +148,7 @@ WITH ONLINE_REQUEST_TABLE AS (
         TILE.INDEX,
         TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
       FROM "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS REQ
-      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+      INNER JOIN __TEMP_TILE_TABLE_000000000000000000000000 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) = FLOOR(TILE.INDEX / 1)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
@@ -94,7 +160,7 @@ WITH ONLINE_REQUEST_TABLE AS (
         TILE.INDEX,
         TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
       FROM "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS REQ
-      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+      INNER JOIN __TEMP_TILE_TABLE_000000000000000000000000 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) - 1 = FLOOR(TILE.INDEX / 1)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
@@ -144,4 +210,4 @@ ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ALTER COLUMN `snapshot_da
 ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ALTER COLUMN `cust_id` SET NOT NULL;
 
 ALTER TABLE `db`.`schema`.`new_batch_prediction_table` ADD CONSTRAINT `pk_new_batch_prediction_table`
-PRIMARY KEY(`cust_id`, `snapshot_date`);
+PRIMARY KEY(`cust_id`, `snapshot_date` TIMESERIES);
