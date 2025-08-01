@@ -41,6 +41,7 @@ class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     enabled: Optional[bool] = Field(default=None)
+    compute_option_value: Optional[str] = Field(default=None)
 
 
 class DeploymentServiceUpdate(DeploymentUpdate):

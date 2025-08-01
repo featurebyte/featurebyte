@@ -19,6 +19,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
+    ComputeOption,
     DatabaseDetailsServiceUpdate,
     DatabaseDetailsUpdate,
     FeatureStoreCreate,
@@ -548,3 +549,22 @@ class FeatureStoreController(
         """
         await self.service.update_document(document_id=feature_store_id, data=data)
         return await self.service.get_document(feature_store_id)
+
+    async def list_compute_options(self, feature_store_id: ObjectId) -> List[ComputeOption]:
+        """
+        List compute options for feature store
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+
+        Returns
+        -------
+        List[ComputeOption]
+            List of compute options
+        """
+        feature_store = await self.service.get_document(document_id=feature_store_id)
+        return await self.session_manager_service.list_feature_store_compute_options(
+            feature_store=feature_store
+        )

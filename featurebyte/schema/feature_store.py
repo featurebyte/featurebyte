@@ -3,7 +3,7 @@ FeatureStore API payload schema
 """
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import sqlglot
 from bson import ObjectId
@@ -203,3 +203,13 @@ class FeatureStoreUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     max_query_concurrency: Optional[int] = Field(default=None, gt=0, lt=100)
+
+
+class ComputeOption(FeatureByteBaseModel):
+    """
+    Compute option schema
+    """
+
+    name: str
+    value: str
+    details: Dict[str, Any] = Field(default_factory=dict)

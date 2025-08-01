@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from redis import Redis
 
+from featurebyte.exception import InvalidComputeOptionValueError
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -18,7 +19,9 @@ from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 
 
@@ -38,6 +41,8 @@ class DeploymentService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
+        catalog_service: CatalogService,
+        session_manager_service: SessionManagerService,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,
         redis: Redis[Any],
@@ -51,6 +56,8 @@ class DeploymentService(
             redis=redis,
         )
         self.feature_store_service = feature_store_service
+        self.catalog_service = catalog_service
+        self.session_manager_service = session_manager_service
 
     async def update_store_info(
         self,
@@ -95,6 +102,54 @@ class DeploymentService(
                 user_id=self.user.id,
                 disable_audit=self.should_disable_audit,
             )
+
+    async def update_compute_option_value(
+        self, document_id: ObjectId, compute_option_value: str
+    ) -> DeploymentModel:
+        """
+        Update compute option for the deployment
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of the deployment document to update
+        compute_option_value: str
+            Compute option value to be set
+
+        Returns
+        -------
+        DeploymentModel
+            Updated deployment document
+
+        Raises
+        -------
+        InvalidComputeOptionValueError
+            If the provided compute option value is not valid for the deployment's feature store
+        """
+        document = await self.get_document(document_id=document_id)
+
+        # Test if the compute option value is valid
+        catalog = await self.catalog_service.get_document(document.catalog_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=catalog.default_feature_store_ids[0]
+        )
+        compute_options = await self.session_manager_service.list_feature_store_compute_options(
+            feature_store
+        )
+        if compute_option_value not in {compute_option.value for compute_option in compute_options}:
+            raise InvalidComputeOptionValueError(
+                f"Invalid compute option value: {compute_option_value}. "
+                f"Valid options are: {[option.value for option in compute_options]}"
+            )
+
+        update = DeploymentServiceUpdate(
+            compute_option_value=compute_option_value,
+        )
+        updated_doc = await super().update_document(
+            document_id=document_id, data=update, document=document
+        )
+        assert updated_doc
+        return updated_doc
 
 
 class AllDeploymentService(DeploymentService):

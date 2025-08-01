@@ -78,6 +78,37 @@ class DatabricksSession(BaseSparkSession):
             os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
             super().__init__(**data)
 
+    @classmethod
+    def get_workspace_client(
+        cls, host: str, database_credential: Union[AccessTokenCredential, OAuthCredential]
+    ) -> WorkspaceClient:
+        """
+        Get a WorkspaceClient instance based on the provided database credential.
+
+        Parameters
+        ----------
+        host: str
+            The host URL of the Databricks workspace.
+        database_credential: Union[AccessTokenCredential, OAuthCredential]
+            The credential to use for authentication with the Databricks workspace.
+
+        Returns
+        -------
+        WorkspaceClient
+        """
+        if isinstance(database_credential, AccessTokenCredential):
+            return WorkspaceClient(
+                host=host,
+                token=database_credential.access_token,
+            )
+        else:
+            assert isinstance(database_credential, OAuthCredential)
+            return WorkspaceClient(
+                host=host,
+                client_id=database_credential.client_id,
+                client_secret=database_credential.client_secret,
+            )
+
     def _execute_query(self, cursor: Any, query: str, **kwargs: Any) -> Any:
         try:
             return super()._execute_query(cursor, query, **kwargs)
@@ -143,18 +174,9 @@ class DatabricksSession(BaseSparkSession):
 
     @property
     def _workspace_client(self) -> WorkspaceClient:
-        if isinstance(self.database_credential, AccessTokenCredential):
-            return WorkspaceClient(
-                host=self.host,
-                token=self.database_credential.access_token,
-            )
-        else:
-            assert isinstance(self.database_credential, OAuthCredential)
-            return WorkspaceClient(
-                host=self.host,
-                client_id=self.database_credential.client_id,
-                client_secret=self.database_credential.client_secret,
-            )
+        return self.get_workspace_client(
+            host=self.host, database_credential=self.database_credential
+        )
 
     def _initialize_storage(self) -> None:
         self.storage_path = self.storage_path.rstrip("/")

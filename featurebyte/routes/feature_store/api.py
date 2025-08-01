@@ -34,6 +34,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.feature_store import (
+    ComputeOption,
     DatabaseDetailsUpdate,
     FeatureStoreCreate,
     FeatureStoreList,
@@ -151,6 +152,12 @@ class FeatureStoreRouter(
             self.update,
             methods=["PATCH"],
             response_model=FeatureStoreModel,
+        )
+        self.router.add_api_route(
+            "/{feature_store_id}/compute_option",
+            self.list_compute_options,
+            methods=["GET"],
+            response_model=List[ComputeOption],
         )
 
     async def create_object(
@@ -428,3 +435,14 @@ class FeatureStoreRouter(
         """Update max_query_concurrency"""
         controller: FeatureStoreController = self.get_controller_for_request(request)
         return await controller.update(feature_store_id=ObjectId(feature_store_id), data=data)
+
+    async def list_compute_options(
+        self,
+        request: Request,
+        feature_store_id: PydanticObjectId,
+    ) -> List[ComputeOption]:
+        """
+        List compute options for a feature store
+        """
+        controller: FeatureStoreController = self.get_controller_for_request(request)
+        return await controller.list_compute_options(feature_store_id=feature_store_id)
