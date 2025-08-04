@@ -15,6 +15,7 @@ from featurebyte.exception import (
     DeploymentNotOnlineEnabledError,
     DocumentCreationError,
     DocumentDeletionError,
+    DocumentUpdateError,
 )
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel
@@ -157,9 +158,26 @@ class DeploymentController(
         -------
         Optional[Task]
             Task to create deployment.
+
+        Raises
+        ------
+        DocumentUpdateError
+            If the deployment is enabled and compute option is being updated.
         """
         # check if deployment exists
         deployment = await self.service.get_document(document_id=document_id)
+
+        # check if updating compute option
+        if data.compute_option_value:
+            if deployment.enabled:
+                raise DocumentUpdateError(
+                    "Cannot update compute option for an enabled deployment. Please disable the deployment first."
+                )
+            # update compute option
+            await self.service.update_compute_option_value(
+                document_id=document_id, compute_option_value=data.compute_option_value
+            )
+
         if data.enabled is not None and data.enabled != deployment.enabled:
             payload = DeploymentCreateUpdateTaskPayload(
                 deployment_payload=UpdateDeploymentPayload(enabled=data.enabled),

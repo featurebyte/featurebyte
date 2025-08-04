@@ -893,6 +893,24 @@ def snowflake_query_map_fixture():
         'SELECT\n  COUNT(DISTINCT "date") AS "date"\nFROM "sf_database"."sf_schema"."time_series_table"': [
             {"date": 10}
         ],
+        "SHOW WAREHOUSES": [
+            {
+                "name": "sf_warehouse",
+                "state": "ACTIVE",
+                "type": "STANDARD",
+                "size": "X-SMALL",
+                "auto_suspend": 60,
+                "auto_resume": True,
+            },
+            {
+                "name": "alt_warehouse",
+                "state": "ACTIVE",
+                "type": "STANDARD",
+                "size": "X-SMALL",
+                "auto_suspend": 60,
+                "auto_resume": True,
+            },
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'

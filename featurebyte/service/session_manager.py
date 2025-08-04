@@ -15,10 +15,13 @@ from featurebyte import SourceType, get_logger  # type: ignore
 from featurebyte.enum import StrEnum
 from featurebyte.exception import CredentialsError, SessionInitializationTimeOut
 from featurebyte.models.base import User
-from featurebyte.models.credential import CredentialModel
+from featurebyte.models.credential import AccessTokenCredential, CredentialModel, OAuthCredential
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.node.schema import BaseDatabricksDetails
+from featurebyte.schema.feature_store import ComputeOption
 from featurebyte.service.credential import CredentialService
 from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     BaseSession,
     session_cache,
@@ -287,3 +290,146 @@ class SessionManagerService:
         )
         assert isinstance(session, BaseSession)
         return session
+
+    @classmethod
+    async def list_compute_options(
+        cls,
+        feature_store: FeatureStoreModel,
+        credentials: Optional[CredentialModel] = None,
+    ) -> list[ComputeOption]:
+        """
+        Get compute options for the feature store
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            ExtendedFeatureStoreModel object
+        credentials: Optional[CredentialModel]
+            Credentials to be used to connect to the database
+
+        Returns
+        -------
+        list[ComputeOption]
+            List of compute options available for the feature store
+
+        Raises
+        ------
+        AssertionError
+            If credentials are required for the source type and not provided
+        """
+        if feature_store.type in [SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY]:
+            assert isinstance(feature_store.details, BaseDatabricksDetails)
+            assert credentials, "Credentials should not be None for Databricks feature store"
+            assert isinstance(
+                credentials.database_credential, (AccessTokenCredential, OAuthCredential)
+            )
+            with DatabricksSession.exclude_env_credentials():
+                databricks_ws_client = DatabricksSession.get_workspace_client(
+                    host=feature_store.details.host,
+                    database_credential=credentials.database_credential,
+                )
+            workspace_id = databricks_ws_client.get_workspace_id()
+            compute_options = []
+            for cluster in databricks_ws_client.clusters.list():
+                cluster_details = cluster.as_dict()
+                compute_options.append(
+                    ComputeOption(
+                        name=cluster.cluster_name,
+                        value=f"sql/protocolv1/o/{workspace_id}/{cluster.cluster_id}",
+                        details={
+                            k: cluster_details.get(k)
+                            for k in (
+                                "autoscale",
+                                "autotermination_minutes",
+                                "cluster_cores",
+                                "cluster_memory_mb",
+                                "creator_user_name",
+                                "data_security_mode",
+                                "driver_node_type_id",
+                                "node_type_id",
+                                "num_workers",
+                                "policy_id",
+                                "runtime_engine",
+                                "single_user_name",
+                                "spark_version",
+                                "state",
+                                "state_message",
+                                "workload_type",
+                            )
+                        },
+                    )
+                )
+            for warehouse in databricks_ws_client.warehouses.list():
+                warehouse_details = warehouse.as_dict()
+                compute_options.append(
+                    ComputeOption(
+                        name=warehouse.name,
+                        value=warehouse.odbc_params.path if warehouse.odbc_params else "",
+                        details={
+                            k: warehouse_details.get(k)
+                            for k in (
+                                "auto_stop_mins",
+                                "cluster_size",
+                                "creator_name",
+                                "enable_photon",
+                                "enable_serverless_compute",
+                                "max_num_clusters",
+                                "min_num_clusters",
+                                "num_clusters",
+                                "spot_instance_policy",
+                                "state",
+                                "warehouse_type",
+                            )
+                        },
+                    )
+                )
+            return compute_options
+        elif feature_store.type == SourceType.SNOWFLAKE:
+            session = await cls.get_session(
+                feature_store=feature_store,
+                credentials=credentials,
+                timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+            )
+            results = await session.execute_query("SHOW WAREHOUSES")
+            if results is not None:
+                return [
+                    ComputeOption(
+                        name=row["name"],
+                        value=row["name"],
+                        details={
+                            k: row.get(k)
+                            for k in (
+                                "state",
+                                "type",
+                                "size",
+                                "auto_suspend",
+                                "auto_resume",
+                                "owner",
+                            )
+                        },
+                    )
+                    for row in results.to_dict(orient="records")
+                ]
+
+        return []
+
+    async def list_feature_store_compute_options(
+        self, feature_store: FeatureStoreModel
+    ) -> list[ComputeOption]:
+        """
+        Get compute options for the feature store
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            ExtendedFeatureStoreModel object
+
+        Returns
+        -------
+        list[ComputeOption]
+            List of compute options available for the feature store
+        """
+        credentials = await self.credential_service.get_credentials(
+            user_id=self.user.id, feature_store=feature_store
+        )
+        return await self.list_compute_options(feature_store, credentials)

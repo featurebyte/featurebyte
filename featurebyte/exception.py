@@ -605,3 +605,9 @@ class InvalidTableSchemaError(BaseUnprocessableEntityError):
     """
     Raise when a table with invalid schema is provided
     """
+
+
+class InvalidComputeOptionValueError(BaseUnprocessableEntityError):
+    """
+    Raise when an invalid compute option value is provided
+    """
