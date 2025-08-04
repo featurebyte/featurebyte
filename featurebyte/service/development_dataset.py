@@ -4,7 +4,7 @@ DevelopmentDatasetService class
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, cast
+from typing import Any, AsyncIterator, Optional, Type, cast
 
 from bson import ObjectId
 from redis import Redis
@@ -17,8 +17,8 @@ from featurebyte.exception import (
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.development_dataset import DevelopmentDatasetModel, DevelopmentTable
-from featurebyte.models.feature_store import TableModel
 from featurebyte.persistent import Persistent
+from featurebyte.persistent.base import SortDir
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.development_dataset import (
@@ -35,52 +35,9 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.table import TableService
 from featurebyte.storage import Storage
-
-DEV_TABLE_DELETION_MARKING_PIPELINE = [
-    "$query_filter",
-    # Unwind the development_tables array, keeping documents even if it's empty
-    {
-        "$unwind": {
-            "path": "$development_tables",
-            "preserveNullAndEmptyArrays": True,
-        }
-    },
-    # Lookup to check if table_id exists in the table collection
-    {
-        "$lookup": {
-            "from": TableModel.collection_name(),
-            "localField": "development_tables.table_id",
-            "foreignField": "_id",
-            "as": "matched_table",
-        }
-    },
-    # Add "deleted": true if there is no match
-    {
-        "$addFields": {
-            "development_tables.deleted": {
-                "$cond": {
-                    "if": {"$eq": [{"$size": "$matched_table"}, 0]},
-                    "then": True,
-                    "else": False,
-                }
-            }
-        }
-    },
-    # Reconstruct the full document while collecting the updated development_tables
-    {
-        "$group": {
-            "_id": "$_id",
-            "fullDocument": {"$first": "$$ROOT"},
-            "development_tables": {"$push": "$development_tables"},
-        }
-    },
-    # Replace the original development_tables with updated ones
-    {"$set": {"fullDocument.development_tables": "$development_tables"}},
-    # Replace root to return the final modified document
-    {"$replaceRoot": {"newRoot": "$fullDocument"}},
-]
 
 
 class DevelopmentDatasetService(
@@ -351,14 +308,101 @@ class DevelopmentDatasetService(
             ),
         )
 
-    async def construct_get_pipeline(self, **kwargs: Any) -> List[Any] | None:
-        pipeline = await super().construct_get_pipeline(**kwargs) or []
-        # add pipeline stages to flag deleted tables
-        pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)
-        return pipeline
+    async def _get_valid_table_ids(self) -> set[ObjectId]:
+        """
+        Get a list of valid table IDs from the table service.
 
-    async def construct_list_pipeline(self, **kwargs: Any) -> List[Any] | None:
-        pipeline = await super().construct_list_pipeline(**kwargs) or []
-        # add pipeline stages to flag deleted tables
-        pipeline.extend(DEV_TABLE_DELETION_MARKING_PIPELINE)
-        return pipeline
+        Returns
+        -------
+        set[ObjectId]
+            List of valid table IDs.
+        """
+        return set([
+            doc["_id"]
+            async for doc in self.table_service.list_documents_as_dict_iterator(
+                projection={"_id": 1}
+            )
+        ])
+
+    @staticmethod
+    def _add_deleted_flag_to_development_tables(
+        document: dict[str, Any],
+        valid_table_ids: set[ObjectId],
+    ) -> dict[str, Any]:
+        """
+        Add a 'deleted' flag to each development table indicating whether the table ID is valid.
+
+        Parameters
+        ----------
+        document: dict[str, Any]
+            Development table document to process.
+        valid_table_ids: list[ObjectId]
+            List of valid table IDs.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            Processed list of development tables with 'deleted' flag added.
+        """
+        if "development_tables" not in document:
+            return document
+        for dev_table in document["development_tables"]:
+            dev_table["deleted"] = dev_table["table_id"] not in valid_table_ids
+        return document
+
+    async def get_document_as_dict(
+        self,
+        document_id: ObjectId,
+        exception_detail: str | None = None,
+        use_raw_query_filter: bool = False,
+        projection: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        valid_table_ids = await self._get_valid_table_ids()
+        doc = await super().get_document_as_dict(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            projection=projection,
+            **kwargs,
+        )
+        return self._add_deleted_flag_to_development_tables(doc, valid_table_ids)
+
+    async def list_documents_as_dict(
+        self,
+        page: int = 1,
+        page_size: int = DEFAULT_PAGE_SIZE,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        use_raw_query_filter: bool = False,
+        projection: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        valid_table_ids = await self._get_valid_table_ids()
+        results = await super().list_documents_as_dict(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            use_raw_query_filter=use_raw_query_filter,
+            projection=projection,
+            **kwargs,
+        )
+        for doc in results["data"]:
+            self._add_deleted_flag_to_development_tables(doc, valid_table_ids)
+
+        return results
+
+    async def list_documents_as_dict_iterator(
+        self,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        use_raw_query_filter: bool = False,
+        projection: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[dict[str, Any]]:
+        valid_table_ids = await self._get_valid_table_ids()
+        async for doc in super().list_documents_as_dict_iterator(
+            sort_by=sort_by,
+            use_raw_query_filter=use_raw_query_filter,
+            projection=projection,
+            **kwargs,
+        ):
+            yield self._add_deleted_flag_to_development_tables(doc, valid_table_ids)
