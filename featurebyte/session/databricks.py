@@ -4,10 +4,11 @@ DatabricksSession class
 
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 from io import BytesIO
-from typing import Any, AsyncGenerator, BinaryIO, Optional, Union
+from typing import Any, AsyncGenerator, BinaryIO, Iterator, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
@@ -72,11 +73,26 @@ class DatabricksSession(BaseSparkSession):
     database_credential: Union[AccessTokenCredential, OAuthCredential]
 
     def __init__(self, **data: Any) -> None:
+        with self.exclude_env_credentials():
+            super().__init__(**data)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def exclude_env_credentials() -> Iterator[None]:
+        """
+        Context manager to ignore environment variables for credentials.
+        This is useful to prevent accidental usage of environment variables
+        when creating a session with explicit credentials.
+
+        Yields
+        -------
+        None
+        """
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("GOOGLE_CREDENTIALS", None)
             os.environ.pop("DATABRICKS_CLIENT_ID", None)
             os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
-            super().__init__(**data)
+            yield
 
     @classmethod
     def get_workspace_client(

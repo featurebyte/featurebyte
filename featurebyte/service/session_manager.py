@@ -323,10 +323,11 @@ class SessionManagerService:
             assert isinstance(
                 credentials.database_credential, (AccessTokenCredential, OAuthCredential)
             )
-            databricks_ws_client = DatabricksSession.get_workspace_client(
-                host=feature_store.details.host,
-                database_credential=credentials.database_credential,
-            )
+            with DatabricksSession.exclude_env_credentials():
+                databricks_ws_client = DatabricksSession.get_workspace_client(
+                    host=feature_store.details.host,
+                    database_credential=credentials.database_credential,
+                )
             workspace_id = databricks_ws_client.get_workspace_id()
             compute_options = []
             for cluster in databricks_ws_client.clusters.list():
