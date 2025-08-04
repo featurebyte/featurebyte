@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.2.0 (2025-08-04)
+
+### 💡 Enhancements
+
++ `service` Batch features will be computed using temporary tile tables by default
++ `api` Use snapshot date as regular primary key instead of timeseries key for external DataBricks feature table by default.
++ `service` Add routes to update compute options for a deployment
++ `service` Allow using larger observation tables for preview by using the first rows within preview row limit.
+
 ## v3.1.2 (2025-07-14)
 
 ### 💡 Enhancements
