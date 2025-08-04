@@ -127,6 +127,8 @@ class TestClient(BaseTestClient):
         """
         Override request method to handle streaming responses
         """
+        if "allow_redirects" in kwargs:
+            kwargs["follow_redirects"] = kwargs.pop("allow_redirects")
         if stream:
             with super().stream(method, url, *args, **kwargs) as response:
                 return Response(response)
