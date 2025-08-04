@@ -86,7 +86,8 @@ class DatabricksSession(BaseSparkSession):
 
         Yields
         -------
-        None
+        Iterator[None]
+            The context manager
         """
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("GOOGLE_CREDENTIALS", None)
