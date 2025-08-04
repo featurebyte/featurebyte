@@ -117,7 +117,7 @@ def test_inner_get_routes(test_api_client, resource_name, dependent_resources):
         FeatureList,
     ],
 )
-def test_list_and_get_api_objects(api_config, api_object_class):
+def test_list_and_get_api_objects(config, api_object_class):
     """Test listing api object through SDK"""
     objs = api_object_class.list()
     if objs.shape[0]:
