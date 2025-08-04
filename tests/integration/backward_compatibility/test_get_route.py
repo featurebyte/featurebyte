@@ -3,12 +3,10 @@ Backward compatibility tests
 """
 
 import os
-import tempfile
 from http import HTTPStatus
 from unittest import mock
 
 import pytest
-import yaml
 from bson import ObjectId
 from fastapi.testclient import TestClient
 
@@ -22,7 +20,6 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.app import app
-from featurebyte.config import Configurations
 from featurebyte.persistent.mongo import MongoDB
 from tests.integration.conftest import MONGO_CONNECTION
 
@@ -106,32 +103,6 @@ def test_inner_get_routes(test_api_client, resource_name, dependent_resources):
             assert response.status_code == HTTPStatus.OK, (route, response.text)
 
 
-@pytest.fixture(name="api_config", scope="module")
-def config_fixture(test_api_client):
-    config_dict = {
-        "profile": [
-            {
-                "name": "local",
-                "api_url": "http://localhost:8080",
-                "api_token": "token",
-            }
-        ],
-        "default_profile": "local",
-        "logging": {
-            "level": "DEBUG",
-        },
-    }
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        config_file_path = os.path.join(tempdir, "config.yaml")
-        with open(config_file_path, "w") as file_handle:
-            file_handle.write(yaml.dump(config_dict))
-            file_handle.flush()
-            with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-                mock_request.side_effect = test_api_client.request
-                yield Configurations(config_file_path=config_file_path)
-
-
 @pytest.mark.parametrize(
     "api_object_class",
     [
@@ -146,7 +117,7 @@ def config_fixture(test_api_client):
         FeatureList,
     ],
 )
-def test_list_and_get_api_objects(api_config, api_object_class):
+def test_list_and_get_api_objects(config, api_object_class):
     """Test listing api object through SDK"""
     objs = api_object_class.list()
     if objs.shape[0]:
