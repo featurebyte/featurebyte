@@ -4,7 +4,7 @@ Table model's attribute payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator, model_validator
@@ -69,6 +69,24 @@ class TableCreate(FeatureByteBaseModel):
                 raise ValueError(f"Column not found in table: {column_name}")
         return column_name
 
+    def _set_skip_validation(self, name: str, value: Any) -> None:
+        """
+        Workaround to be able to set fields without validation.
+
+        Parameters
+        ----------
+        name: str
+            Name of the field to set
+        value: Any
+            Value to set for the field
+        """
+        attr = getattr(self.__class__, name, None)
+        if isinstance(attr, property):
+            attr.__set__(self, value)
+        else:
+            self.__dict__[name] = value
+            self.__pydantic_fields_set__.add(name)
+
     @model_validator(mode="after")
     def _update_columns_info(self) -> "TableCreate":
         """
@@ -78,15 +96,17 @@ class TableCreate(FeatureByteBaseModel):
         -------
         TableCreate
         """
-        if not self.datetime_partition_column:
-            return self
-
         for column_info in self.columns_info:
             if column_info.name == self.datetime_partition_column:
                 column_info.dtype_metadata = DBVarTypeMetadata(
                     timestamp_schema=self.datetime_partition_schema
                 )
                 column_info.partition_metadata = PartitionMetadata(is_partition_key=True)
+            elif column_info.partition_metadata and column_info.dtype_metadata:
+                self._set_skip_validation("datetime_partition_column", column_info.name)
+                self._set_skip_validation(
+                    "datetime_partition_schema", column_info.dtype_metadata.timestamp_schema
+                )
             else:
                 column_info.partition_metadata = None
 
@@ -197,3 +217,38 @@ class ColumnSemanticUpdate(FeatureByteBaseModel):
 
     column_name: NameStr
     semantic_id: Optional[PydanticObjectId] = Field(default=None)
+
+
+class TableReadMixin(FeatureByteBaseModel):
+    """
+    Table Read Schema mixin to include datetime partition column and schema
+    """
+
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _populate_datetime_partition_info(cls, values: Any) -> Any:
+        """
+        Populate datetime partition column and schema
+
+        Parameters
+        ----------
+        values: Any
+            Values to validate and populate
+
+        Returns
+        -------
+        Any
+        """
+        columns_info = values.get("columns_info", [])
+        for column_info in columns_info:
+            partition_metadata = column_info.get("partition_metadata")
+            if partition_metadata is not None and partition_metadata.get("is_partition_key", False):
+                dtype_metadata = column_info.get("dtype_metadata")
+                if dtype_metadata is not None:
+                    values["datetime_partition_column"] = column_info["name"]
+                    values["datetime_partition_schema"] = dtype_metadata.get("timestamp_schema")
+                break
+        return values

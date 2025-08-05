@@ -2,6 +2,7 @@
 Tests for TimeSeriesTable routes
 """
 
+import copy
 from http import HTTPStatus
 
 import pytest
@@ -155,6 +156,8 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         assert output.pop("updated_at") is None
         output["validation"].pop("updated_at")
         output["catalog_id"] = str(default_catalog_id)
+        output["datetime_partition_column"] = None
+        output["datetime_partition_schema"] = None
         return output
 
     @pytest.fixture(name="data_update_dict")
@@ -519,7 +522,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         Test create with unsupported reference timestamp schema
         """
         test_api_client, _ = test_api_client_persistent
-        payload = self.payload.copy()
+        payload = copy.deepcopy(self.payload)
         payload["reference_datetime_schema"]["format_string"] = "YYYY-MM-DD HH:MM:SS TZH:TZM"
         response = test_api_client.post(self.base_route, json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -528,3 +531,29 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             response_json["detail"]
             == "Timezone information in time series table reference datetime column is not supported."
         )
+
+    def test_get_response_datetime_partition_column(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """
+        Test get response
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        id = response_dict["_id"]
+        assert response_dict["datetime_partition_column"] == "date"
+        assert response_dict["datetime_partition_schema"] == {
+            "format_string": "YYYY-MM-DD HH24:MI:SS",
+            "is_utc_time": None,
+            "timezone": "Etc/UTC",
+        }
+
+        response = test_api_client.get(f"{self.base_route}/{id}")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict["datetime_partition_column"] == "date"
+        assert response_dict["datetime_partition_schema"] == {
+            "format_string": "YYYY-MM-DD HH24:MI:SS",
+            "is_utc_time": None,
+            "timezone": "Etc/UTC",
+        }

@@ -15,7 +15,7 @@ from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSett
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
+from featurebyte.schema.table import TableCreate, TableReadMixin, TableServiceUpdate, TableUpdate
 
 
 class TimeSeriesTableCreate(TableCreate):
@@ -40,12 +40,18 @@ class TimeSeriesTableCreate(TableCreate):
     )(TableCreate._special_column_validator)
 
 
+class TimeSeriesTableRead(TimeSeriesTableModel, TableReadMixin):
+    """
+    TimeSeriesTable Read Schema
+    """
+
+
 class TimeSeriesTableList(PaginationMixin):
     """
     Paginated list of TimeSeriesTable
     """
 
-    data: Sequence[TimeSeriesTableModel]
+    data: Sequence[TimeSeriesTableRead]
 
 
 class TimeSeriesTableUpdateMixin(FeatureByteBaseModel):

@@ -15,7 +15,7 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
+from featurebyte.schema.table import TableCreate, TableReadMixin, TableServiceUpdate, TableUpdate
 
 
 class EventTableCreate(TableCreate):
@@ -60,12 +60,18 @@ class EventTableCreate(TableCreate):
         return self
 
 
+class EventTableRead(EventTableModel, TableReadMixin):
+    """
+    EventTable Read Schema
+    """
+
+
 class EventTableList(PaginationMixin):
     """
     Paginated list of EventTable
     """
 
-    data: Sequence[EventTableModel]
+    data: Sequence[EventTableRead]
 
 
 class EventTableUpdateMixin(FeatureByteBaseModel):

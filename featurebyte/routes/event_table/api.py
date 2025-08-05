@@ -11,7 +11,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
+from featurebyte.models.event_table import FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
@@ -25,7 +25,12 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.routes.event_table.controller import EventTableController
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
-from featurebyte.schema.event_table import EventTableCreate, EventTableList, EventTableUpdate
+from featurebyte.schema.event_table import (
+    EventTableCreate,
+    EventTableList,
+    EventTableRead,
+    EventTableUpdate,
+)
 from featurebyte.schema.info import EventTableInfo
 from featurebyte.schema.table import (
     ColumnCriticalDataInfoUpdate,
@@ -37,13 +42,13 @@ router = APIRouter(prefix="/event_table")
 
 
 class EventTableRouter(
-    BaseApiRouter[EventTableModel, EventTableList, EventTableCreate, EventTableController]
+    BaseApiRouter[EventTableRead, EventTableList, EventTableCreate, EventTableController]
 ):
     """
     Event table router
     """
 
-    object_model = EventTableModel
+    object_model = EventTableRead
     list_object_model = EventTableList
     create_object_schema = EventTableCreate
     controller = EventTableController
@@ -56,7 +61,7 @@ class EventTableRouter(
             "/{event_table_id}",
             self.update_event_table,
             methods=["PATCH"],
-            response_model=EventTableModel,
+            response_model=EventTableRead,
             status_code=HTTPStatus.OK,
         )
 
@@ -73,7 +78,7 @@ class EventTableRouter(
             "/{event_table_id}/column_entity",
             self.update_column_entity,
             methods=["PATCH"],
-            response_model=EventTableModel,
+            response_model=EventTableRead,
             status_code=HTTPStatus.OK,
         )
 
@@ -82,7 +87,7 @@ class EventTableRouter(
             "/{event_table_id}/column_critical_data_info",
             self.update_column_critical_data_info,
             methods=["PATCH"],
-            response_model=EventTableModel,
+            response_model=EventTableRead,
             status_code=HTTPStatus.OK,
         )
 
@@ -91,7 +96,7 @@ class EventTableRouter(
             "/{event_table_id}/column_description",
             self.update_column_description,
             methods=["PATCH"],
-            response_model=EventTableModel,
+            response_model=EventTableRead,
             status_code=HTTPStatus.OK,
         )
 
@@ -105,7 +110,7 @@ class EventTableRouter(
 
     async def get_object(
         self, request: Request, event_table_id: PydanticObjectId
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         return await super().get_object(request, event_table_id)
 
     async def list_audit_logs(
@@ -130,12 +135,13 @@ class EventTableRouter(
 
     async def update_description(
         self, request: Request, event_table_id: PydanticObjectId, data: DescriptionUpdate
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         return await super().update_description(request, event_table_id, data)
 
-    async def create_object(self, request: Request, data: EventTableCreate) -> EventTableModel:
+    async def create_object(self, request: Request, data: EventTableCreate) -> EventTableRead:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)
+        event_table = await controller.create_table(data=data)
+        return EventTableRead(**event_table.model_dump(by_alias=True))
 
     async def get_event_table_info(
         self, request: Request, event_table_id: PydanticObjectId, verbose: bool = VerboseQuery
@@ -152,64 +158,64 @@ class EventTableRouter(
 
     async def update_event_table(
         self, request: Request, event_table_id: PydanticObjectId, data: EventTableUpdate
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         """
         Update event table
         """
         controller = self.get_controller_for_request(request)
-        event_table: EventTableModel = await controller.update_table(
+        event_table = await controller.update_table(
             document_id=ObjectId(event_table_id),
             data=data,
         )
-        return event_table
+        return EventTableRead(**event_table.model_dump(by_alias=True))
 
     async def update_column_entity(
         self, request: Request, event_table_id: PydanticObjectId, data: ColumnEntityUpdate
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         """
         Update column entity
         """
         controller = self.get_controller_for_request(request)
-        event_table: EventTableModel = await controller.update_column_entity(
+        event_table = await controller.update_column_entity(
             document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             entity_id=data.entity_id,
         )
-        return event_table
+        return EventTableRead(**event_table.model_dump(by_alias=True))
 
     async def update_column_critical_data_info(
         self,
         request: Request,
         event_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         """
         Update column critical data info
         """
         controller = self.get_controller_for_request(request)
-        event_table: EventTableModel = await controller.update_column_critical_data_info(
+        event_table = await controller.update_column_critical_data_info(
             document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
         )
-        return event_table
+        return EventTableRead(**event_table.model_dump(by_alias=True))
 
     async def update_column_description(
         self,
         request: Request,
         event_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
-    ) -> EventTableModel:
+    ) -> EventTableRead:
         """
         Update column description
         """
         controller = self.get_controller_for_request(request)
-        event_table: EventTableModel = await controller.update_column_description(
+        event_table = await controller.update_column_description(
             document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             description=data.description,
         )
-        return event_table
+        return EventTableRead(**event_table.model_dump(by_alias=True))
 
     async def list_default_feature_job_setting_history(
         self,

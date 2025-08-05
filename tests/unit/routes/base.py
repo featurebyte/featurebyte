@@ -1304,6 +1304,11 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"/table/{success_response_dict['_id']}")
         response_dict = response.json()
 
+        # datetime_partition_column and datetime_partition_schema are added in the response
+        # for specific table types, so we exclude them from the comparison
+        success_response_dict.pop("datetime_partition_column", None)
+        success_response_dict.pop("datetime_partition_schema", None)
+
         # overwrite the updated_at & columns_info fields (due to entity tagging)
         success_response_dict["updated_at"] = response_dict["updated_at"]
         success_response_dict["columns_info"] = response_dict["columns_info"]
