@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.development_dataset import DevelopmentTable
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import (
     BaseDocumentServiceUpdateSchema,
@@ -27,7 +28,15 @@ class DevelopmentDatasetBase(FeatureByteBaseModel):
     description: Optional[StrictStr] = Field(default=None)
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
-    development_tables: List[DevelopmentTable]
+
+
+class DevelopmentTableCreate(FeatureByteBaseModel):
+    """
+    Development source table for a table
+    """
+
+    table_id: PydanticObjectId
+    location: TabularSource
 
 
 class DevelopmentDatasetCreate(DevelopmentDatasetBase):
@@ -36,6 +45,7 @@ class DevelopmentDatasetCreate(DevelopmentDatasetBase):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    development_tables: List[DevelopmentTableCreate]
 
 
 class DevelopmentDatasetRead(DevelopmentDatasetBase):
@@ -44,6 +54,7 @@ class DevelopmentDatasetRead(DevelopmentDatasetBase):
     """
 
     id: PydanticObjectId = Field(alias="_id")
+    development_tables: List[DevelopmentTable]
 
 
 class DevelopmentDatasetList(PaginationMixin):
@@ -87,6 +98,7 @@ class DevelopmentTableInfo(FeatureByteBaseModel):
     table_name: str
     feature_store_name: str
     table_details: TableDetails
+    deleted: bool = Field(default=False)
 
 
 class DevelopmentDatasetInfo(BaseInfo):

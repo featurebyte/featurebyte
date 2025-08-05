@@ -423,7 +423,7 @@ class MongoDB(Persistent):
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> Tuple[List[Document], int]:
         output_pipeline: List[Dict[str, Any]] = []
 
         if sort_by:
