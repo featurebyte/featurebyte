@@ -156,7 +156,7 @@ async def test_partitioned_table_column_info(session):
                 name="POINT_IN_TIME",
                 dtype="TIMESTAMP",
                 dtype_metadata=None,
-                partition_metadata=PartitionMetadata(is_partition_key=True),
+                partition_metadata=PartitionMetadata(is_partition_key_candidate=True),
                 description=None,
             ),
         ),
