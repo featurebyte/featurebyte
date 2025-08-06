@@ -1544,7 +1544,7 @@ def test_create_with_datetime_partition_column_missing_format_string(
     Test creating EventTable with datetime partition column with missing format string
     """
     _ = catalog
-    with pytest.raises(ValidationError) as exc:
+    with pytest.raises(RecordCreationException) as exc:
         # Attempt to create an event table with a datetime partition column with missing format string
         # This should raise an exception since the column is expected to have a format string
         snowflake_database_table.create_event_table(

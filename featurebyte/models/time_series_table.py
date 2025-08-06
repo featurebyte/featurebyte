@@ -81,6 +81,9 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("reference_datetime_column", "reference_datetime_schema"),
             ],
+            datetime_partition_schema_pair=ColumnToTimestampSchema(
+                "datetime_partition_column", "datetime_partition_schema"
+            ),
         ),
     )
 

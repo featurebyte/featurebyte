@@ -80,6 +80,9 @@ class EventTableModel(EventTableData, TableModel):
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("event_timestamp_column", "event_timestamp_schema"),
             ],
+            datetime_partition_schema_pair=ColumnToTimestampSchema(
+                "datetime_partition_column", "datetime_partition_schema"
+            ),
         )
     )
 
