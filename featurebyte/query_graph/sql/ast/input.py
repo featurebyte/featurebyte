@@ -275,13 +275,15 @@ class InputNode(TableNode):
             if dtype_metadata is not None:
                 dtype_metadata_mapping[column_info["name"]] = DBVarTypeMetadata(**dtype_metadata)
 
-        format_string = None
-        if partition_column is not None:
-            dtype_metadata = dtype_metadata_mapping.get(partition_column)
-            if dtype_metadata is not None and dtype_metadata.timestamp_schema is not None:
+        # We require dtype_metadata to exist to handle the case where partition_metadata exists
+        # because the column is a partition key, but is not declared as a partition column during
+        # table registration. In that case, we don't want to apply any partition filters.
+        dtype_metadata = dtype_metadata_mapping.get(partition_column)
+        if partition_column is not None and dtype_metadata is not None:
+            if dtype_metadata.timestamp_schema is not None:
                 format_string = dtype_metadata.timestamp_schema.format_string
-
-        if partition_column is not None:
+            else:
+                format_string = None
             partition_filter_condition = get_partition_filter(
                 partition_column=partition_column,
                 partition_column_filter=partition_column_filter,
