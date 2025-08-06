@@ -163,6 +163,8 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
         "event_timestamp_timezone_offset_column": None,
         "event_timestamp_schema": None,
         "is_deleted": False,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
 
 
@@ -989,6 +991,8 @@ def test_default_feature_job_setting_history(saved_event_table):
         "is_deleted",
         "managed_view_id",
         "validation",
+        "datetime_partition_column",
+        "datetime_partition_schema",
     }
 
 
@@ -1540,7 +1544,7 @@ def test_create_with_datetime_partition_column_missing_format_string(
     Test creating EventTable with datetime partition column with missing format string
     """
     _ = catalog
-    with pytest.raises(ValidationError) as exc:
+    with pytest.raises(RecordCreationException) as exc:
         # Attempt to create an event table with a datetime partition column with missing format string
         # This should raise an exception since the column is expected to have a format string
         snowflake_database_table.create_event_table(

@@ -99,6 +99,8 @@ def get_base_expected_dimension_table_model(dimension_table_model, dimension_col
         "is_deleted": False,
         "managed_view_id": None,
         "validation": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
 
 

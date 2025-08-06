@@ -191,6 +191,8 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
         "updated_at": None,
         "user_id": user_id,
         "is_deleted": False,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
 
 

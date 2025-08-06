@@ -104,6 +104,10 @@ class EventTable(TableApiObject):
                 ),
                 ("internal_event_timestamp_column", DBVarType.supported_datetime_types()),
                 ("internal_event_id_column", DBVarType.supported_id_types()),
+                (
+                    "internal_datetime_partition_column",
+                    DBVarType.supported_ts_datetime_types(),
+                ),
             ],
         )
     )

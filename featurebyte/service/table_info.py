@@ -89,4 +89,6 @@ class TableInfoService:
             "columns_info": columns_info,
             "catalog_name": catalog_name,
             "description": data_document.description,
+            "datetime_partition_column": data_document.datetime_partition_column,
+            "datetime_partition_schema": data_document.datetime_partition_schema,
         }
