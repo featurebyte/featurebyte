@@ -193,3 +193,53 @@ def test_partition_column_filters_with_on_demand_entity_filters(
     actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
     fixture_filename = f"tests/fixtures/query_graph/test_input/partition_column_filters_with_entity_filters_{source_type}.sql"
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
+
+
+def test_partition_column_filters_no_dtype_metadata(global_graph, input_details, update_fixtures):
+    """
+    Test that partition column filters are not applied if dtype_metadata is not provided
+    """
+    source_type = SourceType.DATABRICKS_UNITY
+    node_params = {
+        "id": ObjectId(),
+        "type": "event_table",
+        "columns": [
+            {
+                "name": "partition_col",
+                "dtype": DBVarType.VARCHAR,
+                "partition_metadata": {"is_partition_key": True},
+            },
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "a", "dtype": DBVarType.FLOAT},
+        ],
+    }
+    node_params.update(input_details)
+    input_node = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    source_info = SourceInfo(
+        database_name="my_db", schema_name="my_schema", source_type=source_type
+    )
+    partition_column_filters = PartitionColumnFilters(
+        mapping={
+            node_params["id"]: PartitionColumnFilter(
+                from_timestamp=make_literal_value(datetime(2023, 1, 1), cast_as_timestamp=True),
+                to_timestamp=make_literal_value(datetime(2023, 6, 1), cast_as_timestamp=True),
+            )
+        }
+    )
+    sql_graph = SQLOperationGraph(
+        global_graph,
+        sql_type=SQLType.MATERIALIZE,
+        partition_column_filters=partition_column_filters,
+        source_info=source_info,
+    )
+    actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
+    fixture_filename = (
+        "tests/fixtures/query_graph/test_input/partition_column_filters_no_dtype_metadata.sql"
+    )
+    assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
