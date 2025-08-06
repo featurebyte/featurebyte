@@ -150,6 +150,8 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
         "validation": None,
         "effective_timestamp_schema": None,
         "end_timestamp_schema": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
 
 

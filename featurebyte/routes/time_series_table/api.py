@@ -12,7 +12,10 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.models.time_series_table import CronFeatureJobSettingHistoryEntry
+from featurebyte.models.time_series_table import (
+    CronFeatureJobSettingHistoryEntry,
+    TimeSeriesTableModel,
+)
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
@@ -34,7 +37,6 @@ from featurebyte.schema.table import (
 from featurebyte.schema.time_series_table import (
     TimeSeriesTableCreate,
     TimeSeriesTableList,
-    TimeSeriesTableRead,
     TimeSeriesTableUpdate,
 )
 
@@ -43,14 +45,14 @@ router = APIRouter(prefix="/time_series_table")
 
 class TimeSeriesTableRouter(
     BaseApiRouter[
-        TimeSeriesTableRead, TimeSeriesTableList, TimeSeriesTableCreate, TimeSeriesTableController
+        TimeSeriesTableModel, TimeSeriesTableList, TimeSeriesTableCreate, TimeSeriesTableController
     ]
 ):
     """
     Time Series table router
     """
 
-    object_model = TimeSeriesTableRead
+    object_model = TimeSeriesTableModel
     list_object_model = TimeSeriesTableList
     create_object_schema = TimeSeriesTableCreate
     controller = TimeSeriesTableController
@@ -63,7 +65,7 @@ class TimeSeriesTableRouter(
             "/{time_series_table_id}",
             self.update_time_series_table,
             methods=["PATCH"],
-            response_model=TimeSeriesTableRead,
+            response_model=TimeSeriesTableModel,
             status_code=HTTPStatus.OK,
         )
 
@@ -80,7 +82,7 @@ class TimeSeriesTableRouter(
             "/{time_series_table_id}/column_entity",
             self.update_column_entity,
             methods=["PATCH"],
-            response_model=TimeSeriesTableRead,
+            response_model=TimeSeriesTableModel,
             status_code=HTTPStatus.OK,
         )
 
@@ -89,7 +91,7 @@ class TimeSeriesTableRouter(
             "/{time_series_table_id}/column_critical_data_info",
             self.update_column_critical_data_info,
             methods=["PATCH"],
-            response_model=TimeSeriesTableRead,
+            response_model=TimeSeriesTableModel,
             status_code=HTTPStatus.OK,
         )
 
@@ -98,7 +100,7 @@ class TimeSeriesTableRouter(
             "/{time_series_table_id}/column_description",
             self.update_column_description,
             methods=["PATCH"],
-            response_model=TimeSeriesTableRead,
+            response_model=TimeSeriesTableModel,
             status_code=HTTPStatus.OK,
         )
 
@@ -112,7 +114,7 @@ class TimeSeriesTableRouter(
 
     async def get_object(
         self, request: Request, time_series_table_id: PydanticObjectId
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         return await super().get_object(request, time_series_table_id)
 
     async def list_audit_logs(
@@ -137,15 +139,14 @@ class TimeSeriesTableRouter(
 
     async def update_description(
         self, request: Request, time_series_table_id: PydanticObjectId, data: DescriptionUpdate
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         return await super().update_description(request, time_series_table_id, data)
 
     async def create_object(
         self, request: Request, data: TimeSeriesTableCreate
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         controller = self.get_controller_for_request(request)
-        time_series_table = await controller.create_table(data=data)
-        return TimeSeriesTableRead(**time_series_table.model_dump(by_alias=True))
+        return await controller.create_table(data=data)
 
     async def get_time_series_table_info(
         self, request: Request, time_series_table_id: PydanticObjectId, verbose: bool = VerboseQuery
@@ -162,64 +163,64 @@ class TimeSeriesTableRouter(
 
     async def update_time_series_table(
         self, request: Request, time_series_table_id: PydanticObjectId, data: TimeSeriesTableUpdate
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         """
         Update time series table
         """
         controller = self.get_controller_for_request(request)
-        time_series_table = await controller.update_table(
+        time_series_table: TimeSeriesTableModel = await controller.update_table(
             document_id=ObjectId(time_series_table_id),
             data=data,
         )
-        return TimeSeriesTableRead(**time_series_table.model_dump(by_alias=True))
+        return time_series_table
 
     async def update_column_entity(
         self, request: Request, time_series_table_id: PydanticObjectId, data: ColumnEntityUpdate
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         """
         Update column entity
         """
         controller = self.get_controller_for_request(request)
-        time_series_table = await controller.update_column_entity(
+        time_series_table: TimeSeriesTableModel = await controller.update_column_entity(
             document_id=ObjectId(time_series_table_id),
             column_name=data.column_name,
             entity_id=data.entity_id,
         )
-        return TimeSeriesTableRead(**time_series_table.model_dump(by_alias=True))
+        return time_series_table
 
     async def update_column_critical_data_info(
         self,
         request: Request,
         time_series_table_id: PydanticObjectId,
         data: ColumnCriticalDataInfoUpdate,
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         """
         Update column critical data info
         """
         controller = self.get_controller_for_request(request)
-        time_series_table = await controller.update_column_critical_data_info(
+        time_series_table: TimeSeriesTableModel = await controller.update_column_critical_data_info(
             document_id=ObjectId(time_series_table_id),
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
         )
-        return TimeSeriesTableRead(**time_series_table.model_dump(by_alias=True))
+        return time_series_table
 
     async def update_column_description(
         self,
         request: Request,
         time_series_table_id: PydanticObjectId,
         data: ColumnDescriptionUpdate,
-    ) -> TimeSeriesTableRead:
+    ) -> TimeSeriesTableModel:
         """
         Update column description
         """
         controller = self.get_controller_for_request(request)
-        time_series_table = await controller.update_column_description(
+        time_series_table: TimeSeriesTableModel = await controller.update_column_description(
             document_id=ObjectId(time_series_table_id),
             column_name=data.column_name,
             description=data.description,
         )
-        return TimeSeriesTableRead(**time_series_table.model_dump(by_alias=True))
+        return time_series_table
 
     async def list_default_feature_job_setting_history(
         self,

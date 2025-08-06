@@ -104,10 +104,14 @@ def construct_data_model_validator(
                     raise ValueError(f'Column "{col_name}" is expected to have type(s): {dtypes}')
                 if col_name in col_name_to_field_name_map:
                     duplicate_field_name = col_name_to_field_name_map[col_name]
-                    raise ValueError(
-                        f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
-                        f'have to be different columns in the table but "{col_name}" is specified for both.'
-                    )
+                    if (
+                        duplicate_field_name != "internal_datetime_partition_column"
+                        and field_name != "internal_datetime_partition_column"
+                    ):
+                        raise ValueError(
+                            f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
+                            f'have to be different columns in the table but "{col_name}" is specified for both.'
+                        )
                 col_name_to_field_name_map[col_name] = field_name
 
         # Validate and get timestamp_schema for special columns

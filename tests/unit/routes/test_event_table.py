@@ -187,8 +187,6 @@ class TestEventTableApi(BaseTableApiTestSuite):
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
         data_model_dict["status"] = TableStatus.PUBLIC_DRAFT
-        data_model_dict["datetime_partition_column"] = None
-        data_model_dict["datetime_partition_schema"] = None
         assert update_response_dict == data_model_dict
 
         # test get audit records
@@ -271,8 +269,6 @@ class TestEventTableApi(BaseTableApiTestSuite):
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
-        data_model_dict["datetime_partition_column"] = None
-        data_model_dict["datetime_partition_schema"] = None
         assert data == data_model_dict
 
         # expect status to be updated to published

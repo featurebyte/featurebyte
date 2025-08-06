@@ -183,6 +183,8 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
         "updated_at": None,
         "user_id": user_id,
         "is_deleted": False,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
 
 
@@ -993,6 +995,10 @@ def test_default_feature_job_setting_history(saved_time_series_table):
         "reference_datetime_schema.timezone",
         "time_interval.unit",
         "time_interval.value",
+        "datetime_partition_column",
+        "datetime_partition_schema.format_string",
+        "datetime_partition_schema.is_utc_time",
+        "datetime_partition_schema.timezone",
     }
 
 

@@ -298,7 +298,7 @@ class BaseApiTestSuite:
             response = self.post(test_api_client, payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
             if self.async_create:
-                assert response.json()["status"] == "SUCCESS"
+                assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
             else:
                 assert response.json()["_id"] == payload["_id"]
             output.append(response)
@@ -1303,11 +1303,6 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         # check that table route can be used to retrieve the created table
         response = test_api_client.get(f"/table/{success_response_dict['_id']}")
         response_dict = response.json()
-
-        # datetime_partition_column and datetime_partition_schema are added in the response
-        # for specific table types, so we exclude them from the comparison
-        success_response_dict.pop("datetime_partition_column", None)
-        success_response_dict.pop("datetime_partition_schema", None)
 
         # overwrite the updated_at & columns_info fields (due to entity tagging)
         success_response_dict["updated_at"] = response_dict["updated_at"]

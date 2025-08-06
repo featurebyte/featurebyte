@@ -133,6 +133,8 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
         "is_deleted": False,
         "managed_view_id": None,
         "validation": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
     assert time_series_table.model_dump() == expected_time_series_table_dict
     time_series_table_json = time_series_table.model_dump_json(by_alias=True)
