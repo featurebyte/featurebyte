@@ -694,6 +694,7 @@ class TableDataType(StrEnum):
     DIMENSION_TABLE = "dimension_table"
     SCD_TABLE = "scd_table"
     TIME_SERIES_TABLE = "time_series_table"
+    SNAPSHOTS_TABLE = "snapshots_table"
 
     @classmethod
     def with_default_feature_job_setting(cls) -> set[str]:
