@@ -12,6 +12,7 @@ from featurebyte.common.model_util import convert_version_string_to_dict, parse_
 from featurebyte.enum import DBVarType, SourceType, TargetType
 from featurebyte.exception import DocumentInconsistencyError, InvalidTableNameError
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.dtype import PartitionMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.cleaning_operation import CleaningOperationType
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
@@ -52,6 +53,7 @@ def construct_data_model_validator(
     columns_info_key: str,
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
     column_to_timestamp_schema_pairs: Optional[List[ColumnToTimestampSchema]] = None,
+    datetime_partition_schema_pair: Optional[ColumnToTimestampSchema] = None,
 ) -> Any:
     """
     Construct table model model_validator used to validate model input table
@@ -64,6 +66,8 @@ def construct_data_model_validator(
         List of expected column name & type pairs (if type is None, type check will be skipped)
     column_to_timestamp_schema_pairs: Optional[List[ColumnToTimestampSchema]]
         List of column to timestamp schema mapping
+    datetime_partition_schema_pair: Optional[ColumnToTimestampSchema]
+        Datetime partition column to timestamp schema mapping
 
     Returns
     -------
@@ -104,32 +108,57 @@ def construct_data_model_validator(
                     raise ValueError(f'Column "{col_name}" is expected to have type(s): {dtypes}')
                 if col_name in col_name_to_field_name_map:
                     duplicate_field_name = col_name_to_field_name_map[col_name]
-                    raise ValueError(
-                        f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
-                        f'have to be different columns in the table but "{col_name}" is specified for both.'
-                    )
+                    if (
+                        duplicate_field_name != "internal_datetime_partition_column"
+                        and field_name != "internal_datetime_partition_column"
+                    ):
+                        raise ValueError(
+                            f"{_sanitize_field_name(field_name)} and {_sanitize_field_name(duplicate_field_name)} "
+                            f'have to be different columns in the table but "{col_name}" is specified for both.'
+                        )
                 col_name_to_field_name_map[col_name] = field_name
 
         # Validate and get timestamp_schema for special columns
+        validated_column_to_timestamp_schema_pairs = column_to_timestamp_schema_pairs or []
+        if datetime_partition_schema_pair:
+            validated_column_to_timestamp_schema_pairs.append(datetime_partition_schema_pair)
         ambiguous_timestamp_types = (
             DBVarType.supported_datetime_types() - DBVarType.supported_timestamp_types()
         )
-        timestamp_schema_mapping = {}
-        for column_to_timestamp_schema in column_to_timestamp_schema_pairs or []:
+        timestamp_schema_mapping: dict[str, Tuple[TimestampSchema, str]] = {}
+        for column_to_timestamp_schema in validated_column_to_timestamp_schema_pairs:
             col_name = getattr(self, column_to_timestamp_schema.column_field_name)
             if not col_name:
                 continue
             timestamp_schema = getattr(self, column_to_timestamp_schema.timestamp_schema_field_name)
             if timestamp_schema:
-                timestamp_schema_mapping[col_name] = (
+                timestamp_schema_info = (
                     timestamp_schema,
                     column_to_timestamp_schema.timestamp_schema_field_name,
                 )
+                # For datetime partition schema, existing timestamp_schema is preserved if it exists
+                if column_to_timestamp_schema == datetime_partition_schema_pair:
+                    existing_timestamp_schema_info = timestamp_schema_mapping.get(col_name)
+                    if existing_timestamp_schema_info:
+                        timestamp_schema_info = existing_timestamp_schema_info
+                timestamp_schema_mapping[col_name] = timestamp_schema_info
             col_dtype = col_info_map[col_name].get("dtype")
             if col_dtype in ambiguous_timestamp_types and not timestamp_schema:
                 raise ValueError(
                     f"timestamp_schema is required for {col_name} with ambiguous timestamp type {col_dtype}"
                 )
+
+        # Update columns_info with partition metadata
+        datetime_partition_column = (
+            getattr(self, datetime_partition_schema_pair.column_field_name)
+            if datetime_partition_schema_pair
+            else None
+        )
+        for col_name, col_info in col_info_map.items():
+            if col_name == datetime_partition_column:
+                col_info["partition_metadata"] = PartitionMetadata(is_partition_key=True)
+            else:
+                col_info["partition_metadata"] = None
 
         # Update columns_info with timestamp_schema
         if timestamp_schema_mapping:

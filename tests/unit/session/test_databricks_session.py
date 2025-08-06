@@ -177,7 +177,7 @@ async def test_databricks_session(databricks_session_dict):
             name="col_date",
             dtype=DBVarType.DATE,
             description="Date Column",
-            partition_metadata=PartitionMetadata(is_partition_key=True),
+            partition_metadata=PartitionMetadata(is_partition_key_candidate=True),
         ),
         "col_double": ColumnSpecWithDescription(
             name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
@@ -189,7 +189,7 @@ async def test_databricks_session(databricks_session_dict):
             name="col_int",
             dtype=DBVarType.INT,
             description="Int Column",
-            partition_metadata=PartitionMetadata(is_partition_key=True),
+            partition_metadata=PartitionMetadata(is_partition_key_candidate=True),
         ),
         "col_interval": ColumnSpecWithDescription(
             name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
