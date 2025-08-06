@@ -1135,6 +1135,18 @@ def snowflake_database_time_series_table_fixture(snowflake_data_source):
     )
 
 
+@pytest.fixture(name="snowflake_database_snapshots_table")
+def snowflake_database_snapshots_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for SnapshotsTable. Use the same underlying table as TimeSeriesTable
+    """
+    yield snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="time_series_table",
+    )
+
+
 @pytest.fixture(name="snowflake_feature_store_id")
 def snowflake_feature_store_id_fixture():
     """Snowflake feature store id"""

@@ -31,12 +31,12 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of time series table columns
-    series_id_column: Optional[str]
-        Series ID column name
-    reference_datetime_column: str
-        Reference datetime column name
-    reference_datetime_schema: TimestampSchema
-        Reference datetime schema
+    snapshot_id_column: Optional[str]
+        Snapshot ID column name
+    snapshot_datetime_column: str
+        Snapshot datetime column name
+    snapshot_datetime_schema: TimestampSchema
+        Snapshot datetime schema
     time_interval: TimeInterval
         Time interval between consecutive records in each series
     default_feature_job_setting : Optional[FeatureJobSetting]
@@ -57,20 +57,20 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
         construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
-                ("reference_datetime_column", DBVarType.supported_ts_datetime_types()),
-                ("reference_datetime_schema", {DBVarType.VARCHAR}),
+                ("snapshot_datetime_column", DBVarType.supported_ts_datetime_types()),
+                ("snapshot_datetime_schema", {DBVarType.VARCHAR}),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("series_id_column", DBVarType.supported_id_types()),
+                ("snapshot_id_column", DBVarType.supported_id_types()),
             ],
             column_to_timestamp_schema_pairs=[
-                ColumnToTimestampSchema("reference_datetime_column", "reference_datetime_schema"),
+                ColumnToTimestampSchema("snapshot_datetime_column", "snapshot_datetime_schema"),
             ],
         ),
     )
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return []
+        return [self.snapshot_id_column]
 
     @property
     def special_columns(self) -> List[str]:

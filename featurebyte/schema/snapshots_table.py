@@ -35,7 +35,7 @@ class SnapshotsTableCreate(TableCreate):
         "record_creation_timestamp_column",
         "snapshot_id_column",
         "snapshot_datetime_column",
-        "snapshot_partition_column",
+        "datetime_partition_column",
         mode="after",
     )(TableCreate._special_column_validator)
 

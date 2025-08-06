@@ -33,6 +33,7 @@ from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.snapshots_table import SnapshotsTableService
 from featurebyte.service.time_series_table import TimeSeriesTableService
 
 TableDocumentService = Union[
@@ -41,6 +42,7 @@ TableDocumentService = Union[
     DimensionTableService,
     SCDTableService,
     TimeSeriesTableService,
+    SnapshotsTableService,
 ]
 
 
