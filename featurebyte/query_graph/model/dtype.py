@@ -4,6 +4,8 @@ Models related to dtype
 
 from typing import Optional
 
+from pydantic import Field
+
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.timestamp_schema import (
@@ -102,4 +104,5 @@ class PartitionMetadata(FeatureByteBaseModel):
     Metadata for PartitionMetadata
     """
 
-    is_partition_key: bool
+    is_partition_key: bool = Field(default=False)
+    is_partition_key_candidate: bool = Field(default=False)

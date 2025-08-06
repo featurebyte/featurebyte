@@ -116,6 +116,8 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "is_deleted": False,
         "managed_view_id": None,
         "validation": None,
+        "datetime_partition_column": None,
+        "datetime_partition_schema": None,
     }
     assert event_table.model_dump() == expected_event_table_dict
     event_table_json = event_table.model_dump_json(by_alias=True)

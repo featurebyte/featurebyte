@@ -342,7 +342,7 @@ class BaseSparkSession(BaseSession, ABC):
                 for column_name, var_info, _ in partition_info[2:]:
                     if column_name in column_name_type_map:
                         column_name_type_map[column_name].partition_metadata = PartitionMetadata(
-                            is_partition_key=True,
+                            is_partition_key_candidate=True,
                         )
 
         return column_name_type_map
