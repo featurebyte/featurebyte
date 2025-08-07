@@ -17,7 +17,7 @@ from typeguard import TypeCheckError
 
 from featurebyte import SnapshotsTable
 from featurebyte.api.entity import Entity
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -28,20 +28,15 @@ from featurebyte.exception import (
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.snapshots_table import SnapshotsTableModel
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
-    ExtendedTimestampSchema,
     TimestampSchema,
-    TimestampTupleSchema,
     TimeZoneColumn,
-    TimezoneOffsetSchema,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
-    AddTimestampSchema,
     DisguisedValueImputation,
     MissingValueImputation,
 )
@@ -1136,91 +1131,10 @@ def test_timezone__invalid(snowflake_database_snapshots_table, catalog):
     assert expected_msg in str(exc.value)
 
 
-def test_timezone_offset__valid_column(snowflake_database_snapshots_table, catalog):
-    """Test specifying a timezone offset using a column"""
-    _ = catalog
-    snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
-        name="sf_snapshots_table",
-        snapshot_id_column="col_int",
-        snapshot_datetime_column="date",
-        snapshot_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS",
-            timezone=TimeZoneColumn(
-                column_name="col_text",
-                type="offset",
-            ),
-        ),
-        time_interval=TimeInterval(value=1, unit="DAY"),
-    )
-    assert snapshots_table.reference_datetime_schema.timezone.column_name == "col_text"
-
-    input_node_params = snapshots_table.frame.node.parameters
-    assert input_node_params.reference_datetime_schema.timezone.column_name == "col_text"
-
-    # check tagged semantic
-    column_semantic_map = {}
-    for col_info in snapshots_table.info(verbose=True)["columns_info"]:
-        if col_info["semantic"]:
-            column_semantic_map[col_info["name"]] = col_info["semantic"]
-
-    assert column_semantic_map == {
-        "col_int": "snapshot_id",
-        "date": "snapshot_date_time",
-        "col_text": "time_zone",
-    }
-
-    # check reference column map & conditionally expand columns logic
-    view = snapshots_table.get_view()
-    assert view._reference_column_map == {"date": ["col_text"]}
-    assert view._conditionally_expand_columns(["date"]) == ["date", "col_text"]
-
-    # create zip timestamp with timezone offset column
-    ts_tz_col = view.date.zip_timestamp_timezone_columns()
-    assert ts_tz_col.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
-    assert ts_tz_col.dtype_info == DBVarTypeInfo(
-        dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
-        metadata=DBVarTypeMetadata(
-            timestamp_schema=None,
-            timestamp_tuple_schema=TimestampTupleSchema(
-                timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
-                timestamp_schema=ExtendedTimestampSchema(
-                    dtype=view.date.dtype,
-                    format_string="YYYY-MM-DD HH24:MI:SS",
-                    timezone=TimeZoneColumn(
-                        column_name="col_text",
-                        type="offset",
-                    ),
-                ),
-            ),
-        ),
-    )
-
-    # test update default feature job setting
-    cron_feature_job_setting = CronFeatureJobSetting(
-        crontab=Crontab(
-            minute=0,
-            hour=1,
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        ),
-        timezone="Etc/UTC",
-    )
-    snapshots_table.update_default_feature_job_setting(feature_job_setting=cron_feature_job_setting)
-    assert snapshots_table.default_feature_job_setting == cron_feature_job_setting
-
-    # attempt to add timestamp schema to special column
-    with pytest.raises(RecordUpdateException) as exc:
-        snapshots_table.date.update_critical_data_info(
-            cleaning_operations=[AddTimestampSchema(timestamp_schema=TimestampSchema())]
-        )
-
-    expected_msg = "Cannot update special column: date with AddTimestampSchema cleaning operation"
-    assert expected_msg in str(exc.value)
-
-
-def test_timezone_offset__invalid_column(snowflake_database_snapshots_table, catalog):
-    """Test specifying a timezone offset using a column"""
+def test_timezone_offset__timezone_column_not_supported(
+    snowflake_database_snapshots_table, catalog
+):
+    """Test specifying a timezone offset using a column (not supported)"""
     _ = catalog
     with pytest.raises(RecordCreationException) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
@@ -1230,15 +1144,15 @@ def test_timezone_offset__invalid_column(snowflake_database_snapshots_table, cat
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS",
                 timezone=TimeZoneColumn(
-                    column_name="col_float",
+                    column_name="col_text",
                     type="offset",
-                    format_string="TZH:TZM",
                 ),
             ),
             time_interval=TimeInterval(value=1, unit="DAY"),
         )
-    expected = "Column \"col_float\" is expected to have type(s): ['VARCHAR']"
-    assert expected in str(exc.value)
+    assert "Timezone column in snapshot_datetime_schema is not supported for SnapshotsTable" in str(
+        exc.value
+    )
 
 
 def test_sdk_code_generation(saved_snapshots_table, update_fixtures):
