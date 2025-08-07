@@ -93,7 +93,31 @@ def expected_time_series_table_preview_query() -> str:
           CAST("created_at" AS VARCHAR) AS "created_at",
           "store_id" AS "store_id",
           CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
-        FROM "sf_database"."sf_schema"."time_series_table"
+        FROM "sf_database"."sf_schema"."snapshots_table"
+        LIMIT 10
+        """
+    ).strip()
+
+
+@pytest.fixture()
+def expected_snapshots_table_preview_query() -> str:
+    """
+    Expected preview_sql output
+    """
+    return textwrap.dedent(
+        """
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          CAST("date" AS VARCHAR) AS "date",
+          CAST("created_at" AS VARCHAR) AS "created_at",
+          "store_id" AS "store_id",
+          CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
+        FROM "sf_database"."sf_schema"."snapshots_table"
         LIMIT 10
         """
     ).strip()
@@ -235,6 +259,21 @@ def saved_time_series_table_fixture(snowflake_time_series_table, catalog):
     assert isinstance(snowflake_time_series_table.created_at, datetime)
     assert isinstance(snowflake_time_series_table.tabular_source.feature_store_id, ObjectId)
     yield snowflake_time_series_table
+
+
+@pytest.fixture(name="saved_snapshots_table")
+def saved_snapshots_table_fixture(snowflake_snapshots_table, catalog):
+    """
+    Saved snapshots table fixture
+    """
+    _ = catalog
+    previous_id = snowflake_snapshots_table.id
+    assert snowflake_snapshots_table.saved is True
+    assert snowflake_snapshots_table.id == previous_id
+    assert snowflake_snapshots_table.status == TableStatus.PUBLIC_DRAFT
+    assert isinstance(snowflake_snapshots_table.created_at, datetime)
+    assert isinstance(snowflake_snapshots_table.tabular_source.feature_store_id, ObjectId)
+    yield snowflake_snapshots_table
 
 
 @pytest.fixture(name="snowflake_time_series_table_with_tz_offset_column")
