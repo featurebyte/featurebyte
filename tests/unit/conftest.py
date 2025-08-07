@@ -1772,6 +1772,24 @@ def snowflake_time_series_table_with_entity_fixture(
     yield snowflake_time_series_table
 
 
+@pytest.fixture(name="snowflake_snapshots_table_with_entity")
+def snowflake_snapshots_table_with_entity_fixture(
+    snowflake_snapshots_table,
+    cust_id_entity,
+    transaction_entity,
+    mock_api_object_cache,
+    mock_detect_and_update_column_dtypes,
+    patch_initialize_entity_dtype,
+):
+    """
+    Entity fixture that sets cust_id in snowflake_snapshots_table as an Entity
+    """
+    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
+    snowflake_snapshots_table.store_id.as_entity(cust_id_entity.name)
+    snowflake_snapshots_table.col_int.as_entity(transaction_entity.name)
+    yield snowflake_snapshots_table
+
+
 @pytest.fixture(name="arbitrary_default_feature_job_setting")
 def arbitrary_default_feature_job_setting_fixture():
     """

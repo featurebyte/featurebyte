@@ -133,7 +133,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         list[str]
         """
         out = super().protected_attributes + ["snapshot_datetime_column"]
-        if self.reference_datetime_schema is not None:
+        if self.snapshot_datetime_schema is not None:
             out.append("snapshot_datetime_schema")
         return out
 

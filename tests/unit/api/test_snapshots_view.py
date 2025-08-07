@@ -11,7 +11,7 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.api.time_series_view import TimeSeriesView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.enum import DBVarType
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -28,15 +28,15 @@ from tests.util.helper import (
 )
 
 
-class TestTimeSeriesView(BaseViewTestSuite):
+class TestSnapshotsView(BaseViewTestSuite):
     """
-    TimeSeriesView test suite
+    SnapshotsView test suite
     """
 
     protected_columns = ["date"]
-    view_type = ViewType.TIME_SERIES_VIEW
+    view_type = ViewType.SNAPSHOTS_VIEW
     col = "store_id"
-    view_class = TimeSeriesView
+    view_class = SnapshotsView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
     SELECT
@@ -52,7 +52,7 @@ class TestTimeSeriesView(BaseViewTestSuite):
       (
         "store_id" + 1
       ) AS "new_col"
-    FROM "sf_database"."sf_schema"."time_series_table"
+    FROM "sf_database"."sf_schema"."snapshots_table"
     LIMIT 10
     """
 
@@ -60,28 +60,27 @@ class TestTimeSeriesView(BaseViewTestSuite):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
-def test_from_time_series_table(snowflake_time_series_table, mock_api_object_cache):
+def test_from_snapshots_table(snowflake_snapshots_table, mock_api_object_cache):
     """
     Test event table creation
     """
     _ = mock_api_object_cache
-    time_series_view_first = snowflake_time_series_table.get_view()
+    snapshots_view_first = snowflake_snapshots_table.get_view()
     expected_view_columns_info = [
         col
-        for col in snowflake_time_series_table.columns_info
-        if col.name != snowflake_time_series_table.record_creation_timestamp_column
+        for col in snowflake_snapshots_table.columns_info
+        if col.name != snowflake_snapshots_table.record_creation_timestamp_column
     ]
-    assert time_series_view_first.tabular_source == snowflake_time_series_table.tabular_source
+    assert snapshots_view_first.tabular_source == snowflake_snapshots_table.tabular_source
     assert (
-        time_series_view_first.row_index_lineage
-        == snowflake_time_series_table.frame.row_index_lineage
+        snapshots_view_first.row_index_lineage == snowflake_snapshots_table.frame.row_index_lineage
     )
-    assert time_series_view_first.columns_info == expected_view_columns_info
+    assert snapshots_view_first.columns_info == expected_view_columns_info
 
     entity = Entity(name="customer", serving_names=["cust_id"])
     entity.save()
-    snowflake_time_series_table.store_id.as_entity("customer")
-    snowflake_time_series_table.update_default_feature_job_setting(
+    snowflake_snapshots_table.store_id.as_entity("customer")
+    snowflake_snapshots_table.update_default_feature_job_setting(
         feature_job_setting=CronFeatureJobSetting(
             crontab=Crontab(
                 minute=0,
@@ -93,14 +92,14 @@ def test_from_time_series_table(snowflake_time_series_table, mock_api_object_cac
             timezone="Etc/UTC",
         )
     )
-    time_series_view_second = snowflake_time_series_table.get_view()
+    snapshots_view_second = snowflake_snapshots_table.get_view()
     expected_view_columns_info = [
         col
-        for col in snowflake_time_series_table.columns_info
-        if col.name != snowflake_time_series_table.record_creation_timestamp_column
+        for col in snowflake_snapshots_table.columns_info
+        if col.name != snowflake_snapshots_table.record_creation_timestamp_column
     ]
-    assert time_series_view_second.columns_info == expected_view_columns_info
-    assert time_series_view_second.default_feature_job_setting == CronFeatureJobSetting(
+    assert snapshots_view_second.columns_info == expected_view_columns_info
+    assert snapshots_view_second.default_feature_job_setting == CronFeatureJobSetting(
         crontab=Crontab(
             minute=0,
             hour=1,
@@ -114,45 +113,41 @@ def test_from_time_series_table(snowflake_time_series_table, mock_api_object_cac
 
 
 def test_getitem__list_of_str_contains_protected_column(
-    snowflake_time_series_table, snowflake_time_series_view
+    snowflake_snapshots_table, snowflake_snapshots_view
 ):
     """
     Test retrieving subset of the event table features
     """
     # case 1: select a non-protect column without selecting date column and entity identifier column
-    time_series_view_subset1 = snowflake_time_series_view[["col_float"]]
-    assert isinstance(time_series_view_subset1, TimeSeriesView)
-    assert set(time_series_view_subset1.column_var_type_map) == {
+    snapshots_view_subset1 = snowflake_snapshots_view[["col_float"]]
+    assert isinstance(snapshots_view_subset1, SnapshotsView)
+    assert set(snapshots_view_subset1.column_var_type_map) == {
         "date",
         "col_int",
         "col_float",
     }
+    assert snapshots_view_subset1.row_index_lineage == snowflake_snapshots_view.row_index_lineage
     assert (
-        time_series_view_subset1.row_index_lineage == snowflake_time_series_view.row_index_lineage
-    )
-    assert (
-        time_series_view_subset1.default_feature_job_setting
-        == snowflake_time_series_view.default_feature_job_setting
+        snapshots_view_subset1.default_feature_job_setting
+        == snowflake_snapshots_view.default_feature_job_setting
     )
 
     # case 2: select a non-protected column with a timestamp column
-    time_series_view_subset2 = snowflake_time_series_view[["col_float", "col_int", "date"]]
-    assert isinstance(time_series_view_subset2, TimeSeriesView)
-    assert set(time_series_view_subset2.column_var_type_map) == {
+    snapshots_view_subset2 = snowflake_snapshots_view[["col_float", "col_int", "date"]]
+    assert isinstance(snapshots_view_subset2, SnapshotsView)
+    assert set(snapshots_view_subset2.column_var_type_map) == {
         "date",
         "col_int",
         "col_float",
     }
+    assert snapshots_view_subset2.row_index_lineage == snowflake_snapshots_view.row_index_lineage
     assert (
-        time_series_view_subset2.row_index_lineage == snowflake_time_series_view.row_index_lineage
-    )
-    assert (
-        time_series_view_subset2.default_feature_job_setting
-        == snowflake_time_series_view.default_feature_job_setting
+        snapshots_view_subset2.default_feature_job_setting
+        == snowflake_snapshots_view.default_feature_job_setting
     )
 
     # both event table subsets actually point to the same node
-    assert time_series_view_subset1.node == time_series_view_subset2.node
+    assert snapshots_view_subset1.node == snapshots_view_subset2.node
 
 
 @pytest.mark.parametrize(
@@ -163,11 +158,11 @@ def test_getitem__list_of_str_contains_protected_column(
         ("col_text", 2, DBVarType.VARCHAR),
     ],
 )
-def test_time_series_view_column_lag(
-    snowflake_time_series_view, snowflake_time_series_table, column, offset, expected_var_type
+def test_snapshots_view_column_lag(
+    snowflake_snapshots_view, snowflake_snapshots_table, column, offset, expected_var_type
 ):
     """
-    Test TimeSeriesViewColumn lag operation
+    Test SnapshotsViewColumn lag operation
     """
     if offset is None:
         expected_offset_param = 1
@@ -176,7 +171,7 @@ def test_time_series_view_column_lag(
     lag_kwargs = {}
     if offset is not None:
         lag_kwargs["offset"] = offset
-    lagged_column = snowflake_time_series_view[column].lag("store_id", **lag_kwargs)
+    lagged_column = snowflake_snapshots_view[column].lag("store_id", **lag_kwargs)
     assert lagged_column.node.output_type == NodeOutputType.SERIES
     assert lagged_column.dtype == expected_var_type
     assert lagged_column.node.type == NodeType.LAG
@@ -194,48 +189,44 @@ def test_time_series_view_column_lag(
         lagged_column,
         to_use_saved_data=False,
         table_id_to_info={
-            snowflake_time_series_table.id: {
-                "name": snowflake_time_series_table.name,
-                "record_creation_timestamp_column": snowflake_time_series_table.record_creation_timestamp_column,
+            snowflake_snapshots_table.id: {
+                "name": snowflake_snapshots_table.name,
+                "record_creation_timestamp_column": snowflake_snapshots_table.record_creation_timestamp_column,
             }
         },
     )
 
 
-def test_time_series_view_column_lag__invalid(snowflake_time_series_view):
+def test_snapshots_view_column_lag__invalid(snowflake_snapshots_view):
     """
     Test attempting to apply lag more than once raises error
     """
-    snowflake_time_series_view["prev_col_float"] = snowflake_time_series_view["col_float"].lag(
+    snowflake_snapshots_view["prev_col_float"] = snowflake_snapshots_view["col_float"].lag(
         "store_id"
     )
     with pytest.raises(ValueError) as exc:
-        (snowflake_time_series_view["prev_col_float"] + 123).lag("store_id")
+        (snowflake_snapshots_view["prev_col_float"] + 123).lag("store_id")
     assert "lag can only be applied once per column" in str(exc.value)
 
 
-def test_time_series_view_copy(snowflake_time_series_view):
+def test_snapshots_view_copy(snowflake_snapshots_view):
     """
     Test event view copy
     """
-    new_snowflake_time_series_view = snowflake_time_series_view.copy()
-    assert new_snowflake_time_series_view == snowflake_time_series_view
-    assert new_snowflake_time_series_view.feature_store == snowflake_time_series_view.feature_store
-    assert id(new_snowflake_time_series_view.graph.nodes) == id(
-        snowflake_time_series_view.graph.nodes
-    )
+    new_snowflake_snapshots_view = snowflake_snapshots_view.copy()
+    assert new_snowflake_snapshots_view == snowflake_snapshots_view
+    assert new_snowflake_snapshots_view.feature_store == snowflake_snapshots_view.feature_store
+    assert id(new_snowflake_snapshots_view.graph.nodes) == id(snowflake_snapshots_view.graph.nodes)
 
-    deep_snowflake_time_series_view = snowflake_time_series_view.copy()
-    assert deep_snowflake_time_series_view == snowflake_time_series_view
-    assert deep_snowflake_time_series_view.feature_store == snowflake_time_series_view.feature_store
-    assert id(deep_snowflake_time_series_view.graph.nodes) == id(
-        snowflake_time_series_view.graph.nodes
-    )
+    deep_snowflake_snapshots_view = snowflake_snapshots_view.copy()
+    assert deep_snowflake_snapshots_view == snowflake_snapshots_view
+    assert deep_snowflake_snapshots_view.feature_store == snowflake_snapshots_view.feature_store
+    assert id(deep_snowflake_snapshots_view.graph.nodes) == id(snowflake_snapshots_view.graph.nodes)
 
-    view_column = snowflake_time_series_view["col_int"]
+    view_column = snowflake_snapshots_view["col_int"]
     new_view_column = view_column.copy()
     assert new_view_column == view_column
-    assert new_view_column.parent == view_column.parent == snowflake_time_series_view
+    assert new_view_column.parent == view_column.parent == snowflake_snapshots_view
     assert id(new_view_column.graph.nodes) == id(view_column.graph.nodes)
 
     deep_view_column = view_column.copy(deep=True)
@@ -244,13 +235,13 @@ def test_time_series_view_copy(snowflake_time_series_view):
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_validate_join(snowflake_dimension_view, snowflake_time_series_view):
+def test_validate_join(snowflake_dimension_view, snowflake_snapshots_view):
     """
     Test validate join
     """
     # No error expected
-    snowflake_time_series_view.validate_join(snowflake_dimension_view)
-    snowflake_time_series_view.validate_join(snowflake_time_series_view)
+    snowflake_snapshots_view.validate_join(snowflake_dimension_view)
+    snowflake_snapshots_view.validate_join(snowflake_snapshots_view)
 
 
 @pytest.fixture(name="generic_input_node_params")
@@ -282,59 +273,59 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_sdk_code_generation(saved_time_series_table, update_fixtures):
+def test_sdk_code_generation(saved_snapshots_table, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    time_series_view = saved_time_series_table.get_view()
+    snapshots_view = saved_snapshots_table.get_view()
     check_sdk_code_generation(
-        time_series_view,
+        snapshots_view,
         to_use_saved_data=to_use_saved_data,
-        fixture_path="tests/fixtures/sdk_code/time_series_view.py",
+        fixture_path="tests/fixtures/sdk_code/snapshots_view.py",
         update_fixtures=update_fixtures,
-        table_id=saved_time_series_table.id,
+        table_id=saved_snapshots_table.id,
     )
 
     # add some cleaning operations to the table before view construction
-    saved_time_series_table.col_int.update_critical_data_info(
+    saved_snapshots_table.col_int.update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=-1),
         ]
     )
-    saved_time_series_table.col_float.update_critical_data_info(
+    saved_snapshots_table.col_float.update_critical_data_info(
         cleaning_operations=[
             DisguisedValueImputation(disguised_values=[-99], imputed_value=-1),
         ]
     )
 
-    time_series_view = saved_time_series_table.get_view()
+    snapshots_view = saved_snapshots_table.get_view()
     check_sdk_code_generation(
-        time_series_view,
+        snapshots_view,
         to_use_saved_data=to_use_saved_data,
-        fixture_path="tests/fixtures/sdk_code/time_series_view_with_column_clean_ops.py",
+        fixture_path="tests/fixtures/sdk_code/snapshots_view_with_column_clean_ops.py",
         update_fixtures=update_fixtures,
-        table_id=saved_time_series_table.id,
+        table_id=saved_snapshots_table.id,
     )
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table_from_time_series_view__no_sample(
-    snowflake_time_series_table, snowflake_execute_query, catalog, cust_id_entity
+def test_create_observation_table_from_snapshots_view__no_sample(
+    snowflake_snapshots_table, snowflake_execute_query, catalog, cust_id_entity
 ):
     """
-    Test creating ObservationTable from an TimeSeriesView
+    Test creating ObservationTable from an SnapshotsView
     """
     _ = catalog
-    view = snowflake_time_series_table.get_view()
+    view = snowflake_snapshots_table.get_view()
 
     observation_table = view.create_observation_table(
-        "my_observation_table_from_time_series_view",
+        "my_observation_table_from_snapshots_view",
         columns=["date", "store_id"],
         columns_rename_mapping={"date": "POINT_IN_TIME", "store_id": "cust_id"},
         primary_entities=[cust_id_entity.name],
     )
 
     assert isinstance(observation_table, ObservationTable)
-    assert observation_table.name == "my_observation_table_from_time_series_view"
+    assert observation_table.name == "my_observation_table_from_snapshots_view"
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
     assert observation_table.request_input.definition is not None
 
@@ -362,7 +353,7 @@ def test_create_observation_table_from_time_series_view__no_sample(
               "date" AS "date",
               "store_id" AS "store_id",
               "another_timestamp_col" AS "another_timestamp_col"
-            FROM "sf_database"."sf_schema"."time_series_table"
+            FROM "sf_database"."sf_schema"."snapshots_table"
           )
         )
         WHERE
@@ -384,29 +375,29 @@ def test_create_observation_table_from_time_series_view__no_sample(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table_from_time_series_view__with_sample(
-    snowflake_time_series_table_with_entity,
+def test_create_observation_table_from_snapshots_view__with_sample(
+    snowflake_snapshots_table_with_entity,
     snowflake_execute_query,
     cust_id_entity,
 ):
     """
-    Test creating ObservationTable from an TimeSeriesView
+    Test creating ObservationTable from an SnapshotsView
     """
-    view = snowflake_time_series_table_with_entity.get_view()
+    view = snowflake_snapshots_table_with_entity.get_view()
 
     with patch(
         "featurebyte.models.request_input.BaseRequestInput.get_row_count",
         AsyncMock(return_value=1000),
     ):
         observation_table = view.create_observation_table(
-            "my_observation_table_from_time_series_view",
+            "my_observation_table_from_snapshots_view",
             sample_rows=100,
             columns=["date", "store_id"],
             columns_rename_mapping={"date": "POINT_IN_TIME", "store_id": "cust_id"},
         )
 
     assert isinstance(observation_table, ObservationTable)
-    assert observation_table.name == "my_observation_table_from_time_series_view"
+    assert observation_table.name == "my_observation_table_from_snapshots_view"
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
@@ -436,7 +427,7 @@ def test_create_observation_table_from_time_series_view__with_sample(
                 "date" AS "date",
                 "store_id" AS "store_id",
                 "another_timestamp_col" AS "another_timestamp_col"
-              FROM "sf_database"."sf_schema"."time_series_table"
+              FROM "sf_database"."sf_schema"."snapshots_table"
             )
           )
           WHERE
@@ -461,11 +452,11 @@ def test_create_observation_table_from_time_series_view__with_sample(
     )
 
 
-def test_shape(snowflake_time_series_table, snowflake_query_map):
+def test_shape(snowflake_snapshots_table, snowflake_query_map):
     """
-    Test creating ObservationTable from an TimeSeriesView
+    Test creating ObservationTable from an SnapshotsView
     """
-    view = snowflake_time_series_table.get_view()
+    view = snowflake_snapshots_table.get_view()
     expected_call_view = textwrap.dedent(
         """
         WITH data AS (
@@ -479,7 +470,7 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
             "date" AS "date",
             "store_id" AS "store_id",
             "another_timestamp_col" AS "another_timestamp_col"
-          FROM "sf_database"."sf_schema"."time_series_table"
+          FROM "sf_database"."sf_schema"."snapshots_table"
         )
         SELECT
           COUNT(*) AS "count"
@@ -491,7 +482,7 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
         WITH data AS (
           SELECT
             "col_int" AS "col_int"
-          FROM "sf_database"."sf_schema"."time_series_table"
+          FROM "sf_database"."sf_schema"."snapshots_table"
         )
         SELECT
           COUNT(*) AS "count"

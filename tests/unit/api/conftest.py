@@ -508,6 +508,21 @@ def snowflake_time_series_view_fixture(
     yield time_series_view
 
 
+@pytest.fixture(name="snowflake_snapshots_view")
+def snowflake_snapshots_view_fixture(
+    snowflake_snapshots_table, config, arbitrary_default_cron_feature_job_setting
+):
+    """
+    SnapshotsView fixture
+    """
+    _ = config
+    snowflake_snapshots_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_cron_feature_job_setting
+    )
+    snapshots_view = snowflake_snapshots_table.get_view()
+    yield snapshots_view
+
+
 @pytest.fixture(name="feature_job_logs", scope="session")
 def feature_job_logs_fixture():
     """
