@@ -1,5 +1,5 @@
 """
-Tests for TimeSeriesTable routes
+Tests for SnapshotsTable routes
 """
 
 from http import HTTPStatus
@@ -9,25 +9,25 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.models.feature_store import TableStatus
-from featurebyte.models.time_series_table import TimeSeriesTableModel
+from featurebyte.models.snapshots_table import SnapshotsTableModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.table import TimeSeriesTableData
-from featurebyte.schema.time_series_table import TimeSeriesTableCreate
+from featurebyte.query_graph.model.table import SnapshotsTableData
+from featurebyte.schema.snapshots_table import SnapshotsTableCreate
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
-class TestTimeSeriesTableApi(BaseTableApiTestSuite):
+class TestSnapshotsTableApi(BaseTableApiTestSuite):
     """
-    TestTimeSeriesTableApi class
+    TestSnapshotsTableApi class
     """
 
-    class_name = "TimeSeriesTable"
-    base_route = "/time_series_table"
-    data_create_schema_class = TimeSeriesTableCreate
+    class_name = "SnapshotsTable"
+    base_route = "/snapshots_table"
+    data_create_schema_class = SnapshotsTableCreate
     payload = BaseTableApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/time_series_table.json"
+        "tests/fixtures/request_payloads/snapshots_table.json"
     )
-    document_name = "sf_time_series_table"
+    document_name = "sf_snapshots_table"
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -43,7 +43,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'time_series_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'snapshots_table'}}\") "
             f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
@@ -74,17 +74,17 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 
-    @pytest_asyncio.fixture(name="reference_datetime_id_semantic_ids")
-    async def reference_datetime_id_semantic_ids_fixture(self, app_container):
-        """Reference datetime & series ID semantic IDs fixture"""
+    @pytest_asyncio.fixture(name="snapshot_datetime_id_semantic_ids")
+    async def snapshot_datetime_id_semantic_ids_fixture(self, app_container):
+        """Fixture for snapshot datetime and snapshot id semantic ids"""
         record_creation_timestamp = await app_container.semantic_service.get_or_create_document(
             "record_creation_timestamp"
         )
-        time_series_date_time = await app_container.semantic_service.get_or_create_document(
-            "time_series_date_time"
+        snapshot_date_time = await app_container.semantic_service.get_or_create_document(
+            "snapshot_date_time"
         )
-        series_id = await app_container.semantic_service.get_or_create_document("series_id")
-        return time_series_date_time.id, series_id.id, record_creation_timestamp.id
+        snapshot_id = await app_container.semantic_service.get_or_create_document("snapshot_id")
+        return snapshot_date_time.id, snapshot_id.id, record_creation_timestamp.id
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
@@ -92,34 +92,34 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         tabular_source,
         columns_info,
         user_id,
-        reference_datetime_id_semantic_ids,
+        snapshot_datetime_id_semantic_ids,
         feature_store_details,
         default_catalog_id,
     ):
-        """Fixture for a Event Data dict"""
+        """Fixture for a SnapshotsTable dict"""
         (
-            time_series_date_time_semantic_id,
-            series_id_semantic_id,
+            snapshot_date_time_semantic_id,
+            snapshot_id_semantic_id,
             record_creation_timestamp_id,
-        ) = reference_datetime_id_semantic_ids
+        ) = snapshot_datetime_id_semantic_ids
         cols_info = []
         for col_info in columns_info:
             col = col_info.copy()
             if col["name"] == "date":
-                col["semantic_id"] = time_series_date_time_semantic_id
+                col["semantic_id"] = snapshot_date_time_semantic_id
             elif col["name"] == "series_id":
-                col["semantic_id"] = series_id_semantic_id
+                col["semantic_id"] = snapshot_id_semantic_id
             elif col["name"] == "created_at":
                 col["semantic_id"] = record_creation_timestamp_id
             cols_info.append(col)
 
-        time_series_table_dict = {
+        snapshots_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
-            "series_id_column": "series_id",
-            "reference_datetime_column": "date",
-            "reference_datetime_schema": {
+            "snapshot_id_column": "series_id",
+            "snapshot_datetime_column": "date",
+            "snapshot_datetime_schema": {
                 "format_string": "YYYY-MM-DD HH24:MI:SS",
                 "timezone": "Etc/UTC",
                 "is_utc_time": None,
@@ -142,15 +142,15 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             "user_id": str(user_id),
             "_id": ObjectId(),
         }
-        time_series_table_data = TimeSeriesTableData(**time_series_table_dict)
-        input_node = time_series_table_data.construct_input_node(
+        snapshots_table_data = SnapshotsTableData(**snapshots_table_dict)
+        input_node = snapshots_table_data.construct_input_node(
             feature_store_details=feature_store_details
         )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
-        time_series_table_dict["graph"] = graph
-        time_series_table_dict["node_name"] = inserted_node.name
-        output = TimeSeriesTableModel(**time_series_table_dict).json_dict()
+        snapshots_table_dict["graph"] = graph
+        snapshots_table_dict["node_name"] = inserted_node.name
+        output = SnapshotsTableModel(**snapshots_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         output["validation"].pop("updated_at")
@@ -160,7 +160,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
         """
-        Event table update dict object
+        Snapshots table update dict object
         """
         return {
             "default_feature_job_setting": {
@@ -186,7 +186,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         data_model_dict,
     ):
         """
-        Update Event Data
+        Update Snapshots Data
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -213,7 +213,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         assert update_response_dict == data_model_dict
 
         # test get audit records
-        response = test_api_client.get(f"/time_series_table/audit/{insert_id}")
+        response = test_api_client.get(f"/snapshots_table/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 4
@@ -246,7 +246,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(
-            f"/time_series_table/history/default_feature_job_setting/{insert_id}"
+            f"/snapshots_table/history/default_feature_job_setting/{insert_id}"
         )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
@@ -285,7 +285,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         data_model_dict,
     ):
         """
-        Update Event Data only updates job settings even if other fields are provided
+        Update Snapshots Data only updates job settings even if other fields are provided
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -298,7 +298,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         data_update_dict["name"] = "Some other name"
         data_update_dict["source"] = "Some other source"
         data_update_dict["status"] = TableStatus.PUBLISHED.value
-        response = test_api_client.patch(f"/time_series_table/{insert_id}", json=data_update_dict)
+        response = test_api_client.patch(f"/snapshots_table/{insert_id}", json=data_update_dict)
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert data["_id"] == insert_id
@@ -338,7 +338,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
 
         for hour in ["1", "3", "4", "10", "12"]:
             response = test_api_client.patch(
-                f"/time_series_table/{document_id}",
+                f"/snapshots_table/{document_id}",
                 json={
                     "default_feature_job_setting": {
                         "crontab": {
@@ -362,7 +362,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(
-            f"/time_series_table/history/default_feature_job_setting/{document_id}"
+            f"/snapshots_table/history/default_feature_job_setting/{document_id}"
         )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
@@ -379,20 +379,19 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         )
         expected_info_response = {
             "name": self.document_name,
-            "description": "test time series table",
             "status": "PUBLIC_DRAFT",
             "catalog_name": "grocery",
             "record_creation_timestamp_column": "created_at",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
-                "table_name": "time_series_table",
+                "table_name": "snapshots_table",
             },
             "entities": [],
             "column_count": 10,
-            "series_id_column": "col_int",
-            "reference_datetime_column": "date",
-            "reference_datetime_schema": {
+            "snapshot_id_column": "col_int",
+            "snapshot_datetime_column": "date",
+            "snapshot_datetime_schema": {
                 "format_string": "YYYY-MM-DD HH24:MI:SS",
                 "timezone": "Etc/UTC",
                 "is_utc_time": None,
@@ -407,8 +406,8 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         assert response_dict["columns_info"] is None
         assert set(response_dict["semantics"]) == {
             "record_creation_timestamp",
-            "series_id",
-            "time_series_date_time",
+            "snapshot_id",
+            "snapshot_date_time",
         }
 
         verbose_response = test_api_client.get(
@@ -423,7 +422,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "name": "col_int",
                 "dtype": "INT",
                 "entity": None,
-                "semantic": "series_id",
+                "semantic": "snapshot_id",
                 "critical_data_info": None,
                 "description": None,
             },
@@ -471,7 +470,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "name": "date",
                 "dtype": "VARCHAR",
                 "entity": None,
-                "semantic": "time_series_date_time",
+                "semantic": "snapshot_date_time",
                 "critical_data_info": None,
                 "description": "Date column",
             },
@@ -520,11 +519,11 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         payload = self.payload.copy()
-        payload["reference_datetime_schema"]["format_string"] = "YYYY-MM-DD HH:MM:SS TZH:TZM"
+        payload["snapshot_datetime_schema"]["format_string"] = "YYYY-MM-DD HH:MM:SS TZH:TZM"
         response = test_api_client.post(self.base_route, json=payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         response_json = response.json()
         assert (
             response_json["detail"]
-            == "Timezone information in time series table reference datetime column is not supported."
+            == "Timezone information in snapshot_datetime_column is not supported for SnapshotsTable."
         )
