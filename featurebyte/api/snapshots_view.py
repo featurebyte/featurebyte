@@ -44,7 +44,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.TimeSeriesView",
+        proxy_class="featurebyte.SnapshotsView",
         skip_params_and_signature_in_class_docs=True,
     )
     _series_class: ClassVar[Any] = SnapshotsViewColumn

@@ -42,6 +42,7 @@ from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.snapshots_table import SnapshotsTable
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target

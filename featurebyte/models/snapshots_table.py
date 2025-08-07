@@ -24,9 +24,9 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
     Model for SnapshotsTable
 
     id: PydanticObjectId
-        TimeSeriesTable id of the object
+        SnapshotsTable id of the object
     name : str
-        Name of the TimeSeriesTable
+        Name of the SnapshotsTable
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
@@ -42,11 +42,11 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
     status : TableStatus
-        Status of the TimeSeriesTable
+        Status of the SnapshotsTable
     created_at : Optional[datetime]
-        Datetime when the TimeSeriesTable was first saved or published
+        Datetime when the SnapshotsTable was first saved or published
     updated_at: Optional[datetime]
-        Datetime when the TimeSeriesTable object was last updated
+        Datetime when the SnapshotsTable object was last updated
     """
 
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
