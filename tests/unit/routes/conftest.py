@@ -63,7 +63,7 @@ def get_mocked_get_session_fixture(snowflake_execute_query, adapter, source_info
         yield mocked_get_session
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, name="mocked_get_session")
 def get_mock_get_session_fixture(snowflake_execute_query):
     """
     Returns a mocked get_feature_store_session.

@@ -298,6 +298,7 @@ class DeploymentController(
             else:
                 result = await self.online_serving_service.get_online_features_from_feature_list(
                     feature_list=feature_list,
+                    deployment=deployment,
                     request_data=data.entity_serving_names,
                 )
         except (DeploymentNotEnabledError, RuntimeError) as exc:

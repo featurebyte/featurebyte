@@ -91,7 +91,7 @@ class BaseMaterializedTableService(
         )
 
     async def generate_materialized_table_location(
-        self, feature_store_id: ObjectId
+        self, feature_store_id: ObjectId, session: Optional[BaseSession] = None
     ) -> TabularSource:
         """
         Generate a TabularSource object for a new materialized table to be created
@@ -100,13 +100,18 @@ class BaseMaterializedTableService(
         ----------
         feature_store_id: ObjectId
             Feature store id
+        session: Optional[BaseSession]
+            Optional database session. If not provided, a new session will be created.
 
         Returns
         -------
         TabularSource
         """
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
-        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        if session is not None:
+            db_session = session
+        else:
+            db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         destination_table_name = f"{self.materialized_table_name_prefix}_{ObjectId()}"
         location = TabularSource(
