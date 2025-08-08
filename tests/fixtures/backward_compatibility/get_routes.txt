@@ -25,6 +25,7 @@
 /relationship_info
 /scd_table
 /semantic
+/snapshots_table
 /static_source_table
 /status
 /system_metrics
