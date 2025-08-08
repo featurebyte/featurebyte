@@ -44,6 +44,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
 from featurebyte.routes.scd_table.api import SCDTableRouter
 from featurebyte.routes.semantic.api import SemanticRouter
+from featurebyte.routes.snapshots_table.api import SnapshotsTableRouter
 from featurebyte.routes.static_source_table.api import StaticSourceTableRouter
 from featurebyte.routes.system_metrics.api import SystemMetricsRouter
 from featurebyte.routes.table.api import TableRouter
@@ -256,6 +257,7 @@ def get_app() -> FastAPI:
         UserDefinedFunctionRouter(),
         ManagedViewRouter(),
         DevelopmentDatasetRouter(),
+        SnapshotsTableRouter(),
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in catalog_specific_routers:

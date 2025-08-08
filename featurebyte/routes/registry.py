@@ -69,6 +69,7 @@ from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
+from featurebyte.routes.snapshots_table.controller import SnapshotsTableController
 from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.system_metrics.controller import SystemMetricsController
 from featurebyte.routes.table.controller import TableController
@@ -182,6 +183,8 @@ from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_helper import SessionHelper
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.snapshots_table import SnapshotsTableService
+from featurebyte.service.snapshots_table_validation import SnapshotsTableValidationService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.system_metrics import SystemMetricsService
@@ -424,6 +427,10 @@ app_container_config.register_class(
     TimeSeriesTableValidationService,
     dependency_override={"table_document_service": "time_series_table_service"},
 )
+app_container_config.register_class(
+    SnapshotsTableValidationService,
+    dependency_override={"table_document_service": "snapshots_table_service"},
+)
 app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
@@ -431,6 +438,8 @@ app_container_config.register_class(SemanticService)
 app_container_config.register_class(SemanticRelationshipService)
 app_container_config.register_class(SessionManagerService)
 app_container_config.register_class(SessionHelper)
+app_container_config.register_class(SnapshotsTableController)
+app_container_config.register_class(SnapshotsTableService)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
 app_container_config.register_class(SystemMetricsService)

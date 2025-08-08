@@ -858,6 +858,18 @@ def snowflake_query_map_fixture():
                 "COMMENT": "SCD table",
             }
         ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='snapshots_table'"
+        ): [
+            {
+                "TABLE_NAME": "snapshits_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "Snapshots table",
+            }
+        ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
         'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
             {"row_count": 100}
@@ -922,6 +934,9 @@ def snowflake_query_map_fixture():
             query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
         )
     )
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."snapshots_table"'] = query_map[
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."time_series_table"'
+    ]
     return query_map
 
 
@@ -1135,6 +1150,18 @@ def snowflake_database_time_series_table_fixture(snowflake_data_source):
     )
 
 
+@pytest.fixture(name="snowflake_database_snapshots_table")
+def snowflake_database_snapshots_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for SnapshotsTable
+    """
+    yield snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="snapshots_table",
+    )
+
+
 @pytest.fixture(name="snowflake_feature_store_id")
 def snowflake_feature_store_id_fixture():
     """Snowflake feature store id"""
@@ -1205,6 +1232,12 @@ def snowflake_item_table_with_timestamp_schema_id_fixture():
 def snowflake_time_series_table_id_fixture():
     """Snowflake time series table ID"""
     return ObjectId("6337f9651050ee7d5980662f")
+
+
+@pytest.fixture(name="snowflake_snapshots_table_id")
+def snowflake_snapshots_table_id_fixture():
+    """Snowflake snapshots table ID"""
+    return ObjectId("6893ffbc6782e0c8fce7d072")
 
 
 @pytest.fixture(name="cust_id_entity_id")
@@ -1553,6 +1586,36 @@ def snowflake_time_series_table_fixture(
     yield time_series_table
 
 
+@pytest.fixture(name="snowflake_snapshots_table")
+def snowflake_snapshots_table_fixture(
+    snowflake_database_snapshots_table,
+    snowflake_snapshots_table_id,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """SnapshotsTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
+        name="sf_snapshots_table",
+        snapshot_id_column="col_int",
+        snapshot_datetime_column="date",
+        snapshot_datetime_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
+        time_interval=TimeInterval(value=1, unit="DAY"),
+        record_creation_timestamp_column="created_at",
+        description="test snapshots table",
+        _id=snowflake_snapshots_table_id,
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
+    )
+    assert snapshots_table.frame.node.parameters.id == snapshots_table.id
+    assert snapshots_table.id == snowflake_snapshots_table_id
+    yield snapshots_table
+
+
 @pytest.fixture(name="cust_id_entity")
 def cust_id_entity_fixture(cust_id_entity_id, catalog):
     """
@@ -1707,6 +1770,24 @@ def snowflake_time_series_table_with_entity_fixture(
     snowflake_time_series_table.store_id.as_entity(cust_id_entity.name)
     snowflake_time_series_table.col_int.as_entity(transaction_entity.name)
     yield snowflake_time_series_table
+
+
+@pytest.fixture(name="snowflake_snapshots_table_with_entity")
+def snowflake_snapshots_table_with_entity_fixture(
+    snowflake_snapshots_table,
+    cust_id_entity,
+    transaction_entity,
+    mock_api_object_cache,
+    mock_detect_and_update_column_dtypes,
+    patch_initialize_entity_dtype,
+):
+    """
+    Entity fixture that sets cust_id in snowflake_snapshots_table as an Entity
+    """
+    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
+    snowflake_snapshots_table.store_id.as_entity(cust_id_entity.name)
+    snowflake_snapshots_table.col_int.as_entity(transaction_entity.name)
+    yield snowflake_snapshots_table
 
 
 @pytest.fixture(name="arbitrary_default_feature_job_setting")

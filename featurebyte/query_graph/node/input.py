@@ -412,6 +412,46 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
         return output
 
 
+class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
+    """SnapshotsTableParameters"""
+
+    type: Literal[TableDataType.SNAPSHOTS_TABLE] = TableDataType.SNAPSHOTS_TABLE
+    id: Optional[PydanticObjectId] = Field(default=None)
+    id_column: InColumnStr = Field(default=None)
+    snapshot_datetime_column: InColumnStr
+    snapshot_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+
+    @property
+    def variable_name_prefix(self) -> str:
+        return "snapshots_table"
+
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
+            "snapshot_id_column": self.id_column,
+            "snapshot_datetime_column": self.snapshot_datetime_column,
+            "snapshot_datetime_schema": derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.snapshot_datetime_schema
+            ),
+            "time_interval": ClassEnum.TIME_INTERVAL(
+                value=self.time_interval.value,
+                unit=self.time_interval.unit,
+            ),
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
+
+    def construct_comment(
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'snapshots_table name: "{table_name}"')
+        return output
+
+
 InputNodeParameters = Annotated[
     Union[
         EventTableInputNodeParameters,
@@ -420,6 +460,7 @@ InputNodeParameters = Annotated[
         DimensionTableInputNodeParameters,
         SCDTableInputNodeParameters,
         TimeSeriesTableInputNodeParameters,
+        SnapshotsTableInputNodeParameters,
     ],
     Field(discriminator="type"),
 ]
@@ -440,6 +481,7 @@ class InputNode(BaseNode):
         TableDataType.DIMENSION_TABLE: ClassEnum.DIMENSION_TABLE,
         TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
         TableDataType.TIME_SERIES_TABLE: ClassEnum.TIME_SERIES_TABLE,
+        TableDataType.SNAPSHOTS_TABLE: ClassEnum.SNAPSHOTS_TABLE,
     }
 
     @property

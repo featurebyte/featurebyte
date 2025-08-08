@@ -99,6 +99,30 @@ def expected_time_series_table_preview_query() -> str:
     ).strip()
 
 
+@pytest.fixture()
+def expected_snapshots_table_preview_query() -> str:
+    """
+    Expected preview_sql output
+    """
+    return textwrap.dedent(
+        """
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          CAST("date" AS VARCHAR) AS "date",
+          CAST("created_at" AS VARCHAR) AS "created_at",
+          "store_id" AS "store_id",
+          CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
+        FROM "sf_database"."sf_schema"."snapshots_table"
+        LIMIT 10
+        """
+    ).strip()
+
+
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """
@@ -235,6 +259,21 @@ def saved_time_series_table_fixture(snowflake_time_series_table, catalog):
     assert isinstance(snowflake_time_series_table.created_at, datetime)
     assert isinstance(snowflake_time_series_table.tabular_source.feature_store_id, ObjectId)
     yield snowflake_time_series_table
+
+
+@pytest.fixture(name="saved_snapshots_table")
+def saved_snapshots_table_fixture(snowflake_snapshots_table, catalog):
+    """
+    Saved snapshots table fixture
+    """
+    _ = catalog
+    previous_id = snowflake_snapshots_table.id
+    assert snowflake_snapshots_table.saved is True
+    assert snowflake_snapshots_table.id == previous_id
+    assert snowflake_snapshots_table.status == TableStatus.PUBLIC_DRAFT
+    assert isinstance(snowflake_snapshots_table.created_at, datetime)
+    assert isinstance(snowflake_snapshots_table.tabular_source.feature_store_id, ObjectId)
+    yield snowflake_snapshots_table
 
 
 @pytest.fixture(name="snowflake_time_series_table_with_tz_offset_column")
@@ -467,6 +506,21 @@ def snowflake_time_series_view_fixture(
     )
     time_series_view = snowflake_time_series_table.get_view()
     yield time_series_view
+
+
+@pytest.fixture(name="snowflake_snapshots_view")
+def snowflake_snapshots_view_fixture(
+    snowflake_snapshots_table, config, arbitrary_default_cron_feature_job_setting
+):
+    """
+    SnapshotsView fixture
+    """
+    _ = config
+    snowflake_snapshots_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_cron_feature_job_setting
+    )
+    snapshots_view = snowflake_snapshots_table.get_view()
+    yield snapshots_view
 
 
 @pytest.fixture(name="feature_job_logs", scope="session")

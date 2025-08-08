@@ -247,6 +247,18 @@ class TimeSeriesTableInfo(TableInfo):
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
 
 
+class SnapshotsTableInfo(TableInfo):
+    """
+    SnapshotsTable info schema
+    """
+
+    snapshot_id_column: str
+    snapshot_datetime_column: str
+    snapshot_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+    default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
+
+
 class NamespaceInfo(BaseInfo):
     """
     Namespace info schema

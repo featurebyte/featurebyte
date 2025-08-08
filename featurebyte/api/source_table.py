@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from featurebyte.api.item_table import ItemTable
     from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
+    from featurebyte.api.snapshots_table import SnapshotsTable
     from featurebyte.api.static_source_table import StaticSourceTable
     from featurebyte.api.time_series_table import TimeSeriesTable
 else:
@@ -908,6 +909,103 @@ class SourceTable(AbstractTableData):
         )
 
     @typechecked
+    def create_snapshots_table(
+        self,
+        name: str,
+        snapshot_datetime_column: str,
+        snapshot_datetime_schema: TimestampSchema,
+        time_interval: TimeInterval,
+        snapshot_id_column: Optional[str],
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        datetime_partition_column: Optional[str] = None,
+        datetime_partition_schema: Optional[TimestampSchema] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> SnapshotsTable:
+        """
+        Creates and adds to the catalog an SnapshotsTable object from a source table.
+
+        To create a SnapshotsTable, you need to identify the columns representing the entity being
+        snapshotted key and snapshot datetime.
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further aid
+        feature engineering. This can include identifying columns that identify or reference entities, providing
+        information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+        descriptions of its columns.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        snapshot_datetime_column: str
+            Column representing the datetime of the snapshot.
+        snapshot_datetime_schema: TimestampSchema
+            The schema of the snapshot datetime column. Timezone column is not supported.
+        time_interval: TimeInterval
+            Specifies the frequency of snapshots. Note that only intervals defined with a single
+            time unit (e.g., 1 day, 1 week) are supported.
+        snapshot_id_column: Optional[str]
+            Represents the entity being snapshotted. Must be unique within each snapshot datetime.
+        record_creation_timestamp_column: str
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        datetime_partition_column: Optional[str]
+            The optional column for the datetime column used for partitioning the snapshots table.
+        datetime_partition_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the datetime partition column.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            event table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
+
+        Returns
+        -------
+        SnapshotsTable
+            SnapshotsTable created from the source table.
+
+        Examples
+        --------
+        Create an snapshots table from a source table.
+
+        >>> # Register GROCERYPROFILE as a snapshots table
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPROFILES"
+        ... )
+        >>> sales_table = source_table.create_snapshots_table(  # doctest: +SKIP
+        ...     name="GROCERYPROFILES",
+        ...     snapshot_datetime_column="Date",
+        ...     snapshot_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        ...     time_interval=TimeInterval(value=1, unit="DAY"),
+        ...     snapshot_id_column="StoreGuid",
+        ...     record_creation_timestamp_column="record_available_at",
+        ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
+        - [TimeIntervalUnit](/reference/featurebyte.enum.TimeIntervalUnit/):
+            Time interval unit for the time series.
+        """
+
+        from featurebyte.api.snapshots_table import SnapshotsTable
+
+        return SnapshotsTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            snapshot_datetime_column=snapshot_datetime_column,
+            snapshot_datetime_schema=snapshot_datetime_schema,
+            datetime_partition_column=datetime_partition_column,
+            datetime_partition_schema=datetime_partition_schema,
+            time_interval=time_interval,
+            snapshot_id_column=snapshot_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
     def get_or_create_event_table(
         self,
         name: str,
@@ -1204,6 +1302,72 @@ class SourceTable(AbstractTableData):
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
             series_id_column=series_id_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_snapshots_table(
+        self,
+        name: str,
+        snapshot_datetime_column: str,
+        snapshot_datetime_schema: TimestampSchema,
+        time_interval: TimeInterval,
+        snapshot_id_column: Optional[str],
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        datetime_partition_column: Optional[str] = None,
+        datetime_partition_schema: Optional[TimestampSchema] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> SnapshotsTable:
+        """
+        Get or create snapshots table from this source table. Internally, this method calls
+        `SnapshotsTable.get` by name, if the table does not exist, it will be created.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        snapshot_datetime_column: str
+            Column representing the datetime of the snapshot.
+        snapshot_datetime_schema: TimestampSchema
+            The schema of the snapshot datetime column. Timezone column is not supported.
+        time_interval: TimeInterval
+            Specifies the frequency of snapshots. Note that only intervals defined with a single
+            time unit (e.g., 1 day, 1 week) are supported.
+        snapshot_id_column: Optional[str]
+            Represents the entity being snapshotted. Must be unique within each snapshot datetime.
+        record_creation_timestamp_column: str
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        datetime_partition_column: Optional[str]
+            The optional column for the datetime column used for partitioning the snapshots table.
+        datetime_partition_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the datetime partition column.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            event table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
+
+
+        Returns
+        -------
+        SnapshotsTable
+        """
+
+        from featurebyte.api.snapshots_table import SnapshotsTable
+
+        return SnapshotsTable.get_or_create(
+            source_table=self,
+            name=name,
+            snapshot_datetime_column=snapshot_datetime_column,
+            snapshot_datetime_schema=snapshot_datetime_schema,
+            datetime_partition_column=datetime_partition_column,
+            datetime_partition_schema=datetime_partition_schema,
+            time_interval=time_interval,
+            snapshot_id_column=snapshot_id_column,
             record_creation_timestamp_column=record_creation_timestamp_column,
             description=description,
             _id=_id,

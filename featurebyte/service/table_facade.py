@@ -23,6 +23,8 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.item_table_validation import ItemTableValidationService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
+from featurebyte.service.snapshots_table import SnapshotsTableService
+from featurebyte.service.snapshots_table_validation import SnapshotsTableValidationService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
 from featurebyte.service.table_status import TableStatusService
@@ -59,6 +61,8 @@ class TableFacadeService:
         time_series_table_validation_service: TimeSeriesTableValidationService,
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
+        snapshots_table_service: SnapshotsTableService,
+        snapshots_table_validation_service: SnapshotsTableValidationService,
     ):
         self.table_service = table_service
         self.event_table_service = event_table_service
@@ -73,6 +77,8 @@ class TableFacadeService:
         self.time_series_table_validation_service = time_series_table_validation_service
         self.table_columns_info_service = table_columns_info_service
         self.table_status_service = table_status_service
+        self.snapshots_table_service = snapshots_table_service
+        self.snapshots_table_validation_service = snapshots_table_validation_service
 
     def get_specific_table_service(self, table_type: TableDataType) -> TableDocumentService:
         """
@@ -93,6 +99,7 @@ class TableFacadeService:
             TableDataType.DIMENSION_TABLE: self.dimension_table_service,
             TableDataType.SCD_TABLE: self.scd_table_service,
             TableDataType.TIME_SERIES_TABLE: self.time_series_table_service,
+            TableDataType.SNAPSHOTS_TABLE: self.snapshots_table_service,
         }
         return table_service_map[table_type]  # type: ignore
 
@@ -117,6 +124,7 @@ class TableFacadeService:
             TableDataType.DIMENSION_TABLE: self.dimension_table_validation_service,
             TableDataType.SCD_TABLE: self.scd_table_validation_service,
             TableDataType.TIME_SERIES_TABLE: self.time_series_table_validation_service,
+            TableDataType.SNAPSHOTS_TABLE: self.snapshots_table_validation_service,
         }
         return table_service_map[table_type]  # type: ignore
 

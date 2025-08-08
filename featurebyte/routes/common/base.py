@@ -39,6 +39,7 @@ from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.snapshots_table import SnapshotsTableService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
@@ -87,6 +88,7 @@ DocumentServiceT = TypeVar(
     TimeSeriesTableService,
     ManagedViewService,
     DevelopmentDatasetService,
+    SnapshotsTableService,
 )
 
 

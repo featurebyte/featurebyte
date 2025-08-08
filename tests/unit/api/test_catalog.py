@@ -23,6 +23,7 @@ from typeguard import TypeCheckError
 from featurebyte import (
     MySQLOnlineStoreDetails,
     OnlineStore,
+    SnapshotsTable,
     TimeSeriesTable,
     UsernamePasswordCredential,
 )
@@ -296,6 +297,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
         TimeSeriesTable,  # accessible as part of catalog.(list|get)_table
+        SnapshotsTable,
         SavableApiObject,
         DeletableApiObject,
         TableApiObject,
