@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, field_validator, model_validator
+from pydantic import Field, StrictStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from featurebyte.common.validator import columns_info_validator
@@ -17,7 +17,6 @@ from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata, PartitionMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -68,29 +67,6 @@ class TableCreate(FeatureByteBaseModel):
             if column_name not in columns_info:
                 raise ValueError(f"Column not found in table: {column_name}")
         return column_name
-
-    @model_validator(mode="after")
-    def _update_columns_info(self) -> "TableCreate":
-        """
-        Update columns_info
-
-        Returns
-        -------
-        TableCreate
-        """
-        if not self.datetime_partition_column:
-            return self
-
-        for column_info in self.columns_info:
-            if column_info.name == self.datetime_partition_column:
-                column_info.dtype_metadata = DBVarTypeMetadata(
-                    timestamp_schema=self.datetime_partition_schema
-                )
-                column_info.partition_metadata = PartitionMetadata(is_partition_key=True)
-            else:
-                column_info.partition_metadata = None
-
-        return self
 
 
 class TableUpdate(FeatureByteBaseModel):

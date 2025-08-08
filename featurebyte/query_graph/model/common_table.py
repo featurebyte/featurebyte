@@ -5,7 +5,7 @@ This module contains common table related models.
 from abc import abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
-from pydantic import Field, field_validator
+from pydantic import Field, StrictStr, field_validator
 from typing_extensions import Literal
 
 from featurebyte.common.validator import columns_info_validator
@@ -15,6 +15,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.cleaning_operation import (
@@ -57,6 +58,8 @@ class BaseTableData(FeatureByteBaseModel):
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
     managed_view_id: Optional[PydanticObjectId] = Field(default=None)
+    datetime_partition_column: Optional[StrictStr] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
     # pydantic validators
     _validator = field_validator("columns_info")(columns_info_validator)

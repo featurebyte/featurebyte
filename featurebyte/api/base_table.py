@@ -11,7 +11,7 @@ from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, c
 import pandas as pd
 from bson import ObjectId
 from pandas import DataFrame
-from pydantic import Field
+from pydantic import Field, StrictStr
 from typeguard import typechecked
 from typing_extensions import Literal
 
@@ -33,6 +33,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import (
     CleaningOperation,
@@ -521,6 +522,12 @@ class TableApiObject(
     internal_record_creation_timestamp_column: Optional[str] = Field(
         alias="record_creation_timestamp_column"
     )
+    internal_datetime_partition_column: Optional[StrictStr] = Field(
+        default=None, alias="datetime_partition_column"
+    )
+    internal_datetime_partition_schema: Optional[TimestampSchema] = Field(
+        default=None, alias="datetime_partition_schema"
+    )
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
@@ -638,6 +645,38 @@ class TableApiObject(
             return self.cached_model.record_creation_timestamp_column
         except RecordRetrievalException:
             return self.internal_record_creation_timestamp_column
+
+    @property
+    def datetime_partition_column(self) -> Optional[str]:
+        """
+        Returns the name of the column in the table that is used for partitioning by time.
+        This column is typically used to organize data into time-based partitions, which can be used to
+        optimize query performance.
+
+        Returns
+        -------
+        Optional[str]
+            Name of the datetime partition column in the table.
+        """
+        try:
+            return self.cached_model.datetime_partition_column
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_column
+
+    @property
+    def datetime_partition_schema(self) -> Optional[TimestampSchema]:
+        """
+        Returns the timestamp schema of the datetime partition column in the table.
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Timestamp schema of the datetime partition column
+        """
+        try:
+            return self.cached_model.datetime_partition_schema
+        except RecordRetrievalException:
+            return self.internal_datetime_partition_schema
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:

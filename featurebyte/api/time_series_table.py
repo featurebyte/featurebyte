@@ -84,6 +84,10 @@ class TimeSeriesTable(TableApiObject):
                 ),
                 ("internal_reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("internal_series_id_column", DBVarType.supported_id_types()),
+                (
+                    "internal_datetime_partition_column",
+                    DBVarType.supported_ts_datetime_types(),
+                ),
             ],
         )
     )

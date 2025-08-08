@@ -191,6 +191,8 @@ class TableInfo(TableBriefInfo, BaseInfo):
     semantics: List[str]
     column_count: int
     columns_info: Optional[List[TableColumnInfo]] = Field(default=None)
+    datetime_partition_column: Optional[str] = Field(default=None)
+    datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class EventTableInfo(TableInfo):
