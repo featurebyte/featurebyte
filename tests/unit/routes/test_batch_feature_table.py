@@ -17,6 +17,7 @@ from featurebyte.schema.batch_feature_table import (
     BatchExternalFeatureTableCreate,
     OutputTableInfo,
 )
+from featurebyte.schema.feature_store import FeatureStoreShape
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
@@ -687,14 +688,13 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_existing_databricks_table_queries.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
-    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns")
+    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.table_shape")
     @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query_long_running")
     def test_create_success_external_feature_table_existing_empty_table(
         self,
         mock_execute_query_long_running,
-        mock_list_columns,
+        mock_table_shape,
         test_api_client_persistent,
-        output_table_list_columns,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
         mock_snowflake_session,
@@ -706,7 +706,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
 
         # empty schema for existing table
-        mock_list_columns.return_value = []
+        mock_table_shape.return_value = FeatureStoreShape(num_cols=1, num_rows=0)
         response = test_api_client.post(
             f"{self.base_route}/feature_table", json=payload_for_external_feature_table
         )
@@ -719,14 +719,13 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_existing_empty_table_queries.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
-    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.list_columns")
+    @patch("featurebyte.service.batch_feature_table.FeatureStoreWarehouseService.table_shape")
     @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query_long_running")
     def test_create_success_external_feature_table_existing_empty_databricks_table(
         self,
         mock_execute_query_long_running,
-        mock_list_columns,
+        mock_table_shape,
         test_api_client_persistent,
-        output_table_list_columns,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
         mock_snowflake_session,
@@ -738,7 +737,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
 
         # empty schema for existing table
-        mock_list_columns.return_value = []
+        mock_table_shape.return_value = FeatureStoreShape(num_cols=1, num_rows=0)
         with patch(
             "featurebyte.service.batch_external_feature_table.BatchExternalFeatureTableService._get_source_type"
         ) as mock_get_source_type:

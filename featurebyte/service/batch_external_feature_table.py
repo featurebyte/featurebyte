@@ -24,6 +24,7 @@ from featurebyte.exception import (
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -135,12 +136,22 @@ class BatchExternalFeatureTableService:
                 schema_name=table_expr.db,
                 table_name=table_expr.name,
             )
-            available_column_details = {specs.name: specs for specs in column_specs}
 
-            # if table exists but has no columns, it is considered empty.
+            table_shape = await self.feature_store_warehouse_service.table_shape(
+                TabularSource(
+                    feature_store_id=feature_store.id,
+                    table_details=TableDetails(
+                        database_name=table_expr.catalog,
+                        schema_name=table_expr.db,
+                        table_name=table_expr.name,
+                    ),
+                )
+            )
+            # if table exists but has no rows, it is considered empty.
             # In such case we will not validate columns but alter the schema before writing
-            if available_column_details:
+            if table_shape.num_rows > 0:
                 # ensure all required columns are present
+                available_column_details = {specs.name: specs for specs in column_specs}
                 output_columns_and_dtypes = copy.deepcopy(output_columns_and_dtypes)
                 output_columns_and_dtypes[SpecialColumnName.POINT_IN_TIME] = DBVarType.TIMESTAMP
                 output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = (
@@ -349,13 +360,7 @@ class BatchExternalFeatureTableService:
                 ),
                 expressions=[
                     expressions.When(
-                        matched=True, then=expressions.Update(expressions=[expressions.Star()])
-                    ),
-                    expressions.When(
                         matched=False, then=expressions.Insert(this=expressions.Star())
-                    ),
-                    expressions.When(
-                        matched=False, source=True, then=expressions.Var(this="DELETE")
                     ),
                 ],
             )
@@ -542,7 +547,7 @@ class BatchExternalFeatureTableService:
             table_name=output_table_expr.name,
         )
         output_feature_table_name = sql_to_string(
-            get_fully_qualified_table_name(output_table_details.model_dump()),
+            output_table_expr,
             source_type=source_type,
         )
 
@@ -558,14 +563,11 @@ class BatchExternalFeatureTableService:
                 source_type=source_type,
             )
         else:
-            column_specs = await self.feature_store_warehouse_service.list_columns(
-                feature_store=feature_store,
-                database_name=output_table_expr.catalog,
-                schema_name=output_table_expr.db,
-                table_name=output_table_expr.name,
+            table_shape = await self.feature_store_warehouse_service.table_shape(
+                TabularSource(feature_store_id=feature_store.id, table_details=output_table_details)
             )
-            if not column_specs:
-                # If the table exists but has no columns, it is considered empty.
+            if table_shape.num_rows == 0:
+                # If the table exists but has no rows, it is considered empty.
                 await self._overwrite_output_table(
                     db_session=db_session,
                     input_select_expr=input_select_expr,
