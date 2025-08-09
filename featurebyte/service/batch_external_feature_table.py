@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import re
 import textwrap
 from typing import Any, List, Optional
 
@@ -23,6 +24,7 @@ from featurebyte.exception import (
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -134,32 +136,47 @@ class BatchExternalFeatureTableService:
                 schema_name=table_expr.db,
                 table_name=table_expr.name,
             )
-            available_column_details = {specs.name: specs for specs in column_specs}
 
-            # ensure all required columns are present
-            output_columns_and_dtypes = copy.deepcopy(output_columns_and_dtypes)
-            output_columns_and_dtypes[SpecialColumnName.POINT_IN_TIME] = DBVarType.TIMESTAMP
-            output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = DBVarType.VARCHAR
-            missing_columns = set(output_columns_and_dtypes.keys()) - set(
-                available_column_details.keys()
+            table_shape = await self.feature_store_warehouse_service.table_shape(
+                TabularSource(
+                    feature_store_id=feature_store.id,
+                    table_details=TableDetails(
+                        database_name=table_expr.catalog,
+                        schema_name=table_expr.db,
+                        table_name=table_expr.name,
+                    ),
+                )
             )
-            if missing_columns:
-                raise InvalidTableSchemaError(
-                    f"Output table missing required columns: {', '.join(sorted(list(missing_columns)))}"
+            # if table exists but has no rows, it is considered empty.
+            # In such case we will not validate columns but alter the schema before writing
+            if table_shape.num_rows > 0:
+                # ensure all required columns are present
+                available_column_details = {specs.name: specs for specs in column_specs}
+                output_columns_and_dtypes = copy.deepcopy(output_columns_and_dtypes)
+                output_columns_and_dtypes[SpecialColumnName.POINT_IN_TIME] = DBVarType.TIMESTAMP
+                output_columns_and_dtypes[data.output_table_info.snapshot_date_name] = (
+                    DBVarType.VARCHAR
                 )
+                missing_columns = set(output_columns_and_dtypes.keys()) - set(
+                    available_column_details.keys()
+                )
+                if missing_columns:
+                    raise InvalidTableSchemaError(
+                        f"Output table missing required columns: {', '.join(sorted(list(missing_columns)))}"
+                    )
 
-            # ensure column types match
-            mismatch_columns = [
-                f"{column_name} (expected {required_dtype}, got {available_column_details[column_name].dtype})"
-                for column_name, required_dtype in output_columns_and_dtypes.items()
-                if not available_column_details[column_name].is_compatible_with(
-                    ColumnSpec(name=column_name, dtype=required_dtype)
-                )
-            ]
-            if mismatch_columns:
-                raise InvalidTableSchemaError(
-                    f"Output table column type mismatch: {', '.join(mismatch_columns)}"
-                )
+                # ensure column types match
+                mismatch_columns = [
+                    f"{column_name} (expected {required_dtype}, got {available_column_details[column_name].dtype})"
+                    for column_name, required_dtype in output_columns_and_dtypes.items()
+                    if not available_column_details[column_name].is_compatible_with(
+                        ColumnSpec(name=column_name, dtype=required_dtype)
+                    )
+                ]
+                if mismatch_columns:
+                    raise InvalidTableSchemaError(
+                        f"Output table column type mismatch: {', '.join(mismatch_columns)}"
+                    )
 
         except TableNotFoundError:
             pass
@@ -172,43 +189,15 @@ class BatchExternalFeatureTableService:
             output_document_id=ObjectId(),
         )
 
-    async def _create_output_table(
+    async def _add_primary_keys(
         self,
         db_session: BaseSession,
-        input_select_expr: expressions.Select,
         output_table_details: TableDetails,
         output_feature_table_name: str,
         output_table_info: OutputTableInfo,
         batch_feature_table: BatchFeatureTableModel,
         source_type: SourceType,
     ) -> None:
-        """
-        Create output feature table
-
-        Parameters
-        ----------
-        db_session: BaseSession
-            Database session to use for creating the table
-        input_select_expr: expressions.Select
-            Select expression to use for creating the table
-        output_table_details: TableDetails
-            Details of the output table to create
-        output_feature_table_name: str
-            Fully qualified name of the output feature table
-        output_table_info: OutputTableInfo
-            Information about the output table to create
-        batch_feature_table: BatchFeatureTableModel
-            Batch feature table model containing the feature values to write
-        source_type: SourceType
-            Source type of the database session
-        """
-        # Create the output table
-        await db_session.create_table_as(
-            table_details=output_table_details,
-            partition_keys=[output_table_info.snapshot_date_name],
-            select_expr=input_select_expr,
-        )
-
         # Add primary key constraint if applicable
         if source_type == SourceType.DATABRICKS_UNITY:
             # Get serving entity names from batch feature table
@@ -250,6 +239,152 @@ class BatchExternalFeatureTableService:
                     """
                 ).strip()
             )
+
+    async def _create_output_table(
+        self,
+        db_session: BaseSession,
+        input_select_expr: expressions.Select,
+        output_table_details: TableDetails,
+        output_feature_table_name: str,
+        output_table_info: OutputTableInfo,
+        batch_feature_table: BatchFeatureTableModel,
+        source_type: SourceType,
+    ) -> None:
+        """
+        Create output feature table
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session to use for creating the table
+        input_select_expr: expressions.Select
+            Select expression to use for creating the table
+        output_table_details: TableDetails
+            Details of the output table to create
+        output_feature_table_name: str
+            Fully qualified name of the output feature table
+        output_table_info: OutputTableInfo
+            Information about the output table to create
+        batch_feature_table: BatchFeatureTableModel
+            Batch feature table model containing the feature values to write
+        source_type: SourceType
+            Source type of the database session
+        """
+        # Create the output table
+        await db_session.create_table_as(
+            table_details=output_table_details,
+            partition_keys=[output_table_info.snapshot_date_name],
+            select_expr=input_select_expr,
+        )
+
+        await self._add_primary_keys(
+            db_session=db_session,
+            output_table_details=output_table_details,
+            output_feature_table_name=output_feature_table_name,
+            output_table_info=output_table_info,
+            batch_feature_table=batch_feature_table,
+            source_type=source_type,
+        )
+
+    async def _overwrite_output_table(
+        self,
+        db_session: BaseSession,
+        input_select_expr: expressions.Select,
+        output_table_expr: expressions.Table,
+        output_table_details: TableDetails,
+        output_feature_table_name: str,
+        output_table_info: OutputTableInfo,
+        batch_feature_table: BatchFeatureTableModel,
+        source_type: SourceType,
+    ) -> None:
+        """
+        Create output feature table
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session to use for creating the table
+        input_select_expr: expressions.Select
+            Select expression to use for creating the table
+        output_table_expr: expressions.Table
+            Expression representing the output table to overwrite
+        output_table_details: TableDetails
+            Details of the output table to create
+        output_feature_table_name: str
+            Fully qualified name of the output feature table
+        output_table_info: OutputTableInfo
+            Information about the output table to create
+        batch_feature_table: BatchFeatureTableModel
+            Batch feature table model containing the feature values to write
+        source_type: SourceType
+            Source type of the database session
+        """
+
+        if source_type == SourceType.DATABRICKS_UNITY:
+            # For Databricks Unity, we will overwrite the existing table without replacing it.
+            # Add POINT_IN_TIME column to the empty table
+            alter_table_sql_expr = expressions.Alter(
+                this=output_table_expr,
+                kind="TABLE",
+                actions=[
+                    expressions.ColumnDef(
+                        this=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                        kind=expressions.DataType(
+                            this=expressions.DataType.Type.TIMESTAMP, nested=False
+                        ),
+                    )
+                ],
+            )
+            await db_session.execute_query_long_running(
+                sql_to_string(alter_table_sql_expr, source_type=source_type)
+            )
+            # Append the new data to the existing table
+            merge_table_sql_expr = expressions.Merge(
+                this=expressions.Alias(
+                    this=output_table_expr,
+                    alias=expressions.TableAlias(this=quoted_identifier("T")),
+                ),
+                using=expressions.Subquery(
+                    this=input_select_expr,
+                    alias=expressions.TableAlias(this=quoted_identifier("S")),
+                ),
+                on=expressions.EQ(
+                    this=expressions.Column(
+                        this=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                        table=quoted_identifier("T"),
+                    ),
+                    expression=expressions.Column(
+                        this=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                        table=quoted_identifier("S"),
+                    ),
+                ),
+                expressions=[
+                    expressions.When(
+                        matched=False, then=expressions.Insert(this=expressions.Star())
+                    ),
+                ],
+            )
+            sql = sql_to_string(merge_table_sql_expr, source_type=source_type)
+            await db_session.execute_query_long_running(
+                re.sub(r"MERGE\s+INTO", "MERGE WITH SCHEMA EVOLUTION INTO", sql, count=1)
+            )
+        else:
+            # For other source types, we will replace the existing table and create a new one.
+            await db_session.create_table_as(
+                table_details=output_table_details,
+                partition_keys=[output_table_info.snapshot_date_name],
+                select_expr=input_select_expr,
+                replace=True,  # Replace the existing table
+            )
+
+        await self._add_primary_keys(
+            db_session=db_session,
+            output_table_details=output_table_details,
+            output_feature_table_name=output_feature_table_name,
+            output_table_info=output_table_info,
+            batch_feature_table=batch_feature_table,
+            source_type=source_type,
+        )
 
     async def _append_output_table(
         self,
@@ -412,11 +547,11 @@ class BatchExternalFeatureTableService:
             table_name=output_table_expr.name,
         )
         output_feature_table_name = sql_to_string(
-            get_fully_qualified_table_name(output_table_details.model_dump()),
+            output_table_expr,
             source_type=source_type,
         )
-        output_table_exists = await db_session.table_exists(output_table_details)
 
+        output_table_exists = await db_session.table_exists(output_table_details)
         if not output_table_exists:
             await self._create_output_table(
                 db_session=db_session,
@@ -428,17 +563,33 @@ class BatchExternalFeatureTableService:
                 source_type=source_type,
             )
         else:
-            output_columns_expr = [
-                quoted_identifier(SpecialColumnName.POINT_IN_TIME),
-                quoted_identifier(output_table_info.snapshot_date_name),
-            ] + columns
-            await self._append_output_table(
-                db_session=db_session,
-                input_select_expr=input_select_expr,
-                output_table_expr=output_table_expr,
-                output_feature_table_name=output_feature_table_name,
-                output_table_info=output_table_info,
-                snapshot_date_expr=snapshot_date_expr,
-                output_columns_expr=output_columns_expr,
-                source_type=source_type,
+            table_shape = await self.feature_store_warehouse_service.table_shape(
+                TabularSource(feature_store_id=feature_store.id, table_details=output_table_details)
             )
+            if table_shape.num_rows == 0:
+                # If the table exists but has no rows, it is considered empty.
+                await self._overwrite_output_table(
+                    db_session=db_session,
+                    input_select_expr=input_select_expr,
+                    output_table_expr=output_table_expr,
+                    output_table_details=output_table_details,
+                    output_feature_table_name=output_feature_table_name,
+                    output_table_info=output_table_info,
+                    batch_feature_table=batch_feature_table,
+                    source_type=source_type,
+                )
+            else:
+                output_columns_expr = [
+                    quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                    quoted_identifier(output_table_info.snapshot_date_name),
+                ] + columns
+                await self._append_output_table(
+                    db_session=db_session,
+                    input_select_expr=input_select_expr,
+                    output_table_expr=output_table_expr,
+                    output_feature_table_name=output_feature_table_name,
+                    output_table_info=output_table_info,
+                    snapshot_date_expr=snapshot_date_expr,
+                    output_columns_expr=output_columns_expr,
+                    source_type=source_type,
+                )
