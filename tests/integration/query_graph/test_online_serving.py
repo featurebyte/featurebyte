@@ -14,10 +14,12 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import expressions
 
 from featurebyte import FeatureList
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
@@ -186,12 +188,13 @@ async def test_online_serving_sql(
                 columns,
                 use_deployed_tile_tables=True,
             )
-        check_get_batch_features_feature_table(
+        await check_get_batch_features_feature_table(
             data_source,
             deployment,
             batch_request_table,
             df_historical,
             columns,
+            session,
         )
 
         # clear batch request table
@@ -308,17 +311,32 @@ def check_get_batch_features(
         batch_feature_table.preview()
 
 
-def check_get_batch_features_feature_table(
-    data_source, deployment, batch_request_table, df_historical, columns
+def get_fully_qualified_table_name_string(table_details, source_type):
+    """
+    Get fully qualified table name
+    """
+    return sql_to_string(
+        get_fully_qualified_table_name({
+            "table_name": table_details.table_name,
+            "schema_name": table_details.schema_name,
+            "database_name": table_details.database_name,
+        }),
+        source_type=source_type,
+    )
+
+
+async def check_get_batch_features_feature_table(
+    data_source, deployment, batch_request_table, df_historical, columns, session
 ):
     """
     Check get_batch_features_async that appends to an existing table
     """
     input_table_details = batch_request_table.location.table_details
     table_details = copy.deepcopy(input_table_details)
+
     table_details.table_name = "BATCH_FEATURE_TABLE_APPEND_TO"
-    input_table_name = f'"{input_table_details.database_name}"."{input_table_details.schema_name}"."{input_table_details.table_name}"'
-    output_table_name = f'"{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
+    input_table_name = get_fully_qualified_table_name_string(input_table_details, data_source.type)
+    output_table_name = get_fully_qualified_table_name_string(table_details, data_source.type)
     deployment.compute_batch_features(
         batch_request_table=batch_request_table,
         output_table_name=output_table_name,
@@ -358,6 +376,59 @@ def check_get_batch_features_feature_table(
     )
     preview_df = output_table.preview(limit=50)
     assert preview_df.shape[0] == df_historical.shape[0] * 2
+
+    # create empty table and overwrite it
+    table_details = copy.deepcopy(input_table_details)
+    table_details.table_name = "BATCH_FEATURE_TABLE_EMPTY"
+    output_table_name = get_fully_qualified_table_name_string(table_details, data_source.type)
+    await session.create_table_as(
+        table_details=table_details,
+        select_expr=expressions.Select(
+            expressions=[
+                expressions.Alias(
+                    this=expressions.Literal(this="1", is_string=False),
+                    alias=expressions.Identifier(this="id", quoted=False),
+                )
+            ],
+            where=expressions.Where(
+                this=expressions.EQ(
+                    this=expressions.Literal(this="1", is_string=False),
+                    expression=expressions.Literal(this="0", is_string=False),
+                )
+            ),
+        ),
+    )
+
+    if data_source.type in [SourceType.SPARK, SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY]:
+        # for spark based data source, ensure location remain the same after populating the table
+        df = await session.execute_query(f"DESCRIBE EXTENDED {output_table_name}")
+        original_table_location = df.data_type[df.col_name == "Location"].iloc[0]
+    else:
+        original_table_location = None
+
+    deployment.compute_batch_features(
+        batch_request_table=batch_request_table,
+        output_table_name=output_table_name,
+        output_table_snapshot_date="2001-01-02",
+        output_table_snapshot_date_name="snapshot_dt",
+        point_in_time="2001-01-02 13:15:00",
+        use_deployed_tile_tables=True,
+    )
+    output_table = data_source.get_source_table(
+        table_name=table_details.table_name,
+        database_name=table_details.database_name,
+        schema_name=table_details.schema_name,
+    )
+    preview_df = output_table.preview(limit=50)
+    assert preview_df.shape[0] == df_historical.shape[0]
+
+    if data_source.type in [SourceType.SPARK, SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY]:
+        # for spark based data source, ensure location remain the same after populating the table
+        df = await session.execute_query(f"DESCRIBE EXTENDED {output_table_name}")
+        table_location = df.data_type[df.col_name == "Location"].iloc[0]
+        assert (
+            table_location == original_table_location
+        ), "Table location should remain the same after populating the table"
 
 
 async def check_concurrent_online_store_table_updates(
