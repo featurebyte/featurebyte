@@ -80,6 +80,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             "dimension_table": "DimensionTable",
             "scd_table": "SCDTable",
             "time_series_table": "TimeSeriesTable",
+            "snapshots_table": "SnapshotsTable",
         }
 
     @property

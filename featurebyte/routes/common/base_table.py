@@ -21,6 +21,7 @@ from featurebyte.models.feature_store import TableValidation, TableValidationSta
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.models.snapshots_table import SnapshotsTableModel
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -43,6 +44,7 @@ from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseSer
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.snapshots_table import SnapshotsTableService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
@@ -56,6 +58,7 @@ TableDocumentT = TypeVar(
     DimensionTableModel,
     SCDTableModel,
     TimeSeriesTableModel,
+    SnapshotsTableModel,
 )
 TableDocumentServiceT = TypeVar(
     "TableDocumentServiceT",
@@ -64,6 +67,7 @@ TableDocumentServiceT = TypeVar(
     DimensionTableService,
     SCDTableService,
     TimeSeriesTableService,
+    SnapshotsTableService,
 )
 
 

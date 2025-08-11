@@ -694,6 +694,7 @@ class TableDataType(StrEnum):
     DIMENSION_TABLE = "dimension_table"
     SCD_TABLE = "scd_table"
     TIME_SERIES_TABLE = "time_series_table"
+    SNAPSHOTS_TABLE = "snapshots_table"
 
     @classmethod
     def with_default_feature_job_setting(cls) -> set[str]:
@@ -734,6 +735,8 @@ class SemanticType(StrEnum):
     SCD_SURROGATE_KEY_ID = "scd_surrogate_key_id"
     TIME_SERIES_DATE_TIME = "time_series_date_time"
     TIME_ZONE = "time_zone"
+    SNAPSHOT_ID = "snapshot_id"
+    SNAPSHOT_DATE_TIME = "snapshot_date_time"
 
 
 class MaterializedTableNamePrefix(StrEnum):

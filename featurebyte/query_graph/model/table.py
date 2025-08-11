@@ -710,6 +710,77 @@ class TimeSeriesTableData(BaseTableData):
         return view_graph_node, columns_info
 
 
+class SnapshotsTableData(BaseTableData):
+    """SnapshotsTableData class"""
+
+    type: Literal[TableDataType.SNAPSHOTS_TABLE] = TableDataType.SNAPSHOTS_TABLE
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    snapshot_id_column: StrictStr
+    snapshot_datetime_column: StrictStr
+    snapshot_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.snapshot_id_column:
+            return [self.snapshot_id_column]
+        return []
+
+    @field_validator("time_interval")
+    def validate_time_interval(cls, value: TimeInterval) -> TimeInterval:
+        if value.value != 1:
+            raise ValueError(
+                "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+            )
+        return value
+
+    def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
+        return InputNode(
+            name="temp",
+            parameters={
+                "id": self.id,
+                "id_column": self.snapshot_id_column,
+                "feature_store_details": {"type": feature_store_details.type},
+                "snapshot_datetime_column": self.snapshot_datetime_column,
+                "snapshot_datetime_schema": self.snapshot_datetime_schema,
+                "time_interval": self.time_interval,
+                **self._get_common_input_node_parameters(),
+            },
+        )
+
+    def construct_snapshots_view_graph_node(
+        self,
+        snapshots_table_node: InputNode,
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node & columns info for SnapshotsView of this snapshots table.
+
+        Parameters
+        ----------
+        snapshots_table_node: InputNode
+            Snapshots table node
+        drop_column_names: List[str]
+            List of column names to drop from the snapshots table
+        metadata: ViewMetadata
+            Metadata to be added to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.SNAPSHOTS_VIEW,
+            data_node=snapshots_table_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        return view_graph_node, columns_info
+
+
 if TYPE_CHECKING:
     AllTableDataT = BaseTableData
     SpecificTableDataT = BaseTableData
