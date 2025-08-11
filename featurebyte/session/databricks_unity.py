@@ -9,8 +9,7 @@ from typing import Any, BinaryIO
 from pydantic import PrivateAttr
 
 from featurebyte import SourceType
-from featurebyte.query_graph.model.table import TableSpec
-from featurebyte.session.base import INTERACTIVE_QUERY_TIMEOUT_SECONDS, BaseSchemaInitializer
+from featurebyte.session.base import BaseSchemaInitializer
 from featurebyte.session.base_spark import (
     BaseSparkMetadataSchemaInitializer,
     BaseSparkSchemaInitializer,
@@ -118,39 +117,3 @@ class DatabricksUnitySession(DatabricksSession):
 
     def _delete_file_from_storage(self, path: str) -> None:
         self._files_client.delete(file_path=path)
-
-    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
-        try:
-            schemas = await self.execute_query_interactive(
-                f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
-            )
-        except self._no_schema_error:
-            # fallback to using show statements if catalog does not have information schema
-            return await super()._list_schemas(database_name=database_name)
-        output = []
-        if schemas is not None:
-            output.extend(schemas["SCHEMA_NAME"].tolist())
-        return output
-
-    async def _list_tables(
-        self,
-        database_name: str | None = None,
-        schema_name: str | None = None,
-        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
-    ) -> list[TableSpec]:
-        try:
-            tables = await self.execute_query_interactive(
-                f"SELECT TABLE_NAME, COMMENT FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
-                f"WHERE TABLE_SCHEMA ILIKE '{schema_name}'",
-                timeout=timeout,
-            )
-        except self._no_schema_error:
-            # fallback to using show statements if catalog does not have information schema
-            return await super().list_tables(
-                database_name=database_name, schema_name=schema_name, timeout=timeout
-            )
-        output = []
-        if tables is not None:
-            for _, (name, comment) in tables.iterrows():
-                output.append(TableSpec(name=name, description=comment))
-        return output

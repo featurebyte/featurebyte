@@ -10,6 +10,9 @@ import datetime
 import os
 from typing import Any, AsyncGenerator, List, Optional, Tuple
 
+from cachetools import TTLCache
+from cachetools.keys import hashkey
+
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import DBVarType, InternalName, MaterializedTableNamePrefix, ViewNamePrefix
 from featurebyte.exception import (
@@ -47,6 +50,24 @@ MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
 )  # 10 million rows, 300 columns
 
+DATABASE_CACHE_MAX_SIZE = 100
+DATABASE_CACHE_TTL_SECONDS = 3600
+
+list_database_cache: TTLCache[Any, list[str]] = TTLCache(
+    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+)
+list_schema_cache: TTLCache[Any, list[str]] = TTLCache(
+    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+)
+list_table_cache: TTLCache[Any, list[TableSpec]] = TTLCache(
+    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+)
+list_column_cache: TTLCache[Any, list[ColumnSpecWithDescription]] = TTLCache(
+    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+)
+table_details_cache: TTLCache[Any, TableDetails] = TTLCache(
+    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+)
 
 logger = get_logger(__name__)
 
@@ -89,6 +110,7 @@ class FeatureStoreWarehouseService:
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List databases in feature store
@@ -97,21 +119,36 @@ class FeatureStoreWarehouseService:
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
+        refresh: bool
+            Whether to refresh the list of databases
 
         Returns
         -------
         List[str]
             List of database names
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+        if refresh:
+            list_database_cache.clear()
+
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        return await db_session.list_databases()
+        key = hashkey(credentials.id if credentials else None, feature_store.id)
+        result = list_database_cache.get(key)
+        if result is None:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
+            )
+            result = await db_session.list_databases()
+            list_database_cache[key] = result
+        return result
 
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -122,6 +159,8 @@ class FeatureStoreWarehouseService:
             FeatureStoreModel object
         database_name: str
             Name of database to use
+        refresh: bool
+            Whether to refresh the list of schemas
 
         Raises
         ------
@@ -133,49 +172,66 @@ class FeatureStoreWarehouseService:
         List[str]
             List of schema names
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+        if refresh:
+            list_schema_cache.clear()
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        try:
-            return await db_session.list_schemas(database_name=database_name)
-        except db_session.no_schema_error as exc:
-            raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
+        key = hashkey(credentials.id if credentials else None, feature_store.id, database_name)
+        result = list_schema_cache.get(key)
+        if result is None:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
+            )
+            try:
+                result = await db_session.list_schemas(database_name=database_name)
+                list_schema_cache[key] = result
+            except db_session.no_schema_error as exc:
+                raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
+        return result
 
     @staticmethod
     def _is_visible_table(table_name: str, filter_featurebyte_tables: bool) -> bool:
+        table_name = table_name.upper()
         if table_name.startswith("__"):
             return False
         if not filter_featurebyte_tables:
             return True
         for prefix in ViewNamePrefix.visible():
             # Table name case can get changed in certain databases (e.g. Databricks)
-            prefix = prefix.upper()
-            if table_name.upper().startswith(prefix):
+            if table_name.startswith(prefix.upper()):
                 return True
         # quick filter for materialized tables
-        if "TABLE" not in table_name:
+        if "TABLE" not in table_name.upper():
             return False
         for prefix in MaterializedTableNamePrefix.visible():
             # Table name case can get changed in certain databases (e.g. Databricks)
-            prefix = prefix.upper()
-            if table_name.upper().startswith(prefix):
+            if table_name.startswith(prefix.upper()):
                 return True
         return False
 
     @staticmethod
     async def _is_featurebyte_schema(
-        db_session: BaseSession, database_name: str, schema_name: str
+        db_session: BaseSession,
+        database_name: str,
+        schema_name: str,
+        tables: List[TableSpec],
     ) -> bool:
         try:
-            sql_expr = get_feature_store_id_expr(
-                database_name=database_name, schema_name=schema_name
-            )
-            sql = sql_to_string(
-                sql_expr,
-                source_type=db_session.source_type,
-            )
-            _ = await db_session.execute_query(sql)
-            return True
+            # check if metadata_schema table exists
+            for table in tables:
+                if table.name.upper() == "METADATA_SCHEMA":
+                    sql_expr = get_feature_store_id_expr(
+                        database_name=database_name, schema_name=schema_name
+                    )
+                    sql = sql_to_string(
+                        sql_expr,
+                        source_type=db_session.source_type,
+                    )
+                    _ = await db_session.execute_query(sql)
+                    return True
+            return False
         except db_session.no_schema_error:
             return False
 
@@ -184,6 +240,7 @@ class FeatureStoreWarehouseService:
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
+        refresh: bool = True,
     ) -> List[TableSpec]:
         """
         List tables in feature store
@@ -196,6 +253,8 @@ class FeatureStoreWarehouseService:
             Name of database to use
         schema_name: str
             Name of schema to use
+        refresh: bool
+            Whether to refresh the list of tables
 
         Raises
         ------
@@ -207,23 +266,41 @@ class FeatureStoreWarehouseService:
         List[TableSpec]
             List of tables
         """
-
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+        if refresh:
+            list_table_cache.clear()
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        is_featurebyte_schema = await self._is_featurebyte_schema(
-            db_session, database_name, schema_name
+        key = hashkey(
+            credentials.id if credentials else None, feature_store.id, database_name, schema_name
         )
-        try:
-            tables = await db_session.list_tables(
-                database_name=database_name, schema_name=schema_name
+        result = list_table_cache.get(key)
+        logger.info(f"Cached {result is None}")
+        if result is None:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
             )
-        except db_session.no_schema_error as exc:
-            raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
+            try:
+                tables = await db_session.list_tables(
+                    database_name=database_name, schema_name=schema_name
+                )
+            except db_session.no_schema_error as exc:
+                raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
+            is_featurebyte_schema = await self._is_featurebyte_schema(
+                db_session,
+                database_name,
+                schema_name,
+                tables,
+            )
 
-        return [
-            table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
-        ]
+            result = [
+                table
+                for table in tables
+                if self._is_visible_table(table.name, is_featurebyte_schema)
+            ]
+            list_table_cache[key] = result
+        return result
 
     async def list_columns(
         self,
@@ -231,6 +308,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
@@ -245,6 +323,8 @@ class FeatureStoreWarehouseService:
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the list of columns
 
         Raises
         ------
@@ -256,23 +336,40 @@ class FeatureStoreWarehouseService:
         List[ColumnSpecWithDescription]
             List of ColumnSpecWithDescription object
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+        if refresh:
+            list_column_cache.clear()
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-
-        try:
-            table_schema = await db_session.list_table_schema(
-                database_name=database_name, schema_name=schema_name, table_name=table_name
+        key = hashkey(
+            credentials.id if credentials else None,
+            feature_store.id,
+            database_name,
+            schema_name,
+            table_name,
+        )
+        result = list_column_cache.get(key)
+        if result is None:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
             )
-        except db_session.no_schema_error as exc:
-            raise TableNotFoundError(f"Table {table_name} not found.") from exc
 
-        table_schema = {  # type: ignore[assignment]
-            col_name: v
-            for (col_name, v) in table_schema.items()
-            if col_name != InternalName.TABLE_ROW_INDEX
-        }
-        return list(table_schema.values())
+            try:
+                table_schema = await db_session.list_table_schema(
+                    database_name=database_name, schema_name=schema_name, table_name=table_name
+                )
+            except db_session.no_schema_error as exc:
+                raise TableNotFoundError(f"Table {table_name} not found.") from exc
+
+            table_schema = {  # type: ignore[assignment]
+                col_name: v
+                for (col_name, v) in table_schema.items()
+                if col_name != InternalName.TABLE_ROW_INDEX
+            }
+            result = list(table_schema.values())
+            list_column_cache[key] = result
+        return result
 
     async def get_table_details(
         self,
@@ -280,6 +377,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
     ) -> TableDetails:
         """
         Get table details
@@ -294,6 +392,8 @@ class FeatureStoreWarehouseService:
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the table details
 
         Raises
         ------
@@ -304,16 +404,32 @@ class FeatureStoreWarehouseService:
         -------
         TableDetails
         """
-
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+        if refresh:
+            table_details_cache.clear()
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        try:
-            return await db_session.get_table_details(
-                database_name=database_name, schema_name=schema_name, table_name=table_name
+        key = hashkey(
+            credentials.id if credentials else None,
+            feature_store.id,
+            database_name,
+            schema_name,
+            table_name,
+        )
+        result = table_details_cache.get(key)
+        if result is None:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
             )
-        except db_session.no_schema_error as exc:
-            raise TableNotFoundError(f"Table {table_name} not found.") from exc
+            try:
+                result = await db_session.get_table_details(
+                    database_name=database_name, schema_name=schema_name, table_name=table_name
+                )
+                table_details_cache[key] = result
+            except db_session.no_schema_error as exc:
+                raise TableNotFoundError(f"Table {table_name} not found.") from exc
+        return result
 
     async def _get_table_shape(
         self, location: TabularSource, db_session: BaseSession

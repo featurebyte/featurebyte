@@ -232,6 +232,7 @@ class FeatureStoreRouter(
     async def list_databases_in_feature_store(
         request: Request,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List databases
@@ -241,7 +242,7 @@ class FeatureStoreRouter(
             controller, feature_store
         )
         result: List[str] = await controller.list_databases(
-            feature_store=feature_store,
+            feature_store=feature_store, refresh=refresh
         )
         return result
 
@@ -250,6 +251,7 @@ class FeatureStoreRouter(
         request: Request,
         database_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List schemas
@@ -261,6 +263,7 @@ class FeatureStoreRouter(
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
+            refresh=refresh,
         )
         return result
 
@@ -270,6 +273,7 @@ class FeatureStoreRouter(
         database_name: str,
         schema_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List schemas
@@ -282,6 +286,7 @@ class FeatureStoreRouter(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
+            refresh=refresh,
         )
         return result
 
@@ -292,6 +297,7 @@ class FeatureStoreRouter(
         schema_name: str,
         table_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns
@@ -305,6 +311,7 @@ class FeatureStoreRouter(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
+            refresh=refresh,
         )
         return result
 

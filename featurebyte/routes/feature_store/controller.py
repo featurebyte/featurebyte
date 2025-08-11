@@ -182,6 +182,7 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List databases accessible by the feature store
@@ -190,6 +191,8 @@ class FeatureStoreController(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
+        refresh: bool
+            Whether to refresh the database list from the warehouse
 
         Returns
         -------
@@ -198,12 +201,14 @@ class FeatureStoreController(
         """
         return await self.feature_store_warehouse_service.list_databases(
             feature_store=feature_store,
+            refresh=refresh,
         )
 
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -214,6 +219,8 @@ class FeatureStoreController(
             FeatureStoreModel object
         database_name: str
             Name of database to use
+        refresh: bool
+            Whether to refresh the schema list from the warehouse
 
         Returns
         -------
@@ -223,6 +230,7 @@ class FeatureStoreController(
         return await self.feature_store_warehouse_service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
+            refresh=refresh,
         )
 
     async def list_tables(
@@ -230,6 +238,7 @@ class FeatureStoreController(
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List tables in feature store
@@ -242,6 +251,8 @@ class FeatureStoreController(
             Name of database to use
         schema_name: str
             Name of schema to use
+        refresh: bool
+            Whether to refresh the table list from the warehouse
 
         Returns
         -------
@@ -252,6 +263,7 @@ class FeatureStoreController(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
+            refresh=refresh,
         )
         return [table.name for table in tables]
 
@@ -261,6 +273,7 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
@@ -275,6 +288,8 @@ class FeatureStoreController(
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the column list from the warehouse
 
         Returns
         -------
@@ -286,6 +301,7 @@ class FeatureStoreController(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
+            refresh=refresh,
         )
 
     async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
