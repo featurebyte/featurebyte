@@ -61,7 +61,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         "using the Default Feature Job Setting simplifies the process of setting "
         "up the Feature Job Setting for each feature.",
     )
-    snapshot_id_column: Optional[str] = Field(
+    snapshot_id_column: str = Field(
         frozen=True,
         description="Represents the entity being snapshotted. Must be unique within each snapshot datetime",
     )
@@ -158,7 +158,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         assert join_column is not None, "Series ID column is not available."
         return join_column
 
-    def _get_join_column(self) -> Optional[str]:
+    def _get_join_column(self) -> str:
         return self.snapshot_id_column
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
