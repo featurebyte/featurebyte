@@ -1272,15 +1272,8 @@ def test_validate_blind_spot_time_interval(
     _ = catalog
 
     # Create snapshots table with specified time interval
-    test_name = f"sf_snapshots_table_{time_interval_value}_{time_interval_unit}"
-    if blind_spot is not None:
-        blind_spot_str = str(blind_spot).replace(" ", "_").replace("=", "_")
-        test_name += f"_{blind_spot_str}"
-    else:
-        test_name += "_none"
-
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
-        name=test_name,
+        name="test_snapshots_table",
         snapshot_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
