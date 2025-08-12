@@ -1248,15 +1248,15 @@ def test_update_critical_data_info_with_none_value(saved_snapshots_table):
 @pytest.mark.parametrize(
     "time_interval_value,time_interval_unit,blind_spot,expected_error",
     [
-        # Valid case - fixed size unit with valid string blind_spot
+        # Valid case: fixed size unit with valid string blind_spot
         (1, "HOUR", "7200s", None),  # 2 hours in seconds
-        # Valid case - non-fixed size unit with CalendarWindow blind_spot
+        # Valid case: non-fixed size unit with CalendarWindow blind_spot
         (1, "MONTH", CalendarWindow(unit=TimeIntervalUnit.MONTH, size=3), None),
-        # Valid case - no blind spot
+        # Valid case: no blind spot
         (1, "HOUR", None, None),
-        # Invalid case - not multiple (string blind_spot)
+        # Invalid case: not multiple (string blind_spot)
         (1, "HOUR", "5400s", "has to be a multiple of time_interval"),  # 90 minutes
-        # Invalid case - incompatible types
+        # Invalid case: incompatible types
         (1, "MONTH", "3600s", "are not compatible"),  # string vs non-fixed
     ],
 )
