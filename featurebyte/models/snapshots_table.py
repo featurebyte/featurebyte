@@ -73,6 +73,16 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
     def _validate_blind_spot_time_interval(self) -> "SnapshotsTableModel":
         """
         Validate that blind_spot in default_feature_job_setting is a multiple of time_interval
+
+        Returns
+        -------
+        SnapshotsTableModel
+            The validated model instance
+
+        Raises
+        ------
+        ValueError
+            If blind_spot and time_interval are not compatible
         """
         if self.default_feature_job_setting is not None:
             blind_spot_window = self.default_feature_job_setting.get_blind_spot_calendar_window()
