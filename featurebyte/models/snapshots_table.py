@@ -15,6 +15,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.table import SnapshotsTableData
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
 
@@ -67,6 +68,35 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
             ],
         ),
     )
+
+    @model_validator(mode="after")
+    def _validate_blind_spot_time_interval(self) -> "SnapshotsTableModel":
+        """
+        Validate that blind_spot in default_feature_job_setting is a multiple of time_interval
+        """
+        if self.default_feature_job_setting is not None:
+            blind_spot_window = self.default_feature_job_setting.get_blind_spot_calendar_window()
+            if not blind_spot_window:
+                return self
+            time_interval_window = CalendarWindow(
+                unit=self.time_interval.unit, size=self.time_interval.value
+            )
+            time_interval_is_fixed_size = time_interval_window.is_fixed_size()
+            blind_spot_is_fixed_size = blind_spot_window.is_fixed_size()
+            if time_interval_is_fixed_size != blind_spot_is_fixed_size:
+                raise ValueError("blind_spot and time_interval are not compatible")
+            if time_interval_is_fixed_size:
+                time_interval_size = time_interval_window.to_seconds()
+                blind_spot_size = blind_spot_window.to_seconds()
+            else:
+                time_interval_size = time_interval_window.to_months()
+                blind_spot_size = blind_spot_window.to_months()
+            if blind_spot_size % time_interval_size != 0:
+                raise ValueError(
+                    f"blind_spot ({blind_spot_window}) has to be a multiple of time_interval ({time_interval_size})"
+                )
+
+        return self
 
     @property
     def primary_key_columns(self) -> List[str]:
