@@ -17,7 +17,7 @@ from typeguard import TypeCheckError
 
 from featurebyte import SnapshotsTable
 from featurebyte.api.entity import Entity
-from featurebyte.enum import TableDataType
+from featurebyte.enum import TableDataType, TimeIntervalUnit
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -36,6 +36,7 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
     TimeZoneColumn,
 )
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -1242,3 +1243,73 @@ def test_update_critical_data_info_with_none_value(saved_snapshots_table):
         saved_snapshots_table.col_int.info.critical_data_info.cleaning_operations
         == cleaning_operations
     )
+
+
+@pytest.mark.parametrize(
+    "time_interval_value,time_interval_unit,blind_spot,expected_error",
+    [
+        # Valid case: fixed size unit with valid string blind_spot
+        (1, "HOUR", "7200s", None),  # 2 hours in seconds
+        # Valid case: non-fixed size unit with CalendarWindow blind_spot
+        (1, "MONTH", CalendarWindow(unit=TimeIntervalUnit.MONTH, size=3), None),
+        # Valid case: no blind spot
+        (1, "HOUR", None, None),
+        # Invalid case: not multiple (string blind_spot)
+        (1, "HOUR", "5400s", "has to be a multiple of time_interval"),  # 90 minutes
+        # Invalid case: incompatible types
+        (1, "MONTH", "3600s", "are not compatible"),  # string vs non-fixed
+    ],
+)
+def test_validate_blind_spot_time_interval(
+    snowflake_database_snapshots_table,
+    catalog,
+    time_interval_value,
+    time_interval_unit,
+    blind_spot,
+    expected_error,
+):
+    """Test _validate_blind_spot_time_interval with various combinations"""
+    _ = catalog
+
+    # Create snapshots table with specified time interval
+    snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
+        name="test_snapshots_table",
+        snapshot_id_column="col_int",
+        snapshot_datetime_column="date",
+        snapshot_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
+        time_interval=TimeInterval(value=time_interval_value, unit=time_interval_unit),
+        record_creation_timestamp_column="created_at",
+    )
+
+    # Create feature job setting with optional blind spot
+    feature_job_setting_kwargs = {
+        "crontab": Crontab(
+            minute=0,
+            hour="*" if time_interval_unit in ["HOUR", "MINUTE"] else 0,
+            day_of_week="*",
+            day_of_month="*" if time_interval_unit not in ["MONTH", "QUARTER"] else "1",
+            month_of_year="*",
+        ),
+        "timezone": "Etc/UTC",
+    }
+    if blind_spot is not None:
+        feature_job_setting_kwargs["blind_spot"] = blind_spot
+
+    if expected_error is None:
+        # Should not raise error
+        snapshots_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(**feature_job_setting_kwargs)
+        )
+        if blind_spot is not None:
+            assert snapshots_table.default_feature_job_setting.blind_spot == blind_spot
+        else:
+            assert snapshots_table.default_feature_job_setting.blind_spot is None
+    else:
+        # Should raise exception with expected message
+        with pytest.raises(RecordUpdateException) as exc:
+            snapshots_table.update_default_feature_job_setting(
+                feature_job_setting=CronFeatureJobSetting(**feature_job_setting_kwargs)
+            )
+        assert expected_error in str(exc.value)

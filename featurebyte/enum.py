@@ -129,6 +129,15 @@ class TimeIntervalUnit(OrderedStrEnum):
     QUARTER = "QUARTER"
     YEAR = "YEAR"
 
+    @classmethod
+    def fixed_size_units(cls) -> list[TimeIntervalUnit]:
+        return [
+            TimeIntervalUnit.MINUTE,
+            TimeIntervalUnit.HOUR,
+            TimeIntervalUnit.DAY,
+            TimeIntervalUnit.WEEK,
+        ]
+
 
 class DBVarType(StrEnum):
     """
