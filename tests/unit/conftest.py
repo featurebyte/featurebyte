@@ -3299,7 +3299,7 @@ def patch_is_featurebyte_schema():
         "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._is_featurebyte_schema"
     ) as mock_is_featurebyte_schema:
         mock_is_featurebyte_schema.return_value = False
-        yield
+        yield mock_is_featurebyte_schema
 
 
 @pytest.fixture(name="source_info")

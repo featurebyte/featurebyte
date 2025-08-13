@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pandas as pd
 import pyarrow as pa
 import pytest
+from databricks.sdk.service.catalog import CatalogInfo, ColumnInfo, SchemaInfo, TableInfo
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -69,55 +70,11 @@ class MockDatabricksConnection:
 
     def execute(self, *args, **kwargs):
         query = args[0]
-        if query == "SHOW CATALOGS":
-            self.description = [["catalog", "STRING"]]
-            self.result_rows = [["hive_metastore"], ["samples"]]
-        elif query.startswith("SHOW SCHEMAS"):
-            self.description = [["databaseName", "STRING"]]
-            self.result_rows = [["default"], ["demo"]]
-        elif query.startswith("SHOW TABLES"):
-            self.description = [["database", "STRING"], ["tableName", "STRING"]]
-            self.result_rows = [
-                ["default", "transactions"],
-                ["default", "calls"],
-            ]
-        elif query.startswith("DESCRIBE"):
-            self.description = [
-                ["col_name", "STRING"],
-                ["data_type", "STRING"],
-                ["comment", "STRING"],
-            ]
-            self.result_rows = [
-                ["col_binary", "BINARY", "Binary Column"],
-                ["col_bool", "BOOLEAN", "Boolean Column"],
-                ["col_date", "DATE", "Date Column"],
-                ["col_decimal", "DECIMAL", "Decimal Column"],
-                ["col_double", "DOUBLE", "Double Column"],
-                ["col_float", "FLOAT", "Float Column"],
-                ["col_int", "INT", "Int Column"],
-                ["col_interval", "INTERVAL", "Interval Column"],
-                ["col_void", "VOID", "Void Column"],
-                ["col_timestamp", "TIMESTAMP", "Timestamp Column"],
-                ["col_array", "ARRAY", "Array Column"],
-                ["col_map", "MAP", "Map Column"],
-                ["col_struct", "STRUCT", "Struct Column"],
-                ["col_string", "STRING", "String Column"],
-                ["col_unknown", "UNKNOWN", "Unknown Column"],
-                ["# Partition Information", ""],
-                ["# col_name", ""],
-                ["col_date", "DATE"],
-                ["col_int", "INT"],
-                ["", ""],
-                ["# Storage Information", ""],
-                ["Location", "file:/tmp/test.parquet"],
-                ["", ""],
-            ]
-        else:
-            self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
-            self.result_rows = [
-                [1, 2, 3],
-                [100, 200, 300],
-            ]
+        self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
+        self.result_rows = [
+            [1, 2, 3],
+            [100, 200, 300],
+        ]
         self.returned_count = 0
         return self
 
@@ -148,11 +105,46 @@ def patched_databricks_session_cls_fixture(
 
 
 @pytest.mark.usefixtures("databricks_connection")
+@patch("featurebyte.session.databricks.WorkspaceClient")
 @pytest.mark.asyncio
-async def test_databricks_session(databricks_session_dict):
+async def test_databricks_session(mock_workspace_client, databricks_session_dict):
     """
     Test DatabricksSession
     """
+    mock_workspace_client = mock_workspace_client.return_value
+    mock_workspace_client.catalogs.list.return_value = [
+        CatalogInfo(name="hive_metastore"),
+        CatalogInfo(name="samples"),
+    ]
+    mock_workspace_client.schemas.list.return_value = [
+        SchemaInfo(name="default"),
+        SchemaInfo(name="demo"),
+    ]
+    mock_workspace_client.tables.list.return_value = [
+        TableInfo(name="transactions"),
+        TableInfo(name="calls"),
+    ]
+    mock_workspace_client.tables.get.return_value = TableInfo(
+        name="transactions",
+        columns=[
+            ColumnInfo(name="col_binary", type_text="BINARY", comment="Binary Column"),
+            ColumnInfo(name="col_bool", type_text="BOOLEAN", comment="Boolean Column"),
+            ColumnInfo(name="col_date", type_text="DATE", comment="Date Column", partition_index=0),
+            ColumnInfo(name="col_decimal", type_text="DECIMAL", comment="Decimal Column"),
+            ColumnInfo(name="col_double", type_text="DOUBLE", comment="Double Column"),
+            ColumnInfo(name="col_float", type_text="FLOAT", comment="Float Column"),
+            ColumnInfo(name="col_int", type_text="INT", comment="Int Column", partition_index=1),
+            ColumnInfo(name="col_interval", type_text="INTERVAL", comment="Interval Column"),
+            ColumnInfo(name="col_void", type_text="VOID", comment="Void Column"),
+            ColumnInfo(name="col_timestamp", type_text="TIMESTAMP", comment="Timestamp Column"),
+            ColumnInfo(name="col_array", type_text="ARRAY", comment="Array Column"),
+            ColumnInfo(name="col_map", type_text="MAP", comment="Map Column"),
+            ColumnInfo(name="col_struct", type_text="STRUCT", comment="Struct Column"),
+            ColumnInfo(name="col_string", type_text="STRING", comment="String Column"),
+            ColumnInfo(name="col_unknown", type_text="UNKNOWN", comment="Unknown Column"),
+        ],
+    )
+
     session = DatabricksSession(**databricks_session_dict)
     assert session.host == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"

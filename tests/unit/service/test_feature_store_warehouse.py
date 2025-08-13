@@ -143,13 +143,14 @@ async def test_table_preview(
     assert args[0] == expected_query
 
 
-@pytest.mark.parametrize("featurebyte_schema", [True, False])
+@pytest.mark.parametrize("is_featurebyte_schema", [True, False])
 @pytest.mark.asyncio
 async def test_list_tables(
     feature_store_warehouse_service,
     feature_store,
     mock_get_feature_store_session,
-    featurebyte_schema,
+    mock_is_featurebyte_schema,
+    is_featurebyte_schema,
 ):
     """
     Test list_tables
@@ -170,8 +171,7 @@ async def test_list_tables(
         TableSpec(name="table2", description="table2"),
     ]
 
-    if not featurebyte_schema:
-        mock_session.execute_query.side_effect = Exception
+    mock_is_featurebyte_schema.return_value = is_featurebyte_schema
 
     mock_session.list_tables.return_value = table_specs
     tables = await feature_store_warehouse_service.list_tables(
@@ -179,11 +179,7 @@ async def test_list_tables(
         database_name="db_name",
         schema_name="schema_name",
     )
-    assert (
-        mock_session.execute_query.call_args[0][0]
-        == 'SELECT\n  "FEATURE_STORE_ID"\nFROM "db_name"."schema_name"."METADATA_SCHEMA"'
-    )
-    if featurebyte_schema:
+    if is_featurebyte_schema:
         assert tables == table_specs[2:8]
     else:
         assert tables == table_specs[1:]

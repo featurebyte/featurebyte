@@ -16,6 +16,7 @@ import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
 from databricks.sdk.core import Config, oauth_service_principal
+from databricks.sdk.errors import NotFound
 from databricks.sql.thrift_api.TCLIService.ttypes import TOperationHandle
 from pydantic import PrivateAttr
 from TCLIService import ttypes
@@ -81,21 +82,27 @@ class DatabricksSession(BaseSparkSession):
 
     async def _list_databases(self) -> list[str]:
         output = []
-        for catalog_info in self._workspace_client.catalogs.list(include_browse=True):
-            if catalog_info.name:
-                output.append(catalog_info.name)
-        return output
+        try:
+            for catalog_info in self._workspace_client.catalogs.list(include_browse=True):
+                if catalog_info.name:
+                    output.append(catalog_info.name)
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
 
     async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         if database_name is None:
             return []
         output = []
-        for schema_info in self._workspace_client.schemas.list(
-            catalog_name=database_name, include_browse=True
-        ):
-            if schema_info.name:
-                output.append(schema_info.name)
-        return output
+        try:
+            for schema_info in self._workspace_client.schemas.list(
+                catalog_name=database_name, include_browse=True
+            ):
+                if schema_info.name:
+                    output.append(schema_info.name)
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
 
     async def _list_tables(
         self,
@@ -106,12 +113,15 @@ class DatabricksSession(BaseSparkSession):
         if database_name is None or schema_name is None:
             return []
         output = []
-        for table_info in self._workspace_client.tables.list(
-            catalog_name=database_name, schema_name=schema_name, include_browse=True
-        ):
-            if table_info.name:
-                output.append(TableSpec(name=table_info.name, description=table_info.comment))
-        return output
+        try:
+            for table_info in self._workspace_client.tables.list(
+                catalog_name=database_name, schema_name=schema_name, include_browse=True
+            ):
+                if table_info.name:
+                    output.append(TableSpec(name=table_info.name, description=table_info.comment))
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
 
     async def list_table_schema(
         self,
@@ -120,31 +130,34 @@ class DatabricksSession(BaseSparkSession):
         schema_name: str | None = None,
         timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
-        table_info = self._workspace_client.tables.get(
-            f"{database_name}.{schema_name}.{table_name}"
-        )
-        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = OrderedDict()
-        if table_info.columns is None:
-            return column_name_type_map
-        for column_info in table_info.columns:
-            if column_info.name is None or column_info.type_text is None:
-                continue
-            dtype = self._convert_to_internal_variable_type(column_info.type_text.upper())
-            partition_metadata = (
-                None
-                if column_info.partition_index is None
-                else PartitionMetadata(
-                    is_partition_key_candidate=True,
+        try:
+            table_info = self._workspace_client.tables.get(
+                f"{database_name}.{schema_name}.{table_name}"
+            )
+            column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = OrderedDict()
+            if table_info.columns is None:
+                return column_name_type_map
+            for column_info in table_info.columns:
+                if column_info.name is None or column_info.type_text is None:
+                    continue
+                dtype = self._convert_to_internal_variable_type(column_info.type_text.upper())
+                partition_metadata = (
+                    None
+                    if column_info.partition_index is None
+                    else PartitionMetadata(
+                        is_partition_key_candidate=True,
+                    )
                 )
-            )
-            column_name_type_map[column_info.name] = ColumnSpecWithDescription(
-                name=column_info.name,
-                dtype=dtype,
-                description=column_info.comment or None,
-                partition_metadata=partition_metadata,
-            )
+                column_name_type_map[column_info.name] = ColumnSpecWithDescription(
+                    name=column_info.name,
+                    dtype=dtype,
+                    description=column_info.comment or None,
+                    partition_metadata=partition_metadata,
+                )
 
-        return column_name_type_map
+            return column_name_type_map
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
 
     @staticmethod
     @contextlib.contextmanager
