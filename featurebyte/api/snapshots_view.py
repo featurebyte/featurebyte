@@ -13,6 +13,7 @@ from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -162,9 +163,15 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         return self.snapshot_id_column
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+        # TODO: support offset
         _ = offset
         return {
-            "snapshot_parameters": {
+            "snapshots_parameters": {
                 "snapshot_datetime_column": self.snapshot_datetime_column,
+                "time_interval": self.time_interval,
+                "snapshot_datetime_metadata": DBVarTypeMetadata(
+                    timestamp_schema=self.snapshot_datetime_schema
+                ),
+                "feature_job_setting": self.default_feature_job_setting,
             }
         }

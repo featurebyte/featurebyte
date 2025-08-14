@@ -1129,6 +1129,29 @@ class EventLookupParameters(FeatureByteBaseModel):
         return None
 
 
+class SnapshotsLookupParameters(FeatureByteBaseModel):
+    """Parameters for SnapshotsTable lookup"""
+
+    snapshot_datetime_column: InColumnStr
+    time_interval: TimeInterval
+    snapshot_datetime_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
+    offset: Optional[CalendarWindow] = Field(default=None)
+
+    @property
+    def snapshot_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get snapshot timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.snapshot_datetime_metadata:
+            return self.snapshot_datetime_metadata.timestamp_schema
+        return None
+
+
 class LookupParameters(FeatureByteBaseModel):
     """Lookup NOde Parameters"""
 
@@ -1139,6 +1162,7 @@ class LookupParameters(FeatureByteBaseModel):
     entity_id: PydanticObjectId
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
+    snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
