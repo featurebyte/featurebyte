@@ -110,8 +110,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
         assert "created_at" in response_dict
 
+    @pytest.mark.parametrize("refresh", [True, False])
     def test_list_databases__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+        self, test_api_client_persistent, create_success_response, mock_get_session, refresh
     ):
         """
         Test list databases
@@ -122,7 +123,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
         databases = ["a", "b", "c"]
         mock_get_session.return_value.list_databases.return_value = databases
-        response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh={refresh}", json=feature_store
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == databases
 
@@ -188,8 +191,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             "detail": "Database not found. Please specify a valid database name.",
         }
 
+    @pytest.mark.parametrize("refresh", [True, False])
     def test_list_schemas__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+        self, test_api_client_persistent, create_success_response, mock_get_session, refresh
     ):
         """
         Test list schemas
@@ -202,7 +206,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         schemas = ["a", "b", "c"]
         mock_get_session.return_value.list_schemas.return_value = schemas
         response = test_api_client.post(
-            f"{self.base_route}/schema?database_name=X", json=feature_store
+            f"{self.base_route}/schema?database_name=X&refresh={refresh}", json=feature_store
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == schemas
@@ -255,12 +259,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             "detail": "Schema not found. Please specify a valid schema name.",
         }
 
+    @pytest.mark.parametrize("refresh", [True, False])
     def test_list_tables__200(
         self,
         test_api_client_persistent,
         create_success_response,
         mock_get_session,
         mock_is_featurebyte_schema,
+        refresh,
     ):
         """
         Test list tables
@@ -277,7 +283,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             TableSpec(name=tb) for tb in tables
         ]
         response = test_api_client.post(
-            f"{self.base_route}/table?database_name=X&schema_name=Y", json=feature_store
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh={refresh}",
+            json=feature_store,
         )
         assert response.status_code == HTTPStatus.OK, response.text
         # tables with names that has a "__" prefix should be excluded
@@ -337,8 +344,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             "detail": "Table not found. Please specify a valid table name.",
         }
 
+    @pytest.mark.parametrize("refresh", [True, False])
     def test_list_columns__200(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+        self, test_api_client_persistent, create_success_response, mock_get_session, refresh
     ):
         """
         Test list columns
@@ -357,7 +365,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         }
         mock_get_session.return_value.list_table_schema.return_value = columns
         response = test_api_client.post(
-            f"{self.base_route}/column?database_name=X&schema_name=Y&table_name=Z",
+            f"{self.base_route}/column?database_name=X&schema_name=Y&table_name=Z&refresh={refresh}",
             json=feature_store,
         )
         assert response.status_code == HTTPStatus.OK
@@ -1174,3 +1182,137 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "details": {},
             },
         ]
+
+    def test_no_cache_200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """Test list without cache(success)"""
+        test_api_client, _ = test_api_client_persistent
+        feature_store = create_success_response.json()
+        doc_id = feature_store["_id"]
+
+        mock_get_session.return_value.list_databases.return_value = ["x"]
+        mock_get_session.return_value.list_schemas.return_value = ["y"]
+        tables = ["a", "b", "c"]
+        mock_get_session.return_value.list_tables.return_value = [
+            TableSpec(name=tb) for tb in tables
+        ]
+
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["x"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=X&refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["y"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == tables[:3]
+
+        # check cache works
+        mock_get_session.return_value.list_databases.return_value = []
+        mock_get_session.return_value.list_schemas.return_value = []
+        mock_get_session.return_value.list_tables.return_value = []
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == tables[:3]
+
+        # expect cache to be cleared
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh=True", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=X&refresh=True", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=True",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+    def test_clear_cache_200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """Test clear cache (success)"""
+        test_api_client, _ = test_api_client_persistent
+        feature_store = create_success_response.json()
+        doc_id = feature_store["_id"]
+
+        mock_get_session.return_value.list_databases.return_value = ["x"]
+        mock_get_session.return_value.list_schemas.return_value = ["y"]
+        tables = ["a", "b", "c"]
+        mock_get_session.return_value.list_tables.return_value = [
+            TableSpec(name=tb) for tb in tables
+        ]
+
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["x"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=X&refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["y"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == tables[:3]
+
+        # check cache works
+        mock_get_session.return_value.list_databases.return_value = []
+        mock_get_session.return_value.list_schemas.return_value = []
+        mock_get_session.return_value.list_tables.return_value = []
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == tables[:3]
+
+        # clear cache
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}/cache")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # expect cache to be cleared
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=X&refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []

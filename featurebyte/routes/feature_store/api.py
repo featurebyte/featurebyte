@@ -159,6 +159,12 @@ class FeatureStoreRouter(
             methods=["GET"],
             response_model=List[ComputeOption],
         )
+        self.router.add_api_route(
+            "/{feature_store_id}/cache",
+            self.clear_cache,
+            methods=["DELETE"],
+            status_code=HTTPStatus.OK,
+        )
 
     async def create_object(
         self,
@@ -453,3 +459,14 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = self.get_controller_for_request(request)
         return await controller.list_compute_options(feature_store_id=feature_store_id)
+
+    async def clear_cache(
+        self,
+        request: Request,
+        feature_store_id: PydanticObjectId,
+    ) -> None:
+        """
+        Clear listing cache for the feature store.
+        """
+        controller: FeatureStoreController = self.get_controller_for_request(request)
+        await controller.clear_cache(feature_store_id=feature_store_id)

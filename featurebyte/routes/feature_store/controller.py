@@ -584,3 +584,16 @@ class FeatureStoreController(
         return await self.session_manager_service.list_feature_store_compute_options(
             feature_store=feature_store
         )
+
+    async def clear_cache(self, feature_store_id: ObjectId) -> None:
+        """
+        Clear cache for feature store
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+        """
+        await self.feature_store_warehouse_service.clear_listing_cache(
+            feature_store_id=feature_store_id
+        )

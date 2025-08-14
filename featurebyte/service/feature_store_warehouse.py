@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import datetime
 import os
-from typing import Any, AsyncGenerator, List, Optional, Tuple
+from collections import defaultdict
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
+from bson import ObjectId
 from cachetools import TTLCache
 from cachetools.keys import hashkey
 
@@ -53,21 +55,25 @@ MAX_TABLE_CELLS = int(
 DATABASE_CACHE_MAX_SIZE = 100
 DATABASE_CACHE_TTL_SECONDS = 3600
 
-list_database_cache: TTLCache[Any, list[str]] = TTLCache(
-    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
+
+def cache_factory() -> TTLCache[Any, Any]:
+    """
+    Factory function to create a TTLCache instance with specified max size and TTL.
+
+    Returns
+    -------
+    TTLCache[Any, Any]
+    """
+    return TTLCache(maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS)
+
+
+list_database_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
+list_schema_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
+list_table_cache: Dict[ObjectId, TTLCache[Any, list[TableSpec]]] = defaultdict(cache_factory)
+list_column_cache: Dict[ObjectId, TTLCache[Any, list[ColumnSpecWithDescription]]] = defaultdict(
+    cache_factory
 )
-list_schema_cache: TTLCache[Any, list[str]] = TTLCache(
-    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
-)
-list_table_cache: TTLCache[Any, list[TableSpec]] = TTLCache(
-    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
-)
-list_column_cache: TTLCache[Any, list[ColumnSpecWithDescription]] = TTLCache(
-    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
-)
-table_details_cache: TTLCache[Any, TableDetails] = TTLCache(
-    maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS
-)
+table_details_cache: Dict[ObjectId, TTLCache[Any, TableDetails]] = defaultdict(cache_factory)
 
 logger = get_logger(__name__)
 
@@ -128,20 +134,20 @@ class FeatureStoreWarehouseService:
             List of database names
         """
         if refresh:
-            list_database_cache.clear()
+            list_database_cache[feature_store.id].clear()
 
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        key = hashkey(credentials.id if credentials else None, feature_store.id)
-        result = list_database_cache.get(key)
+        key = hashkey(credentials.id if credentials else None)
+        result = list_database_cache[feature_store.id].get(key)
         if result is None:
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
                 credentials_override=credentials,
             )
             result = await db_session.list_databases()
-            list_database_cache[key] = result
+            list_database_cache[feature_store.id][key] = result
         return result
 
     async def list_schemas(
@@ -173,12 +179,12 @@ class FeatureStoreWarehouseService:
             List of schema names
         """
         if refresh:
-            list_schema_cache.clear()
+            list_schema_cache[feature_store.id].clear()
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        key = hashkey(credentials.id if credentials else None, feature_store.id, database_name)
-        result = list_schema_cache.get(key)
+        key = hashkey(credentials.id if credentials else None, database_name)
+        result = list_schema_cache[feature_store.id].get(key)
         if result is None:
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
@@ -186,7 +192,7 @@ class FeatureStoreWarehouseService:
             )
             try:
                 result = await db_session.list_schemas(database_name=database_name)
-                list_schema_cache[key] = result
+                list_schema_cache[feature_store.id][key] = result
             except db_session.no_schema_error as exc:
                 raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
         return result
@@ -267,14 +273,12 @@ class FeatureStoreWarehouseService:
             List of tables
         """
         if refresh:
-            list_table_cache.clear()
+            list_table_cache[feature_store.id].clear()
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        key = hashkey(
-            credentials.id if credentials else None, feature_store.id, database_name, schema_name
-        )
-        result = list_table_cache.get(key)
+        key = hashkey(credentials.id if credentials else None, database_name, schema_name)
+        result = list_table_cache[feature_store.id].get(key)
         logger.info(f"Cached {result is None}")
         if result is None:
             db_session = await self.session_manager_service.get_feature_store_session(
@@ -299,7 +303,7 @@ class FeatureStoreWarehouseService:
                 for table in tables
                 if self._is_visible_table(table.name, is_featurebyte_schema)
             ]
-            list_table_cache[key] = result
+            list_table_cache[feature_store.id][key] = result
         return result
 
     async def list_columns(
@@ -337,18 +341,17 @@ class FeatureStoreWarehouseService:
             List of ColumnSpecWithDescription object
         """
         if refresh:
-            list_column_cache.clear()
+            list_column_cache[feature_store.id].clear()
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
         key = hashkey(
             credentials.id if credentials else None,
-            feature_store.id,
             database_name,
             schema_name,
             table_name,
         )
-        result = list_column_cache.get(key)
+        result = list_column_cache[feature_store.id].get(key)
         if result is None:
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
@@ -368,7 +371,7 @@ class FeatureStoreWarehouseService:
                 if col_name != InternalName.TABLE_ROW_INDEX
             }
             result = list(table_schema.values())
-            list_column_cache[key] = result
+            list_column_cache[feature_store.id][key] = result
         return result
 
     async def get_table_details(
@@ -405,18 +408,17 @@ class FeatureStoreWarehouseService:
         TableDetails
         """
         if refresh:
-            table_details_cache.clear()
+            table_details_cache[feature_store.id].clear()
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
         key = hashkey(
             credentials.id if credentials else None,
-            feature_store.id,
             database_name,
             schema_name,
             table_name,
         )
-        result = table_details_cache.get(key)
+        result = table_details_cache[feature_store.id].get(key)
         if result is None:
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
@@ -426,7 +428,7 @@ class FeatureStoreWarehouseService:
                 result = await db_session.get_table_details(
                     database_name=database_name, schema_name=schema_name, table_name=table_name
                 )
-                table_details_cache[key] = result
+                table_details_cache[feature_store.id][key] = result
             except db_session.no_schema_error as exc:
                 raise TableNotFoundError(f"Table {table_name} not found.") from exc
         return result
@@ -626,6 +628,21 @@ class FeatureStoreWarehouseService:
             source_type=db_session.source_type,
         )
         return db_session.get_async_query_stream(sql)
+
+    async def clear_listing_cache(self, feature_store_id: ObjectId) -> None:
+        """
+        Clear the listing cache for databases, schemas, tables, and columns.
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID for which to clear the cache
+        """
+        list_database_cache[feature_store_id].clear()
+        list_schema_cache[feature_store_id].clear()
+        list_table_cache[feature_store_id].clear()
+        list_column_cache[feature_store_id].clear()
+        table_details_cache[feature_store_id].clear()
 
 
 class NonInteractiveFeatureStoreWarehouseService(FeatureStoreWarehouseService):
