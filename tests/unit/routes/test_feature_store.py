@@ -1316,3 +1316,55 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == []
+
+    def test_cache_is_parameter_specific(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """Test cache is parameter specific"""
+        test_api_client, _ = test_api_client_persistent
+        feature_store = create_success_response.json()
+        doc_id = feature_store["_id"]
+
+        mock_get_session.return_value.list_databases.return_value = ["x"]
+        mock_get_session.return_value.list_schemas.return_value = ["y"]
+        tables = ["a", "b", "c"]
+        mock_get_session.return_value.list_tables.return_value = [
+            TableSpec(name=tb) for tb in tables
+        ]
+
+        response = test_api_client.post(
+            f"{self.base_route}/database?refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["x"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=X&refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == ["y"]
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Y&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == tables[:3]
+
+        # check cache works
+        mock_get_session.return_value.list_databases.return_value = []
+        mock_get_session.return_value.list_schemas.return_value = []
+        mock_get_session.return_value.list_tables.return_value = []
+
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=Y&refresh=False", json=feature_store
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
+
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=X&schema_name=Z&refresh=False",
+            json=feature_store,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == []
