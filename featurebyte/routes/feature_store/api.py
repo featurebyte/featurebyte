@@ -159,6 +159,12 @@ class FeatureStoreRouter(
             methods=["GET"],
             response_model=List[ComputeOption],
         )
+        self.router.add_api_route(
+            "/{feature_store_id}/cache",
+            self.clear_cache,
+            methods=["DELETE"],
+            status_code=HTTPStatus.OK,
+        )
 
     async def create_object(
         self,
@@ -232,6 +238,7 @@ class FeatureStoreRouter(
     async def list_databases_in_feature_store(
         request: Request,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List databases
@@ -241,7 +248,7 @@ class FeatureStoreRouter(
             controller, feature_store
         )
         result: List[str] = await controller.list_databases(
-            feature_store=feature_store,
+            feature_store=feature_store, refresh=refresh
         )
         return result
 
@@ -250,6 +257,7 @@ class FeatureStoreRouter(
         request: Request,
         database_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List schemas
@@ -261,6 +269,7 @@ class FeatureStoreRouter(
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
+            refresh=refresh,
         )
         return result
 
@@ -270,6 +279,7 @@ class FeatureStoreRouter(
         database_name: str,
         schema_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[str]:
         """
         List schemas
@@ -282,6 +292,7 @@ class FeatureStoreRouter(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
+            refresh=refresh,
         )
         return result
 
@@ -292,6 +303,7 @@ class FeatureStoreRouter(
         schema_name: str,
         table_name: str,
         feature_store: FeatureStoreModel,
+        refresh: bool = Query(default=True),
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns
@@ -305,6 +317,7 @@ class FeatureStoreRouter(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
+            refresh=refresh,
         )
         return result
 
@@ -446,3 +459,14 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = self.get_controller_for_request(request)
         return await controller.list_compute_options(feature_store_id=feature_store_id)
+
+    async def clear_cache(
+        self,
+        request: Request,
+        feature_store_id: PydanticObjectId,
+    ) -> None:
+        """
+        Clear listing cache for the feature store.
+        """
+        controller: FeatureStoreController = self.get_controller_for_request(request)
+        await controller.clear_cache(feature_store_id=feature_store_id)

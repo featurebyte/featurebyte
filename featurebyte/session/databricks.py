@@ -7,14 +7,16 @@ from __future__ import annotations
 import contextlib
 import os
 import time
+from functools import cached_property
 from io import BytesIO
-from typing import Any, AsyncGenerator, BinaryIO, Iterator, Optional, Union
+from typing import Any, AsyncGenerator, BinaryIO, Iterator, Optional, OrderedDict, Union
 from unittest.mock import patch
 
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
 from databricks.sdk.core import Config, oauth_service_principal
+from databricks.sdk.errors import NotFound
 from databricks.sql.thrift_api.TCLIService.ttypes import TOperationHandle
 from pydantic import PrivateAttr
 from TCLIService import ttypes
@@ -23,7 +25,10 @@ from featurebyte import logging
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import AccessTokenCredential, OAuthCredential
-from featurebyte.session.base import APPLICATION_NAME
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import PartitionMetadata
+from featurebyte.query_graph.model.table import TableSpec
+from featurebyte.session.base import APPLICATION_NAME, INTERACTIVE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
@@ -73,8 +78,86 @@ class DatabricksSession(BaseSparkSession):
     database_credential: Union[AccessTokenCredential, OAuthCredential]
 
     def __init__(self, **data: Any) -> None:
-        with self.exclude_env_credentials():
-            super().__init__(**data)
+        super().__init__(**data)
+
+    async def _list_databases(self) -> list[str]:
+        output = []
+        try:
+            for catalog_info in self._workspace_client.catalogs.list(include_browse=True):
+                if catalog_info.name:
+                    output.append(catalog_info.name)
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
+
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
+        if database_name is None:
+            return []
+        output = []
+        try:
+            for schema_info in self._workspace_client.schemas.list(
+                catalog_name=database_name, include_browse=True
+            ):
+                if schema_info.name:
+                    output.append(schema_info.name)
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
+
+    async def _list_tables(
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    ) -> list[TableSpec]:
+        if database_name is None or schema_name is None:
+            return []
+        output = []
+        try:
+            for table_info in self._workspace_client.tables.list(
+                catalog_name=database_name, schema_name=schema_name, include_browse=True
+            ):
+                if table_info.name:
+                    output.append(TableSpec(name=table_info.name, description=table_info.comment))
+            return output
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
+
+    async def list_table_schema(
+        self,
+        table_name: str | None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    ) -> OrderedDict[str, ColumnSpecWithDescription]:
+        try:
+            table_info = self._workspace_client.tables.get(
+                f"{database_name}.{schema_name}.{table_name}"
+            )
+            column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = OrderedDict()
+            if table_info.columns is None:
+                return column_name_type_map
+            for column_info in table_info.columns:
+                if column_info.name is None or column_info.type_text is None:
+                    continue
+                dtype = self._convert_to_internal_variable_type(column_info.type_text.upper())
+                partition_metadata = (
+                    None
+                    if column_info.partition_index is None
+                    else PartitionMetadata(
+                        is_partition_key_candidate=True,
+                    )
+                )
+                column_name_type_map[column_info.name] = ColumnSpecWithDescription(
+                    name=column_info.name,
+                    dtype=dtype,
+                    description=column_info.comment or None,
+                    partition_metadata=partition_metadata,
+                )
+
+            return column_name_type_map
+        except NotFound as exc:
+            raise self._no_schema_error(str(exc)) from exc
 
     @staticmethod
     @contextlib.contextmanager
@@ -149,30 +232,33 @@ class DatabricksSession(BaseSparkSession):
 
         additional_connection_params: dict[str, Any] = {}
         # This patch is necessary for the query execution to be cancellable while the cursor is polling for results
-        with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
-            if isinstance(self.database_credential, AccessTokenCredential):
-                additional_connection_params["access_token"] = self.database_credential.access_token
-            else:
-
-                def credentials_provider() -> Any:
-                    assert isinstance(self.database_credential, OAuthCredential)
-                    config = Config(
-                        host=f"https://{self.host}",
-                        client_id=self.database_credential.client_id,
-                        client_secret=self.database_credential.client_secret,
+        with self.exclude_env_credentials():
+            with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
+                if isinstance(self.database_credential, AccessTokenCredential):
+                    additional_connection_params["access_token"] = (
+                        self.database_credential.access_token
                     )
-                    return oauth_service_principal(config)
+                else:
 
-                additional_connection_params["credentials_provider"] = credentials_provider
-            self._connection = databricks_sql.connect(
-                server_hostname=self.host,
-                http_path=self.http_path,
-                catalog=self.catalog_name,
-                schema=self.schema_name,
-                _user_agent_entry=APPLICATION_NAME,
-                _use_arrow_native_complex_types=False,
-                **additional_connection_params,
-            )
+                    def credentials_provider() -> Any:
+                        assert isinstance(self.database_credential, OAuthCredential)
+                        config = Config(
+                            host=f"https://{self.host}",
+                            client_id=self.database_credential.client_id,
+                            client_secret=self.database_credential.client_secret,
+                        )
+                        return oauth_service_principal(config)
+
+                    additional_connection_params["credentials_provider"] = credentials_provider
+                self._connection = databricks_sql.connect(
+                    server_hostname=self.host,
+                    http_path=self.http_path,
+                    catalog=self.catalog_name,
+                    schema=self.schema_name,
+                    _user_agent_entry=APPLICATION_NAME,
+                    _use_arrow_native_complex_types=False,
+                    **additional_connection_params,
+                )
 
         # Always use UTC for session timezone
         cursor = self._connection.cursor()
@@ -189,11 +275,12 @@ class DatabricksSession(BaseSparkSession):
             return True
         return False
 
-    @property
+    @cached_property
     def _workspace_client(self) -> WorkspaceClient:
-        return self.get_workspace_client(
-            host=self.host, database_credential=self.database_credential
-        )
+        with self.exclude_env_credentials():
+            return self.get_workspace_client(
+                host=self.host, database_credential=self.database_credential
+            )
 
     def _initialize_storage(self) -> None:
         self.storage_path = self.storage_path.rstrip("/")

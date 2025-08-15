@@ -182,6 +182,7 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List databases accessible by the feature store
@@ -190,20 +191,25 @@ class FeatureStoreController(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
+        refresh: bool
+            Whether to refresh the database list from the warehouse
 
         Returns
         -------
         List[str]
             List of database names
         """
-        return await self.feature_store_warehouse_service.list_databases(
+        databases: List[str] = await self.feature_store_warehouse_service.list_databases(
             feature_store=feature_store,
+            refresh=refresh,
         )
+        return databases
 
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -214,22 +220,27 @@ class FeatureStoreController(
             FeatureStoreModel object
         database_name: str
             Name of database to use
+        refresh: bool
+            Whether to refresh the schema list from the warehouse
 
         Returns
         -------
         List[str]
             List of schema names
         """
-        return await self.feature_store_warehouse_service.list_schemas(
+        schemas: List[str] = await self.feature_store_warehouse_service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
+            refresh=refresh,
         )
+        return schemas
 
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
+        refresh: bool = True,
     ) -> List[str]:
         """
         List tables in feature store
@@ -242,6 +253,8 @@ class FeatureStoreController(
             Name of database to use
         schema_name: str
             Name of schema to use
+        refresh: bool
+            Whether to refresh the table list from the warehouse
 
         Returns
         -------
@@ -252,6 +265,7 @@ class FeatureStoreController(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
+            refresh=refresh,
         )
         return [table.name for table in tables]
 
@@ -261,6 +275,7 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
@@ -275,18 +290,24 @@ class FeatureStoreController(
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the column list from the warehouse
 
         Returns
         -------
         List[ColumnInfo]
             List of ColumnInfo object
         """
-        return await self.feature_store_warehouse_service.list_columns(
+        columns: List[
+            ColumnSpecWithDescription
+        ] = await self.feature_store_warehouse_service.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
+            refresh=refresh,
         )
+        return columns
 
     async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
         """
@@ -567,4 +588,17 @@ class FeatureStoreController(
         feature_store = await self.service.get_document(document_id=feature_store_id)
         return await self.session_manager_service.list_feature_store_compute_options(
             feature_store=feature_store
+        )
+
+    async def clear_cache(self, feature_store_id: ObjectId) -> None:
+        """
+        Clear cache for feature store
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+        """
+        await self.feature_store_warehouse_service.clear_listing_cache(
+            feature_store_id=feature_store_id
         )

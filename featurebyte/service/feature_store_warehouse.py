@@ -7,8 +7,14 @@ We split this into a separate service, as these typically require a session obje
 from __future__ import annotations
 
 import datetime
+import functools
 import os
-from typing import Any, AsyncGenerator, List, Optional, Tuple
+from collections import defaultdict
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple
+
+from bson import ObjectId
+from cachetools import TTLCache
+from cachetools.keys import hashkey
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import DBVarType, InternalName, MaterializedTableNamePrefix, ViewNamePrefix
@@ -19,6 +25,7 @@ from featurebyte.exception import (
     TableNotFoundError,
 )
 from featurebyte.logging import get_logger
+from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -47,8 +54,75 @@ MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
 )  # 10 million rows, 300 columns
 
+DATABASE_CACHE_MAX_SIZE = 100
+DATABASE_CACHE_TTL_SECONDS = 3600
+
+
+def cache_factory() -> TTLCache[Any, Any]:
+    """
+    Factory function to create a TTLCache instance with specified max size and TTL.
+
+    Returns
+    -------
+    TTLCache[Any, Any]
+    """
+    return TTLCache(maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS)
+
+
+list_database_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
+list_schema_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
+list_table_cache: Dict[ObjectId, TTLCache[Any, list[TableSpec]]] = defaultdict(cache_factory)
+list_column_cache: Dict[ObjectId, TTLCache[Any, list[ColumnSpecWithDescription]]] = defaultdict(
+    cache_factory
+)
+table_details_cache: Dict[ObjectId, TTLCache[Any, TableDetails]] = defaultdict(cache_factory)
 
 logger = get_logger(__name__)
+
+
+def async_cache(
+    cache_dict: Dict[ObjectId, TTLCache[Any, Any]],
+) -> Callable[..., Callable[..., Awaitable[Any]]]:
+    """
+    Decorator for async cache lookup and storage.
+
+    Parameters
+    ----------
+    cache_dict: Dict[ObjectId, TTLCache[Any, Any]]
+        Dictionary to store the cache for different feature stores.
+
+    Returns
+    -------
+    Any
+        Decorator function that wraps the original function to add caching behavior.
+    """
+
+    def decorator(func: Callable[..., Awaitable[List[Any]]]) -> Callable[..., Awaitable[Any]]:
+        @functools.wraps(func)
+        async def wrapper(
+            self: FeatureStoreWarehouseService,
+            feature_store: FeatureStoreModel,
+            *args: Any,
+            refresh: bool = True,
+            **kwargs: Any,
+        ) -> list[Any]:
+            if refresh:
+                cache_dict[feature_store.id].clear()
+            credentials = await self.session_manager_service.credential_service.get_credentials(
+                user_id=self.session_manager_service.user.id, feature_store=feature_store
+            )
+            key = hashkey(credentials.id if credentials else None, *args)
+            result = cache_dict[feature_store.id].get(key)
+            if result is None:
+                result = await func(
+                    self, feature_store, *args, refresh=refresh, credentials=credentials, **kwargs
+                )
+                cache_dict[feature_store.id][key] = result
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 class FeatureStoreWarehouseService:
@@ -86,9 +160,12 @@ class FeatureStoreWarehouseService:
         )
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
+    @async_cache(list_database_cache)
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
+        refresh: bool = True,
+        credentials: Optional[CredentialModel] = None,
     ) -> List[str]:
         """
         List databases in feature store
@@ -97,6 +174,10 @@ class FeatureStoreWarehouseService:
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
+        refresh: bool
+            Whether to refresh the list of databases
+        credentials: Optional[CredentialModel] = None
+            Credentials to use for the session. If None, will use the credentials from the session manager
 
         Returns
         -------
@@ -105,13 +186,17 @@ class FeatureStoreWarehouseService:
         """
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
+            credentials_override=credentials,
         )
         return await db_session.list_databases()
 
+    @async_cache(list_schema_cache)
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
+        refresh: bool = True,
+        credentials: Optional[CredentialModel] = None,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -122,6 +207,10 @@ class FeatureStoreWarehouseService:
             FeatureStoreModel object
         database_name: str
             Name of database to use
+        refresh: bool
+            Whether to refresh the list of schemas
+        credentials: Optional[CredentialModel] = None
+            Credentials to use for the session. If None, will use the credentials from the session manager
 
         Raises
         ------
@@ -134,7 +223,8 @@ class FeatureStoreWarehouseService:
             List of schema names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+            feature_store=feature_store,
+            credentials_override=credentials,
         )
         try:
             return await db_session.list_schemas(database_name=database_name)
@@ -143,47 +233,56 @@ class FeatureStoreWarehouseService:
 
     @staticmethod
     def _is_visible_table(table_name: str, filter_featurebyte_tables: bool) -> bool:
+        table_name = table_name.upper()
         if table_name.startswith("__"):
             return False
         if not filter_featurebyte_tables:
             return True
         for prefix in ViewNamePrefix.visible():
             # Table name case can get changed in certain databases (e.g. Databricks)
-            prefix = prefix.upper()
-            if table_name.upper().startswith(prefix):
+            if table_name.startswith(prefix.upper()):
                 return True
         # quick filter for materialized tables
         if "TABLE" not in table_name:
             return False
         for prefix in MaterializedTableNamePrefix.visible():
             # Table name case can get changed in certain databases (e.g. Databricks)
-            prefix = prefix.upper()
-            if table_name.upper().startswith(prefix):
+            if table_name.startswith(prefix.upper()):
                 return True
         return False
 
     @staticmethod
     async def _is_featurebyte_schema(
-        db_session: BaseSession, database_name: str, schema_name: str
+        db_session: BaseSession,
+        database_name: str,
+        schema_name: str,
+        tables: List[TableSpec],
     ) -> bool:
         try:
-            sql_expr = get_feature_store_id_expr(
-                database_name=database_name, schema_name=schema_name
-            )
-            sql = sql_to_string(
-                sql_expr,
-                source_type=db_session.source_type,
-            )
-            _ = await db_session.execute_query(sql)
-            return True
+            # check if metadata_schema table exists
+            for table in tables:
+                if table.name.upper() == "METADATA_SCHEMA":
+                    sql_expr = get_feature_store_id_expr(
+                        database_name=database_name, schema_name=schema_name
+                    )
+                    sql = sql_to_string(
+                        sql_expr,
+                        source_type=db_session.source_type,
+                    )
+                    _ = await db_session.execute_query(sql)
+                    return True
+            return False
         except db_session.no_schema_error:
             return False
 
+    @async_cache(list_table_cache)
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
+        refresh: bool = True,
+        credentials: Optional[CredentialModel] = None,
     ) -> List[TableSpec]:
         """
         List tables in feature store
@@ -196,6 +295,10 @@ class FeatureStoreWarehouseService:
             Name of database to use
         schema_name: str
             Name of schema to use
+        refresh: bool
+            Whether to refresh the list of tables
+        credentials: Optional[CredentialModel]
+            Credentials to use for the session. If None, will use the credentials from the session manager
 
         Raises
         ------
@@ -207,12 +310,9 @@ class FeatureStoreWarehouseService:
         List[TableSpec]
             List of tables
         """
-
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
-        is_featurebyte_schema = await self._is_featurebyte_schema(
-            db_session, database_name, schema_name
+            feature_store=feature_store,
+            credentials_override=credentials,
         )
         try:
             tables = await db_session.list_tables(
@@ -220,17 +320,26 @@ class FeatureStoreWarehouseService:
             )
         except db_session.no_schema_error as exc:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
+        is_featurebyte_schema = await self._is_featurebyte_schema(
+            db_session,
+            database_name,
+            schema_name,
+            tables,
+        )
 
         return [
             table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
         ]
 
+    @async_cache(list_column_cache)
     async def list_columns(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
+        credentials: Optional[CredentialModel] = None,
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
@@ -245,6 +354,10 @@ class FeatureStoreWarehouseService:
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the list of columns
+        credentials: Optional[CredentialModel]
+            Credentials to use for the session. If None, will use the credentials from the session manager
 
         Raises
         ------
@@ -257,7 +370,8 @@ class FeatureStoreWarehouseService:
             List of ColumnSpecWithDescription object
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+            feature_store=feature_store,
+            credentials_override=credentials,
         )
 
         try:
@@ -274,12 +388,15 @@ class FeatureStoreWarehouseService:
         }
         return list(table_schema.values())
 
+    @async_cache(table_details_cache)
     async def get_table_details(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
         table_name: str,
+        refresh: bool = True,
+        credentials: Optional[CredentialModel] = None,
     ) -> TableDetails:
         """
         Get table details
@@ -294,6 +411,10 @@ class FeatureStoreWarehouseService:
             Name of schema to use
         table_name: str
             Name of table to use
+        refresh: bool
+            Whether to refresh the table details
+        credentials: Optional[CredentialModel]
+            Credentials to use for the session. If None, will use the credentials from the session manager
 
         Raises
         ------
@@ -304,9 +425,9 @@ class FeatureStoreWarehouseService:
         -------
         TableDetails
         """
-
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
+            feature_store=feature_store,
+            credentials_override=credentials,
         )
         try:
             return await db_session.get_table_details(
@@ -510,6 +631,21 @@ class FeatureStoreWarehouseService:
             source_type=db_session.source_type,
         )
         return db_session.get_async_query_stream(sql)
+
+    async def clear_listing_cache(self, feature_store_id: ObjectId) -> None:
+        """
+        Clear the listing cache for databases, schemas, tables, and columns.
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID for which to clear the cache
+        """
+        list_database_cache[feature_store_id].clear()
+        list_schema_cache[feature_store_id].clear()
+        list_table_cache[feature_store_id].clear()
+        list_column_cache[feature_store_id].clear()
+        table_details_cache[feature_store_id].clear()
 
 
 class NonInteractiveFeatureStoreWarehouseService(FeatureStoreWarehouseService):

@@ -1,4 +1,4 @@
-FROM python:3.10-slim AS builder
+FROM python:3.10.16-slim AS builder
 
 # Increase PIP read timeout to 120 seconds to avoid timeout issues
 ENV PIP_DEFAULT_TIMEOUT=120
@@ -28,7 +28,7 @@ RUN . /opt/venv/bin/activate && \
     pip install dist/*.whl
 
 
-FROM python:3.10-slim AS runner
+FROM python:3.10.16-slim AS runner
 
 ARG USER_HOME=/app
 
