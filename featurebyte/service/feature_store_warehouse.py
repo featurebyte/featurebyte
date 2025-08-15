@@ -10,7 +10,7 @@ import datetime
 import functools
 import os
 from collections import defaultdict
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
 
 from bson import ObjectId
 from cachetools import TTLCache
@@ -80,11 +80,14 @@ table_details_cache: Dict[ObjectId, TTLCache[Any, TableDetails]] = defaultdict(c
 logger = get_logger(__name__)
 
 
+T = TypeVar("T")
+
+
 def async_cache(
     cache_dict: Dict[ObjectId, TTLCache[Any, Any]],
-) -> Callable[..., Callable[..., Awaitable[Any]]]:
+) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """
-    Decorator for async cache lookup and storage.
+    Decorator for async cache lookup and storage that preserves return types.
 
     Parameters
     ----------
@@ -93,11 +96,11 @@ def async_cache(
 
     Returns
     -------
-    Any
-        Decorator function that wraps the original function to add caching behavior.
+    Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]
+        Decorator function that wraps the original function while preserving return type.
     """
 
-    def decorator(func: Callable[..., Awaitable[List[Any]]]) -> Callable[..., Awaitable[Any]]:
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(
             self: FeatureStoreWarehouseService,
@@ -105,7 +108,7 @@ def async_cache(
             *args: Any,
             refresh: bool = True,
             **kwargs: Any,
-        ) -> list[Any]:
+        ) -> T:
             if refresh:
                 cache_dict[feature_store.id].clear()
             credentials = await self.session_manager_service.credential_service.get_credentials(

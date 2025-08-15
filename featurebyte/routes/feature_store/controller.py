@@ -199,11 +199,10 @@ class FeatureStoreController(
         List[str]
             List of database names
         """
-        databases: List[str] = await self.feature_store_warehouse_service.list_databases(
+        return await self.feature_store_warehouse_service.list_databases(
             feature_store=feature_store,
             refresh=refresh,
         )
-        return databases
 
     async def list_schemas(
         self,
@@ -228,12 +227,11 @@ class FeatureStoreController(
         List[str]
             List of schema names
         """
-        schemas: List[str] = await self.feature_store_warehouse_service.list_schemas(
+        return await self.feature_store_warehouse_service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
             refresh=refresh,
         )
-        return schemas
 
     async def list_tables(
         self,
@@ -298,16 +296,13 @@ class FeatureStoreController(
         List[ColumnInfo]
             List of ColumnInfo object
         """
-        columns: List[
-            ColumnSpecWithDescription
-        ] = await self.feature_store_warehouse_service.list_columns(
+        return await self.feature_store_warehouse_service.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
             refresh=refresh,
         )
-        return columns
 
     async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
         """
