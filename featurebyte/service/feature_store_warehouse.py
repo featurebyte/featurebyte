@@ -114,7 +114,7 @@ def async_cache(
             credentials = await self.session_manager_service.credential_service.get_credentials(
                 user_id=self.session_manager_service.user.id, feature_store=feature_store
             )
-            key = hashkey(credentials.id if credentials else None, *args)
+            key = hashkey(credentials.id if credentials else None, *args, **kwargs)
             result = cache_dict[feature_store.id].get(key)
             if result is None:
                 result = await func(
