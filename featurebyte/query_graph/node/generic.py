@@ -1151,6 +1151,20 @@ class SnapshotsLookupParameters(FeatureByteBaseModel):
             return self.snapshot_datetime_metadata.timestamp_schema
         return None
 
+    @property
+    def snapshot_timestamp_format_string(self) -> Optional[str]:
+        """
+        Get snapshot timestamp format string
+
+        Returns
+        -------
+        Optional[str]
+        """
+        snapshot_timestamp_schema = self.snapshot_timestamp_schema
+        if snapshot_timestamp_schema:
+            return snapshot_timestamp_schema.format_string
+        return None
+
 
 class LookupParameters(FeatureByteBaseModel):
     """Lookup NOde Parameters"""

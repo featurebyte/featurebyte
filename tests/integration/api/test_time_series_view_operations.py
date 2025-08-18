@@ -13,7 +13,10 @@ from bson import ObjectId
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from tests.util.helper import create_observation_table_by_upload, fb_assert_frame_equal
+from tests.util.helper import (
+    check_preview_and_compute_historical_features,
+    fb_assert_frame_equal,
+)
 
 
 @pytest.fixture(name="time_series_window_aggregate_feature")
@@ -101,19 +104,6 @@ def test_times_series_view(time_series_table):
         "hour": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
     assert actual == expected
-
-
-def check_preview_and_compute_historical_features(feature_list, preview_params, expected):
-    """
-    Helper function to check preview and compute historical features
-    """
-    df_features = feature_list.preview(preview_params)
-    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
-
-    obs_table = create_observation_table_by_upload(preview_params)
-    df_feature_table = feature_list.compute_historical_feature_table(obs_table, str(ObjectId()))
-    df_features = df_feature_table.to_pandas()
-    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
 def test_aggregate_over(time_series_window_aggregate_feature):

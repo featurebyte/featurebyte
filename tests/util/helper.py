@@ -1168,3 +1168,16 @@ def feature_query_set_to_string(
         feature_query_set.add_completed_feature_query(feature_query)
     queries.append(feature_query_set.construct_output_query(source_info))
     return ";\n\n".join(queries)
+
+
+def check_preview_and_compute_historical_features(feature_list, preview_params, expected):
+    """
+    Helper function to check preview and compute historical features
+    """
+    df_features = feature_list.preview(preview_params)
+    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
+
+    obs_table = create_observation_table_by_upload(preview_params)
+    df_feature_table = feature_list.compute_historical_feature_table(obs_table, str(ObjectId()))
+    df_features = df_feature_table.to_pandas()
+    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])

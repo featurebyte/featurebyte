@@ -214,6 +214,11 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                                 adjusted_point_in_time_expr,
                                 blind_spot_window.to_months(),
                             )
+                if snapshots_parameters.snapshot_timestamp_format_string is not None:
+                    adjusted_point_in_time_expr = self.adapter.format_timestamp(
+                        adjusted_point_in_time_expr,
+                        snapshots_parameters.snapshot_timestamp_format_string,
+                    )
                 left_table_join_keys = [
                     adjusted_point_in_time_expr,
                     get_qualified_column_identifier(serving_name, "REQ"),

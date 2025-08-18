@@ -866,6 +866,21 @@ def time_series_dataframe_tz_column_fixture(time_series_dataframe):
     return df
 
 
+@pytest.fixture(name="snapshots_dataframe", scope="session")
+def snapshots_dataframe_fixture(time_series_dataframe):
+    """
+    DataFrame fixture for snapshots data
+    """
+    df = time_series_dataframe.copy()
+    df = df.rename(
+        columns={
+            "series_id_col": "snapshot_id_col",
+            "reference_datetime_col": "snapshot_datetime_col",
+        }
+    )
+    return df
+
+
 @pytest.fixture(name="observation_table_dataframe", scope="session")
 def observation_table_dataframe_fixture(scd_dataframe):
     """
@@ -998,6 +1013,7 @@ async def datasets_registration_helper_fixture(
     scd_data_table_name_custom_date_with_tz_format,
     time_series_dataframe,
     time_series_tz_column_dataframe,
+    snapshots_dataframe,
     observation_table_dataframe,
 ):
     """
@@ -1070,6 +1086,9 @@ async def datasets_registration_helper_fixture(
     # Time series table
     helper.add_table("TIME_SERIES_TABLE", time_series_dataframe)
     helper.add_table("TIME_SERIES_TABLE_TZ_COLUMN", time_series_tz_column_dataframe)
+
+    # Snapshots table
+    helper.add_table("SNAPSHOTS_TABLE", snapshots_dataframe)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1764,6 +1783,22 @@ def time_series_data_tabular_source_tz_column_tabular_source(
     return database_table
 
 
+@pytest.fixture(name="snapshots_data_tabular_source", scope="session")
+def snapshots_data_tabular_source_fixture(
+    session,
+    data_source,
+):
+    """
+    Fixture for snapshots table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="SNAPSHOTS_TABLE",
+    )
+    return database_table
+
+
 @pytest.fixture(name="scd_table_name", scope="session")
 def scd_table_name_fixture(source_type):
     """
@@ -1802,6 +1837,14 @@ def time_series_table_tz_column_name_fixture(source_type):
     Fixture for the TimeSeriesTable name (with timezone offset column)
     """
     return f"{source_type}_time_series_table_tz_column"
+
+
+@pytest.fixture(name="snapshots_table_name", scope="session")
+def snapshots_table_name_fixture(source_type):
+    """
+    Fixture for the SnapshotsTable name
+    """
+    return f"{source_type}_snapshots_table"
 
 
 def tag_entities_for_scd_table(scd_table):
@@ -1913,7 +1956,7 @@ def time_series_table_fixture(
     catalog,
 ):
     """
-    Fixture for a SCDTable in integration tests
+    Fixture for a TimeSeriesTable in integration tests
     """
     _ = catalog
     time_series_table = time_series_data_tabular_source.create_time_series_table(
@@ -1970,6 +2013,39 @@ def time_series_table_tz_column_fixture(
     time_series_table["series_id_col"].as_entity(series2_entity.name)
     time_series_table["user_id_col"].as_entity(user_entity.name)
     return time_series_table
+
+
+@pytest.fixture(name="snapshots_table", scope="session")
+def snapshots_table_fixture(
+    snapshots_data_tabular_source,
+    snapshots_table_name,
+    timestamp_format_string,
+    series_entity,
+    user_entity,
+    catalog,
+):
+    """
+    Fixture for a SnapshotsTable in integration tests
+    """
+    _ = catalog
+    snapshots_table = snapshots_data_tabular_source.create_snapshots_table(
+        name=snapshots_table_name,
+        snapshot_datetime_column="snapshot_datetime_col",
+        snapshot_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+        snapshot_id_column="snapshot_id_col",
+        datetime_partition_column="snapshot_datetime_col",
+        datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
+    )
+    snapshots_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        )
+    )
+    snapshots_table["snapshot_id_col"].as_entity(series_entity.name)
+    snapshots_table["user_id_col"].as_entity(user_entity.name)
+    return snapshots_table
 
 
 @pytest.fixture(name="dimension_view", scope="session")
