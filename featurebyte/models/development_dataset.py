@@ -3,11 +3,12 @@ Model for Development Dataset
 """
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import Field, field_validator
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -19,6 +20,22 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.sql.common import DevelopmentDatasets
 
 
+class DevelopmentDatasetStatus(StrEnum):
+    """
+    Development Dataset status
+    """
+
+    DRAFT = (
+        "Draft",
+        "Planning stage—scope defined and development plan created; sampling tables not yet generated.",
+    )
+    ENTITY_SAMPLING = (
+        "Entity Sampling",
+        "Sampling tables and statistics generated; development tables not yet created.",
+    )
+    ACTIVE = "Active", "Development tables mapped to source tables."
+
+
 class DevelopmentTable(FeatureByteBaseModel):
     """
     Development source table for a table
@@ -27,6 +44,7 @@ class DevelopmentTable(FeatureByteBaseModel):
     table_id: PydanticObjectId
     location: TabularSource
     deleted: bool = Field(default=False, description="Indicates if the table is deleted")
+    sampled_table_id: Optional[PydanticObjectId] = None
 
 
 class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
@@ -37,6 +55,8 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
     development_tables: List[DevelopmentTable] = Field(default_factory=list)
+    development_plan_id: Optional[PydanticObjectId] = None
+    status: DevelopmentDatasetStatus = Field(default=DevelopmentDatasetStatus.ACTIVE)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
