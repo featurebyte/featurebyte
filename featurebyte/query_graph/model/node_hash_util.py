@@ -186,5 +186,5 @@ def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
     """
     # Consider None snapshot_parameters in LookupParameters as the same as not provided for backward
     # compatibility
-    if node_parameters.get("snapshot_parameters") is None:
-        node_parameters.pop("snapshot_parameters", None)
+    if node_parameters.get("snapshots_parameters") is None:
+        node_parameters.pop("snapshots_parameters", None)

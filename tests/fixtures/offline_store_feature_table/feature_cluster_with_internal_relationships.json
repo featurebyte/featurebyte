@@ -266,7 +266,8 @@
                         "natural_key_column": "col_text",
                         "offset": null
                     },
-                    "serving_name": "cust_id"
+                    "serving_name": "cust_id",
+                    "snapshots_parameters": null
                 },
                 "type": "lookup"
             },

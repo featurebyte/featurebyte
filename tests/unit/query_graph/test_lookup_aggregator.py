@@ -188,6 +188,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         },
@@ -201,6 +202,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         },
@@ -245,6 +247,7 @@ def test_lookup_aggregator__offline_scd_only(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -287,6 +290,7 @@ def test_lookup_aggregator__online_with_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -366,6 +370,7 @@ def test_lookup_aggregator__online_without_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -411,6 +416,7 @@ def test_lookup_aggregator__online_with_offset(
                 offset="14d",
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -442,6 +448,7 @@ def test_lookup_aggregator__event_table(
             "entity_column": "order_id",
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
