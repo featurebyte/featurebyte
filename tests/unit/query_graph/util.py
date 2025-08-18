@@ -143,11 +143,12 @@ def get_combined_aggregation_expr_from_aggregator(
         0,
     )
     result_expr = result.updated_table_expr
-    select_with_ctes = construct_cte_sql([
-        CommonTable.to_cte_statement(item)
-        for item in aggregator.get_common_table_expressions("REQUEST_TABLE")
-    ])
-    result_expr.args["with"] = select_with_ctes.args["with"]
+    common_table_expressions = aggregator.get_common_table_expressions("REQUEST_TABLE")
+    if common_table_expressions:
+        select_with_ctes = construct_cte_sql([
+            CommonTable.to_cte_statement(item) for item in common_table_expressions
+        ])
+        result_expr.args["with"] = select_with_ctes.args["with"]
     return result_expr
 
 
