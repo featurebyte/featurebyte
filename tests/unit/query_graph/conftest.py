@@ -8,7 +8,7 @@ import json
 import pytest
 from bson import ObjectId
 
-from featurebyte import Crontab, MissingValueImputation
+from featurebyte import CronFeatureJobSetting, Crontab, MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.models import DimensionTableModel, EntityModel
@@ -370,6 +370,14 @@ def time_series_table_time_interval_fixture():
     return {"unit": "DAY", "value": 1}
 
 
+@pytest.fixture(name="snapshots_table_time_interval")
+def snapshots_table_time_interval_fixture():
+    """
+    Fixture for snapshots table time interval. Default to 1 day and can be overwritten by tests.
+    """
+    return {"unit": "DAY", "value": 1}
+
+
 @pytest.fixture(name="time_series_table_input_node")
 def time_series_table_input_node_fixture(
     global_graph, input_details, time_series_table_time_interval
@@ -391,6 +399,38 @@ def time_series_table_input_node_fixture(
         "reference_datetime_column": "snapshot_date",
         "reference_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
         "time_interval": time_series_table_time_interval,
+        "id": ObjectId("67643eeab0f7b5c9c7683e46"),
+    }
+    node_params.update(input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
+@pytest.fixture(name="snapshots_table_input_node")
+def snapshots_table_input_node_fixture(global_graph, input_details, snapshots_table_time_interval):
+    """Fixture of an input node for a snapshots table"""
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "customer_snapshot"
+    node_params = {
+        "type": "snapshots_table",
+        "columns": [
+            {
+                "name": "snapshot_date",
+                "dtype": DBVarType.VARCHAR,
+                "dtype_metadata": {"timestamp_schema": {"format_string": "YYYYMMDD"}},
+            },
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "a", "dtype": DBVarType.FLOAT},
+        ],
+        "id_column": "cust_id",
+        "snapshot_datetime_column": "snapshot_date",
+        "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
+        "time_interval": snapshots_table_time_interval,
         "id": ObjectId("67643eeab0f7b5c9c7683e46"),
     }
     node_params.update(input_details)
@@ -1328,6 +1368,39 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
         node_params={"columns": ["Current Membership Status"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(scd_offset_lookup_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="snapshots_lookup_feature_node")
+def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_node, entity_id):
+    """
+    Fixture for a snapshots lookup feature node
+    """
+    node_params = {
+        "input_column_names": ["a"],
+        "feature_names": ["lookup_feature_a"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": entity_id,
+        "snapshots_parameters": {
+            "snapshot_datetime_column": "snapshot_date",
+            "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
+            "feature_job_setting": CronFeatureJobSetting(crontab="10 * * * *").model_dump(),
+            "time_interval": {"unit": "DAY", "value": 1},
+        },
+    }
+    lookup_agg_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[snapshots_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["lookup_feature_a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_agg_node.name)],
     )
     return feature_node
 

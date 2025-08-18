@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.generic import (
     LookupNode,
     LookupTargetNode,
     SCDLookupParameters,
+    SnapshotsLookupParameters,
 )
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec
 
@@ -30,6 +31,7 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     serving_names: list[str]
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
+    snapshots_parameters: Optional[SnapshotsLookupParameters]
     is_parent_lookup: bool = False
 
     @property

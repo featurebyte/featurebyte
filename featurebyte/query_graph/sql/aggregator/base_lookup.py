@@ -5,7 +5,6 @@ SQL generation for lookup features
 from __future__ import annotations
 
 from abc import abstractmethod
-from dataclasses import dataclass
 from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 
 import pandas as pd
@@ -31,7 +30,6 @@ from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
 
 
-@dataclass
 class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     """
     SubqueryWithPointInTimeCutoff for lookup features
@@ -188,8 +186,46 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             serving_name = specs[0].serving_names[0]
             source_expr = specs[0].source_expr
 
+            snapshots_parameters = specs[0].snapshots_parameters
+            if snapshots_parameters is None:
+                join_keys = [serving_name]
+                left_table_join_keys = None
+            else:
+                join_keys = [
+                    snapshots_parameters.snapshot_datetime_column,
+                    serving_name,
+                ]
+                adjusted_point_in_time_expr = self.adapter.timestamp_truncate(
+                    get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
+                    snapshots_parameters.time_interval.unit,
+                )
+                if snapshots_parameters.feature_job_setting is not None:
+                    blind_spot_window = (
+                        snapshots_parameters.feature_job_setting.get_blind_spot_calendar_window()
+                    )
+                    if blind_spot_window is not None:
+                        if blind_spot_window.is_fixed_size():
+                            adjusted_point_in_time_expr = self.adapter.subtract_seconds(
+                                adjusted_point_in_time_expr,
+                                blind_spot_window.to_seconds(),
+                            )
+                        else:
+                            adjusted_point_in_time_expr = self.adapter.subtract_months(
+                                adjusted_point_in_time_expr,
+                                blind_spot_window.to_months(),
+                            )
+                left_table_join_keys = [
+                    adjusted_point_in_time_expr,
+                    get_qualified_column_identifier(serving_name, "REQ"),
+                ]
+
             agg_expr = select(
                 alias_(quoted_identifier(entity_column), alias=serving_name, quoted=True),
+                *(
+                    [quoted_identifier(snapshots_parameters.snapshot_datetime_column)]
+                    if snapshots_parameters
+                    else []
+                ),
                 *[
                     alias_(
                         quoted_identifier(spec.input_column_name),
@@ -206,11 +242,12 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             else:
                 event_timestamp_column = None
 
-            agg_expr = get_deduplicated_expr(self.adapter, agg_expr, [serving_name])
+            agg_expr = get_deduplicated_expr(self.adapter, agg_expr, join_keys)
             result = SubqueryWithPointInTimeCutoff(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],
-                join_keys=[serving_name],
+                join_keys=join_keys,
+                left_table_join_keys=left_table_join_keys,
                 event_timestamp_column=event_timestamp_column,
                 forward_point_in_time_offset=self.get_forward_point_in_time_offset(specs[0]),
                 adapter=self.adapter,
