@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 import pymongo
 
-from featurebyte.models.base import FeatureByteBaseModel, FeatureByteCatalogBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
@@ -30,11 +30,12 @@ class WarehouseTableServiceUpdate(BaseDocumentServiceUpdateSchema):
     cleanup_failed_count: Optional[int] = None
 
 
-class WarehouseTableModel(FeatureByteCatalogBaseDocumentModel):
+class WarehouseTableModel(FeatureByteBaseDocumentModel):
     """
     WarehouseTableModel class
 
-    Represents a catalog specific table in the warehouse with optional metadata.
+    Represents a table in the warehouse with optional metadata. This is not catalog-specific
+    as warehouse tables are infrastructure that can be accessed across catalogs.
 
     tag is an optional string to identify a collection of tables, such as all temporary tile tables
     created for the purpose of creating a historical feature table, in which case the tag could be
@@ -53,14 +54,14 @@ class WarehouseTableModel(FeatureByteCatalogBaseDocumentModel):
     def warehouse_tables(self) -> list[Any]:
         return [self.location.table_details]
 
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "warehouse_table"
         unique_constraints = []
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("location"),
             pymongo.operations.IndexModel("tag"),
         ]

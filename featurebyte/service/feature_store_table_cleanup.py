@@ -21,10 +21,10 @@ MAX_CLEANUP_FAILURES = 5
 class FeatureStoreTableCleanupService:
     """
     FeatureStoreTableCleanupService is responsible for cleaning up temporary tables that are due
-    for cleanup in the feature store warehouse across all catalogs.
+    for cleanup in the feature store warehouse.
 
-    Unlike catalog-specific services, this cleanup operates across all catalogs for a given
-    feature store to ensure comprehensive cleanup of warehouse tables.
+    Since WarehouseTableModel is not catalog-specific, this service naturally operates
+    across all catalogs for a given feature store.
     """
 
     def __init__(
@@ -39,10 +39,10 @@ class FeatureStoreTableCleanupService:
 
     async def run_cleanup(self, feature_store_id: ObjectId) -> None:
         """
-        Run cleanup on the feature store warehouse tables across all catalogs
+        Run cleanup on the feature store warehouse tables
 
-        This method operates across all catalogs for the given feature store,
-        using raw query filters to bypass catalog-specific filtering.
+        Since WarehouseTableModel is not catalog-specific, this method naturally
+        operates across all catalogs for the given feature store.
 
         Parameters
         ----------

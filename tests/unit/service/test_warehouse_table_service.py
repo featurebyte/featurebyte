@@ -200,14 +200,14 @@ def app_container_with_catalog_fixture(persistent, user, storage, temp_storage):
 
 @pytest.mark.asyncio
 @freeze_time("2021-01-01 10:00:00")
-async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
+async def test_list_warehouse_tables_due_for_cleanup_non_catalog_specific(
     app_container,
     app_container_with_catalog,
     feature_store,
 ):
     """
-    Test that list_warehouse_tables_due_for_cleanup works across different catalogs for the same feature store.
-    This validates the cross-catalog functionality using allow_use_raw_query_filter.
+    Test that list_warehouse_tables_due_for_cleanup works across different catalog contexts
+    since WarehouseTableModel is not catalog-specific.
     """
     from datetime import timedelta
 
@@ -226,7 +226,7 @@ async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
     warehouse_service_cat1 = app_container_cat1.warehouse_table_service
     warehouse_service_cat2 = app_container_cat2.warehouse_table_service
 
-    # Create expired tables in different catalogs but same feature store
+    # Create expired tables from different catalog contexts but same feature store
     table_cat1 = WarehouseTableModel(
         location=TabularSource(
             feature_store_id=feature_store.id,
@@ -236,7 +236,7 @@ async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
                 table_name="expired_table_cat1",
             ),
         ),
-        tag="test_cross_catalog_tag",
+        tag="test_non_catalog_tag",
         expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
         cleanup_failed_count=0,
     )
@@ -250,17 +250,16 @@ async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
                 table_name="expired_table_cat2",
             ),
         ),
-        tag="test_cross_catalog_tag",
+        tag="test_non_catalog_tag",
         expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
         cleanup_failed_count=0,
     )
 
-    # Create tables in different catalog contexts
+    # Create tables from different catalog contexts
     created_table_cat1 = await warehouse_service_cat1.create_document(table_cat1)
     created_table_cat2 = await warehouse_service_cat2.create_document(table_cat2)
 
-    # Test the cross-catalog query functionality
-    # Use any warehouse service since the method uses raw query filters
+    # Test that any warehouse service can see all tables since they're non-catalog-specific
     test_service = app_container.warehouse_table_service
 
     discovered_tables = []
@@ -269,7 +268,7 @@ async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
         discovered_tables.append(table)
         table_names.add(table.location.table_details.table_name)
 
-    # Cross-catalog discovery should find both tables
+    # Should find both tables since WarehouseTableModel is not catalog-specific
     assert len(discovered_tables) == 2
     assert "expired_table_cat1" in table_names
     assert "expired_table_cat2" in table_names
