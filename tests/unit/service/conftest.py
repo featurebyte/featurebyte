@@ -341,6 +341,12 @@ def online_store_cleanup_scheduler_service_fixture(app_container):
     return app_container.online_store_cleanup_scheduler_service
 
 
+@pytest.fixture(name="feature_store_table_cleanup_scheduler_service")
+def feature_store_table_cleanup_scheduler_service_fixture(app_container):
+    """FeatureStoreTableCleanupSchedulerService fixture"""
+    return app_container.feature_store_table_cleanup_scheduler_service
+
+
 @pytest.fixture(name="periodic_task_service")
 def periodic_task_service_fixture(app_container):
     """PeriodicTaskService fixture"""

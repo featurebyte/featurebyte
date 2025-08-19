@@ -131,6 +131,9 @@ from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_table_cleanup import FeatureStoreTableCleanupService
+from featurebyte.service.feature_store_table_cleanup_scheduler import (
+    FeatureStoreTableCleanupSchedulerService,
+)
 from featurebyte.service.feature_store_warehouse import (
     FeatureStoreWarehouseService,
     NonInteractiveFeatureStoreWarehouseService,
@@ -389,6 +392,7 @@ app_container_config.register_class(OnlineStoreService)
 app_container_config.register_class(OnlineStoreController)
 app_container_config.register_class(OnlineStoreCleanupService)
 app_container_config.register_class(FeatureStoreTableCleanupService)
+app_container_config.register_class(FeatureStoreTableCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)
 app_container_config.register_class(OnlineStoreTableVersionService)

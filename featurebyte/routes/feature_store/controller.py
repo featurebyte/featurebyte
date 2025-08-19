@@ -36,6 +36,9 @@ from featurebyte.schema.worker.task.data_description import DataDescriptionTaskP
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_table_cleanup_scheduler import (
+    FeatureStoreTableCleanupSchedulerService,
+)
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.preview import NonCatalogSpecificPreviewService
 from featurebyte.service.session_manager import SessionManagerService
@@ -62,6 +65,7 @@ class FeatureStoreController(
         credential_service: CredentialService,
         all_catalog_service: AllCatalogService,
         task_controller: TaskController,
+        feature_store_table_cleanup_scheduler_service: FeatureStoreTableCleanupSchedulerService,
     ):
         super().__init__(feature_store_service)
         self.preview_service = non_catalog_specific_preview_service
@@ -70,6 +74,9 @@ class FeatureStoreController(
         self.credential_service = credential_service
         self.all_catalog_service = all_catalog_service
         self.task_controller = task_controller
+        self.feature_store_table_cleanup_scheduler_service = (
+            feature_store_table_cleanup_scheduler_service
+        )
 
     @staticmethod
     async def _check_feature_store_ownership(
@@ -177,7 +184,37 @@ class FeatureStoreController(
                 await self.credential_service.delete_document(credential_doc.id)
             raise
 
+        # Schedule the feature store table cleanup task
+        await self.feature_store_table_cleanup_scheduler_service.start_job_if_not_exist(
+            feature_store_id=document.id,
+        )
+        logger.info(
+            "Scheduled feature store table cleanup task",
+            extra={"feature_store_id": str(document.id)},
+        )
+
         return document
+
+    async def delete(self, document_id: ObjectId) -> None:
+        """
+        Delete FeatureStore document and stop the cleanup task
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of feature store to delete
+        """
+        # Stop the cleanup task first
+        await self.feature_store_table_cleanup_scheduler_service.stop_job(
+            feature_store_id=document_id
+        )
+        logger.info(
+            "Stopped feature store table cleanup task",
+            extra={"feature_store_id": str(document_id)},
+        )
+
+        # Call the parent delete method
+        await super().delete(document_id)
 
     async def list_databases(
         self,
