@@ -25,6 +25,7 @@ from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
     compare_pydantic_obj,
+    get_node,
 )
 
 
@@ -508,3 +509,58 @@ def test_shape(snowflake_snapshots_table, snowflake_query_map):
         assert view["col_int"].shape() == (1000, 1)
         # Check that the correct query was executed
         assert mock_execute_query.call_args[0][0] == expected_call_view_column
+
+
+def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
+    """
+    Test SnapshotsView as_feature configures additional parameters
+    """
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+    feature = view["col_float"].as_feature("FloatFeature")
+    graph_dict = feature.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_1")
+    assert lookup_node == {
+        "name": "lookup_1",
+        "type": NodeType.LOOKUP,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatFeature"],
+            "entity_column": "col_int",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": {
+                "snapshot_datetime_column": "date",
+                "time_interval": {"unit": "DAY", "value": 1},
+                "snapshot_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "is_utc_time": None,
+                        "timezone": "Etc/UTC",
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "feature_job_setting": None,
+                "offset": None,
+            },
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_snapshots_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_snapshots_table.id: {
+                "name": snowflake_snapshots_table.name,
+                "record_creation_timestamp_column": snowflake_snapshots_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
+                "columns_info": table_columns_info,
+            }
+        },
+    )
