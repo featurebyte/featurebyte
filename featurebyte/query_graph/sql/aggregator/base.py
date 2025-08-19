@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, Optional, Sequence, Tuple, TypeVar
 
 from bson import ObjectId
+from pydantic import model_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
@@ -61,13 +62,21 @@ class LeftJoinableSubquery(FeatureByteBaseModel):
     join_keys: list[str]
     left_table_join_keys: Optional[list[expressions.Expression]] = None
 
-    def __post_init__(self) -> None:
-        """Validate that left_table_join_keys has the same length as join_keys if not None."""
+    @model_validator(mode="after")
+    def validate_left_table_join_keys(self) -> "LeftJoinableSubquery":
+        """
+        Validate that left_table_join_keys has the same length as join_keys if not None.
+
+        Returns
+        -------
+        LeftJoinableSubquery
+        """
         if self.left_table_join_keys is not None:
             assert len(self.left_table_join_keys) == len(self.join_keys), (
                 f"left_table_join_keys length ({len(self.left_table_join_keys)}) "
                 f"must match join_keys length ({len(self.join_keys)})"
             )
+        return self
 
     def get_expression_for_column(
         self, main_alias: str, join_alias: str, column_name: str, adapter: BaseAdapter
