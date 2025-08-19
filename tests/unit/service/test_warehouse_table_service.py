@@ -163,3 +163,117 @@ async def test_list_warehouse_tables_due_for_cleanup_not_expired(
         async for warehouse_table in service.list_warehouse_tables_due_for_cleanup(feature_store_id)
     ]
     assert len(result) == 0
+
+
+@pytest.fixture(name="app_container_with_catalog")
+def app_container_with_catalog_fixture(persistent, user, storage, temp_storage):
+    """
+    Return a function that creates an app container with a specific catalog_id.
+    This allows tests to create multiple app containers with different catalog contexts.
+    """
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
+
+    from featurebyte.routes.lazy_app_container import LazyAppContainer
+    from featurebyte.routes.registry import app_container_config
+    from featurebyte.worker import get_celery
+    from tests.unit.conftest import TEST_REDIS_URI
+
+    def create_app_container(catalog_id):
+        return LazyAppContainer(
+            app_container_config=app_container_config,
+            instance_map={
+                "user": user,
+                "persistent": persistent,
+                "temp_storage": temp_storage,
+                "celery": get_celery(),
+                "storage": storage,
+                "catalog_id": catalog_id,
+                "task_id": uuid4(),
+                "progress": AsyncMock(),
+                "redis_uri": TEST_REDIS_URI,
+            },
+        )
+
+    return create_app_container
+
+
+@pytest.mark.asyncio
+@freeze_time("2021-01-01 10:00:00")
+async def test_list_warehouse_tables_due_for_cleanup_cross_catalog(
+    app_container,
+    app_container_with_catalog,
+    feature_store,
+):
+    """
+    Test that list_warehouse_tables_due_for_cleanup works across different catalogs for the same feature store.
+    This validates the cross-catalog functionality using allow_use_raw_query_filter.
+    """
+    from datetime import timedelta
+
+    from featurebyte.models.warehouse_table import WarehouseTableModel
+    from featurebyte.query_graph.model.common_table import TabularSource
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create app containers with different catalog IDs
+    catalog_1_id = ObjectId("646f6c1c0ed28a5271fb02d1")
+    catalog_2_id = ObjectId("646f6c1c0ed28a5271fb02d2")
+
+    app_container_cat1 = app_container_with_catalog(catalog_1_id)
+    app_container_cat2 = app_container_with_catalog(catalog_2_id)
+
+    # Get warehouse table services from different catalog contexts
+    warehouse_service_cat1 = app_container_cat1.warehouse_table_service
+    warehouse_service_cat2 = app_container_cat2.warehouse_table_service
+
+    # Create expired tables in different catalogs but same feature store
+    table_cat1 = WarehouseTableModel(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="sf_db",
+                schema_name="sf_schema",
+                table_name="expired_table_cat1",
+            ),
+        ),
+        tag="test_cross_catalog_tag",
+        expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
+        cleanup_failed_count=0,
+    )
+
+    table_cat2 = WarehouseTableModel(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="sf_db",
+                schema_name="sf_schema",
+                table_name="expired_table_cat2",
+            ),
+        ),
+        tag="test_cross_catalog_tag",
+        expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
+        cleanup_failed_count=0,
+    )
+
+    # Create tables in different catalog contexts
+    created_table_cat1 = await warehouse_service_cat1.create_document(table_cat1)
+    created_table_cat2 = await warehouse_service_cat2.create_document(table_cat2)
+
+    # Test the cross-catalog query functionality
+    # Use any warehouse service since the method uses raw query filters
+    test_service = app_container.warehouse_table_service
+
+    discovered_tables = []
+    table_names = set()
+    async for table in test_service.list_warehouse_tables_due_for_cleanup(feature_store.id):
+        discovered_tables.append(table)
+        table_names.add(table.location.table_details.table_name)
+
+    # Cross-catalog discovery should find both tables
+    assert len(discovered_tables) == 2
+    assert "expired_table_cat1" in table_names
+    assert "expired_table_cat2" in table_names
+
+    # Cleanup the test data
+    await warehouse_service_cat1.delete_document(created_table_cat1.id)
+    await warehouse_service_cat2.delete_document(created_table_cat2.id)

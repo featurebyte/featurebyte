@@ -6,6 +6,7 @@ from typing import Optional
 
 from bson import ObjectId
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
@@ -47,9 +48,11 @@ class FeatureStoreTableCleanupSchedulerService:
         feature_store_id: ObjectId
             Feature store id
         """
+        # Note: catalog_id is required by BaseTaskPayload but the cleanup task operates
+        # across all catalogs for the feature store. We use DEFAULT_CATALOG_ID if none provided.
         payload = FeatureStoreTableCleanupTaskPayload(
             user_id=self.user.id,
-            catalog_id=self.catalog_id,
+            catalog_id=self.catalog_id or DEFAULT_CATALOG_ID,
             feature_store_id=feature_store_id,
         )
         if await self.get_periodic_task(feature_store_id) is None:

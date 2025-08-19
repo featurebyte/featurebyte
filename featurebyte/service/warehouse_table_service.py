@@ -178,7 +178,10 @@ class WarehouseTableService(
         self, feature_store_id: ObjectId
     ) -> AsyncIterator[WarehouseTableModel]:
         """
-        List warehouse tables that are due for cleanup (expired)
+        List warehouse tables that are due for cleanup (expired) across all catalogs
+
+        This method operates across all catalogs for a given feature store, using
+        raw query filters to bypass catalog-specific filtering.
 
         Parameters
         ----------
@@ -194,5 +197,8 @@ class WarehouseTableService(
             "location.feature_store_id": feature_store_id,
             "expires_at": {"$lt": datetime.utcnow()},
         }
-        async for doc in self.list_documents_iterator(query_filter=query_filter):
-            yield doc
+        with self.allow_use_raw_query_filter():
+            async for doc in self.list_documents_iterator(
+                query_filter=query_filter, use_raw_query_filter=True
+            ):
+                yield doc
