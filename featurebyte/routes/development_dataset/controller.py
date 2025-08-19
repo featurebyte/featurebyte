@@ -157,7 +157,7 @@ class DevelopmentDatasetController(
         development_dataset_id: ObjectId
             Document ID of the development dataset to which tables will be added
         development_tables: list[DevelopmentTable]
-            List of DevelopmentTableInfo to be added
+            List of DevelopmentTable to be added
 
         Returns
         -------
@@ -228,8 +228,11 @@ class DevelopmentDatasetController(
                         dev_table.location.feature_store_id
                     ],
                     table_details=dev_table.location.table_details,
+                    sampled_table_id=dev_table.sampled_table_id,
                 )
                 for dev_table in document.development_tables
                 if not dev_table.deleted
             ],
+            development_plan_id=document.development_plan_id,
+            status=document.status,
         )

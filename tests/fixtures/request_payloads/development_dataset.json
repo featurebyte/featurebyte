@@ -6,6 +6,7 @@
     ],
     "_id": "646f6c190ed28a5271fb02ea",
     "description": "This is a development dataset",
+    "development_plan_id": null,
     "development_tables": [
         {
             "location": {
@@ -16,10 +17,12 @@
                     "table_name": "sf_table_sample"
                 }
             },
+            "sampled_table_id": null,
             "table_id": "6337f9651050ee7d5980660d"
         }
     ],
     "name": "My Development Dataset",
     "sample_from_timestamp": "2022-01-01T00:00:00",
-    "sample_to_timestamp": "2024-12-31T00:00:00"
+    "sample_to_timestamp": "2024-12-31T00:00:00",
+    "status": "Active"
 }

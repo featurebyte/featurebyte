@@ -218,6 +218,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                             },
                         },
                         "deleted": False,
+                        "sampled_table_id": None,
                     },
                 ],
             },
@@ -242,6 +243,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                     },
                 },
                 "deleted": False,
+                "sampled_table_id": None,
             },
             {
                 "table_id": "6337f9651050ee7d1234660d",
@@ -254,6 +256,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                     },
                 },
                 "deleted": False,
+                "sampled_table_id": None,
             },
         ]
         assert response_dict == expected_response_dict
@@ -291,6 +294,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                             },
                         },
                         "deleted": False,
+                        "sampled_table_id": None,
                     },
                 ]
             },
@@ -321,6 +325,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                             },
                         },
                         "deleted": False,
+                        "sampled_table_id": None,
                     },
                 ]
             },
@@ -358,6 +363,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                             },
                         },
                         "deleted": False,
+                        "sampled_table_id": None,
                     },
                 ]
             },
@@ -419,10 +425,13 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                     },
                     "table_name": "sf_event_table",
                     "deleted": False,
+                    "sampled_table_id": None,
                 }
             ],
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
+            "development_plan_id": None,
+            "status": "Active",
         }
 
     def test_get_schema(self, test_api_client_persistent, create_success_response):
@@ -445,6 +454,8 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
             "catalog_id": "646f6c1c0ed28a5271fb02db",
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
+            "development_plan_id": None,
+            "status": "Active",
             "development_tables": [
                 {
                     "location": {
@@ -457,6 +468,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                     },
                     "table_id": "6337f9651050ee7d5980660d",
                     "deleted": False,
+                    "sampled_table_id": None,
                 }
             ],
         }
@@ -483,6 +495,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                             },
                         },
                         "deleted": False,
+                        "sampled_table_id": None,
                     },
                 ],
             },
@@ -516,6 +529,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                 },
                 "table_id": "6337f9651050ee7d5980660d",
                 "deleted": True,
+                "sampled_table_id": None,
             },
             {
                 "location": {
@@ -528,6 +542,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                 },
                 "table_id": "6337f9651050ee7d1234660d",
                 "deleted": False,
+                "sampled_table_id": None,
             },
         ]
 
@@ -547,6 +562,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                 },
                 "table_id": "6337f9651050ee7d5980660d",
                 "deleted": True,
+                "sampled_table_id": None,
             },
             {
                 "location": {
@@ -559,6 +575,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                 },
                 "table_id": "6337f9651050ee7d1234660d",
                 "deleted": False,
+                "sampled_table_id": None,
             },
         ]
 
@@ -583,8 +600,11 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
                     },
                     "table_name": "sf_dimension_table",
                     "deleted": False,
+                    "sampled_table_id": None,
                 }
             ],
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
+            "development_plan_id": None,
+            "status": "Active",
         }
