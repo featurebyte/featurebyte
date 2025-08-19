@@ -77,10 +77,7 @@ class FeatureStoreTableCleanupService:
             try:
                 await self.warehouse_table_service.drop_table_with_session(
                     session=db_session,
-                    feature_store_id=feature_store_id,
-                    table_name=table_details.table_name,
-                    schema_name=table_details.schema_name,
-                    database_name=table_details.database_name,
+                    warehouse_table=warehouse_table,
                     exists=True,
                 )
                 cleanup_count += 1

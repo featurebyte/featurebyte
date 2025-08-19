@@ -105,8 +105,7 @@ async def test_drop_table_with_session(
     # Drop the table
     await service.drop_table_with_session(
         session=mock_snowflake_session,
-        feature_store_id=feature_store_id,
-        table_name=table_name,
+        warehouse_table=warehouse_table,
     )
 
     # Check that the table no longer exists

@@ -141,10 +141,7 @@ async def test_run_cleanup_with_drop_failure_increments_counter(
         # Verify drop_table_with_session was called with correct parameters including exists=True
         mock_drop.assert_called_once_with(
             session=mock_session_manager,
-            feature_store_id=feature_store.id,
-            table_name="expired_test_table",
-            schema_name="sf_schema",
-            database_name="sf_db",
+            warehouse_table=expired_warehouse_table,
             exists=True,
         )
 
@@ -196,10 +193,7 @@ async def test_run_cleanup_force_delete_after_max_failures(
         # Verify drop_table_with_session was called with correct parameters including exists=True
         mock_drop.assert_called_once_with(
             session=mock_session_manager,
-            feature_store_id=feature_store.id,
-            table_name="max_failures_table",
-            schema_name="sf_schema",
-            database_name="sf_db",
+            warehouse_table=warehouse_table,
             exists=True,
         )
 
