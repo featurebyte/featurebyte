@@ -82,16 +82,6 @@ def test_create_table_as_with_session(saved_warehouse_table, feature_store_id):
 
 
 @pytest.mark.asyncio
-async def test_get_warehouse_table_by_location(service, saved_warehouse_table):
-    """
-    Test get_warehouse_table_by_location method
-    """
-    location = saved_warehouse_table.location
-    warehouse_table = await service.get_warehouse_table_by_location(location)
-    assert warehouse_table == saved_warehouse_table
-
-
-@pytest.mark.asyncio
 async def test_drop_table_with_session(
     service, saved_warehouse_table, feature_store_id, table_name, mock_snowflake_session
 ):
@@ -99,7 +89,7 @@ async def test_drop_table_with_session(
     Test drop_table_with_session method
     """
     # Check that the table exists
-    warehouse_table = await service.get_warehouse_table_by_location(saved_warehouse_table.location)
+    warehouse_table = await service.get_document(saved_warehouse_table.id)
     assert warehouse_table is not None
 
     # Drop the table
@@ -108,9 +98,11 @@ async def test_drop_table_with_session(
         warehouse_table=warehouse_table,
     )
 
-    # Check that the table no longer exists
-    warehouse_table = await service.get_warehouse_table_by_location(warehouse_table.location)
-    assert warehouse_table is None
+    # Check that the table no longer exists (document should be deleted)
+    from featurebyte.exception import DocumentNotFoundError
+
+    with pytest.raises(DocumentNotFoundError):
+        await service.get_document(saved_warehouse_table.id)
 
 
 @pytest.mark.asyncio

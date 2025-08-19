@@ -130,28 +130,6 @@ class WarehouseTableService(
         async for doc in self.list_documents_iterator(query_filter=query_filter):
             yield doc
 
-    async def get_warehouse_table_by_location(
-        self, location: TabularSource
-    ) -> Optional[WarehouseTableModel]:
-        """
-        Get a document by location
-
-        Parameters
-        ----------
-        location: TabularSource
-            Location to filter by
-
-        Returns
-        -------
-        Optional[WarehouseTableModel]
-            WarehouseTableModel or None
-        """
-        query_filter = {"location": location.model_dump()}
-        doc = None
-        async for doc in self.list_documents_iterator(query_filter=query_filter):
-            break
-        return doc
-
     async def list_warehouse_tables_due_for_cleanup(
         self, feature_store_id: ObjectId
     ) -> AsyncIterator[WarehouseTableModel]:
