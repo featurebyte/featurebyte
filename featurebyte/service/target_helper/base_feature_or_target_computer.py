@@ -166,6 +166,9 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         compute_request: ComputeRequestT,
         output_table_details: TableDetails,
+        progress_callback: Optional[
+            Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
+        ] = None,
     ) -> ExecutionResult:
         """
         Compute targets or features
@@ -178,6 +181,8 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Compute request
         output_table_details: TableDetails
             Table details to write the results to
+        progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
+            Optional progress callback to override the default task progress updater
 
         Returns
         -------
@@ -208,7 +213,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
                 session=db_session,
                 output_table_details=output_table_details,
                 parent_serving_preparation=parent_serving_preparation,
-                progress_callback=self.task_progress_updater.update_progress,
+                progress_callback=progress_callback or self.task_progress_updater.update_progress,
                 observation_set=observation_set,
             ),
             validation_parameters=validation_parameters,

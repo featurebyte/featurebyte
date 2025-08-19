@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
@@ -22,6 +23,11 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
+
+# Progress allocation for different phases of the historical feature table task
+FEATURE_COMPUTATION_PROGRESS_MAX = 95
+STATS_COMPUTATION_PROGRESS = 97
 
 logger = get_logger(__name__)
 
@@ -44,6 +50,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
         system_metrics_service: SystemMetricsService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -54,6 +61,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
         self.system_metrics_service = system_metrics_service
+        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: HistoricalFeatureTableTaskPayload) -> str:
         return f'Save historical feature table "{payload.name}"'
@@ -106,11 +114,23 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             list_of_table_details=[location.table_details],
             payload=payload,
         ):
+            # Create a ranged progress callback for the compute phase (0% to 95%)
+            compute_progress_callback = get_ranged_progress_callback(
+                self.task_progress_updater.update_progress, 0, FEATURE_COMPUTATION_PROGRESS_MAX
+            )
+
             result = await self.historical_features_service.compute(
                 observation_set=observation_set,
                 compute_request=fl_get_historical_features,
                 output_table_details=location.table_details,
+                progress_callback=compute_progress_callback,
             )
+
+            # Update progress for the stats computation phase
+            await self.task_progress_updater.update_progress(
+                percent=STATS_COMPUTATION_PROGRESS, message="Computing table statistics"
+            )
+
             (
                 columns_info,
                 num_rows,
@@ -136,3 +156,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             metrics_data = result.historical_features_metrics
             metrics_data.historical_feature_table_id = payload.output_document_id
             await self.system_metrics_service.create_metrics(metrics_data=metrics_data)
+
+            await self.task_progress_updater.update_progress(
+                percent=100, message="Historical feature table creation completed"
+            )

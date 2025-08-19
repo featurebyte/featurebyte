@@ -57,7 +57,11 @@ from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
 from featurebyte.utils.redis import acquire_lock
 
-FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
+# Progress percentages for different phases of feature table cache operations
+FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 5
+FEATURE_COMPUTATION_COMPLETED_PROGRESS_PERCENTAGE = 85
+CACHE_INSERTION_START_PROGRESS_PERCENTAGE = 85
+CACHE_INSERTION_COMPLETED_PROGRESS_PERCENTAGE = 100
 
 logger = get_logger(__name__)
 
@@ -631,6 +635,16 @@ class FeatureTableCacheService:
         )
 
         try:
+            # Feature computation phase (5% to 85%)
+            if progress_callback:
+                feature_computation_progress_callback = get_ranged_progress_callback(
+                    progress_callback,
+                    FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
+                    FEATURE_COMPUTATION_COMPLETED_PROGRESS_PERCENTAGE,
+                )
+            else:
+                feature_computation_progress_callback = None
+
             features_computation_result = await self._populate_intermediate_table(
                 feature_store=feature_store,
                 observation_table=observation_table,
@@ -641,9 +655,16 @@ class FeatureTableCacheService:
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
                 development_dataset=development_dataset,
-                progress_callback=progress_callback,
+                progress_callback=feature_computation_progress_callback,
                 raise_on_error=raise_on_error,
             )
+
+            # Update progress for cache insertion phase
+            if progress_callback:
+                await progress_callback(
+                    CACHE_INSERTION_START_PROGRESS_PERCENTAGE, "Inserting features into cache"
+                )
+
             async with acquire_lock(
                 self.redis,
                 f"feature_table_cache_update:obs:{observation_table.id}",
@@ -658,6 +679,13 @@ class FeatureTableCacheService:
                     graph=graph,
                     intermediate_table_name=intermediate_table_name,
                     features_computation_result=features_computation_result,
+                )
+
+            # Cache insertion completed
+            if progress_callback:
+                await progress_callback(
+                    CACHE_INSERTION_COMPLETED_PROGRESS_PERCENTAGE,
+                    "Feature cache insertion completed",
                 )
         finally:
             await db_session.drop_table(
@@ -762,11 +790,6 @@ class FeatureTableCacheService:
                 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
                 "Feature table cache status check completed",
             )
-            remaining_progress_callback = get_ranged_progress_callback(
-                progress_callback, FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE, 100
-            )
-        else:
-            remaining_progress_callback = None
 
         if non_cached_nodes:
             features_computation_result = await self._materialize_and_update_cache(
@@ -778,10 +801,16 @@ class FeatureTableCacheService:
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
                 development_dataset=development_dataset,
-                progress_callback=remaining_progress_callback,
+                progress_callback=progress_callback,
                 raise_on_error=raise_on_error,
             )
         else:
+            # No features to compute, everything is cached
+            if progress_callback:
+                await progress_callback(
+                    CACHE_INSERTION_COMPLETED_PROGRESS_PERCENTAGE, "All features already cached"
+                )
+
             features_computation_result = FeaturesComputationResult(
                 historical_features_metrics=HistoricalFeaturesMetrics(
                     tile_compute_seconds=0,
@@ -1023,5 +1052,10 @@ class FeatureTableCacheService:
             select_expr=select_expr,
             kind="TABLE",
         )
+
+        # Final progress update to 100% for view/table creation
+        if progress_callback:
+            await progress_callback(100, "Historical feature table created")
+
         historical_features_metrics.total_seconds = time.time() - first_tic
         return False, historical_features_metrics
