@@ -128,3 +128,38 @@ async def test_list_warehouse_tables_by_tag(service, saved_warehouse_table):
         async for warehouse_table in service.list_warehouse_tables_by_tag("non_existent_tag")
     ]
     assert len(result) == 0
+
+
+@pytest.mark.asyncio
+@freeze_time("2021-01-02 12:00:00")  # After expiration
+async def test_list_warehouse_tables_due_for_cleanup(
+    service, saved_warehouse_table, feature_store_id
+):
+    """
+    Test list_warehouse_tables_due_for_cleanup method
+    """
+    # The saved_warehouse_table expires at 2021-01-02 10:00:00
+    # Current time is 2021-01-02 12:00:00, so it should be included
+    result = [
+        warehouse_table
+        async for warehouse_table in service.list_warehouse_tables_due_for_cleanup(feature_store_id)
+    ]
+    assert len(result) == 1
+    assert result[0] == saved_warehouse_table
+
+
+@pytest.mark.asyncio
+@freeze_time("2021-01-01 08:00:00")  # Before expiration
+async def test_list_warehouse_tables_due_for_cleanup_not_expired(
+    service, saved_warehouse_table, feature_store_id
+):
+    """
+    Test list_warehouse_tables_due_for_cleanup method when tables are not expired
+    """
+    # The saved_warehouse_table expires at 2021-01-02 10:00:00
+    # Current time is 2021-01-01 08:00:00, so it should not be included
+    result = [
+        warehouse_table
+        async for warehouse_table in service.list_warehouse_tables_due_for_cleanup(feature_store_id)
+    ]
+    assert len(result) == 0

@@ -174,3 +174,26 @@ class WarehouseTableService(
         async for doc in self.list_documents_iterator(query_filter=query_filter):
             break
         return doc
+
+    async def list_warehouse_tables_due_for_cleanup(
+        self, feature_store_id: ObjectId
+    ) -> AsyncIterator[WarehouseTableModel]:
+        """
+        List warehouse tables that are due for cleanup (expired)
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID to filter by
+
+        Yields
+        ------
+        WarehouseTableModel
+            WarehouseTableModel documents that are expired and should be cleaned up
+        """
+        query_filter = {
+            "location.feature_store_id": feature_store_id,
+            "expires_at": {"$lt": datetime.utcnow()},
+        }
+        async for doc in self.list_documents_iterator(query_filter=query_filter):
+            yield doc

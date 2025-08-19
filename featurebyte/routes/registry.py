@@ -130,6 +130,7 @@ from featurebyte.service.feature_offline_store_info import OfflineStoreInfoIniti
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_table_cleanup import FeatureStoreTableCleanupService
 from featurebyte.service.feature_store_warehouse import (
     FeatureStoreWarehouseService,
     NonInteractiveFeatureStoreWarehouseService,
@@ -252,6 +253,7 @@ from featurebyte.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTask,
 )
 from featurebyte.worker.task.feature_materialize_sync import FeatureMaterializeSyncTask
+from featurebyte.worker.task.feature_store_table_cleanup import FeatureStoreTableCleanupTask
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
 from featurebyte.worker.task.observation_table import ObservationTableTask
@@ -386,6 +388,7 @@ app_container_config.register_class(OnlineServingService)
 app_container_config.register_class(OnlineStoreService)
 app_container_config.register_class(OnlineStoreController)
 app_container_config.register_class(OnlineStoreCleanupService)
+app_container_config.register_class(FeatureStoreTableCleanupService)
 app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)
 app_container_config.register_class(OnlineStoreTableVersionService)
@@ -513,6 +516,7 @@ app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTas
 app_container_config.register_class(StaticSourceTableTask)
 app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
+app_container_config.register_class(FeatureStoreTableCleanupTask)
 app_container_config.register_class(QueryCacheCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestIOTask)
