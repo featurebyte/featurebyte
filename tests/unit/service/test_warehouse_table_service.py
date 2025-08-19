@@ -2,7 +2,7 @@
 Tests for WarehouseTableService
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
@@ -10,6 +10,8 @@ from bson import ObjectId
 from freezegun import freeze_time
 from sqlglot import parse_one
 
+from featurebyte.models.warehouse_table import WarehouseTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 
 
@@ -165,62 +167,24 @@ async def test_list_warehouse_tables_due_for_cleanup_not_expired(
     assert len(result) == 0
 
 
-@pytest.fixture(name="app_container_with_catalog")
-def app_container_with_catalog_fixture(persistent, user, storage, temp_storage):
-    """
-    Return a function that creates an app container with a specific catalog_id.
-    This allows tests to create multiple app containers with different catalog contexts.
-    """
-    from unittest.mock import AsyncMock
-    from uuid import uuid4
-
-    from featurebyte.routes.lazy_app_container import LazyAppContainer
-    from featurebyte.routes.registry import app_container_config
-    from featurebyte.worker import get_celery
-    from tests.unit.conftest import TEST_REDIS_URI
-
-    def create_app_container(catalog_id):
-        return LazyAppContainer(
-            app_container_config=app_container_config,
-            instance_map={
-                "user": user,
-                "persistent": persistent,
-                "temp_storage": temp_storage,
-                "celery": get_celery(),
-                "storage": storage,
-                "catalog_id": catalog_id,
-                "task_id": uuid4(),
-                "progress": AsyncMock(),
-                "redis_uri": TEST_REDIS_URI,
-            },
-        )
-
-    return create_app_container
-
-
 @pytest.mark.asyncio
 @freeze_time("2021-01-01 10:00:00")
 async def test_list_warehouse_tables_due_for_cleanup_non_catalog_specific(
     app_container,
-    app_container_with_catalog,
+    app_container_factory,
     feature_store,
 ):
     """
     Test that list_warehouse_tables_due_for_cleanup works across different catalog contexts
     since WarehouseTableModel is not catalog-specific.
     """
-    from datetime import timedelta
-
-    from featurebyte.models.warehouse_table import WarehouseTableModel
-    from featurebyte.query_graph.model.common_table import TabularSource
-    from featurebyte.query_graph.node.schema import TableDetails
 
     # Create app containers with different catalog IDs
     catalog_1_id = ObjectId("646f6c1c0ed28a5271fb02d1")
     catalog_2_id = ObjectId("646f6c1c0ed28a5271fb02d2")
 
-    app_container_cat1 = app_container_with_catalog(catalog_1_id)
-    app_container_cat2 = app_container_with_catalog(catalog_2_id)
+    app_container_cat1 = app_container_factory(catalog_1_id)
+    app_container_cat2 = app_container_factory(catalog_2_id)
 
     # Get warehouse table services from different catalog contexts
     warehouse_service_cat1 = app_container_cat1.warehouse_table_service

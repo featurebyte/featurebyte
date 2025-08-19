@@ -3046,29 +3046,42 @@ def catalog_fixture(snowflake_feature_store):
     return Catalog.create(name="catalog", feature_store_name=snowflake_feature_store.name)
 
 
+@pytest.fixture(name="app_container_factory")
+def app_container_factory_fixture(persistent, user, storage, temp_storage):
+    """
+    Return a function that creates an app container with a specific catalog_id.
+    This allows tests to create multiple app containers with different catalog contexts.
+    """
+
+    def create_app_container(catalog_id):
+        return LazyAppContainer(
+            app_container_config=app_container_config,
+            instance_map={
+                "user": user,
+                "persistent": persistent,
+                "temp_storage": temp_storage,
+                "celery": get_celery(),
+                "storage": storage,
+                "catalog_id": catalog_id,
+                "task_id": uuid4(),
+                "progress": AsyncMock(),
+                "redis_uri": TEST_REDIS_URI,
+            },
+        )
+
+    return create_app_container
+
+
 @pytest.fixture(name="app_container_no_catalog")
-def app_container_no_catalog_fixture(persistent, user, storage, temp_storage):
+def app_container_no_catalog_fixture(app_container_factory):
     """
     AppContainer fixture without catalog
     """
-    return LazyAppContainer(
-        app_container_config=app_container_config,
-        instance_map={
-            "user": user,
-            "persistent": persistent,
-            "temp_storage": temp_storage,
-            "celery": get_celery(),
-            "storage": storage,
-            "catalog_id": None,
-            "task_id": uuid4(),
-            "progress": AsyncMock(),
-            "redis_uri": TEST_REDIS_URI,
-        },
-    )
+    return app_container_factory(catalog_id=None)
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog, storage, temp_storage):
+def app_container_fixture(app_container_factory, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
 
@@ -3077,20 +3090,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     means that we should not put a scope="session" on this fixture, and it is likely that test will fail if that
     change is made.
     """
-    return LazyAppContainer(
-        app_container_config=app_container_config,
-        instance_map={
-            "user": user,
-            "persistent": persistent,
-            "temp_storage": temp_storage,
-            "celery": get_celery(),
-            "storage": storage,
-            "catalog_id": catalog.id,
-            "task_id": uuid4(),
-            "progress": AsyncMock(),
-            "redis_uri": TEST_REDIS_URI,
-        },
-    )
+    return app_container_factory(catalog_id=catalog.id)
 
 
 @pytest_asyncio.fixture(name="insert_credential")
