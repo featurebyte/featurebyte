@@ -2,14 +2,14 @@
 Tests for FeatureStoreTableCleanupService
 """
 
-from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
-from bson import ObjectId
 from freezegun import freeze_time
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.warehouse_table import WarehouseTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -23,117 +23,138 @@ def service_fixture(app_container):
     return app_container.feature_store_table_cleanup_service
 
 
-@pytest.fixture(name="feature_store_id")
-def feature_store_id_fixture():
+@pytest.fixture(name="warehouse_table_service")
+def warehouse_table_service_fixture(app_container):
     """
-    Feature store id fixture
+    WarehouseTableService fixture
     """
-    return ObjectId()
+    return app_container.warehouse_table_service
+
+
+@pytest.fixture(name="mock_session_manager", autouse=True)
+def mock_session_manager_fixture(service):
+    """
+    Mock only the session manager dependency - feature store get_document can work normally
+    """
+    mock_session = AsyncMock()
+
+    with patch.object(
+        service.session_manager_service, "get_feature_store_session", return_value=mock_session
+    ):
+        yield mock_session
 
 
 @pytest_asyncio.fixture(name="expired_warehouse_table")
 @freeze_time("2021-01-01 10:00:00")
-async def expired_warehouse_table_fixture(feature_store_id):
+async def expired_warehouse_table_fixture(warehouse_table_service, feature_store):
     """
-    Create an expired warehouse table model
+    Create an actual expired warehouse table document in the database
     """
-    return WarehouseTableModel(
+    table = WarehouseTableModel(
         location=TabularSource(
-            feature_store_id=feature_store_id,
+            feature_store_id=feature_store.id,
             table_details=TableDetails(
-                database_name="test_db",
-                schema_name="test_schema",
-                table_name="expired_table",
+                database_name="sf_db",
+                schema_name="sf_schema",
+                table_name="expired_test_table",
             ),
         ),
-        tag="test_tag",
-        expires_at=datetime(2020, 12, 31, 10, 0, 0),  # expired
+        tag="test_cleanup_tag",
+        expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
     )
+    return await warehouse_table_service.create_document(table)
+
+
+@pytest_asyncio.fixture(name="non_expired_warehouse_table")
+@freeze_time("2021-01-01 10:00:00")
+async def non_expired_warehouse_table_fixture(warehouse_table_service, feature_store):
+    """
+    Create an actual non-expired warehouse table document in the database
+    """
+    table = WarehouseTableModel(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="sf_db",
+                schema_name="sf_schema",
+                table_name="non_expired_test_table",
+            ),
+        ),
+        tag="test_cleanup_tag",
+        expires_at=datetime.utcnow() + timedelta(hours=1),  # expires in 1 hour
+    )
+    return await warehouse_table_service.create_document(table)
 
 
 @pytest.mark.asyncio
 @freeze_time("2021-01-01 10:00:00")
-async def test_run_cleanup(service, feature_store_id, expired_warehouse_table):
+async def test_run_cleanup_success(
+    service,
+    warehouse_table_service,
+    feature_store,
+    expired_warehouse_table,
+    non_expired_warehouse_table,
+):
     """
-    Test run_cleanup method
+    Test run_cleanup method successfully cleans up expired tables
     """
-    # Mock the warehouse table service to return the expired table
-    with (
-        patch.object(
-            service.warehouse_table_service, "list_warehouse_tables_due_for_cleanup"
-        ) as mock_list,
-        patch.object(service.warehouse_table_service, "drop_table_with_session") as mock_drop,
-    ):
-        # Configure mock to yield the expired table
-        async def mock_async_generator():
-            yield expired_warehouse_table
+    # Before cleanup - both tables should exist
+    assert await warehouse_table_service.get_document(expired_warehouse_table.id) is not None
+    assert await warehouse_table_service.get_document(non_expired_warehouse_table.id) is not None
 
-        mock_list.return_value = mock_async_generator()
-        mock_drop.return_value = None
+    # Run cleanup
+    await service.run_cleanup(feature_store_id=feature_store.id)
 
-        # Mock feature store service
-        mock_feature_store = Mock()
-        service.feature_store_service.get_document = AsyncMock(return_value=mock_feature_store)
-
-        # Mock session manager
-        mock_session = Mock()
-        service.session_manager_service.get_feature_store_session = AsyncMock(
-            return_value=mock_session
-        )
-
-        # Run cleanup
-        await service.run_cleanup(feature_store_id=feature_store_id)
-
-        # Verify calls
-        mock_list.assert_called_once_with(feature_store_id)
-        mock_drop.assert_called_once_with(
-            session=mock_session,
-            feature_store_id=feature_store_id,
-            table_name="expired_table",
-            schema_name="test_schema",
-            database_name="test_db",
-        )
+    # After cleanup - expired table should be deleted, non-expired should remain
+    with pytest.raises(DocumentNotFoundError):
+        await warehouse_table_service.get_document(expired_warehouse_table.id)
+    assert await warehouse_table_service.get_document(non_expired_warehouse_table.id) is not None
 
 
 @pytest.mark.asyncio
 @freeze_time("2021-01-01 10:00:00")
-async def test_run_cleanup_with_exception(service, feature_store_id, expired_warehouse_table):
+async def test_run_cleanup_with_drop_failure(
+    service,
+    warehouse_table_service,
+    feature_store,
+    expired_warehouse_table,
+):
     """
-    Test run_cleanup method when drop_table_with_session raises an exception
+    Test run_cleanup method when drop_table_with_session fails - document should NOT be deleted
     """
-    # Mock the warehouse table service to return the expired table
-    with (
-        patch.object(
-            service.warehouse_table_service, "list_warehouse_tables_due_for_cleanup"
-        ) as mock_list,
-        patch.object(service.warehouse_table_service, "drop_table_with_session") as mock_drop,
+    with patch.object(
+        warehouse_table_service,
+        "drop_table_with_session",
+        side_effect=Exception("Database connection failed"),
     ):
-        # Configure mock to yield the expired table
-        async def mock_async_generator():
-            yield expired_warehouse_table
+        # Before cleanup - table should exist
+        assert await warehouse_table_service.get_document(expired_warehouse_table.id) is not None
 
-        mock_list.return_value = mock_async_generator()
-        mock_drop.side_effect = Exception("Table not found")
+        # Run cleanup - should not raise exception even though drop fails
+        await service.run_cleanup(feature_store_id=feature_store.id)
 
-        # Mock feature store service
-        mock_feature_store = Mock()
-        service.feature_store_service.get_document = AsyncMock(return_value=mock_feature_store)
+        # After cleanup - document should still exist because drop failed
+        table_after_cleanup = await warehouse_table_service.get_document(expired_warehouse_table.id)
+        assert table_after_cleanup is not None
+        assert table_after_cleanup.id == expired_warehouse_table.id
 
-        # Mock session manager
-        mock_session = Mock()
-        service.session_manager_service.get_feature_store_session = AsyncMock(
-            return_value=mock_session
-        )
 
-        # Run cleanup - should not raise exception
-        await service.run_cleanup(feature_store_id=feature_store_id)
+@pytest.mark.asyncio
+@freeze_time("2021-01-01 10:00:00")
+async def test_run_cleanup_no_expired_tables(
+    service,
+    warehouse_table_service,
+    feature_store,
+    non_expired_warehouse_table,
+):
+    """
+    Test run_cleanup method when no tables are expired
+    """
+    # Before cleanup - table should exist
+    assert await warehouse_table_service.get_document(non_expired_warehouse_table.id) is not None
 
-        # Verify calls
-        mock_list.assert_called_once_with(feature_store_id)
-        mock_drop.assert_called_once_with(
-            session=mock_session,
-            feature_store_id=feature_store_id,
-            table_name="expired_table",
-            schema_name="test_schema",
-            database_name="test_db",
-        )
+    # Run cleanup
+    await service.run_cleanup(feature_store_id=feature_store.id)
+
+    # After cleanup - table should still exist (not expired)
+    assert await warehouse_table_service.get_document(non_expired_warehouse_table.id) is not None
