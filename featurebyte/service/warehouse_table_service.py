@@ -9,16 +9,15 @@ from typing import Any, AsyncIterator, Optional
 
 from bson import ObjectId
 
-from featurebyte.models.warehouse_table import WarehouseTableModel
+from featurebyte.models.warehouse_table import WarehouseTableModel, WarehouseTableServiceUpdate
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.session.base import BaseSession, QueryMetadata
 
 
 class WarehouseTableService(
-    BaseDocumentService[WarehouseTableModel, WarehouseTableModel, BaseDocumentServiceUpdateSchema]
+    BaseDocumentService[WarehouseTableModel, WarehouseTableModel, WarehouseTableServiceUpdate]
 ):
     """
     WarehouseTableService class

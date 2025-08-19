@@ -7,11 +7,15 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
+from featurebyte.models.warehouse_table import WarehouseTableServiceUpdate
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 
 logger = get_logger(__name__)
+
+# Maximum number of failed cleanup attempts before deleting the document
+MAX_CLEANUP_FAILURES = 5
 
 
 class FeatureStoreTableCleanupService:
@@ -48,6 +52,7 @@ class FeatureStoreTableCleanupService:
         )
 
         cleanup_count = 0
+        force_deleted_count = 0
         async for (
             warehouse_table
         ) in self.warehouse_table_service.list_warehouse_tables_due_for_cleanup(feature_store_id):
@@ -59,6 +64,7 @@ class FeatureStoreTableCleanupService:
                     "schema_name": table_details.schema_name,
                     "database_name": table_details.database_name,
                     "expires_at": warehouse_table.expires_at,
+                    "failed_attempts": warehouse_table.cleanup_failed_count,
                 },
             )
 
@@ -69,21 +75,56 @@ class FeatureStoreTableCleanupService:
                     table_name=table_details.table_name,
                     schema_name=table_details.schema_name,
                     database_name=table_details.database_name,
+                    exists=True,
                 )
                 cleanup_count += 1
-            except Exception as ex:
-                logger.warning(
-                    "Failed to cleanup warehouse table",
+                logger.info(
+                    "Successfully cleaned up warehouse table",
                     extra={
                         "table_name": table_details.table_name,
-                        "error": str(ex),
+                        "failed_attempts": warehouse_table.cleanup_failed_count,
                     },
                 )
+            except Exception as ex:
+                # Increment failure counter
+                new_failed_count = warehouse_table.cleanup_failed_count + 1
+
+                if new_failed_count >= MAX_CLEANUP_FAILURES:
+                    # Too many failures - force delete the document
+                    logger.warning(
+                        "Force deleting warehouse table document after max cleanup failures",
+                        extra={
+                            "table_name": table_details.table_name,
+                            "failed_attempts": new_failed_count,
+                            "max_failures": MAX_CLEANUP_FAILURES,
+                            "error": str(ex),
+                        },
+                    )
+                    await self.warehouse_table_service.delete_document(
+                        document_id=warehouse_table.id
+                    )
+                    force_deleted_count += 1
+                else:
+                    # Update failure counter and keep document
+                    logger.warning(
+                        "Failed to cleanup warehouse table - incrementing failure counter",
+                        extra={
+                            "table_name": table_details.table_name,
+                            "failed_attempts": new_failed_count,
+                            "max_failures": MAX_CLEANUP_FAILURES,
+                            "error": str(ex),
+                        },
+                    )
+                    await self.warehouse_table_service.update_document(
+                        document_id=warehouse_table.id,
+                        data=WarehouseTableServiceUpdate(cleanup_failed_count=new_failed_count),
+                    )
 
         logger.info(
             "Completed feature store table cleanup",
             extra={
                 "feature_store_id": str(feature_store_id),
                 "tables_cleaned": cleanup_count,
+                "force_deleted_count": force_deleted_count,
             },
         )

@@ -61,6 +61,7 @@ async def expired_warehouse_table_fixture(warehouse_table_service, feature_store
         ),
         tag="test_cleanup_tag",
         expires_at=datetime.utcnow() - timedelta(hours=1),  # expired 1 hour ago
+        cleanup_failed_count=0,
     )
     return await warehouse_table_service.create_document(table)
 
@@ -82,6 +83,7 @@ async def non_expired_warehouse_table_fixture(warehouse_table_service, feature_s
         ),
         tag="test_cleanup_tag",
         expires_at=datetime.utcnow() + timedelta(hours=1),  # expires in 1 hour
+        cleanup_failed_count=0,
     )
     return await warehouse_table_service.create_document(table)
 
@@ -113,30 +115,97 @@ async def test_run_cleanup_success(
 
 @pytest.mark.asyncio
 @freeze_time("2021-01-01 10:00:00")
-async def test_run_cleanup_with_drop_failure(
+async def test_run_cleanup_with_drop_failure_increments_counter(
     service,
     warehouse_table_service,
     feature_store,
     expired_warehouse_table,
+    mock_session_manager,
 ):
     """
-    Test run_cleanup method when drop_table_with_session fails - document should NOT be deleted
+    Test run_cleanup method when drop_table_with_session fails - should increment failure counter
     """
     with patch.object(
         warehouse_table_service,
         "drop_table_with_session",
         side_effect=Exception("Database connection failed"),
-    ):
-        # Before cleanup - table should exist
-        assert await warehouse_table_service.get_document(expired_warehouse_table.id) is not None
+    ) as mock_drop:
+        # Before cleanup - table should exist with 0 failures
+        original_table = await warehouse_table_service.get_document(expired_warehouse_table.id)
+        assert original_table is not None
+        assert original_table.cleanup_failed_count == 0
 
         # Run cleanup - should not raise exception even though drop fails
         await service.run_cleanup(feature_store_id=feature_store.id)
 
-        # After cleanup - document should still exist because drop failed
+        # Verify drop_table_with_session was called with correct parameters including exists=True
+        mock_drop.assert_called_once_with(
+            session=mock_session_manager,
+            feature_store_id=feature_store.id,
+            table_name="expired_test_table",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            exists=True,
+        )
+
+        # After cleanup - document should still exist with incremented failure counter
         table_after_cleanup = await warehouse_table_service.get_document(expired_warehouse_table.id)
         assert table_after_cleanup is not None
         assert table_after_cleanup.id == expired_warehouse_table.id
+        assert table_after_cleanup.cleanup_failed_count == 1
+
+
+@pytest.mark.asyncio
+@freeze_time("2021-01-01 10:00:00")
+async def test_run_cleanup_force_delete_after_max_failures(
+    service,
+    warehouse_table_service,
+    feature_store,
+    mock_session_manager,
+):
+    """
+    Test run_cleanup method force deletes document after max failures
+    """
+    # Create a table with 5 failed attempts (at the limit)
+    table = WarehouseTableModel(
+        location=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="sf_db",
+                schema_name="sf_schema",
+                table_name="max_failures_table",
+            ),
+        ),
+        tag="test_cleanup_tag",
+        expires_at=datetime(2021, 1, 1, 9, 0, 0),  # expired 1 hour ago from frozen time
+        cleanup_failed_count=4,  # One away from max
+    )
+    warehouse_table = await warehouse_table_service.create_document(table)
+
+    with patch.object(
+        warehouse_table_service,
+        "drop_table_with_session",
+        side_effect=Exception("Credentials no longer valid"),
+    ) as mock_drop:
+        # Before cleanup - table should exist
+        assert await warehouse_table_service.get_document(warehouse_table.id) is not None
+
+        # Run cleanup - this should force delete the document
+        await service.run_cleanup(feature_store_id=feature_store.id)
+
+        # Verify drop_table_with_session was called with correct parameters including exists=True
+        mock_drop.assert_called_once_with(
+            session=mock_session_manager,
+            feature_store_id=feature_store.id,
+            table_name="max_failures_table",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            exists=True,
+        )
+
+        # After cleanup - document should be force deleted
+        with pytest.raises(DocumentNotFoundError):
+            await warehouse_table_service.get_document(warehouse_table.id)
 
 
 @pytest.mark.asyncio

@@ -9,8 +9,25 @@ from typing import Any, Optional
 
 import pymongo
 
-from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseModel, FeatureByteCatalogBaseDocumentModel
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+
+
+class WarehouseTableUpdate(FeatureByteBaseModel):
+    """
+    WarehouseTable update schema
+    """
+
+    cleanup_failed_count: Optional[int] = None
+
+
+class WarehouseTableServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    WarehouseTableService update schema
+    """
+
+    cleanup_failed_count: Optional[int] = None
 
 
 class WarehouseTableModel(FeatureByteCatalogBaseDocumentModel):
@@ -30,6 +47,7 @@ class WarehouseTableModel(FeatureByteCatalogBaseDocumentModel):
     location: TabularSource
     tag: Optional[str] = None
     expires_at: Optional[datetime] = None
+    cleanup_failed_count: int = 0
 
     @property
     def warehouse_tables(self) -> list[Any]:
