@@ -216,6 +216,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "name": payload.name,
                 "location": location,
                 "context_id": payload.context_id,
+                "use_case_ids": [payload.use_case_id] if payload.use_case_id else [],
                 "request_input": payload.request_input,
                 "purpose": payload.purpose,
                 "primary_entity_ids": primary_entity_ids,

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -37,6 +37,7 @@ from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.models.request_input import BaseRequestInput
 from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -280,6 +281,57 @@ class ObservationTableService(
     def class_name(self) -> str:
         return "ObservationTable"
 
+    async def _validate_context_use_case(
+        self,
+        data: Union[ObservationTableCreate, ObservationTableUpload],
+        target_namespace_id: Optional[ObjectId] = None,
+    ) -> None:
+        """
+        Validate that the context and use case are compatible.
+
+        Parameters
+        ----------
+        data: Union[ObservationTableCreate, ObservationTableUpload]
+            Data to validate
+        target_namespace_id: Optional[ObjectId]
+            Target namespace ID, if applicable
+
+        Raises
+        ------
+        ObservationTableInvalidContextError
+            If the context is not valid.
+        ObservationTableInvalidUseCaseError
+            If the use case is not valid.
+        """
+        use_case: Optional[UseCaseModel] = None
+        if data.use_case_id is not None:
+            # Check if the use case document exists when provided.
+            use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
+            if data.context_id is None:
+                data.context_id = use_case.context_id
+
+        if data.context_id is not None:
+            # Check if context id matches use case context id
+            if use_case and use_case.context_id != data.context_id:
+                raise ObservationTableInvalidUseCaseError(
+                    "Context mismatch with specified use case."
+                )
+            # Check if the context document exists when provided. This should perform additional
+            # validation once additional information such as request schema are available in the
+            # context.
+            context = await self.context_service.get_document(document_id=data.context_id)
+            if data.primary_entity_ids and context.primary_entity_ids != data.primary_entity_ids:
+                raise ObservationTableInvalidContextError(
+                    "Primary entities mismatch with specified context."
+                )
+
+        if target_namespace_id and use_case:
+            # Check if the target namespace matches the use case
+            if target_namespace_id != use_case.target_namespace_id:
+                raise ObservationTableInvalidUseCaseError(
+                    "Target mismatch with specified use case."
+                )
+
     async def _validate_columns(
         self,
         available_columns: List[str],
@@ -361,12 +413,6 @@ class ObservationTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
-        if data.context_id is not None:
-            # Check if the context document exists when provided. This should perform additional
-            # validation once additional information such as request schema are available in the
-            # context.
-            await self.context_service.get_document(document_id=data.context_id)
-
         if isinstance(data.request_input, BaseRequestInput):
             feature_store = await self.feature_store_service.get_document(
                 document_id=data.feature_store_id
@@ -396,6 +442,9 @@ class ObservationTableService(
             target_namespace_id = target.target_namespace_id
         else:
             target_namespace_id = None
+
+        # Validate context and use case
+        await self._validate_context_use_case(data, target_namespace_id)
 
         return ObservationTableTaskPayload(
             **data.model_dump(by_alias=True),
@@ -445,6 +494,9 @@ class ObservationTableService(
             primary_entity_ids=data.primary_entity_ids,
             target_column=data.target_column,
         )
+
+        # Validate context and use case
+        await self._validate_context_use_case(data, target_namespace_id)
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
