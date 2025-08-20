@@ -18,7 +18,7 @@ from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
 
-CLEANUP_INTERVAL_SECONDS = 60 * 60 * 6  # Every 6 hours
+CLEANUP_INTERVAL_SECONDS = 60 * 60 * 24  # Every 24 hours
 
 
 class FeatureStoreTableCleanupSchedulerService:
