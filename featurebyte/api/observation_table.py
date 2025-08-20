@@ -442,6 +442,8 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         purpose: Optional[Purpose] = None,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        context_name: Optional[str] = None,
+        use_case_name: Optional[str] = None,
     ) -> ObservationTable:
         """
         Upload a file to create an observation table. This file can either be a CSV or Parquet file.
@@ -460,6 +462,10 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        context_name: Optional[str]
+            Context name for the observation table.
+        use_case_name: Optional[str]
+            Use case name for the observation table.
 
         Returns
         -------
@@ -474,6 +480,11 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         ...     primary_entities=["entity_name_1"],
         ... )
         """
+        from featurebyte.api.context import Context
+        from featurebyte.api.use_case import UseCase
+
+        context_id = Context.get(context_name).id if context_name else None
+        use_case_id = UseCase.get(use_case_name).id if use_case_name else None
         primary_entity_ids = []
         if primary_entities is not None:
             for entity_name in primary_entities:
@@ -484,6 +495,8 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             primary_entity_ids=primary_entity_ids,
             uploaded_file_name=os.path.basename(file_path),
             target_column=target_column,
+            context_id=context_id,
+            use_case_id=use_case_id,
         )
         with open(file_path, "rb") as file_object:
             observation_table_doc = cls.post_async_task(

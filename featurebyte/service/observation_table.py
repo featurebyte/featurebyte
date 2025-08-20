@@ -281,6 +281,45 @@ class ObservationTableService(
     def class_name(self) -> str:
         return "ObservationTable"
 
+    async def _infer_primary_entity_ids(
+        self,
+        primary_entity_ids: Optional[List[PydanticObjectId]],
+        context_id: Optional[PydanticObjectId],
+        use_case_id: Optional[PydanticObjectId],
+    ) -> List[PydanticObjectId]:
+        """
+        Infer primary entity IDs from the context or use case if not specified.
+
+        Parameters
+        ----------
+        primary_entity_ids: Optional[List[PydanticObjectId]]
+            List of primary entity IDs
+        context_id: Optional[PydanticObjectId]
+            Context ID
+        use_case_id: Optional[PydanticObjectId]
+            Use case ID
+
+        Returns
+        -------
+        List[PydanticObjectId]
+            Validated primary entity IDs
+        """
+        if primary_entity_ids:
+            return primary_entity_ids
+
+        if context_id is not None:
+            # If context ID is provided, fetch the context and use its primary entity IDs
+            context = await self.context_service.get_document(document_id=context_id)
+            return context.primary_entity_ids
+
+        if use_case_id is not None:
+            # If use case ID is provided, fetch the use case and use its context's primary entity IDs
+            use_case = await self.use_case_service.get_document(document_id=use_case_id)
+            context = await self.context_service.get_document(document_id=use_case.context_id)
+            return context.primary_entity_ids
+
+        return primary_entity_ids or []
+
     async def _validate_context_use_case(
         self,
         data: Union[ObservationTableCreate, ObservationTableUpload],
@@ -413,6 +452,12 @@ class ObservationTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
+        data.primary_entity_ids = await self._infer_primary_entity_ids(
+            primary_entity_ids=data.primary_entity_ids,
+            context_id=data.context_id,
+            use_case_id=data.use_case_id,
+        )
+
         if isinstance(data.request_input, BaseRequestInput):
             feature_store = await self.feature_store_service.get_document(
                 document_id=data.feature_store_id
@@ -486,6 +531,12 @@ class ObservationTableService(
         output_document_id = data.id or ObjectId()
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
+        )
+
+        data.primary_entity_ids = await self._infer_primary_entity_ids(
+            primary_entity_ids=data.primary_entity_ids,
+            context_id=data.context_id,
+            use_case_id=data.use_case_id,
         )
 
         # Check if required column names are provided
