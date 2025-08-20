@@ -104,7 +104,7 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
     @model_validator(mode="after")
-    def _require_ids_for_observation_table(self):
+    def _require_ids_for_observation_table(self) -> "DevelopmentDatasetModel":
         if self.source_type == DevelopmentDatasetSourceType.OBSERVATION_TABLE:
             if not self.development_plan_id or not self.observation_table_id:
                 raise ValueError(
