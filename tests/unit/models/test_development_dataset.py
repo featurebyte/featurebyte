@@ -10,21 +10,6 @@ from featurebyte.models.development_dataset import DevelopmentDatasetModel, Deve
 from featurebyte.query_graph.model.common_table import TabularSource
 
 
-def test_empty_development_tables():
-    """
-    Test that an empty development dataset raises a validation error
-    """
-
-    with pytest.raises(ValidationError) as exc_info:
-        DevelopmentDatasetModel(
-            name="test_dataset",
-            sample_from_timestamp="2023-01-01T00:00:00Z",
-            sample_to_timestamp="2023-01-02T00:00:00Z",
-            development_tables=[],
-        )
-    assert "At least one development source table is required" in str(exc_info.value)
-
-
 def test_duplicate_table_ids_development_tables():
     """
     Test that an duplicate table ids indevelopment dataset raises a validation error

@@ -9,7 +9,11 @@ from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.development_dataset import DevelopmentDatasetStatus, DevelopmentTable
+from featurebyte.models.development_dataset import (
+    DevelopmentDatasetSourceType,
+    DevelopmentDatasetStatus,
+    DevelopmentTable,
+)
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import (
@@ -28,8 +32,12 @@ class DevelopmentDatasetBase(FeatureByteBaseModel):
     description: Optional[StrictStr] = Field(default=None)
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
-    development_plan_id: Optional[PydanticObjectId] = None
     status: DevelopmentDatasetStatus = Field(default=DevelopmentDatasetStatus.ACTIVE)
+    source_type: DevelopmentDatasetSourceType = Field(
+        default=DevelopmentDatasetSourceType.SOURCE_TABLES
+    )
+    development_plan_id: Optional[PydanticObjectId] = None
+    observation_table_id: Optional[PydanticObjectId] = None
 
 
 class DevelopmentTableCreate(FeatureByteBaseModel):
@@ -91,6 +99,7 @@ class DevelopmentDatasetServiceUpdate(BaseDocumentServiceUpdateSchema):
 
     name: Optional[NameStr] = Field(default=None)
     development_tables: Optional[List[DevelopmentTable]] = Field(default=None)
+    status: Optional[DevelopmentDatasetStatus] = Field(default=None)
 
 
 class DevelopmentTableInfo(FeatureByteBaseModel):
@@ -113,5 +122,9 @@ class DevelopmentDatasetInfo(BaseInfo):
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
     development_tables: List[DevelopmentTableInfo]
-    development_plan_id: Optional[PydanticObjectId] = None
     status: DevelopmentDatasetStatus = Field(default=DevelopmentDatasetStatus.ACTIVE)
+    source_type: DevelopmentDatasetSourceType = Field(
+        default=DevelopmentDatasetSourceType.SOURCE_TABLES
+    )
+    development_plan_id: Optional[PydanticObjectId] = None
+    observation_table_id: Optional[PydanticObjectId] = None
