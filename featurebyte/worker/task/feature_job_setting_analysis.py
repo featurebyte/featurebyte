@@ -4,9 +4,11 @@ Feature Job Setting Analysis task
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
 from featurebyte_freeware.feature_job_analysis.database import DatabaseTableDetails, EventDataset
 
@@ -106,13 +108,28 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
             schema_name=event_table.tabular_source.table_details.schema_name,
             table_name=event_table.tabular_source.table_details.table_name,
         )
+
+        async def debug_sql_query(query: str) -> pd.DataFrame:
+            result = await db_session.execute_query(query)
+            # create directory in temp folder
+            output_dir = "/tmp/debug_freeware"
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                mode="w", dir=output_dir, suffix=".csv", delete=False
+            ) as tmp:
+                result.to_csv(tmp.name, index=False)
+                with open(f"{output_dir}/debug_sql_query.txt", "a") as f:
+                    f.write(f"Executed SQL: \n{query}\n")
+                    f.write(f"Result: {tmp.name}\n")
+            return result
+
         event_dataset = EventDataset(
             database_type=database_type,
             event_table_name=event_table.name,
             table_details=table_details,
             creation_date_column=event_table.record_creation_timestamp_column,
             event_timestamp_column=event_table.event_timestamp_column,
-            sql_query_func=db_session.execute_query,
+            sql_query_func=debug_sql_query,
         )
 
         await self.task_progress_updater.update_progress(percent=5, message="Running Analysis")
