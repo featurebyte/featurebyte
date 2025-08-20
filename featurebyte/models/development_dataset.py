@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -102,6 +102,22 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ]
         ]
+
+    @model_validator(mode="after")
+    def _require_ids_for_observation_table(self):
+        if self.source_type == DevelopmentDatasetSourceType.OBSERVATION_TABLE:
+            if not self.development_plan_id or not self.observation_table_id:
+                raise ValueError(
+                    "Both development_plan_id and observation_table_id must be specified "
+                    "when source_type is OBSERVATION_TABLE."
+                )
+        if self.source_type == DevelopmentDatasetSourceType.SOURCE_TABLES:
+            if self.development_plan_id or self.observation_table_id:
+                raise ValueError(
+                    "Both development_plan_id and observation_table_id should be null "
+                    "when source_type is SOURCE_TABLES."
+                )
+        return self
 
     @field_validator("development_tables", mode="after")
     @classmethod
