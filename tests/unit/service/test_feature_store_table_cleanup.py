@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.warehouse_table import WarehouseTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
 
 
@@ -254,10 +255,6 @@ async def test_discover_and_adopt_orphaned_tables(
     """
     Test discovery and adoption of orphaned temp tables
     """
-    from unittest.mock import AsyncMock
-
-    from featurebyte.query_graph.model.table import TableSpec
-    from featurebyte.query_graph.node.schema import TableDetails
 
     # Mock session.list_tables to return some tables including temp tables
     mock_session = AsyncMock()
@@ -275,8 +272,6 @@ async def test_discover_and_adopt_orphaned_tables(
     service.session_manager_service.get_feature_store_session = AsyncMock(return_value=mock_session)
 
     # Create a tracked table record for one of the temp tables
-    from featurebyte.models.warehouse_table import WarehouseTableModel
-    from featurebyte.query_graph.model.common_table import TabularSource
 
     existing_tracked_table = WarehouseTableModel(
         location=TabularSource(
