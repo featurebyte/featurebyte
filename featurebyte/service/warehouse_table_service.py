@@ -106,8 +106,8 @@ class WarehouseTableService(
         table_details = warehouse_table.location.table_details
         await session.drop_table(
             table_name=table_details.table_name,
-            schema_name=table_details.schema_name,
-            database_name=table_details.database_name,
+            schema_name=table_details.schema_name or session.schema_name,
+            database_name=table_details.database_name or session.database_name,
             **kwargs,
         )
         await self.delete_document(document_id=warehouse_table.id)

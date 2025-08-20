@@ -121,8 +121,8 @@ class FeatureStoreTableCleanupService:
             table_details = warehouse_table.location.table_details
             # Create a case-insensitive key that uniquely identifies the table
             table_key = self._make_table_key(
-                table_details.database_name,
-                table_details.schema_name,
+                table_details.database_name or db_session.database_name,
+                table_details.schema_name or db_session.schema_name,
                 table_details.table_name,
             )
             tracked_tables[table_key] = warehouse_table
@@ -135,7 +135,6 @@ class FeatureStoreTableCleanupService:
 
         for table_spec in tables:
             if self.is_temp_table(table_spec.name):
-                # Create case-insensitive table key for lookup
                 table_key = self._make_table_key(
                     db_session.database_name,
                     db_session.schema_name,
@@ -155,7 +154,6 @@ class FeatureStoreTableCleanupService:
                         table_details=table_details,
                     )
 
-                    # Orphaned table - adopt it
                     await self._adopt_orphaned_table(location)
                     adopted_count += 1
 
@@ -254,7 +252,7 @@ class FeatureStoreTableCleanupService:
                 new_failed_count = warehouse_table.cleanup_failed_count + 1
 
                 if new_failed_count >= MAX_CLEANUP_FAILURES:
-                    # Too many failures - force delete the document
+                    # Too many failures: force delete the document
                     logger.warning(
                         "Force deleting warehouse table document after max cleanup failures",
                         extra={
