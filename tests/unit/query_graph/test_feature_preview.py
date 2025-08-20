@@ -326,6 +326,35 @@ def test_get_feature_preview_sql__scd_lookup_features_with_offset(
     )
 
 
+def test_get_feature_preview_sql__snapshots_lookup_features(
+    global_graph,
+    snapshots_lookup_feature_node,
+    source_info,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for a SCD lookup feature
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph = global_graph
+    node = snapshots_lookup_feature_node
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_info=source_info,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_snapshots_lookup.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__latest_aggregation(
     global_graph,
     latest_value_aggregation_feature_node,

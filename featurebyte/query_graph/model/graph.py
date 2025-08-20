@@ -17,6 +17,7 @@ from featurebyte.query_graph.model.node_hash_util import (
     exclude_default_timestamp_metadata,
     exclude_non_aggregation_with_timestamp_node_timestamp_metadata,
     exclude_partition_metadata_from_node_parameters,
+    handle_lookup_node_parameters,
     handle_time_series_window_aggregate_node_parameters,
 )
 from featurebyte.query_graph.node import Node, construct_node
@@ -261,6 +262,8 @@ class QueryGraphModel(FeatureByteBaseModel):
                 node_parameters.pop("offset", None)
         if node.type == NodeType.TIME_SERIES_WINDOW_AGGREGATE:
             handle_time_series_window_aggregate_node_parameters(node_parameters)
+        if node.type == NodeType.LOOKUP:
+            handle_lookup_node_parameters(node_parameters)
         if node.type in NodeType.aggregation_and_lookup_node_types():
             exclude_aggregation_and_lookup_node_timestamp_metadata(
                 node_type=node.type, node_parameters=node_parameters

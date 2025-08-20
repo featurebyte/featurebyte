@@ -173,3 +173,18 @@ def handle_time_series_window_aggregate_node_parameters(node_parameters: Dict[st
     feature_job_setting = node_parameters.get("feature_job_setting", {})
     if feature_job_setting.get("blind_spot") is None:
         feature_job_setting.pop("blind_spot", None)
+
+
+def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
+    """
+    Handle lookup node parameters
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters
+    """
+    # Consider None snapshot_parameters in LookupParameters as the same as not provided for backward
+    # compatibility
+    if node_parameters.get("snapshots_parameters") is None:
+        node_parameters.pop("snapshots_parameters", None)

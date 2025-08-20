@@ -4,7 +4,6 @@ Tests for featurebyte.query_graph.feature_compute
 
 import copy
 import textwrap
-from dataclasses import asdict
 
 import pytest
 from bson import ObjectId
@@ -499,7 +498,7 @@ def test_feature_execution_planner__lookup_features(
     # Check aggregation results
     agg_results = aggregator.get_direct_lookups()
     assert len(agg_results) == 1
-    agg_result_dict = asdict(agg_results[0])
+    agg_result_dict = agg_results[0].model_dump()
     agg_result_dict.pop("expr")
     agg_result_dict.pop("adapter")
     assert agg_result_dict == {
@@ -508,6 +507,7 @@ def test_feature_execution_planner__lookup_features(
             "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_1",
         ],
         "join_keys": ["CUSTOMER_ID"],
+        "left_table_join_keys": None,
         "forward_point_in_time_offset": None,
         "event_timestamp_column": None,
     }

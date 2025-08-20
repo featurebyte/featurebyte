@@ -6,13 +6,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Generic, Sequence, Tuple, TypeVar
+from typing import Any, Generic, Optional, Sequence, Tuple, TypeVar
 
 from bson import ObjectId
+from pydantic import model_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -50,8 +52,7 @@ class AggregationResult:
     column_names: list[str]
 
 
-@dataclass
-class LeftJoinableSubquery:
+class LeftJoinableSubquery(FeatureByteBaseModel):
     """
     Representation of a subquery that can be left joined with the request table
     """
@@ -59,6 +60,23 @@ class LeftJoinableSubquery:
     expr: expressions.Select
     column_names: list[str]
     join_keys: list[str]
+    left_table_join_keys: Optional[list[expressions.Expression]] = None
+
+    @model_validator(mode="after")
+    def validate_left_table_join_keys(self) -> "LeftJoinableSubquery":
+        """
+        Validate that left_table_join_keys has the same length as join_keys if not None.
+
+        Returns
+        -------
+        LeftJoinableSubquery
+        """
+        if self.left_table_join_keys is not None:
+            assert len(self.left_table_join_keys) == len(self.join_keys), (
+                f"left_table_join_keys length ({len(self.left_table_join_keys)}) "
+                f"must match join_keys length ({len(self.join_keys)})"
+            )
+        return self
 
     def get_expression_for_column(
         self, main_alias: str, join_alias: str, column_name: str, adapter: BaseAdapter
@@ -278,10 +296,22 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             )
             for agg_result_name in left_joinable_subquery.column_names
         ]
-        join_conditions = [
-            f"REQ.{quoted_identifier(key).sql()} = {agg_table_alias}.{quoted_identifier(key).sql()}"
-            for key in left_joinable_subquery.join_keys
-        ]
+        if left_joinable_subquery.left_table_join_keys is None:
+            left_table_join_keys = [
+                get_qualified_column_identifier(key, "REQ")
+                for key in left_joinable_subquery.join_keys
+            ]
+        else:
+            left_table_join_keys = left_joinable_subquery.left_table_join_keys
+        join_conditions = []
+        for left_key_expr, right_key in zip(left_table_join_keys, left_joinable_subquery.join_keys):
+            right_key_expr = get_qualified_column_identifier(right_key, agg_table_alias)
+            join_conditions.append(
+                expressions.EQ(
+                    this=left_key_expr,
+                    expression=right_key_expr,
+                )
+            )
         updated_table_expr = table_expr.join(
             left_joinable_subquery.expr.subquery(),
             join_type="left",
@@ -497,8 +527,8 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                 *agg_result_names_exprs,
             ).from_(pivoted_online_store.subquery())
             query = LeftJoinableSubquery(
-                expr,
-                list(info.get_mapped_agg_result_names()),
+                expr=expr,
+                column_names=list(info.get_mapped_agg_result_names()),
                 join_keys=info.request_serving_names,
             )
             left_join_queries.append(query)

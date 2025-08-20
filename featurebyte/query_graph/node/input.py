@@ -417,7 +417,7 @@ class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
 
     type: Literal[TableDataType.SNAPSHOTS_TABLE] = TableDataType.SNAPSHOTS_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
-    id_column: InColumnStr = Field(default=None)
+    id_column: InColumnStr
     snapshot_datetime_column: InColumnStr
     snapshot_datetime_schema: TimestampSchema
     time_interval: TimeInterval

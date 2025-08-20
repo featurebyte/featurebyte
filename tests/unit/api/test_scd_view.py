@@ -189,6 +189,7 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
                 "offset": "7d",
             },
             "event_parameters": None,
+            "snapshots_parameters": None,
         },
     }
 
@@ -258,6 +259,7 @@ def test_scd_view_as_feature__special_column(
             "offset": None,
         },
         "event_parameters": None,
+        "snapshots_parameters": None,
     }
 
     # check SDK code generation

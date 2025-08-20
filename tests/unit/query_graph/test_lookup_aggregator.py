@@ -4,14 +4,18 @@ Unit tests for featurebyte.query_graph.sql.aggregator.lookup.LookupAggregator
 
 from __future__ import annotations
 
+import copy
 import textwrap
 from dataclasses import asdict
 
 import pytest
 
+from featurebyte import CalendarWindow, TimeInterval
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from tests.unit.query_graph.util import get_combined_aggregation_expr_from_aggregator
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
@@ -84,6 +88,58 @@ def scd_lookup_specs_with_offset(
 
 
 @pytest.fixture
+def daily_snapshots_table_agg_spec(global_graph, snapshots_lookup_feature_node, source_info):
+    """
+    Fixture for daily snapshots table aggregation specification
+    """
+    parent_nodes = global_graph.get_input_node_names(snapshots_lookup_feature_node)
+    assert len(parent_nodes) == 1
+    agg_node = global_graph.get_node_by_name(parent_nodes[0])
+    return LookupSpec.from_query_graph_node(
+        node=agg_node,
+        graph=global_graph,
+        source_info=source_info,
+        agg_result_name_include_serving_names=True,
+    )[0]
+
+
+@pytest.fixture
+def daily_snapshots_table_agg_spec_blind_spot(daily_snapshots_table_agg_spec):
+    """
+    Fixture for daily snapshots table aggregation specification with blind spot
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.feature_job_setting.blind_spot = CalendarWindow(
+        unit="DAY",
+        size=3,
+    )
+    return agg_spec
+
+
+@pytest.fixture
+def monthly_snapshots_table_agg_spec(daily_snapshots_table_agg_spec):
+    """
+    Fixture for monthly snapshots table aggregation specification
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.time_interval = TimeInterval(unit="MONTH", value=1)
+    return agg_spec
+
+
+@pytest.fixture
+def monthly_snapshots_table_agg_spec_blind_spot(daily_snapshots_table_agg_spec):
+    """
+    Fixture for monthly snapshots table aggregation specification with blind spot
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.feature_job_setting.blind_spot = CalendarWindow(
+        unit="MONTH",
+        size=3,
+    )
+    return agg_spec
+
+
+@pytest.fixture
 def offline_lookup_aggregator(source_info):
     """
     Fixture for a LookupAggregator for serving offline features
@@ -132,6 +188,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         },
@@ -145,6 +202,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         },
@@ -189,6 +247,7 @@ def test_lookup_aggregator__offline_scd_only(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -231,6 +290,7 @@ def test_lookup_aggregator__online_with_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -310,6 +370,7 @@ def test_lookup_aggregator__online_without_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -355,6 +416,7 @@ def test_lookup_aggregator__online_with_offset(
                 offset="14d",
             ),
             "event_parameters": None,
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -386,6 +448,7 @@ def test_lookup_aggregator__event_table(
             "entity_column": "order_id",
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
+            "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
         }
@@ -393,3 +456,40 @@ def test_lookup_aggregator__event_table(
 
     scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
     assert len(scd_lookup_specs) == 0
+
+
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "snapshots_daily",
+        "snapshots_daily_with_blind_spot",
+        "snapshots_monthly",
+        "snapshots_monthly_with_blind_spot",
+    ],
+)
+def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source_info):
+    """
+    Test lookup aggregator for snapshots table
+    """
+    test_case_mapping = {
+        "snapshots_daily": "daily_snapshots_table_agg_spec",
+        "snapshots_daily_with_blind_spot": "daily_snapshots_table_agg_spec_blind_spot",
+        "snapshots_monthly": "monthly_snapshots_table_agg_spec",
+        "snapshots_monthly_with_blind_spot": "monthly_snapshots_table_agg_spec_blind_spot",
+    }
+    fixture_name = test_case_mapping[test_case_name]
+    fixture_obj = request.getfixturevalue(fixture_name)
+    if isinstance(fixture_obj, list):
+        agg_specs = fixture_obj
+    else:
+        agg_specs = [fixture_obj]
+
+    aggregator = LookupAggregator(source_info=source_info)
+    for agg_spec in agg_specs:
+        aggregator.update(agg_spec)
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
+    assert_equal_with_expected_fixture(
+        result_expr.sql(pretty=True),
+        f"tests/fixtures/aggregator/expected_lookup_aggregator_{test_case_name}.sql",
+        update_fixture=update_fixtures,
+    )

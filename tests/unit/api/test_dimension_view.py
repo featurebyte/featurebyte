@@ -198,6 +198,7 @@ def test_as_features__with_primary_key_column(
             "entity_id": cust_id_entity.id,
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
         },
     }
 
@@ -339,6 +340,7 @@ def test_as_target__from_view_column(snowflake_dimension_view_with_entity, cust_
             "entity_id": cust_id_entity.id,
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
             "offset": "1d",
         },
     }
@@ -380,6 +382,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
             "entity_id": cust_id_entity.id,
             "scd_parameters": None,
             "event_parameters": None,
+            "snapshots_parameters": None,
         },
     }
 
