@@ -132,11 +132,7 @@ class DevelopmentDatasetController(
         Task
         """
         # check if document exists
-        development_dataset = await self.service.get_document(document_id=document_id)
-
-        # check if a plan exists
-        if development_dataset.development_plan_id:
-            raise ValueError("Use the route to delete the development plan.")
+        _ = await self.service.get_document(document_id=document_id)
 
         # check if document is used by any other documents
         await self.verify_operation_by_checking_reference(
