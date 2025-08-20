@@ -86,7 +86,7 @@ class FeatureStoreTableCleanupService:
         bool
             True if the table appears to be a temporary table
         """
-        return "__TEMP" in table_name.upper()
+        return table_name.upper().startswith("__TEMP")
 
     async def discover_and_adopt_orphaned_tables(self, feature_store_id: ObjectId) -> int:
         """
