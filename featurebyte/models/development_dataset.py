@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -36,6 +36,21 @@ class DevelopmentDatasetStatus(StrEnum):
     ACTIVE = "Active", "Development tables mapped to source tables."
 
 
+class DevelopmentDatasetSourceType(StrEnum):
+    """
+    Development Dataset Source Type
+    """
+
+    SOURCE_TABLES = (
+        "Source Tables",
+        "Development Tables origin from Source Tables.",
+    )
+    OBSERVATION_TABLE = (
+        "Observation Table",
+        "Development Tables are samples of Registered Tables using an observation table to extract relevant entities.",
+    )
+
+
 class DevelopmentTable(FeatureByteBaseModel):
     """
     Development source table for a table
@@ -55,8 +70,12 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
     sample_from_timestamp: datetime
     sample_to_timestamp: datetime
     development_tables: List[DevelopmentTable] = Field(default_factory=list)
-    development_plan_id: Optional[PydanticObjectId] = None
     status: DevelopmentDatasetStatus = Field(default=DevelopmentDatasetStatus.ACTIVE)
+    source_type: DevelopmentDatasetSourceType = Field(
+        default=DevelopmentDatasetSourceType.SOURCE_TABLES
+    )
+    development_plan_id: Optional[PydanticObjectId] = None
+    observation_table_id: Optional[PydanticObjectId] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -84,6 +103,22 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
             ]
         ]
 
+    @model_validator(mode="after")
+    def _require_ids_for_observation_table(self) -> "DevelopmentDatasetModel":
+        if self.source_type == DevelopmentDatasetSourceType.OBSERVATION_TABLE:
+            if not self.development_plan_id or not self.observation_table_id:
+                raise ValueError(
+                    "Both development_plan_id and observation_table_id must be specified "
+                    "when source_type is OBSERVATION_TABLE."
+                )
+        if self.source_type == DevelopmentDatasetSourceType.SOURCE_TABLES:
+            if self.development_plan_id or self.observation_table_id:
+                raise ValueError(
+                    "Both development_plan_id and observation_table_id should be null "
+                    "when source_type is SOURCE_TABLES."
+                )
+        return self
+
     @field_validator("development_tables", mode="after")
     @classmethod
     def _validate_development_tables(cls, value: List[DevelopmentTable]) -> List[DevelopmentTable]:
@@ -105,8 +140,6 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
         ValueError
             If no development source tables are provided or if there are duplicate table IDs.
         """
-        if not value:
-            raise ValueError("At least one development source table is required")
 
         table_ids = [dev_table.table_id for dev_table in value]
         if len(set(table_ids)) != len(table_ids):

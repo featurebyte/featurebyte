@@ -431,7 +431,9 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
             "development_plan_id": None,
+            "observation_table_id": None,
             "status": "Active",
+            "source_type": "Source Tables",
         }
 
     def test_get_schema(self, test_api_client_persistent, create_success_response):
@@ -455,7 +457,9 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
             "development_plan_id": None,
+            "observation_table_id": None,
             "status": "Active",
+            "source_type": "Source Tables",
             "development_tables": [
                 {
                     "location": {
@@ -606,5 +610,7 @@ class TestDevelopmentDatasetApi(BaseAsyncApiTestSuite):
             "sample_from_timestamp": "2022-01-01T00:00:00",
             "sample_to_timestamp": "2024-12-31T00:00:00",
             "development_plan_id": None,
+            "observation_table_id": None,
             "status": "Active",
+            "source_type": "Source Tables",
         }
