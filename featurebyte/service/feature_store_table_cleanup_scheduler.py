@@ -19,6 +19,9 @@ from featurebyte.service.task_manager import TaskManager
 logger = get_logger(__name__)
 
 CLEANUP_INTERVAL_SECONDS = 60 * 60 * 24  # Every 24 hours
+CLEANUP_TIME_OFFSET_SECONDS = (
+    2 * 60 * 60
+)  # 2-hour offset to avoid clashing with other cleanup services
 
 
 class FeatureStoreTableCleanupSchedulerService:
@@ -63,6 +66,7 @@ class FeatureStoreTableCleanupSchedulerService:
                     name=self._get_job_id(feature_store_id),
                     payload=payload,
                     interval=Interval(every=CLEANUP_INTERVAL_SECONDS, period="seconds"),
+                    time_modulo_frequency_second=CLEANUP_TIME_OFFSET_SECONDS,
                 )
             except DuplicateDocumentError:
                 logger.warning(

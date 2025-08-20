@@ -60,6 +60,7 @@ async def test_start_job__non_existing(
     }.items() <= task.kwargs.items()
     assert task.interval.every == 86400  # 24 hours in seconds
     assert task.interval.period == "seconds"
+    assert task.time_modulo_frequency_second == 7200  # 2-hour offset
 
 
 @pytest.mark.asyncio
