@@ -31,12 +31,10 @@ class FeatureStoreTableCleanupSchedulerService:
         self,
         persistent: Persistent,
         user: User,
-        catalog_id: ObjectId,
         task_manager: TaskManager,
     ):
         self.user = user
         self.persistent = persistent
-        self.catalog_id = catalog_id
         self.task_manager = task_manager
 
     async def start_job_if_not_exist(self, feature_store_id: ObjectId) -> None:
@@ -52,7 +50,7 @@ class FeatureStoreTableCleanupSchedulerService:
         # across all catalogs for the feature store. We use DEFAULT_CATALOG_ID if none provided.
         payload = FeatureStoreTableCleanupTaskPayload(
             user_id=self.user.id,
-            catalog_id=self.catalog_id or DEFAULT_CATALOG_ID,
+            catalog_id=DEFAULT_CATALOG_ID,
             feature_store_id=feature_store_id,
         )
         if await self.get_periodic_task(feature_store_id) is None:

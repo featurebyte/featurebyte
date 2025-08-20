@@ -6,6 +6,8 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.common import DEFAULT_CATALOG_ID
+
 
 @pytest.fixture
 def catalog_id():
@@ -53,10 +55,10 @@ async def test_start_job__non_existing(
     assert {
         "command": "FEATURE_STORE_TABLE_CLEANUP",
         "user_id": str(user.id),
-        "catalog_id": str(feature_store_table_cleanup_scheduler_service.catalog_id),
+        "catalog_id": str(DEFAULT_CATALOG_ID),
         "feature_store_id": str(feature_store_id),
     }.items() <= task.kwargs.items()
-    assert task.interval.every == 21600  # 6 hours in seconds
+    assert task.interval.every == 86400  # 24 hours in seconds
     assert task.interval.period == "seconds"
 
 
