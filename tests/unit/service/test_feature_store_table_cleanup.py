@@ -210,17 +210,17 @@ def test_is_temp_table(service):
     # Should detect temp tables (case insensitive)
     assert service.is_temp_table("__temp_something")
     assert service.is_temp_table("__TEMP_SOMETHING")
-    assert service.is_temp_table("my_table__temp")
     assert service.is_temp_table("__TEMP_FEATURE_QUERY_abc123")
     assert service.is_temp_table("__temp_feature_query_xyz")
-    assert service.is_temp_table("table__temp_suffix")
 
     # Should not detect regular tables
     assert not service.is_temp_table("regular_table")
     assert not service.is_temp_table("my_feature_table")
-    assert not service.is_temp_table("data_temp")  # contains "temp" but not the pattern
-    assert not service.is_temp_table("temporary_table")  # different pattern
-    assert not service.is_temp_table("temp_tile_table")  # doesn't contain "__TEMP"
+    assert not service.is_temp_table("my_table__temp")
+    assert not service.is_temp_table("data_temp")
+    assert not service.is_temp_table("temporary_table")
+    assert not service.is_temp_table("temp_tile_table")
+    assert not service.is_temp_table("table__temp_suffix")
 
 
 def test_make_table_key(service):
