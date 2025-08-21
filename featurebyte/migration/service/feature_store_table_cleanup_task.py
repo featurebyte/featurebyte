@@ -17,15 +17,16 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_table_cleanup_scheduler import (
     FeatureStoreTableCleanupSchedulerService,
 )
+from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
 
 
-class FeatureStoreMigrationService(BaseMongoCollectionMigration):
+class FeatureStoreTableCleanupTaskMigrationService(BaseMongoCollectionMigration):
     """
-    FeatureStoreMigrationService class
+    FeatureStoreTableCleanupTaskMigrationService class
 
-    This class is used to migrate feature store records.
+    This class is used to schedule table cleanup tasks for existing feature stores.
     """
 
     def __init__(
@@ -69,8 +70,6 @@ class FeatureStoreMigrationService(BaseMongoCollectionMigration):
             feature_store_user = User(id=feature_store_user_id)
 
             # Create TaskManager with user override
-            from featurebyte.service.task_manager import TaskManager
-
             task_manager_with_user_override = TaskManager(
                 user=feature_store_user,
                 persistent=self.persistent,

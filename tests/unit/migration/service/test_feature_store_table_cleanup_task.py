@@ -1,11 +1,14 @@
 """
-Tests for FeatureStoreMigrationService
+Tests for FeatureStoreTableCleanupTaskMigrationService
 """
 
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.migration.service.feature_store_table_cleanup_task import (
+    FeatureStoreTableCleanupTaskMigrationService,
+)
 from featurebyte.models.base import User
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
@@ -13,11 +16,9 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 @pytest_asyncio.fixture
 async def migration_service(app_container):
     """
-    Fixture for FeatureStoreMigrationService
+    Fixture for FeatureStoreTableCleanupTaskMigrationService
     """
-    from featurebyte.migration.service.feature_store import FeatureStoreMigrationService
-
-    return FeatureStoreMigrationService(
+    return FeatureStoreTableCleanupTaskMigrationService(
         persistent=app_container.persistent,
         feature_store_service=app_container.feature_store_service,
         feature_store_table_cleanup_scheduler_service=app_container.feature_store_table_cleanup_scheduler_service,
