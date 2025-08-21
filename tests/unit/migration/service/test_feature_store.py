@@ -6,6 +6,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.models.base import User
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
@@ -126,6 +127,7 @@ async def test_schedule_table_cleanup_tasks_preserves_user_context(
 
     # Create feature store with specific user
     specific_user_id = ObjectId()
+    feature_store_service.user = User(id=specific_user_id)
     feature_store = await feature_store_service.create_document(
         data=FeatureStoreCreate(
             name="User Context Test Feature Store",
@@ -137,7 +139,6 @@ async def test_schedule_table_cleanup_tasks_preserves_user_context(
                 "schema_name": "test_schema",
                 "role_name": "test_role",
             },
-            user_id=specific_user_id,
         )
     )
 
@@ -170,6 +171,7 @@ async def test_schedule_table_cleanup_tasks_multiple_feature_stores(
     user_1 = ObjectId()
     user_2 = ObjectId()
 
+    feature_store_service.user = User(id=user_1)
     feature_store_1 = await feature_store_service.create_document(
         data=FeatureStoreCreate(
             name="Multi Test Store 1",
@@ -181,10 +183,10 @@ async def test_schedule_table_cleanup_tasks_multiple_feature_stores(
                 "schema_name": "test_schema",
                 "role_name": "test_role",
             },
-            user_id=user_1,
         )
     )
 
+    feature_store_service.user = User(id=user_2)
     feature_store_2 = await feature_store_service.create_document(
         data=FeatureStoreCreate(
             name="Multi Test Store 2",
@@ -196,7 +198,6 @@ async def test_schedule_table_cleanup_tasks_multiple_feature_stores(
                 "schema_name": "test_schema",
                 "role_name": "test_role",
             },
-            user_id=user_2,
         )
     )
 
