@@ -16,10 +16,13 @@ from featurebyte.models.entity_lookup_feature_table import (
 )
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.models.snapshots_table import SnapshotsTableModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.node.generic import (
     EventLookupParameters,
     SCDLookupParameters,
+    SnapshotsLookupParameters,
 )
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -176,6 +179,19 @@ def _get_lookup_spec_from_join_step(
     else:
         event_parameters = None
 
+    if join_step.table.type == TableDataType.SNAPSHOTS_TABLE:
+        assert isinstance(join_step.table, SnapshotsTableModel)
+        snapshots_parameters = SnapshotsLookupParameters(
+            snapshot_datetime_column=join_step.table.snapshot_datetime_column,
+            time_interval=join_step.table.time_interval,
+            snapshot_datetime_metadata=DBVarTypeMetadata(
+                timestamp_schema=join_step.table.snapshot_datetime_schema,
+            ),
+            feature_job_setting=join_step.table.default_feature_job_setting,
+        )
+    else:
+        snapshots_parameters = None
+
     # Get the sql expression for the data
     graph = QueryGraph()
     input_node = graph.add_node(
@@ -204,7 +220,7 @@ def _get_lookup_spec_from_join_step(
         aggregation_source=aggregation_source,
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
-        snapshots_parameters=None,
+        snapshots_parameters=snapshots_parameters,
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,

@@ -16,17 +16,27 @@ from featurebyte import (
     Relationship,
     Table,
     TargetNamespace,
+    TimeInterval,
     TimestampSchema,
     UseCase,
 )
 from featurebyte.enum import DBVarType
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from tests.util.helper import tz_localize_if_needed
+from tests.util.helper import safe_freeze_time, tz_localize_if_needed
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
 
-@pytest.fixture(name="customer_entity", scope="session")
+@pytest.fixture(name="freeze_feature_timestamp", scope="module", autouse=True)
+def freeze_feature_timestamp_fixture():
+    """
+    Patch ObjectId to return a fixed value so that queries are deterministic
+    """
+    with safe_freeze_time("2022-05-01 00:00:00"):
+        yield
+
+
+@pytest.fixture(name="customer_entity", scope="module")
 def customer_entity_fixture(customer_entity):
     """
     Fixture for customer entity
@@ -36,7 +46,7 @@ def customer_entity_fixture(customer_entity):
     return customer_entity
 
 
-@pytest.fixture(name="event_entity", scope="session")
+@pytest.fixture(name="event_entity", scope="module")
 def event_entity_fixture():
     """
     Fixture for event entity
@@ -46,13 +56,14 @@ def event_entity_fixture():
     return event_entity
 
 
-@pytest_asyncio.fixture(name="tables", scope="session")
+@pytest_asyncio.fixture(name="tables", scope="module")
 async def tables_fixture(
     session, data_source, customer_entity, event_entity, timestamp_format_string_with_time
 ):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
+    # Event table (event -> customer)
     df_events = pd.DataFrame({
         "ts": pd.to_datetime([
             "2022-04-10 10:00:00",
@@ -62,6 +73,8 @@ async def tables_fixture(
         "cust_id": [1000, 1000, 1000],
         "event_id": [1, 2, 3],
     })
+
+    # SCD table (customer -> city)
     df_scd_1 = pd.DataFrame({
         "effective_ts": pd.to_datetime([
             "2020-01-01 10:00:00",
@@ -71,23 +84,46 @@ async def tables_fixture(
         "scd_cust_id": [1000, 1000, 1000],
         "scd_city": ["tokyo", "paris", "tokyo"],
     })
+
+    # Snapshots table (city -> district)
+    snapshot_dates = pd.date_range("2022-01-01", "2022-12-31", freq="1D")
+    snapshot_dates_str = snapshot_dates.strftime("%Y|%m|%d|%H:%M:%S")
+    df_paris = pd.DataFrame({
+        "snapshot_date": snapshot_dates_str,
+        "city": "paris",
+        "district": "paris_metropolitan",
+    })
+    df_tokyo = pd.DataFrame({
+        "snapshot_date": snapshot_dates_str,
+        "city": "tokyo",
+        "district": "tokyo_metropolitan",
+    })
+    df_snapshots = pd.concat([df_paris, df_tokyo], ignore_index=True)
+    df_snapshots["snapshot_id"] = range(1, len(df_snapshots) + 1)
+
+    # SCD table (district -> state)
     df_scd_2 = pd.DataFrame({
         "effective_ts": pd.to_datetime(["1970-01-01 00:00:00", "1970-01-01 00:00:00"]),
-        "city": ["paris", "tokyo"],
+        "district": ["paris_metropolitan", "tokyo_metropolitan"],
         "state": ["île-de-france", "kanto"],
         "is_record_active": [True, True],
     })
+
+    # Dimension table (state -> country)
     df_dimension_1 = pd.DataFrame({
         "state": ["île-de-france", "kanto"],
         "country": ["france", "japan"],
     })
     await session.register_table(f"{table_prefix}_EVENT", df_events)
     await session.register_table(f"{table_prefix}_SCD_1", df_scd_1)
+    await session.register_table(f"{table_prefix}_SNAPSHOTS", df_snapshots)
     await session.register_table(f"{table_prefix}_SCD_2", df_scd_2)
     await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1)
 
     city_entity = Entity(name=f"{table_prefix}_city", serving_names=["serving_city_id"])
     city_entity.save()
+    district_entity = Entity(name=f"{table_prefix}_district", serving_names=["serving_district_id"])
+    district_entity.save()
     state_entity = Entity(name=f"{table_prefix}_state", serving_names=["serving_state_id"])
     state_entity.save()
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
@@ -120,6 +156,21 @@ async def tables_fixture(
     scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
     scd_table_1["scd_city"].as_entity(city_entity.name)
 
+    snapshots_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_SNAPSHOTS",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    snapshots_table = snapshots_source_table.create_snapshots_table(
+        name=f"{table_prefix}_snapshots_table",
+        snapshot_id_column="city",
+        snapshot_datetime_column="snapshot_date",
+        snapshot_datetime_schema=TimestampSchema(format_string=timestamp_format_string_with_time),
+        time_interval=TimeInterval(unit="DAY", value=1),
+    )
+    snapshots_table["city"].as_entity(city_entity.name)
+    snapshots_table["district"].as_entity(district_entity.name)
+
     scd_source_table_2 = data_source.get_source_table(
         table_name=f"{table_prefix}_SCD_2",
         database_name=session.database_name,
@@ -127,11 +178,11 @@ async def tables_fixture(
     )
     scd_table_2 = scd_source_table_2.create_scd_table(
         name=f"{table_prefix}_scd_table_2",
-        natural_key_column="city",
+        natural_key_column="district",
         effective_timestamp_column="effective_ts",
         current_flag_column="is_record_active",
     )
-    scd_table_2["city"].as_entity(city_entity.name)
+    scd_table_2["district"].as_entity(district_entity.name)
     scd_table_2["state"].as_entity(state_entity.name)
 
     dimension_source_table_1 = data_source.get_source_table(
@@ -147,7 +198,7 @@ async def tables_fixture(
     dimension_table_1["country"].as_entity(country_entity.name)
 
 
-@pytest.fixture(name="customer_table", scope="session")
+@pytest.fixture(name="customer_table", scope="module")
 def customer_table_fixture(tables):
     """
     Fixture for the customer table
@@ -156,7 +207,7 @@ def customer_table_fixture(tables):
     return Table.get(f"{table_prefix}_scd_table_1")
 
 
-@pytest.fixture(name="customer_feature", scope="session")
+@pytest.fixture(name="customer_feature", scope="module")
 def customer_feature_fixture(tables):
     """
     Feature of event entity (event's customer id)
@@ -167,7 +218,7 @@ def customer_feature_fixture(tables):
     return feature
 
 
-@pytest.fixture(name="city_feature", scope="session")
+@pytest.fixture(name="city_feature", scope="module")
 def city_feature_fixture(customer_table):
     """
     Feature of customer entity (customer's city)
@@ -177,7 +228,7 @@ def city_feature_fixture(customer_table):
     return feature
 
 
-@pytest.fixture(name="country_feature", scope="session")
+@pytest.fixture(name="country_feature", scope="module")
 def country_feature_fixture(tables):
     """
     Feature of city entity (city's state's country)
@@ -188,7 +239,7 @@ def country_feature_fixture(tables):
     return feature
 
 
-@pytest.fixture(name="combined_user_city_country_feature", scope="session")
+@pytest.fixture(name="combined_user_city_country_feature", scope="module")
 def combined_user_city_country_feature_fixture(customer_feature, city_feature, country_feature):
     """
     Feature of event entity
@@ -198,7 +249,7 @@ def combined_user_city_country_feature_fixture(customer_feature, city_feature, c
     return feature
 
 
-@pytest.fixture(name="customer_num_city_change_feature", scope="session")
+@pytest.fixture(name="customer_num_city_change_feature", scope="module")
 def customer_num_city_change_feature_fixture(tables):
     _ = tables
     view = Table.get(f"{table_prefix}_scd_table_1").get_change_view(track_changes_column="scd_city")
@@ -211,7 +262,7 @@ def customer_num_city_change_feature_fixture(tables):
     return feature
 
 
-@pytest.fixture(name="event_use_case", scope="session")
+@pytest.fixture(name="event_use_case", scope="module")
 def event_use_case_fixture(event_entity):
     """
     Fixture for an event use case. To be specified when creating deployment, so that the deployment
