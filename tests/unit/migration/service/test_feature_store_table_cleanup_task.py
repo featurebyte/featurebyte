@@ -10,6 +10,7 @@ from featurebyte.migration.service.feature_store_table_cleanup_task import (
     FeatureStoreTableCleanupTaskMigrationService,
 )
 from featurebyte.models.base import User
+from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
@@ -35,13 +36,13 @@ async def test_feature_store(app_container, user):
         data=FeatureStoreCreate(
             name="Test Feature Store Migration",
             type="snowflake",
-            details={
-                "account": "test_account",
-                "warehouse": "test_warehouse",
-                "database_name": "test_db",
-                "schema_name": "test_schema",
-                "role_name": "test_role",
-            },
+            details=SnowflakeDetails(
+                account="test_account",
+                warehouse="test_warehouse",
+                database_name="test_db",
+                schema_name="test_schema",
+                role_name="test_role",
+            ),
         )
     )
 
@@ -133,13 +134,13 @@ async def test_schedule_table_cleanup_tasks_preserves_user_context(
         data=FeatureStoreCreate(
             name="User Context Test Feature Store",
             type="snowflake",
-            details={
-                "account": "test_account",
-                "warehouse": "test_warehouse",
-                "database_name": "test_db",
-                "schema_name": "test_schema",
-                "role_name": "test_role",
-            },
+            details=SnowflakeDetails(
+                account="test_account",
+                warehouse="test_warehouse",
+                database_name="test_db",
+                schema_name="test_schema",
+                role_name="test_role",
+            ),
         )
     )
 
@@ -177,13 +178,13 @@ async def test_schedule_table_cleanup_tasks_multiple_feature_stores(
         data=FeatureStoreCreate(
             name="Multi Test Store 1",
             type="snowflake",
-            details={
-                "account": "test_account_1",
-                "warehouse": "test_warehouse",
-                "database_name": "test_db",
-                "schema_name": "test_schema",
-                "role_name": "test_role",
-            },
+            details=SnowflakeDetails(
+                account="test_account_1",
+                warehouse="test_warehouse",
+                database_name="test_db",
+                schema_name="test_schema",
+                role_name="test_role",
+            ),
         )
     )
 
@@ -192,13 +193,13 @@ async def test_schedule_table_cleanup_tasks_multiple_feature_stores(
         data=FeatureStoreCreate(
             name="Multi Test Store 2",
             type="snowflake",
-            details={
-                "account": "test_account_2",
-                "warehouse": "test_warehouse",
-                "database_name": "test_db",
-                "schema_name": "test_schema",
-                "role_name": "test_role",
-            },
+            details=SnowflakeDetails(
+                account="test_account_2",
+                warehouse="test_warehouse",
+                database_name="test_db",
+                schema_name="test_schema",
+                role_name="test_role",
+            ),
         )
     )
 
