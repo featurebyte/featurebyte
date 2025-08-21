@@ -2,7 +2,6 @@
 Tests sql generation for parent features serving
 """
 
-import json
 import textwrap
 
 from bson import ObjectId
@@ -10,10 +9,9 @@ from bson import ObjectId
 from featurebyte.models.parent_serving import (
     EntityLookupInfo,
     EntityLookupStep,
-    ParentServingPreparation,
 )
 from featurebyte.models.snapshots_table import SnapshotsTableModel
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -133,7 +131,9 @@ def test_construct_request_table_with_parent_entities_table_details(parent_servi
     assert result.new_request_table_columns == ["a", "b", "COL_INT"]
 
 
-def test_construct_request_table_with_parent_entities_snapshots_table(update_fixtures):
+def test_construct_request_table_with_parent_entities_snapshots_table(
+    update_fixtures, parent_serving_preparation_factory
+):
     """
     Test construct_request_table_with_parent_entities with SnapshotsTable
     """
@@ -160,30 +160,23 @@ def test_construct_request_table_with_parent_entities_snapshots_table(update_fix
         time_interval={"unit": "DAY", "value": 1},
     )
 
-    # Load feature store details from fixture
-    with open("tests/fixtures/request_payloads/feature_store.json") as f:
-        feature_store_details = FeatureStoreDetails(**json.load(f))
-
-    # Create parent serving preparation with SnapshotsTable
-    parent_serving_preparation = ParentServingPreparation(
-        join_steps=[
-            EntityLookupStep(
-                id=ObjectId(),
-                table=snapshots_table_data,
-                parent=EntityLookupInfo(
-                    key="district",
-                    serving_name="DISTRICT",
-                    entity_id=ObjectId(),
-                ),
-                child=EntityLookupInfo(
-                    key="city",
-                    serving_name="CITY",
-                    entity_id=ObjectId(),
-                ),
-            )
-        ],
-        feature_store_details=feature_store_details,
-    )
+    join_steps = [
+        EntityLookupStep(
+            id=ObjectId(),
+            table=snapshots_table_data,
+            parent=EntityLookupInfo(
+                key="district",
+                serving_name="DISTRICT",
+                entity_id=ObjectId(),
+            ),
+            child=EntityLookupInfo(
+                key="city",
+                serving_name="CITY",
+                entity_id=ObjectId(),
+            ),
+        )
+    ]
+    parent_serving_preparation = parent_serving_preparation_factory(join_steps)
 
     result = construct_request_table_with_parent_entities(
         "REQUEST_TABLE",

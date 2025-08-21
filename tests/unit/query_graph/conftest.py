@@ -18,6 +18,8 @@ from featurebyte.models.column_statistics import (
     StatisticsModel,
 )
 from featurebyte.models.parent_serving import (
+    EntityLookupInfo,
+    EntityLookupStep,
     EntityLookupStepCreator,
     FeatureNodeRelationshipsInfo,
     ParentServingPreparation,
@@ -2252,34 +2254,52 @@ def query_graph_with_cleaning_ops_and_groupby_fixture(
     return graph, groupby_node
 
 
+@pytest.fixture(name="feature_store_details")
+def feature_store_details_fixture():
+    """
+    Fixture for feature store details loaded from JSON
+    """
+    with open("tests/fixtures/request_payloads/feature_store.json") as f:
+        return FeatureStoreDetails(**json.load(f))
+
+
+@pytest.fixture(name="parent_serving_preparation_factory")
+def parent_serving_preparation_factory_fixture(feature_store_details):
+    """
+    Factory fixture for creating ParentServingPreparation with custom join steps
+    """
+
+    def _create_parent_serving_preparation(join_steps):
+        return ParentServingPreparation(
+            join_steps=join_steps,
+            feature_store_details=feature_store_details,
+        )
+
+    return _create_parent_serving_preparation
+
+
 @pytest.fixture(name="parent_serving_preparation")
-def parent_serving_preparation_fixture():
+def parent_serving_preparation_fixture(parent_serving_preparation_factory):
     with open("tests/fixtures/request_payloads/dimension_table.json") as f:
         data_model = DimensionTableModel(**json.load(f))
 
-    with open("tests/fixtures/request_payloads/feature_store.json") as f:
-        feature_store_details = FeatureStoreDetails(**json.load(f))
-
-    parent_serving_preparation = ParentServingPreparation(
-        join_steps=[
-            {
-                "id": ObjectId(),
-                "table": data_model,
-                "parent": {
-                    "key": "col_int",
-                    "serving_name": "COL_INT",
-                    "entity_id": ObjectId(),
-                },
-                "child": {
-                    "key": "col_text",
-                    "serving_name": "COL_TEXT",
-                    "entity_id": ObjectId(),
-                },
-            }
-        ],
-        feature_store_details=feature_store_details,
-    )
-    return parent_serving_preparation
+    join_steps = [
+        EntityLookupStep(
+            id=ObjectId(),
+            table=data_model,
+            parent=EntityLookupInfo(
+                key="col_int",
+                serving_name="COL_INT",
+                entity_id=ObjectId(),
+            ),
+            child=EntityLookupInfo(
+                key="col_text",
+                serving_name="COL_TEXT",
+                entity_id=ObjectId(),
+            ),
+        )
+    ]
+    return parent_serving_preparation_factory(join_steps)
 
 
 @pytest.fixture
