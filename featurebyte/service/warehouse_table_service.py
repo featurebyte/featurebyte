@@ -9,16 +9,15 @@ from typing import Any, AsyncIterator, Optional
 
 from bson import ObjectId
 
-from featurebyte.models.warehouse_table import WarehouseTableModel
+from featurebyte.models.warehouse_table import WarehouseTableModel, WarehouseTableServiceUpdate
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.session.base import BaseSession, QueryMetadata
 
 
 class WarehouseTableService(
-    BaseDocumentService[WarehouseTableModel, WarehouseTableModel, BaseDocumentServiceUpdateSchema]
+    BaseDocumentService[WarehouseTableModel, WarehouseTableModel, WarehouseTableServiceUpdate]
 ):
     """
     WarehouseTableService class
@@ -88,10 +87,7 @@ class WarehouseTableService(
     async def drop_table_with_session(
         self,
         session: BaseSession,
-        feature_store_id: ObjectId,
-        table_name: str,
-        schema_name: Optional[str] = None,
-        database_name: Optional[str] = None,
+        warehouse_table: WarehouseTableModel,
         **kwargs: Any,
     ) -> None:
         """
@@ -102,38 +98,19 @@ class WarehouseTableService(
         ----------
         session: BaseSession
             Database session
-        feature_store_id: ObjectId
-            Feature store ID
-        table_name: str
-            Table name
-        schema_name: Optional[str]
-            Schema name
-        database_name: Optional[str]
-            Database name
+        warehouse_table: WarehouseTableModel
+            The warehouse table document to drop
         **kwargs: Any
             Additional keyword arguments to be passed to drop_table
         """
-        if database_name is None:
-            database_name = session.database_name
-        if schema_name is None:
-            schema_name = session.schema_name
+        table_details = warehouse_table.location.table_details
         await session.drop_table(
-            table_name=table_name,
-            schema_name=schema_name,
-            database_name=database_name,
+            table_name=table_details.table_name,
+            schema_name=table_details.schema_name or session.schema_name,
+            database_name=table_details.database_name or session.database_name,
             **kwargs,
         )
-        location = TabularSource(
-            feature_store_id=feature_store_id,
-            table_details=TableDetails(
-                table_name=table_name,
-                schema_name=schema_name,
-                database_name=database_name,
-            ),
-        )
-        warehouse_table = await self.get_warehouse_table_by_location(location)
-        if warehouse_table is not None:
-            await self.delete_document(document_id=warehouse_table.id)
+        await self.delete_document(document_id=warehouse_table.id)
 
     async def list_warehouse_tables_by_tag(self, tag: str) -> AsyncIterator[WarehouseTableModel]:
         """
@@ -153,24 +130,28 @@ class WarehouseTableService(
         async for doc in self.list_documents_iterator(query_filter=query_filter):
             yield doc
 
-    async def get_warehouse_table_by_location(
-        self, location: TabularSource
-    ) -> Optional[WarehouseTableModel]:
+    async def list_warehouse_tables_due_for_cleanup(
+        self, feature_store_id: ObjectId
+    ) -> AsyncIterator[WarehouseTableModel]:
         """
-        Get a document by location
+        List warehouse tables that are due for cleanup (expired)
+
+        Since WarehouseTableModel is not catalog-specific, this method naturally
+        operates across all catalogs for a given feature store.
 
         Parameters
         ----------
-        location: TabularSource
-            Location to filter by
+        feature_store_id: ObjectId
+            Feature store ID to filter by
 
-        Returns
-        -------
-        Optional[WarehouseTableModel]
-            WarehouseTableModel or None
+        Yields
+        ------
+        WarehouseTableModel
+            WarehouseTableModel documents that are expired and should be cleaned up
         """
-        query_filter = {"location": location.model_dump()}
-        doc = None
+        query_filter = {
+            "location.feature_store_id": feature_store_id,
+            "expires_at": {"$lt": datetime.utcnow()},
+        }
         async for doc in self.list_documents_iterator(query_filter=query_filter):
-            break
-        return doc
+            yield doc

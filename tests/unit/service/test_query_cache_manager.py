@@ -108,7 +108,7 @@ async def test_cache_and_get_table(service, periodic_task_service, feature_store
     assert tasks[0]["name"] == f"query_cache_cleanup_feature_store_id_{feature_store_id}"
     assert tasks[0]["kwargs"] == {
         "task_type": "io_task",
-        "priority": 0,
+        "priority": 2,
         "output_document_id": tasks[0]["kwargs"]["output_document_id"],
         "is_scheduled_task": True,
         "user_id": str(periodic_task_service.user.id),

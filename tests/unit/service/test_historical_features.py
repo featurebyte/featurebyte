@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, call, patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte import CronFeatureJobSetting, Feature, FeatureList, exception
@@ -380,6 +381,7 @@ async def test_get_historical_features__tile_tables_dropped(
         }
         for table_name in tile_table_names:
             yield WarehouseTableModel(
+                id=ObjectId(),
                 location=TabularSource(
                     feature_store_id=snowflake_feature_store.id,
                     table_details=TableDetails(
@@ -387,13 +389,16 @@ async def test_get_historical_features__tile_tables_dropped(
                         schema_name=mock_snowflake_session.schema_name,
                         database_name=mock_snowflake_session.database_name,
                     ),
-                )
+                ),
             )
 
-    with patch(
-        "featurebyte.service.warehouse_table_service.WarehouseTableService.list_warehouse_tables_by_tag",
-        side_effect=mock_func,
-    ) as patched_list_warehouse_tables_by_tag:
+    with (
+        patch(
+            "featurebyte.service.warehouse_table_service.WarehouseTableService.list_warehouse_tables_by_tag",
+            side_effect=mock_func,
+        ) as patched_list_warehouse_tables_by_tag,
+        patch("featurebyte.service.warehouse_table_service.WarehouseTableService.delete_document"),
+    ):
         await get_historical_features(
             session=mock_snowflake_session,
             graph=float_feature.graph,

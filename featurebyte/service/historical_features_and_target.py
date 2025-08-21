@@ -495,10 +495,7 @@ async def cleanup_features_temp_tables(
         ):
             await warehouse_table_service.drop_table_with_session(
                 session=session,
-                feature_store_id=feature_store.id,
-                table_name=warehouse_table.location.table_details.table_name,
-                schema_name=warehouse_table.location.table_details.schema_name,
-                database_name=warehouse_table.location.table_details.database_name,
+                warehouse_table=warehouse_table,
                 if_exists=True,
             )
     await session.drop_tables(

@@ -20,5 +20,5 @@ class QueryCacheCleanupTaskPayload(BaseTaskPayload):
     command: ClassVar[WorkerCommand] = WorkerCommand.QUERY_CACHE_CLEANUP
 
     # instance variables
-    priority: TaskPriority = Field(default=TaskPriority.CRITICAL)
+    priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     feature_store_id: PydanticObjectId
