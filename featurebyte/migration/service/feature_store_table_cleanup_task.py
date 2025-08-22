@@ -9,9 +9,9 @@ from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import (
     BaseDocumentServiceT,
     BaseMongoCollectionMigration,
-    Document,
 )
 from featurebyte.models.base import User
+from featurebyte.models.persistent import Document
 from featurebyte.persistent import Persistent
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_table_cleanup_scheduler import (
