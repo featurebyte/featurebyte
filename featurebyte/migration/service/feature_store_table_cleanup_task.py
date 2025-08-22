@@ -29,6 +29,9 @@ class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigrati
     This class is used to schedule table cleanup tasks for existing feature stores.
     """
 
+    # skip audit migration for this migration since we don't modify documents
+    skip_audit_migration = True
+
     def __init__(
         self,
         persistent: Persistent,
@@ -101,8 +104,8 @@ class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigrati
                 scheduled_count,
             )
 
-        # Return documents unmodified since we don't change feature store records
-        return documents
+        # Return an empty list since we don't need to modify the documents with migrate_record
+        return []
 
     @migrate(
         version=22,
