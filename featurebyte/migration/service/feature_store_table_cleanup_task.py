@@ -73,13 +73,14 @@ class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigrati
             feature_store_user = User(id=feature_store_user_id)
 
             # Create TaskManager with user override
+            original_task_manager = self.feature_store_table_cleanup_scheduler_service.task_manager
             task_manager_with_user_override = TaskManager(
                 user=feature_store_user,
                 persistent=self.persistent,
-                celery=self.feature_store_table_cleanup_scheduler_service.task_manager.celery,
-                catalog_id=self.feature_store_table_cleanup_scheduler_service.task_manager.catalog_id,
-                storage=self.feature_store_table_cleanup_scheduler_service.task_manager.storage,
-                redis=self.feature_store_table_cleanup_scheduler_service.task_manager.redis,
+                celery=original_task_manager.celery,
+                catalog_id=original_task_manager.catalog_id,
+                storage=original_task_manager.storage,
+                redis=original_task_manager.redis,
             )
 
             scheduler_service = FeatureStoreTableCleanupSchedulerService(
@@ -114,7 +115,12 @@ class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigrati
     async def schedule_table_cleanup_tasks(self) -> None:
         """Schedule table cleanup tasks for all existing feature stores"""
         logger.info("Starting migration to schedule cleanup tasks for all feature stores")
+
+        # Construct query filter to ensure catalog-specific migration
+        query_filter = await self.delegate_service.construct_list_query_filter()
+
         await self.migrate_all_records(
+            query_filter=query_filter,
             batch_preprocess_document_func=self.batch_preprocess_document,
         )
         logger.info("Completed scheduling cleanup tasks for all feature stores")
