@@ -116,11 +116,8 @@ class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigrati
         """Schedule table cleanup tasks for all existing feature stores"""
         logger.info("Starting migration to schedule cleanup tasks for all feature stores")
 
-        # Construct query filter to ensure catalog-specific migration
-        query_filter = await self.delegate_service.construct_list_query_filter()
-
+        # No query filter needed since feature stores are not catalog-specific
         await self.migrate_all_records(
-            query_filter=query_filter,
             batch_preprocess_document_func=self.batch_preprocess_document,
         )
         logger.info("Completed scheduling cleanup tasks for all feature stores")
