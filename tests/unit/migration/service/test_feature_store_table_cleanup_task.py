@@ -94,7 +94,7 @@ async def test_schedule_table_cleanup_tasks_creates_periodic_task(
     kwargs = task["kwargs"]
     assert kwargs["user_id"] == str(test_feature_store.user_id)
     assert kwargs["feature_store_id"] == str(test_feature_store.id)
-    assert kwargs["command"] == "FEATURE_STORE_TABLE_CLEANUP"
+    assert kwargs["command"] == "FEATURE_STORE_CLEANUP"
 
 
 @pytest.mark.asyncio

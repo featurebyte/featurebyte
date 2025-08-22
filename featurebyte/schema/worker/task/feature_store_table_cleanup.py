@@ -17,7 +17,7 @@ class FeatureStoreTableCleanupTaskPayload(BaseTaskPayload):
     """
 
     # class variables
-    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_STORE_TABLE_CLEANUP
+    command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_STORE_CLEANUP
 
     # instance variables
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)

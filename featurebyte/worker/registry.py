@@ -66,7 +66,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TARGET_TABLE_CREATE: TargetTableTask,
     WorkerCommand.TILE_COMPUTE: TileTask,
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
-    WorkerCommand.FEATURE_STORE_TABLE_CLEANUP: FeatureStoreTableCleanupTask,
+    WorkerCommand.FEATURE_STORE_CLEANUP: FeatureStoreTableCleanupTask,
     WorkerCommand.QUERY_CACHE_CLEANUP: QueryCacheCleanupTask,
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
     WorkerCommand.FEATURE_MATERIALIZE_SYNC: FeatureMaterializeSyncTask,
