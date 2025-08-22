@@ -22,9 +22,9 @@ from featurebyte.service.task_manager import TaskManager
 logger = get_logger(__name__)
 
 
-class FeatureStoreTableCleanupTaskMigrationService(BaseMongoCollectionMigration):
+class FeatureStoreTableCleanupTaskMigrationServiceV22(BaseMongoCollectionMigration):
     """
-    FeatureStoreTableCleanupTaskMigrationService class
+    FeatureStoreTableCleanupTaskMigrationServiceV22 class
 
     This class is used to schedule table cleanup tasks for existing feature stores.
     """
