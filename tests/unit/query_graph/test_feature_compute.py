@@ -581,6 +581,7 @@ def test_feature_execution_planner__entity_relationships_context(
         feature_node_relationships_infos=[
             feature_node_relationships_info_business_is_parent_of_user
         ],
+        combined_relationships_info=feature_node_relationships_info_business_is_parent_of_user.relationships_info,
         entity_lookup_step_creator=entity_lookup_step_creator,
     )
     parent_serving_preparation.entity_relationships_context = entity_relationships_context
