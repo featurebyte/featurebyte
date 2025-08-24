@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.service.entity import EntityService
 from featurebyte.service.parent_serving import ParentEntityLookupService
+from featurebyte.service.relationship_info import RelationshipInfoService
 
 
 def to_use_frozen_relationships(
@@ -135,9 +136,11 @@ class EntityValidationService:
         self,
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
+        relationship_info_service: RelationshipInfoService,
     ):
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
+        self.relationship_info_service = relationship_info_service
 
     async def get_entity_info_from_request(
         self,
@@ -294,6 +297,15 @@ class EntityValidationService:
                     f"Unexpected serving names provided in serving_names_mapping: {unexpected_keys_str}"
                 )
 
+        # Fallback to using currently available relationships if frozen relationships are not available
+        fallback_relationships_info = []
+        async for info in self.relationship_info_service.list_documents_iterator(
+            query_filter={},
+        ):
+            fallback_relationships_info.append(
+                EntityRelationshipInfo(**info.model_dump(by_alias=True))
+            )
+
         if entity_info.are_all_required_entities_provided(is_tile=False):
             join_steps = []
         else:
@@ -305,7 +317,7 @@ class EntityValidationService:
                     relationships_info=(
                         entity_relationships_context.feature_list_relationships_info
                         if entity_relationships_context is not None
-                        else None
+                        else fallback_relationships_info
                     ),
                 )
             except RequiredEntityNotProvidedError:
@@ -320,7 +332,7 @@ class EntityValidationService:
             relationships_info=(
                 entity_relationships_context.combined_relationships_info
                 if entity_relationships_context is not None
-                else None
+                else fallback_relationships_info
             ),
         )
 

@@ -10,21 +10,36 @@ from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 
 
+async def get_all_relationships_info(relationship_info_service):
+    """Helper function to get all relationships from the service"""
+    relationships_info = []
+    async for info in relationship_info_service.list_documents_iterator(
+        query_filter={},
+    ):
+        relationships_info.append(EntityRelationshipInfo(**info.model_dump(by_alias=True)))
+    return relationships_info
+
+
 @pytest.mark.asyncio
-async def test_get_join_steps__no_op(entity_a, entity_b, parent_entity_lookup_service):
+async def test_get_join_steps__no_op(
+    entity_a, entity_b, parent_entity_lookup_service, relationship_info_service
+):
     """
     Test no joins required as all required entities are provided
     """
     entity_info = EntityInfo(
         required_entities=[entity_a, entity_b], provided_entities=[entity_a, entity_b]
     )
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == []
 
 
 @pytest.mark.asyncio
 async def test_get_join_steps__one_step(
-    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service
+    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service, relationship_info_service
 ):
     """
     Test looking up parent entity in one join
@@ -33,7 +48,10 @@ async def test_get_join_steps__one_step(
     """
     data, relationship_info = b_is_parent_of_a
     entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=relationship_info.id,
@@ -60,6 +78,7 @@ async def test_get_join_steps__two_steps(
     b_is_parent_of_a,
     c_is_parent_of_b,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test looking up parent entity in two joins
@@ -69,7 +88,10 @@ async def test_get_join_steps__two_steps(
     data_a_to_b, rel_a_to_b = b_is_parent_of_a
     data_b_to_c, rel_b_to_c = c_is_parent_of_b
     entity_info = EntityInfo(required_entities=[entity_a, entity_c], provided_entities=[entity_a])
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
@@ -112,6 +134,7 @@ async def test_get_join_steps__two_branches(
     c_is_parent_of_b,
     d_is_parent_of_b,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test looking up parent entity in two joins
@@ -125,7 +148,10 @@ async def test_get_join_steps__two_branches(
     entity_info = EntityInfo(
         required_entities=[entity_a, entity_c, entity_d], provided_entities=[entity_a]
     )
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
@@ -182,6 +208,7 @@ async def test_get_join_steps__serving_names_mapping(
     c_is_parent_of_b,
     d_is_parent_of_b,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test looking up parent entity in two joins
@@ -197,7 +224,10 @@ async def test_get_join_steps__serving_names_mapping(
         provided_entities=[entity_a],
         serving_names_mapping={"A": "new_A"},
     )
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
@@ -245,13 +275,18 @@ async def test_get_join_steps__serving_names_mapping(
 
 
 @pytest.mark.asyncio
-async def test_get_join_steps__not_found(entity_a, entity_b, parent_entity_lookup_service):
+async def test_get_join_steps__not_found(
+    entity_a, entity_b, parent_entity_lookup_service, relationship_info_service
+):
     """
     Test no path can be found because no valid relationships are registered
     """
     entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
+    relationships_info = await get_all_relationships_info(relationship_info_service)
     with pytest.raises(RequiredEntityNotProvidedError):
-        _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+        _ = await parent_entity_lookup_service.get_required_join_steps(
+            entity_info, relationships_info
+        )
 
 
 @pytest.mark.asyncio
@@ -260,14 +295,16 @@ async def test_get_join_steps__not_found_with_relationships(
     entity_c,
     c_is_parent_of_b,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test no path can be found because no valid relationships are registered
     """
     _ = c_is_parent_of_b
     entity_info = EntityInfo(required_entities=[entity_c], provided_entities=[entity_a])
+    relationships_info = await get_all_relationships_info(relationship_info_service)
     with pytest.raises(RequiredEntityNotProvidedError):
-        _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+        await parent_entity_lookup_service.get_required_join_steps(entity_info, relationships_info)
 
 
 @pytest.mark.asyncio
@@ -280,6 +317,7 @@ async def test_get_join_steps__multiple_provided(
     c_is_parent_of_b,
     d_is_parent_of_c,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test looking up parent entity when more than one entity in the join path are provided. In this
@@ -292,7 +330,10 @@ async def test_get_join_steps__multiple_provided(
     data_b_to_c, rel_b_to_c = c_is_parent_of_b
     data_c_to_d, rel_c_to_d = d_is_parent_of_c
     entity_info = EntityInfo(required_entities=[entity_d], provided_entities=[entity_a, entity_b])
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=rel_b_to_c.id,
@@ -379,6 +420,7 @@ async def test_required_entity__complex_and_should_not_error(
     d_is_parent_of_c,
     a_is_parent_of_c_and_d,
     parent_entity_lookup_service,
+    relationship_info_service,
 ):
     """
     Test a case where lookup parent entity should pass without error
@@ -390,7 +432,10 @@ async def test_required_entity__complex_and_should_not_error(
     _ = d_is_parent_of_c
     _ = a_is_parent_of_c_and_d
     entity_info = EntityInfo(required_entities=[entity_b], provided_entities=[entity_a])
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    relationships_info = await get_all_relationships_info(relationship_info_service)
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, relationships_info
+    )
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
@@ -407,7 +452,7 @@ async def test_required_entity__complex_and_should_not_error(
 
 @pytest.mark.asyncio
 async def test_get_join_steps__is_tile(
-    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service
+    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service, relationship_info_service
 ):
     """
     Test looking up parent entity in one join for tile computation
@@ -420,12 +465,13 @@ async def test_get_join_steps__is_tile(
         tile_required_entities=[entity_a, entity_b],
         provided_entities=[entity_a],
     )
+    relationships_info = await get_all_relationships_info(relationship_info_service)
     join_steps = await parent_entity_lookup_service.get_required_join_steps(
-        entity_info, is_tile=False
+        entity_info, relationships_info, is_tile=False
     )
     assert join_steps == []
     tile_join_steps = await parent_entity_lookup_service.get_required_join_steps(
-        entity_info, is_tile=True
+        entity_info, relationships_info, is_tile=True
     )
     assert tile_join_steps == [
         EntityLookupStep(
