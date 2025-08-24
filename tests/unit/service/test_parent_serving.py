@@ -403,3 +403,43 @@ async def test_required_entity__complex_and_should_not_error(
             child=EntityLookupInfo(key="a", serving_name="A", entity_id=entity_a.id),
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__is_tile(
+    entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service
+):
+    """
+    Test looking up parent entity in one join for tile computation
+
+    a (provided) --> b (required)
+    """
+    data, relationship_info = b_is_parent_of_a
+    entity_info = EntityInfo(
+        required_entities=[],
+        tile_required_entities=[entity_a, entity_b],
+        provided_entities=[entity_a],
+    )
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, is_tile=False
+    )
+    assert join_steps == []
+    tile_join_steps = await parent_entity_lookup_service.get_required_join_steps(
+        entity_info, is_tile=True
+    )
+    assert tile_join_steps == [
+        EntityLookupStep(
+            id=relationship_info.id,
+            table=data,
+            parent=EntityLookupInfo(
+                key="b",
+                serving_name="B",
+                entity_id=entity_b.id,
+            ),
+            child=EntityLookupInfo(
+                key="a",
+                serving_name="A",
+                entity_id=entity_a.id,
+            ),
+        )
+    ]

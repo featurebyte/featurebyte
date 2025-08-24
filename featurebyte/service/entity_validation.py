@@ -190,11 +190,13 @@ class EntityValidationService:
 
         # Extract required entities from feature cluster (faster) or graph
         required_entity_ids: Optional[Sequence[ObjectId]] = None
+        tile_required_entity_ids = None
         if feature_list_model is not None:
             if to_use_frozen_relationships(feature_list_model.feature_clusters):
                 required_entity_ids = feature_list_model.primary_entity_ids
             else:
                 required_entity_ids = feature_list_model.entity_ids
+            tile_required_entity_ids = feature_list_model.entity_ids
         elif offline_store_feature_table_model is not None:
             if to_use_frozen_relationships(offline_store_feature_table_model.feature_cluster):
                 required_entity_ids = offline_store_feature_table_model.primary_entity_ids
@@ -210,10 +212,16 @@ class EntityValidationService:
             required_entity_ids = list(planner.generate_plan(nodes).required_entity_ids)
 
         required_entities = await self.entity_service.get_entities(set(required_entity_ids))
+        tile_required_entities = (
+            await self.entity_service.get_entities(set(tile_required_entity_ids))
+            if tile_required_entity_ids is not None
+            else required_entities
+        )
 
         return EntityInfo(
             provided_entities=provided_entities,
             required_entities=required_entities,
+            tile_required_entities=tile_required_entities,
             serving_names_mapping=serving_names_mapping,
         )
 
@@ -286,14 +294,15 @@ class EntityValidationService:
                     f"Unexpected serving names provided in serving_names_mapping: {unexpected_keys_str}"
                 )
 
-        if entity_info.are_all_required_entities_provided():
+        if entity_info.are_all_required_entities_provided(is_tile=False):
             join_steps = []
         else:
             # Try to see if missing entities can be obtained using the provided entities as children
             try:
                 join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                     entity_info,
-                    (
+                    is_tile=False,
+                    relationships_info=(
                         entity_relationships_context.feature_list_relationships_info
                         if entity_relationships_context is not None
                         else None
@@ -305,10 +314,20 @@ class EntityValidationService:
                         entity.id for entity in entity_info.missing_entities
                     ])
                 )
+        tile_join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+            entity_info,
+            is_tile=True,
+            relationships_info=(
+                entity_relationships_context.combined_relationships_info
+                if entity_relationships_context is not None
+                else None
+            ),
+        )
 
         feature_store_details = FeatureStoreDetails(**feature_store.model_dump())
         return ParentServingPreparation(
             join_steps=join_steps,
+            tile_join_steps=tile_join_steps,
             feature_store_details=feature_store_details,
             entity_relationships_context=entity_relationships_context,
         )
@@ -355,6 +374,7 @@ class EntityValidationService:
             feature_list_relationships_info=parameters.relationships_info or [],
             feature_node_relationships_infos=parameters.feature_cluster.feature_node_relationships_infos,
             entity_lookup_step_creator=entity_lookup_step_creator,
+            combined_relationships_info=all_relationships,
         )
 
     async def validate_request_columns(

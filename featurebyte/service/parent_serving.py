@@ -39,6 +39,7 @@ class ParentEntityLookupService:
     async def get_required_join_steps(
         self,
         entity_info: EntityInfo,
+        is_tile: bool = False,
         relationships_info: Optional[list[EntityRelationshipInfo]] = None,
     ) -> list[EntityLookupStep]:
         """
@@ -48,6 +49,8 @@ class ParentEntityLookupService:
         ----------
         entity_info: EntityInfo
             Entity information
+        is_tile: bool
+            Whether the join steps are for tile computation
         relationships_info: Optional[list[EntityRelationshipInfo]]
             Relationships that can be used to derive the join steps. If not provided, the currently
             available relationships will be queried from persistent and used instead.
@@ -57,11 +60,12 @@ class ParentEntityLookupService:
         list[EntityLookupStep]
         """
 
-        if entity_info.are_all_required_entities_provided():
+        if entity_info.are_all_required_entities_provided(is_tile=is_tile):
             return []
 
         if relationships_info is None:
             # Use currently available relationships if frozen relationships are not available
+            # TODO: move this out of this function to avoid querying relationships multiple times
             relationships_info = []
             async for info in self.relationship_info_service.list_documents_iterator(
                 query_filter={},
@@ -70,7 +74,7 @@ class ParentEntityLookupService:
 
         lookup_steps = EntityLookupPlanner.generate_lookup_steps(
             available_entity_ids=list(entity_info.provided_entity_ids),
-            required_entity_ids=list(entity_info.required_entity_ids),
+            required_entity_ids=list(entity_info.get_required_entity_ids(is_tile=is_tile)),
             relationships_info=relationships_info,
         )
 

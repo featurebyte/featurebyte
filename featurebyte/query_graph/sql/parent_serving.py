@@ -113,7 +113,18 @@ def construct_request_table_with_parent_entities(
             get_fully_qualified_table_name(request_table_details.model_dump(), alias="REQ"),
         )
 
+    if request_timestamp_expr is not None:
+        # Need to be able to reference the added point in time column AS REQ.POINT_IN_TIME, hence
+        # creating a nested subquery
+        table_expr = (
+            select(*[get_qualified_column_identifier(col, "REQ") for col in request_table_columns])
+            .select(get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"))
+            .from_(table_expr.subquery(alias="REQ"))
+        )
+
     current_columns = request_table_columns[:]
+    if request_timestamp_expr is not None:
+        current_columns.append(SpecialColumnName.POINT_IN_TIME)
     new_columns = []
     for join_step in join_steps:
         table_expr = _apply_join_step(
