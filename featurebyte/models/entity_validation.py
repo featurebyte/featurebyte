@@ -74,7 +74,6 @@ class EntityInfo(FeatureByteBaseModel):
         -------
         set[ObjectId]
         """
-
         if is_tile:
             entities = self.tile_required_entities
         else:
