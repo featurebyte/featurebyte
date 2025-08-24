@@ -49,6 +49,11 @@ class EntityInfo(FeatureByteBaseModel):
         """
         Returns whether all the required entities are provided in the request
 
+        Parameters
+        ----------
+        is_tile: bool
+            Whether the check is for tile computation
+
         Returns
         -------
         bool
