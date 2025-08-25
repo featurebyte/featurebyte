@@ -140,7 +140,7 @@ async def compute_tiles_on_demand(
         parent_serving_result = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
-            join_steps=parent_serving_preparation.join_steps,
+            join_steps=parent_serving_preparation.tile_join_steps,
             feature_store_details=parent_serving_preparation.feature_store_details,
             request_timestamp_expr=request_timestamp_expr,
         )

@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 import redis
+from bson import ObjectId
 from sqlglot import parse_one
 
 import featurebyte as fb
@@ -274,7 +275,7 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
     features = [
         feature
         for feature in [
-            feature_1,
+            feature_1,  # User entity
             feature_2,
             feature_3,
             feature_4,
@@ -285,9 +286,9 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
             feature_9,
             feature_10,
             feature_11,
-            feature_12,
+            feature_12,  # Order entity
             feature_13,
-            feature_14,
+            feature_14,  # User x ProductAction composite entities
             feature_15,
             feature_16,
             feature_17,
@@ -1141,13 +1142,49 @@ def process_output_features_helper(feat_dict, source_type):
     """
     Process output features to facilitate testing
     """
-    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
+
+    def json_loads_if_str(val):
+        if isinstance(val, str):
+            return json.loads(val)
+        return val
+
+    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json_loads_if_str(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
     if source_type != SourceType.DATABRICKS_UNITY:
-        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json_loads_if_str(
             feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
         )
+
+
+@pytest.mark.order(6)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
+@pytest.mark.asyncio
+async def test_batch_features(
+    session, data_source, deployed_feature_list, expected_features_order_id_T3850, source_type
+):
+    """
+    Test batch features computation
+    """
+    df_request = pd.DataFrame({"order_id": ["T3850"]})
+    table_name = f"batch_request_table_{ObjectId()}".upper()
+    await session.register_table(table_name, df_request)
+    batch_request_table = data_source.get_source_table(
+        table_name=table_name,
+        schema_name=session.schema_name,
+        database_name=session.database_name,
+    )
+    with patch(
+        "featurebyte.query_graph.sql.online_serving.datetime", autospec=True
+    ) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        batch_feature_table = deployed_feature_list.compute_batch_feature_table(
+            batch_request_table, table_name
+        )
+    df_batch_features = batch_feature_table.to_pandas()
+    feat_dict = df_batch_features.iloc[0].to_dict()
+    process_output_features_helper(feat_dict, source_type)
+    assert_dict_approx_equal(feat_dict, expected_features_order_id_T3850)
 
 
 @pytest.mark.order(6)

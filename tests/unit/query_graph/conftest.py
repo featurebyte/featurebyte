@@ -2272,6 +2272,7 @@ def parent_serving_preparation_factory_fixture(feature_store_details):
     def _create_parent_serving_preparation(join_steps):
         return ParentServingPreparation(
             join_steps=join_steps,
+            tile_join_steps=join_steps,
             feature_store_details=feature_store_details,
         )
 

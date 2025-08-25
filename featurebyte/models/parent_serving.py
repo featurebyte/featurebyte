@@ -178,6 +178,8 @@ class EntityRelationshipsContext(FeatureByteBaseModel):
     feature_node_relationships_infos: List[FeatureNodeRelationshipsInfo]
     feature_node_name_to_info: Dict[str, FeatureNodeRelationshipsInfo]  # auto derived
 
+    combined_relationships_info: List[EntityRelationshipInfo]
+
     # Helper to create EntityLookupStep
     entity_lookup_step_creator: EntityLookupStepCreator
 
@@ -216,5 +218,6 @@ class ParentServingPreparation(FeatureByteBaseModel):
     """
 
     join_steps: List[EntityLookupStep]
+    tile_join_steps: List[EntityLookupStep]
     feature_store_details: FeatureStoreDetails
     entity_relationships_context: Optional[EntityRelationshipsContext] = Field(default=None)

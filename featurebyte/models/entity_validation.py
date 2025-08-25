@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
@@ -28,6 +28,7 @@ class EntityInfo(FeatureByteBaseModel):
 
     required_entities: List[EntityModel]
     provided_entities: List[EntityModel]
+    tile_required_entities: List[EntityModel] = Field(default_factory=list)
     serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
 
     @field_validator("required_entities", "provided_entities")
@@ -38,26 +39,46 @@ class EntityInfo(FeatureByteBaseModel):
             entities_dict[entity.id] = entity
         return list(entities_dict.values())
 
-    def are_all_required_entities_provided(self) -> bool:
+    @model_validator(mode="after")
+    def _default_tile_required_entities(self) -> "EntityInfo":
+        if not self.tile_required_entities:
+            self.__dict__["tile_required_entities"] = self.required_entities
+        return self
+
+    def are_all_required_entities_provided(self, is_tile: bool) -> bool:
         """
         Returns whether all the required entities are provided in the request
+
+        Parameters
+        ----------
+        is_tile: bool
+            Whether the check is for tile computation
 
         Returns
         -------
         bool
         """
-        return self.required_entity_ids <= self.provided_entity_ids
+        required_entity_ids = self.get_required_entity_ids(is_tile=is_tile)
+        return required_entity_ids <= self.provided_entity_ids
 
-    @property
-    def required_entity_ids(self) -> set[ObjectId]:
+    def get_required_entity_ids(self, is_tile: bool) -> set[ObjectId]:
         """
-        Set of the required entity ids
+        Get the set of required entity ids
+
+        Parameters
+        ----------
+        is_tile: bool
+            Whether to return the required entity ids for tile computation
 
         Returns
         -------
         set[ObjectId]
         """
-        return {entity.id for entity in self.required_entities}
+        if is_tile:
+            entities = self.tile_required_entities
+        else:
+            entities = self.required_entities
+        return {entity.id for entity in entities}
 
     @property
     def provided_entity_ids(self) -> set[ObjectId]:

@@ -276,7 +276,9 @@ class OfflineStoreFeatureTableConstructionService:
                         provided_entities=primary_entities,
                     )
                     join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
-                        entity_info, relationships_info
+                        entity_info=entity_info,
+                        is_tile=False,
+                        relationships_info=relationships_info,
                     )
                 else:
                     join_steps = None
