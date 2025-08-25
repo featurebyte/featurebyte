@@ -29,5 +29,6 @@
     "sample_rows": null,
     "sample_to_timestamp": null,
     "skip_entity_validation_checks": false,
-    "target_column": null
+    "target_column": null,
+    "use_case_id": null
 }
