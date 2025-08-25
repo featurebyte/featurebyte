@@ -1788,6 +1788,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         context_name: Optional[str] = None,
+        use_case_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
@@ -1817,6 +1818,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             when creating the observation table. If None, no columns are renamed.
         context_name: Optional[str]
             Context name for the observation table.
+        use_case_name: Optional[str]
+            Use case name for the observation table.
         skip_entity_validation_checks: Optional[bool]
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
@@ -1853,8 +1856,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
 
         from featurebyte.api.context import Context
+        from featurebyte.api.use_case import UseCase
 
         context_id = Context.get(context_name).id if context_name else None
+        use_case_id = UseCase.get(use_case_name).id if use_case_name else None
         primary_entity_ids = []
         if primary_entities is not None:
             for entity_name in primary_entities:
@@ -1909,6 +1914,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             ),
             sample_rows=sample_rows,
             context_id=context_id,
+            use_case_id=use_case_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
             target_column=target_column,

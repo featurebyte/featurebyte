@@ -110,6 +110,8 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                         purpose=payload.purpose,
                         primary_entity_ids=payload.primary_entity_ids,
                         target_column=payload.target_column,
+                        context_id=payload.context_id,
+                        use_case_id=payload.use_case_id,
                     ),
                     # set to_add_row_index to False since the row index is already added
                     to_add_row_index=False,

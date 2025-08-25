@@ -7,6 +7,7 @@ from unittest.mock import call, patch
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import TargetNamespace
 from featurebyte.api.observation_table import ObservationTable
@@ -218,3 +219,51 @@ def test_create_observation_table_with_target_definition(
     )
     assert observation_table.target_namespace == float_target.target_namespace
     assert observation_table.target == float_target
+
+
+def test_create_observation_table_with_context(
+    snowflake_database_table,
+    patched_observation_table_service,
+    snowflake_execute_query_for_observation_table,
+    catalog,
+    context,
+):
+    """Test create observation table with use case"""
+    _ = catalog
+    _ = patched_observation_table_service
+    observation_table = snowflake_database_table.create_observation_table(
+        "my_observation_table_with_use_case",
+        sample_rows=100,
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        context_name=context.name,
+    )
+    # check that context is set correctly
+    assert observation_table.context_id == context.id
+    # check that primary entity IDs are populated from the context
+    assert observation_table.primary_entity_ids == [ObjectId("63f94ed6ea1f050131379214")]
+
+
+def test_create_observation_table_with_use_case(
+    snowflake_database_table,
+    patched_observation_table_service,
+    snowflake_execute_query_for_observation_table,
+    catalog,
+    use_case,
+):
+    """Test create observation table with use case"""
+    _ = catalog
+    _ = patched_observation_table_service
+    observation_table = snowflake_database_table.create_observation_table(
+        "my_observation_table_with_use_case",
+        sample_rows=100,
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        use_case_name=use_case.name,
+    )
+    # check that user case is set correctly
+    assert observation_table.use_case_ids[0] == use_case.id
+    # check that context is set correctly
+    assert observation_table.context_id == use_case.context_id
+    # check that primary entity IDs are populated from the context
+    assert observation_table.primary_entity_ids == [ObjectId("63f94ed6ea1f050131379214")]
