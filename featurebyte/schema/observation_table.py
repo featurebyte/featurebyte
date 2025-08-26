@@ -52,7 +52,7 @@ class ObservationTableUpload(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     purpose: Optional[Purpose] = Field(default=None)
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: Optional[List[PydanticObjectId]]
     target_column: Optional[StrictStr] = Field(default=None)
     context_id: Optional[PydanticObjectId] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)

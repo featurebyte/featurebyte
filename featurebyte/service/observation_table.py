@@ -281,45 +281,6 @@ class ObservationTableService(
     def class_name(self) -> str:
         return "ObservationTable"
 
-    async def _infer_primary_entity_ids(
-        self,
-        primary_entity_ids: Optional[List[PydanticObjectId]],
-        context_id: Optional[PydanticObjectId],
-        use_case_id: Optional[PydanticObjectId],
-    ) -> List[PydanticObjectId]:
-        """
-        Infer primary entity IDs from the context or use case if not specified.
-
-        Parameters
-        ----------
-        primary_entity_ids: Optional[List[PydanticObjectId]]
-            List of primary entity IDs
-        context_id: Optional[PydanticObjectId]
-            Context ID
-        use_case_id: Optional[PydanticObjectId]
-            Use case ID
-
-        Returns
-        -------
-        List[PydanticObjectId]
-            Validated primary entity IDs
-        """
-        if primary_entity_ids:
-            return primary_entity_ids
-
-        if context_id is not None:
-            # If context ID is provided, fetch the context and use its primary entity IDs
-            context = await self.context_service.get_document(document_id=context_id)
-            return context.primary_entity_ids
-
-        if use_case_id is not None:
-            # If use case ID is provided, fetch the use case and use its context's primary entity IDs
-            use_case = await self.use_case_service.get_document(document_id=use_case_id)
-            context = await self.context_service.get_document(document_id=use_case.context_id)
-            return context.primary_entity_ids
-
-        return primary_entity_ids or []
-
     async def _validate_context_use_case(
         self,
         data: Union[ObservationTableCreate, ObservationTableUpload],
@@ -346,29 +307,38 @@ class ObservationTableService(
         if data.use_case_id is not None:
             # Check if the use case document exists when provided.
             use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
-            if data.context_id is None:
-                data.context_id = use_case.context_id
+            if data.context_id is not None:
+                raise ObservationTableInvalidContextError(
+                    "Context should not be specified if use case is specified."
+                )
+            if data.primary_entity_ids:
+                raise ObservationTableInvalidContextError(
+                    "Primary entities should not be specified if use case is specified."
+                )
+            data.context_id = use_case.context_id
 
         if data.context_id is not None:
-            # Check if context id matches use case context id
-            if use_case and use_case.context_id != data.context_id:
-                raise ObservationTableInvalidUseCaseError(
-                    "Context mismatch with specified use case."
-                )
             # Check if the context document exists when provided. This should perform additional
             # validation once additional information such as request schema are available in the
             # context.
             context = await self.context_service.get_document(document_id=data.context_id)
-            if data.primary_entity_ids and context.primary_entity_ids != data.primary_entity_ids:
+            if data.primary_entity_ids:
                 raise ObservationTableInvalidContextError(
-                    "Primary entities mismatch with specified context."
+                    "Primary entities should not be specified if context is specified."
                 )
+            data.primary_entity_ids = context.primary_entity_ids
 
         if target_namespace_id and use_case:
             # Check if the target namespace matches the use case
             if target_namespace_id != use_case.target_namespace_id:
+                target_namespace = await self.target_namespace_service.get_document(
+                    document_id=target_namespace_id
+                )
+                use_case_target_namespace = await self.target_namespace_service.get_document(
+                    document_id=use_case.target_namespace_id
+                )
                 raise ObservationTableInvalidUseCaseError(
-                    "Target mismatch with specified use case."
+                    f'Target "{target_namespace.name}" does not match use case target "{use_case_target_namespace.name}".'
                 )
 
     async def _validate_columns(
@@ -405,11 +375,12 @@ class ObservationTableService(
 
             # validate target namespace has same primary entity ids
             target_namespace = target_namespaces["data"][0]
-            if target_namespace["entity_ids"] != primary_entity_ids:
-                raise ObservationTableInvalidTargetNameError(
-                    f'Target "{target_column}" does not have matching primary entity ids.'
-                )
             target_namespace_id = ObjectId(target_namespace["_id"])
+            if primary_entity_ids:
+                if target_namespace["entity_ids"] != primary_entity_ids:
+                    raise ObservationTableInvalidTargetNameError(
+                        f'Target "{target_column}" does not have matching primary entity ids.'
+                    )
 
             # check if target namespace already has a definition
             if target_namespace["target_ids"]:
@@ -450,12 +421,6 @@ class ObservationTableService(
         output_document_id = data.id or ObjectId()
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
-        )
-
-        data.primary_entity_ids = await self._infer_primary_entity_ids(
-            primary_entity_ids=data.primary_entity_ids,
-            context_id=data.context_id,
-            use_case_id=data.use_case_id,
         )
 
         if isinstance(data.request_input, BaseRequestInput):
@@ -532,13 +497,6 @@ class ObservationTableService(
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
-
-        data.primary_entity_ids = await self._infer_primary_entity_ids(
-            primary_entity_ids=data.primary_entity_ids,
-            context_id=data.context_id,
-            use_case_id=data.use_case_id,
-        )
-
         # Check if required column names are provided
         target_namespace_id = await self._validate_columns(
             available_columns=observation_set_dataframe.columns.tolist(),

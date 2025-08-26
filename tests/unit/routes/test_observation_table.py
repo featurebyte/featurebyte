@@ -44,6 +44,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 **payload,
                 "_id": str(ObjectId()),
                 "name": "new_table",
+                "primary_entity_ids": None,
                 "context_id": unknown_context_id,
             },
             f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.',
@@ -280,10 +281,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
 
-    def test_update_use_case_with_error(self, test_api_client_persistent, create_success_response):
+    def test_update_use_case_with_error(self, test_api_client_persistent):
         """Test update context route"""
         test_api_client, _ = test_api_client_persistent
-        doc_id = create_success_response.json()["_id"]
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = "646f6c1c0ed28a5271fb02d5"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        doc_id = response_dict["payload"]["output_document_id"]
 
         context_id = str(ObjectId())
         context_payload = BaseMaterializedTableTestSuite.load_payload(
@@ -801,12 +810,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_update_use_case_without_target(
-        self, test_api_client_persistent, create_success_response
-    ):
+    async def test_update_use_case_without_target(self, test_api_client_persistent):
         """Test update use case"""
         test_api_client, _ = test_api_client_persistent
-        doc_id = create_success_response.json()["_id"]
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = "646f6c1c0ed28a5271fb02d5"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        doc_id = response_dict["payload"]["output_document_id"]
 
         use_case_id = str(ObjectId())
         use_case_payload = BaseMaterializedTableTestSuite.load_payload(
@@ -846,15 +861,19 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         payload = copy.deepcopy(self.payload)
         payload["target_column"] = "target"
+        payload["primary_entity_ids"] = None
         payload["use_case_id"] = "64dc9461ad86dba795606745"
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert response_dict["detail"] == "Target mismatch with specified use case."
+        assert (
+            response_dict["detail"]
+            == 'Target "target" does not match use case target "float_target".'
+        )
 
     @pytest.mark.asyncio
-    async def test_create_with_context_mismatch_422(self, test_api_client_persistent):
-        """Test create with primary entities that does not match context"""
+    async def test_create_with_context_primary_entities_422(self, test_api_client_persistent):
+        """Test create with primary entities and context"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
@@ -873,21 +892,43 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert response_dict["detail"] == "Primary entities mismatch with specified context."
+        assert (
+            response_dict["detail"]
+            == "Primary entities should not be specified if context is specified."
+        )
 
     @pytest.mark.asyncio
-    async def test_create_with_context_mismatch_use_case_422(self, test_api_client_persistent):
-        """Test create with context that does not match use case"""
+    async def test_create_with_use_case_primary_entities_422(self, test_api_client_persistent):
+        """Test create with primary_entities and use case"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         payload = copy.deepcopy(self.payload)
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"]
+            == "Primary entities should not be specified if use case is specified."
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_context_use_case_422(self, test_api_client_persistent):
+        """Test create with context and use case"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
         payload["context_id"] = str(ObjectId())
         payload["use_case_id"] = "64dc9461ad86dba795606745"
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert response_dict["detail"] == "Context mismatch with specified use case."
+        assert (
+            response_dict["detail"] == "Context should not be specified if use case is specified."
+        )
 
     @pytest.mark.asyncio
     async def test_create_with_use_case_201(self, test_api_client_persistent):
@@ -896,6 +937,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
 
         payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
         payload["context_id"] = None
         payload["use_case_id"] = "64dc9461ad86dba795606745"
         response = self.post(test_api_client, payload)
@@ -920,7 +962,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         upload_request = ObservationTableUpload(
             name="uploaded_observation_table",
             purpose="other",
-            primary_entity_ids=["63f94ed6ea1f050131379214"],
+            primary_entity_ids=None,
             use_case_id="64dc9461ad86dba795606745",
         )
         df = pd.DataFrame({
