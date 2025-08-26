@@ -17,6 +17,7 @@ from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import (
     InputNode,
     SnapshotsTableInputNodeParameters,
@@ -101,6 +102,31 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         return self._get_snapshots_table_node_parameters().snapshot_datetime_schema
 
     @property
+    def snapshot_timezone_name(self) -> Optional[str]:
+        """
+        Timezone name of the snapshot datetime column if applicable
+
+        Returns
+        -------
+        Optional[str]
+        """
+        if self.snapshot_datetime_schema.timezone is None:
+            return None
+        assert isinstance(self.snapshot_datetime_schema.timezone, str)
+        return self.snapshot_datetime_schema.timezone
+
+    @property
+    def snapshot_format_string(self) -> Optional[str]:
+        """
+        Format string of the snapshot datetime column if applicable
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self.snapshot_datetime_schema.format_string
+
+    @property
     def time_interval(self) -> TimeInterval:
         """
         Time interval of the time series table
@@ -154,13 +180,78 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         })
         return params
 
-    def get_join_column(self) -> str:
-        join_column = self._get_join_column()
-        assert join_column is not None, "Series ID column is not available."
-        return join_column
-
     def _get_join_column(self) -> str:
         return self.snapshot_id_column
+
+    def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+        """
+        Get join parameters when another view (left) triggered a join with SnapshotsView (right)
+        """
+        from featurebyte.api.event_view import EventView
+        from featurebyte.api.time_series_view import TimeSeriesView
+
+        left_view = calling_view
+        params: dict[str, Any] = {
+            "snapshots_datetime_join_keys": {
+                "right_key": {
+                    "column_name": self.snapshot_datetime_column,
+                    "transform": None,
+                }
+            }
+        }
+        transform = SnapshotsDatetimeTransform(
+            original_timestamp_schema=None,
+            snapshot_timezone_name=self.snapshot_timezone_name,
+            snapshot_time_interval=self.time_interval,
+            snapshot_format_string=self.snapshot_format_string,
+            snapshot_feature_job_setting=self.default_feature_job_setting,
+        )
+        if isinstance(left_view, EventView):
+            transform.original_timestamp_schema = left_view.event_timestamp_schema
+            column_name = left_view.event_timestamp_column
+        elif isinstance(left_view, TimeSeriesView):
+            transform.original_timestamp_schema = left_view.reference_datetime_schema
+            column_name = left_view.reference_datetime_column
+        else:
+            raise NotImplementedError(
+                f"Joining a SnapshotsView to {type(left_view)} is not supported"
+            )
+        params["snapshots_datetime_join_keys"]["left_key"] = {
+            "column_name": column_name,
+            "transform": transform,
+        }
+        return params
+
+    def _get_join_parameters_as_calling_view(self, right_view: View) -> dict[str, Any]:
+        """
+        Get join parameters when SnapshotsView (left) triggered a join with another view (right)
+        """
+        from featurebyte.api.event_view import EventView
+        from featurebyte.api.time_series_view import TimeSeriesView
+
+        if isinstance(right_view, EventView):
+            transform = SnapshotsDatetimeTransform(
+                original_timestamp_schema=right_view.event_timestamp_schema,
+                snapshot_timezone_name=self.snapshot_timezone_name,
+                snapshot_time_interval=self.time_interval,
+                snapshot_format_string=self.snapshot_format_string,
+                snapshot_feature_job_setting=self.default_feature_job_setting,
+            )
+            return {
+                "snapshots_datetime_join_keys": {
+                    "left_key": {
+                        "column_name": self.snapshot_datetime_column,
+                        "transform": None,
+                    },
+                    "right_key": {
+                        "column_name": right_view.event_timestamp_column,
+                        "transform": transform,
+                    },
+                }
+            }
+        if isinstance(right_view, TimeSeriesView):
+            raise ValueError("Cannot join a SnapshotsView to a TimeSeriesView")
+        return {}
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         # TODO: support offset

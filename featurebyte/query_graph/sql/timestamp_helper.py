@@ -231,12 +231,15 @@ def apply_snapshots_datetime_transform(
     utc_datetime_expr = convert_timestamp_to_utc(
         column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
     )
-    snapshot_local_datetime_expr = convert_timezone(
-        target_tz="local",
-        timezone_obj=transform.snapshot_timezone_name,
-        adapter=adapter,
-        column_expr=utc_datetime_expr,
-    )
+    if transform.snapshot_timezone_name is not None:
+        snapshot_local_datetime_expr = convert_timezone(
+            target_tz="local",
+            timezone_obj=transform.snapshot_timezone_name,
+            adapter=adapter,
+            column_expr=utc_datetime_expr,
+        )
+    else:
+        snapshot_local_datetime_expr = utc_datetime_expr
     adjusted_datetime_expr = adapter.timestamp_truncate(
         snapshot_local_datetime_expr,
         transform.snapshot_time_interval.unit,

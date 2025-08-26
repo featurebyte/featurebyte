@@ -1401,7 +1401,7 @@ class SnapshotsDatetimeTransform(FeatureByteBaseModel):
     """
 
     original_timestamp_schema: Optional[TimestampSchema]
-    snapshot_timezone_name: TimeZoneName
+    snapshot_timezone_name: Optional[TimeZoneName]
     snapshot_time_interval: TimeInterval
     snapshot_format_string: Optional[str]
     snapshot_feature_job_setting: Optional[CronFeatureJobSetting]
