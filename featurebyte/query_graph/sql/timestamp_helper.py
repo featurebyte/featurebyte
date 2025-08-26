@@ -4,10 +4,11 @@ Helpers for timestamp handling
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic_extra_types.timezone_name import TimeZoneName
-from sqlglot import Expression
+from sqlglot import Expression, expressions
+from sqlglot.expressions import Select
 
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
@@ -15,6 +16,7 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimeZoneColumn,
     TimeZoneUnion,
 )
+from featurebyte.query_graph.node.generic import SnapshotsDatetimeJoinKey
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -173,3 +175,75 @@ def convert_timestamp_timezone_tuple(
     else:
         timezone_type = "name"
     return adapter.convert_utc_to_timezone(timestamp_utc_expr, timezone_offset_expr, timezone_type)
+
+
+def apply_snapshots_datetime_transform(
+    table_expr: Select,
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
+    adapter: BaseAdapter,
+) -> Select:
+    """
+    Apply a SnapshotsDatetimeJoinKey by transforming the key column in the table expression and
+    return a new Select expression.
+
+    Parameters
+    ----------
+    table_expr: Select
+        Table expression
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey
+        Snapshots datetime join key
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Select
+    """
+    if snapshots_datetime_join_key.transform is None:
+        return table_expr
+    transform = snapshots_datetime_join_key.transform
+    col_expr = quoted_identifier(snapshots_datetime_join_key.column_name)
+    if transform.original_timestamp_schema:
+        col_timestamp_schema = transform.original_timestamp_schema
+    else:
+        col_timestamp_schema = TimestampSchema(is_utc_time=True)
+    utc_datetime_expr = convert_timestamp_to_utc(
+        column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
+    )
+    snapshot_local_datetime_expr = convert_timezone(
+        target_tz="local",
+        timezone_obj=transform.snapshot_timezone_name,
+        adapter=adapter,
+        column_expr=utc_datetime_expr,
+    )
+    adjusted_datetime_expr = adapter.timestamp_truncate(
+        snapshot_local_datetime_expr,
+        transform.snapshot_time_interval.unit,
+    )
+    # TODO: refactor to reuse in BaseLookupAggregator
+    feature_job_setting = transform.snapshot_feature_job_setting
+    if feature_job_setting is not None:
+        blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
+        if blind_spot_window is not None:
+            if blind_spot_window.is_fixed_size():
+                adjusted_datetime_expr = adapter.subtract_seconds(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_seconds(),
+                )
+            else:
+                adjusted_datetime_expr = adapter.subtract_months(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_months(),
+                )
+    if transform.snapshot_format_string is not None:
+        adjusted_datetime_expr = adapter.format_timestamp(
+            adjusted_datetime_expr,
+            transform.snapshot_format_string,
+        )
+    output_expr = table_expr.copy()
+    for col in output_expr.expressions:
+        col_name = col.alias or col.name
+        if col.name == snapshots_datetime_join_key.column_name:
+            col.replace(expressions.alias_(adjusted_datetime_expr, alias=col_name, quoted=True))
+            break
+    return cast(Select, output_expr)

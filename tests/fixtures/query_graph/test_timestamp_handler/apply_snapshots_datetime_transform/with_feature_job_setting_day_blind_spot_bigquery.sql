@@ -1,0 +1,5 @@
+SELECT
+  DATETIME_SUB(CAST(TIMESTAMP_TRUNC(DATETIME(CAST(`event_timestamp` AS TIMESTAMP), 'UTC'), DAY) AS DATETIME), INTERVAL 172800 SECOND) AS `event_timestamp`,
+  `user_id`,
+  `amount`
+FROM events

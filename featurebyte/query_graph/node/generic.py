@@ -6,6 +6,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Literal
 
 from featurebyte.common.model_util import parse_duration_string
@@ -1393,6 +1394,39 @@ class JoinEventTableAttributesMetadata(FeatureByteBaseModel):
     event_suffix: Optional[str] = Field(default=None)
 
 
+class SnapshotsDatetimeTransform(FeatureByteBaseModel):
+    """
+    Represents a transformation of a datetime column (in Event, Item, or Time Series tables) so that
+    it can be used to perform exact match join with a snapshot datetime column
+    """
+
+    original_timestamp_schema: Optional[TimestampSchema]
+    snapshot_timezone_name: TimeZoneName
+    snapshot_time_interval: TimeInterval
+    snapshot_format_string: Optional[str]
+    snapshot_feature_job_setting: Optional[CronFeatureJobSetting]
+
+
+class SnapshotsDatetimeJoinKey(FeatureByteBaseModel):
+    """
+    Represents a join key that is a datetime column when joining with a Snapshots table. Typically,
+    a transform is required for one of the sides to prepare for the exact match join.
+    """
+
+    column_name: str
+    transform: Optional[SnapshotsDatetimeTransform]
+
+
+class SnapshotsDatetimeJoinKeys(FeatureByteBaseModel):
+    """
+    Represents the left and right join keys when joining with a Snapshots table. Both keys are
+    expected to be datetime columns.
+    """
+
+    left_key: SnapshotsDatetimeJoinKey
+    right_key: SnapshotsDatetimeJoinKey
+
+
 class JoinNodeParameters(FeatureByteBaseModel):
     """JoinNodeParameters"""
 
@@ -1404,6 +1438,7 @@ class JoinNodeParameters(FeatureByteBaseModel):
     right_output_columns: List[OutColumnStr]
     join_type: Literal["left", "inner"]
     scd_parameters: Optional[SCDJoinParameters] = Field(default=None)
+    snapshots_datetime_join_keys: Optional[SnapshotsDatetimeJoinKeys] = Field(default=None)
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
