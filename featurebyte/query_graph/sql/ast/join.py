@@ -21,7 +21,10 @@ from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
-from featurebyte.query_graph.sql.timestamp_helper import apply_snapshots_datetime_transform
+from featurebyte.query_graph.sql.timestamp_helper import (
+    apply_snapshots_datetime_transform,
+    get_snapshots_datetime_transform_new_column_name,
+)
 
 
 @dataclass
@@ -62,12 +65,18 @@ class Join(TableNode):
         expected_primary_keys = [self.right_on]
         if self.snapshots_datetime_join_keys is not None:
             datetime_keys = self.snapshots_datetime_join_keys
-            expected_primary_keys.append(datetime_keys.right_key.column_name)
+            expected_primary_keys.append(
+                get_snapshots_datetime_transform_new_column_name(datetime_keys.right_key)
+            )
             join_conditions.append(
                 expressions.EQ(
-                    this=get_qualified_column_identifier(datetime_keys.left_key.column_name, "L"),
+                    this=get_qualified_column_identifier(
+                        get_snapshots_datetime_transform_new_column_name(datetime_keys.left_key),
+                        "L",
+                    ),
                     expression=get_qualified_column_identifier(
-                        datetime_keys.right_key.column_name, "R"
+                        get_snapshots_datetime_transform_new_column_name(datetime_keys.right_key),
+                        "R",
                     ),
                 )
             )

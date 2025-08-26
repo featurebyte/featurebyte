@@ -1,5 +1,6 @@
 SELECT
-  DATE_TRUNC('HOUR', FROM_UTC_TIMESTAMP(`event_timestamp`, 'America/New_York')) AS `event_timestamp`,
+  `event_timestamp`,
   `user_id`,
-  `amount`
+  `amount`,
+  DATE_TRUNC('HOUR', FROM_UTC_TIMESTAMP(`event_timestamp`, 'America/New_York')) AS `__FB_SNAPSHOTS_ADJUSTED_event_timestamp`
 FROM events

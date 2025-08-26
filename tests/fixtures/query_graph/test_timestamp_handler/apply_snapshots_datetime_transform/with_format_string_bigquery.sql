@@ -1,4 +1,7 @@
 SELECT
+  `event_timestamp`,
+  `user_id`,
+  `amount`,
   FORMAT_DATETIME(
     '%Y-%m-%d %H:%M:%S',
     TIMESTAMP_TRUNC(
@@ -8,7 +11,5 @@ SELECT
       ),
       MINUTE
     )
-  ) AS `event_timestamp`,
-  `user_id`,
-  `amount`
+  ) AS `__FB_SNAPSHOTS_ADJUSTED_event_timestamp`
 FROM events

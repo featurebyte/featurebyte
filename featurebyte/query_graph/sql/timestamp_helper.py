@@ -4,12 +4,13 @@ Helpers for timestamp handling
 
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import Literal
 
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
 from sqlglot.expressions import Select
 
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
     TimestampTupleSchema,
@@ -177,6 +178,25 @@ def convert_timestamp_timezone_tuple(
     return adapter.convert_utc_to_timezone(timestamp_utc_expr, timezone_offset_expr, timezone_type)
 
 
+def get_snapshots_datetime_transform_new_column_name(
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
+) -> str:
+    """
+    Get the new column name for the result of applying a snapshots datetime transform.
+
+    Parameters
+    ----------
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey
+
+    Returns
+    -------
+    str
+    """
+    if snapshots_datetime_join_key.transform is None:
+        return snapshots_datetime_join_key.column_name
+    return InternalName.SNAPSHOTS_ADJUSTED_PREFIX + snapshots_datetime_join_key.column_name
+
+
 def apply_snapshots_datetime_transform(
     table_expr: Select,
     snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
@@ -199,9 +219,10 @@ def apply_snapshots_datetime_transform(
     -------
     Select
     """
-    if snapshots_datetime_join_key.transform is None:
-        return table_expr
     transform = snapshots_datetime_join_key.transform
+    if transform is None:
+        return table_expr
+
     col_expr = quoted_identifier(snapshots_datetime_join_key.column_name)
     if transform.original_timestamp_schema:
         col_timestamp_schema = transform.original_timestamp_schema
@@ -240,10 +261,12 @@ def apply_snapshots_datetime_transform(
             adjusted_datetime_expr,
             transform.snapshot_format_string,
         )
-    output_expr = table_expr.copy()
-    for col in output_expr.expressions:
-        col_name = col.alias or col.name
-        if col.name == snapshots_datetime_join_key.column_name:
-            col.replace(expressions.alias_(adjusted_datetime_expr, alias=col_name, quoted=True))
-            break
-    return cast(Select, output_expr)
+
+    output_expr = table_expr.select(
+        expressions.alias_(
+            adjusted_datetime_expr,
+            alias=get_snapshots_datetime_transform_new_column_name(snapshots_datetime_join_key),
+            quoted=True,
+        )
+    )
+    return output_expr
