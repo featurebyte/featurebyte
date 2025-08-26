@@ -53,7 +53,7 @@ async def test_start_job__non_existing(
     task = await feature_store_table_cleanup_scheduler_service.get_periodic_task(feature_store_id)
     assert task is not None
     assert {
-        "command": "FEATURE_STORE_CLEANUP",
+        "command": "FEATURE_STORE_TABLE_CLEANUP",
         "user_id": str(user.id),
         "catalog_id": str(DEFAULT_CATALOG_ID),
         "feature_store_id": str(feature_store_id),
