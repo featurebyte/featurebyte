@@ -511,6 +511,172 @@ def test_shape(snowflake_snapshots_table, snowflake_query_map):
         assert mock_execute_query.call_args[0][0] == expected_call_view_column
 
 
+@pytest.mark.parametrize(
+    "left_view_fixture, right_view_fixture, expected_error, expected_snapshots_datetime_join_keys",
+    [
+        # SnapshotsView as left
+        ("snowflake_snapshots_view", "snowflake_dimension_view", None, None),
+        (
+            "snowflake_snapshots_view",
+            "snowflake_event_view",
+            None,
+            {
+                "left_key": {"column_name": "date", "transform": None},
+                "right_key": {
+                    "column_name": "event_timestamp",
+                    "transform": {
+                        "original_timestamp_schema": None,
+                        "snapshot_timezone_name": "Etc/UTC",
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "snapshot_feature_job_setting": {
+                            "crontab": {
+                                "minute": 0,
+                                "hour": 1,
+                                "day_of_month": "*",
+                                "month_of_year": "*",
+                                "day_of_week": "*",
+                            },
+                            "timezone": "Etc/UTC",
+                            "reference_timezone": "Etc/UTC",
+                            "blind_spot": None,
+                        },
+                    },
+                },
+            },
+        ),
+        (
+            "snowflake_snapshots_view",
+            "snowflake_time_series_view",
+            ValueError("Cannot join a TimeSeriesView to a SnapshotsView"),
+            None,
+        ),
+        (
+            "snowflake_snapshots_view",
+            "snowflake_snapshots_view",
+            NotImplementedError("Joining a SnapshotsView to SnapshotsView is not supported"),
+            None,
+        ),
+        # Other views as left with SnapshotsView as right
+        (
+            "snowflake_dimension_view",
+            "snowflake_snapshots_view",
+            NotImplementedError("Joining a SnapshotsView to DimensionView is not supported"),
+            None,
+        ),
+        (
+            "snowflake_event_view",
+            "snowflake_snapshots_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "event_timestamp",
+                    "transform": {
+                        "original_timestamp_schema": None,
+                        "snapshot_feature_job_setting": {
+                            "blind_spot": None,
+                            "crontab": {
+                                "day_of_month": "*",
+                                "day_of_week": "*",
+                                "hour": 1,
+                                "minute": 0,
+                                "month_of_year": "*",
+                            },
+                            "reference_timezone": "Etc/UTC",
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_timezone_name": "Etc/UTC",
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+        ),
+        (
+            "snowflake_time_series_view",
+            "snowflake_snapshots_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD " "HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_feature_job_setting": {
+                            "blind_spot": None,
+                            "crontab": {
+                                "day_of_month": "*",
+                                "day_of_week": "*",
+                                "hour": 1,
+                                "minute": 0,
+                                "month_of_year": "*",
+                            },
+                            "reference_timezone": "Etc/UTC",
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_timezone_name": "Etc/UTC",
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+        ),
+        (
+            "snowflake_scd_view",
+            "snowflake_snapshots_view",
+            NotImplementedError("Joining a SnapshotsView to SCDView is not supported"),
+            None,
+        ),
+    ],
+)
+def test_snapshots_view_join_all_combinations(
+    request,
+    left_view_fixture,
+    right_view_fixture,
+    expected_error,
+    expected_snapshots_datetime_join_keys,
+):
+    """
+    Test join combinations involving SnapshotsView with exact parameter validation
+    """
+    left_view = request.getfixturevalue(left_view_fixture)
+    right_view = request.getfixturevalue(right_view_fixture)
+
+    # Use minimal column subset
+    left_subset = left_view[["col_int"]]
+    right_subset = right_view[["col_int"]]
+
+    if expected_error:
+        with pytest.raises(
+            type(expected_error), match=str(expected_error).replace("(", r"\(").replace(")", r"\)")
+        ):
+            left_subset.join(right_subset, rsuffix="_test")
+    else:
+        joined_view = left_subset.join(right_subset, rsuffix="_test")
+        join_node = joined_view.node
+
+        # Check exact join parameters
+        assert join_node.type == NodeType.JOIN
+        join_params = join_node.parameters
+
+        assert join_params.left_on == "col_int"
+        assert join_params.right_on == "col_int"
+        assert join_params.join_type == "left"
+        assert join_params.metadata.rsuffix == "_test"
+
+        # Check snapshots_datetime_join_keys
+        if expected_snapshots_datetime_join_keys is None:
+            assert join_params.snapshots_datetime_join_keys is None
+        else:
+            actual_dict = join_params.snapshots_datetime_join_keys.model_dump()
+            assert actual_dict == expected_snapshots_datetime_join_keys
+
+
 def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     """
     Test SnapshotsView as_feature configures additional parameters

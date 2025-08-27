@@ -208,13 +208,13 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         )
         if isinstance(left_view, EventView):
             transform.original_timestamp_schema = left_view.event_timestamp_schema
-            column_name = left_view.event_timestamp_column
+            column_name = left_view.timestamp_column
         elif isinstance(left_view, TimeSeriesView):
             transform.original_timestamp_schema = left_view.reference_datetime_schema
             column_name = left_view.reference_datetime_column
         else:
             raise NotImplementedError(
-                f"Joining a SnapshotsView to {type(left_view)} is not supported"
+                f"Joining a SnapshotsView to {type(left_view).__name__} is not supported"
             )
         params["snapshots_datetime_join_keys"]["left_key"] = {
             "column_name": column_name,
@@ -244,13 +244,13 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
                         "transform": None,
                     },
                     "right_key": {
-                        "column_name": right_view.event_timestamp_column,
+                        "column_name": right_view.timestamp_column,
                         "transform": transform,
                     },
                 }
             }
         if isinstance(right_view, TimeSeriesView):
-            raise ValueError("Cannot join a SnapshotsView to a TimeSeriesView")
+            raise ValueError("Cannot join a TimeSeriesView to a SnapshotsView")
         return {}
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:

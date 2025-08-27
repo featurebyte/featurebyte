@@ -39,9 +39,9 @@ def test_snapshots_view(snapshots_table):
     assert actual == expected
 
 
-def test_snapshots_view_join_event_view(snapshots_table, time_series_table):
+def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table):
     """
-    Test that SnapshotsView can be joined with EventView correctly
+    Test that SnapshotsView can be joined with TimeSeriesView correctly
     """
     snapshots_view = snapshots_table.get_view()
     time_series_view = time_series_table.get_view()
