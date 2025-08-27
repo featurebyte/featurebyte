@@ -215,6 +215,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_output_columns": ["item_type", "item_name"],
         "join_type": "inner",
         "scd_parameters": None,
+        "snapshots_datetime_join_keys": None,
         "metadata": {"type": "join", "rsuffix": "", "rprefix": ""},
     }
     join_node = global_graph.add_operation(
@@ -328,6 +329,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_on": "order_id",
         "right_output_columns": ["item_name", "item_type"],
         "scd_parameters": None,
+        "snapshots_datetime_join_keys": None,
         "metadata": join_node_parameters["metadata"],
     }
     compare_pydantic_obj(pruned_join_node.parameters, expected_pruned_join_node_params)
