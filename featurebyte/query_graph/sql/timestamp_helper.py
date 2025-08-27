@@ -4,13 +4,17 @@ Helpers for timestamp handling
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
 from sqlglot.expressions import Select
 
 from featurebyte.enum import InternalName
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+)
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
     TimestampTupleSchema,
@@ -178,6 +182,64 @@ def convert_timestamp_timezone_tuple(
     return adapter.convert_utc_to_timezone(timestamp_utc_expr, timezone_offset_expr, timezone_type)
 
 
+def apply_snapshot_adjustment(
+    datetime_expr: Expression,
+    time_interval: TimeInterval,
+    feature_job_setting: Optional[CronFeatureJobSetting],
+    format_string: Optional[str],
+    adapter: BaseAdapter,
+) -> Expression:
+    """
+    Apply snapshot adjustments to a datetime expression including truncation, blind spot window,
+    and formatting. This is needed to allow joining with snapshot tables via exact match on the
+    adjusted datetime.
+
+    Parameters
+    ----------
+    datetime_expr: Expression
+        The datetime expression to adjust
+    time_interval: TimeInterval
+        Time interval for truncation
+    feature_job_setting: Optional[CronFeatureJobSetting]
+        Feature job setting containing blind spot window configuration
+    format_string: Optional[str]
+        Format string for timestamp formatting
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+        Adjusted datetime expression
+    """
+    adjusted_datetime_expr = adapter.timestamp_truncate(
+        datetime_expr,
+        time_interval.unit,
+    )
+
+    if feature_job_setting is not None:
+        blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
+        if blind_spot_window is not None:
+            if blind_spot_window.is_fixed_size():
+                adjusted_datetime_expr = adapter.subtract_seconds(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_seconds(),
+                )
+            else:
+                adjusted_datetime_expr = adapter.subtract_months(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_months(),
+                )
+
+    if format_string is not None:
+        adjusted_datetime_expr = adapter.format_timestamp(
+            adjusted_datetime_expr,
+            format_string,
+        )
+
+    return adjusted_datetime_expr
+
+
 def get_snapshots_datetime_transform_new_column_name(
     snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
 ) -> str:
@@ -240,30 +302,13 @@ def apply_snapshots_datetime_transform(
         )
     else:
         snapshot_local_datetime_expr = utc_datetime_expr
-    adjusted_datetime_expr = adapter.timestamp_truncate(
-        snapshot_local_datetime_expr,
-        transform.snapshot_time_interval.unit,
+    adjusted_datetime_expr = apply_snapshot_adjustment(
+        datetime_expr=snapshot_local_datetime_expr,
+        time_interval=transform.snapshot_time_interval,
+        feature_job_setting=transform.snapshot_feature_job_setting,
+        format_string=transform.snapshot_format_string,
+        adapter=adapter,
     )
-    # TODO: refactor to reuse in BaseLookupAggregator
-    feature_job_setting = transform.snapshot_feature_job_setting
-    if feature_job_setting is not None:
-        blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
-        if blind_spot_window is not None:
-            if blind_spot_window.is_fixed_size():
-                adjusted_datetime_expr = adapter.subtract_seconds(
-                    adjusted_datetime_expr,
-                    blind_spot_window.to_seconds(),
-                )
-            else:
-                adjusted_datetime_expr = adapter.subtract_months(
-                    adjusted_datetime_expr,
-                    blind_spot_window.to_months(),
-                )
-    if transform.snapshot_format_string is not None:
-        adjusted_datetime_expr = adapter.format_timestamp(
-            adjusted_datetime_expr,
-            transform.snapshot_format_string,
-        )
 
     output_expr = table_expr.select(
         expressions.alias_(
