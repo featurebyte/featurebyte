@@ -186,6 +186,21 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
         """
         Get join parameters when another view (left) triggered a join with SnapshotsView (right)
+
+        Parameters
+        ----------
+        calling_view : View
+            The view that is joining with this SnapshotsView
+
+        Returns
+        -------
+        dict[str, Any]
+            Dictionary containing join parameters including snapshots_datetime_join_keys
+
+        Raises
+        ------
+        NotImplementedError
+            If joining a SnapshotsView to the given view type is not supported
         """
         from featurebyte.api.event_view import EventView
         from featurebyte.api.time_series_view import TimeSeriesView
@@ -225,6 +240,21 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
     def _get_join_parameters_as_calling_view(self, right_view: View) -> dict[str, Any]:
         """
         Get join parameters when SnapshotsView (left) triggered a join with another view (right)
+
+        Parameters
+        ----------
+        right_view : View
+            The view that this SnapshotsView is joining with
+
+        Returns
+        -------
+        dict[str, Any]
+            Dictionary containing join parameters or empty dict if no special parameters are needed
+
+        Raises
+        ------
+        ValueError
+            If attempting to join a TimeSeriesView to a SnapshotsView
         """
         from featurebyte.api.event_view import EventView
         from featurebyte.api.time_series_view import TimeSeriesView
@@ -251,6 +281,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
             }
         if isinstance(right_view, TimeSeriesView):
             raise ValueError("Cannot join a TimeSeriesView to a SnapshotsView")
+        # For joining with SCDView, the parameters are handled in SCDView::_get_join_parameters()
         return {}
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:

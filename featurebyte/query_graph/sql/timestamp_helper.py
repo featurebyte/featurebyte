@@ -249,6 +249,7 @@ def get_snapshots_datetime_transform_new_column_name(
     Parameters
     ----------
     snapshots_datetime_join_key: SnapshotsDatetimeJoinKey
+        Snapshots datetime join key
 
     Returns
     -------
