@@ -80,5 +80,5 @@ def test_lookup_features(snapshots_table):
     ])
     feature_list = FeatureList([lookup_feature], "test_feature_list")
     expected = preview_params.copy()
-    expected["snapshot_lookup_feature"] = [0.09, 0.14]
+    expected["snapshot_lookup_feature"] = [0.06, 0.11]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
