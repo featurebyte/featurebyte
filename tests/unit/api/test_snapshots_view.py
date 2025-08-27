@@ -677,6 +677,49 @@ def test_snapshots_view_join_all_combinations(
             assert actual_dict == expected_snapshots_datetime_join_keys
 
 
+def test_snapshots_view_join_scd_view(snowflake_snapshots_view, snowflake_scd_view):
+    """
+    Test SnapshotsView joining SCDView produces correct scd_parameters and empty snapshots_datetime_join_keys
+    """
+    # SnapshotsView joining SCDView should work and produce scd_parameters
+    joined_view = snowflake_snapshots_view.join(snowflake_scd_view, rsuffix="_scd", on="col_text")
+    join_node = joined_view.node
+
+    # Check exact join parameters
+    assert join_node.type == NodeType.JOIN
+    join_params = join_node.parameters
+
+    assert join_params.left_on == "col_text"
+    assert join_params.right_on == "col_text"
+    assert join_params.join_type == "left"
+    assert join_params.metadata.rsuffix == "_scd"
+
+    # Check that snapshots_datetime_join_keys is None (empty as mentioned in requirement)
+    assert join_params.snapshots_datetime_join_keys is None
+
+    # Check that scd_parameters is present and has expected structure
+    assert join_params.scd_parameters is not None
+    scd_params = join_params.scd_parameters.model_dump()
+    expected_scd_params = {
+        "effective_timestamp_column": "effective_timestamp",
+        "natural_key_column": "col_text",
+        "current_flag_column": "is_active",
+        "end_timestamp_column": "end_timestamp",
+        "effective_timestamp_metadata": None,
+        "end_timestamp_metadata": None,
+        "left_timestamp_column": "date",
+        "left_timestamp_metadata": {
+            "timestamp_schema": {
+                "format_string": "YYYY-MM-DD HH24:MI:SS",
+                "is_utc_time": None,
+                "timezone": "Etc/UTC",
+            },
+            "timestamp_tuple_schema": None,
+        },
+    }
+    assert scd_params == expected_scd_params
+
+
 def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     """
     Test SnapshotsView as_feature configures additional parameters
