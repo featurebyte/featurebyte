@@ -139,7 +139,7 @@ async def test_schedule_cron_task(task_manager, payload, timezone):
             minute="*",
             # specify 2 hours to run the task to ensure it runs at least once in the test
             # even if the test is run at the end of the hour
-            hour=f"{sg_time.hour}, {sg_time.hour + 1}",
+            hour=f"{sg_time.hour}, {(sg_time.hour + 1) % 24}",
             day_of_week="*",
             day_of_month="*",
             month_of_year="*",
