@@ -47,7 +47,7 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     time_series_view = time_series_table.get_view()
     joined_view = time_series_view.join(snapshots_view, rsuffix="_from_snapshots")
     joined_view = joined_view[joined_view["series_id_col"] == "S0"]
-    df_preview = joined_view.preview(limit=10)
+    df_preview = joined_view.preview(limit=10000)
     df_preview = df_preview.sort_values("reference_datetime_col")
     cols = [
         "reference_datetime_col",
@@ -57,10 +57,10 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     ]
     actual = df_preview[cols].iloc[-3:].to_dict(orient="list")
     expected = {
-        "reference_datetime_col": ["2001|01|08", "2001|01|09", "2001|01|10"],
+        "reference_datetime_col": ["2001|04|08", "2001|04|09", "2001|04|10"],
         "series_id_col": ["S0", "S0", "S0"],
-        "snapshot_datetime_col_from_snapshots": ["2001|01|05", "2001|01|06", "2001|01|07"],
-        "value_col_from_snapshots": [0.04, 0.05, 0.06],
+        "snapshot_datetime_col_from_snapshots": ["2001|04|05", "2001|04|06", "2001|04|07"],
+        "value_col_from_snapshots": [0.9400000000000001, 0.9500000000000001, 0.96],
     }
     assert actual == expected
 
