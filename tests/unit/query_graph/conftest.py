@@ -926,6 +926,40 @@ def join_node_params_fixture():
     }
 
 
+@pytest.fixture(name="join_node_params_with_snapshots_join_keys")
+def join_node_params_with_snapshots_join_keys_fixture():
+    """
+    Join node parameters for joining an EventTable with a SnapshotsTable
+    """
+    return {
+        "left_on": "cust_id",
+        "right_on": "cust_id",
+        "left_input_columns": ["event_id", "ts"],
+        "left_output_columns": ["event_id", "ts"],
+        "right_input_columns": ["cust_id", "a"],
+        "right_output_columns": ["cust_id", "a"],
+        "join_type": "inner",
+        "snapshots_datetime_join_keys": {
+            "left_key": {
+                "column_name": "ts",
+                "transform": {
+                    "original_timestamp_schema": None,
+                    "snapshot_timezone_name": "Asia/Singapore",
+                    "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                    "snapshot_format_string": "YYYYMMDD",
+                    "snapshot_feature_job_setting": CronFeatureJobSetting(
+                        crontab="10 * * * *", blind_spot="3d"
+                    ).model_dump(),
+                },
+            },
+            "right_key": {
+                "column_name": "snapshot_date",
+                "transform": None,
+            },
+        },
+    }
+
+
 @pytest.fixture(name="item_table_join_event_table_node")
 def item_table_join_event_table_node_fixture(
     global_graph,
@@ -979,6 +1013,25 @@ def item_table_joined_event_table_feature_node_fixture(
         input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
     )
     return feature_node
+
+
+@pytest.fixture(name="event_table_join_snapshots_table_node")
+def event_table_join_snapshots_table_node_fixture(
+    global_graph,
+    event_table_input_node,
+    snapshots_table_input_node,
+    join_node_params_with_snapshots_join_keys,
+):
+    """
+    Fixture of a join node that joins SnapshotsTable columns into EventTable. Result of:
+    """
+    node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_params_with_snapshots_join_keys,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node, snapshots_table_input_node],
+    )
+    return node
 
 
 @pytest.fixture(name="order_size_feature_group_node")

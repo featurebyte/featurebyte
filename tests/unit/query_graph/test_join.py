@@ -212,3 +212,20 @@ def test_join_node_parameters_validation__overlapped_columns(join_node_params):
         )
     expected_msg = "Left and right output columns should not have common item(s)."
     assert expected_msg in str(exc.value)
+
+
+def test_event_table_join_snapshots_table(
+    global_graph, event_table_join_snapshots_table_node, source_info, update_fixtures
+):
+    """
+    Test SQL generation for EventTable joined with SnapshotsTable
+    """
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
+    )
+    sql_tree = sql_graph.build(event_table_join_snapshots_table_node).sql
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_event_table_join_snapshots_table.sql",
+        update_fixtures,
+    )

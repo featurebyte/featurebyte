@@ -5,6 +5,7 @@ Backward compatibility tests
 import os
 from http import HTTPStatus
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
@@ -117,9 +118,11 @@ def test_inner_get_routes(test_api_client, resource_name, dependent_resources):
         FeatureList,
     ],
 )
-def test_list_and_get_api_objects(config, api_object_class):
+def test_list_and_get_api_objects(config, api_object_class, test_api_client):
     """Test listing api object through SDK"""
-    objs = api_object_class.list()
-    if objs.shape[0]:
-        obj_name = objs["name"].iloc[0]
-        _ = api_object_class.get(name=obj_name)
+    with patch("featurebyte.api.api_object_util.Configurations.get_client") as mock_get_client:
+        mock_get_client.return_value = test_api_client
+        objs = api_object_class.list()
+        if objs.shape[0]:
+            obj_name = objs["name"].iloc[0]
+            _ = api_object_class.get(name=obj_name)

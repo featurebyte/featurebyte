@@ -663,6 +663,7 @@ def test_extract_definition__join_on_assign(global_graph, assign_join_feature_no
                 "right_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_id",
             ],
             "scd_parameters": None,
+            "snapshots_datetime_join_keys": None,
         },
     )
 
@@ -856,6 +857,7 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
                 "end_timestamp_metadata": None,
                 "left_timestamp_metadata": None,
             },
+            "snapshots_datetime_join_keys": None,
         },
     )
 

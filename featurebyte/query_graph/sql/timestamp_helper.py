@@ -4,17 +4,24 @@ Helpers for timestamp handling
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic_extra_types.timezone_name import TimeZoneName
-from sqlglot import Expression
+from sqlglot import Expression, expressions
+from sqlglot.expressions import Select
 
+from featurebyte.enum import InternalName
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+)
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
     TimestampTupleSchema,
     TimeZoneColumn,
     TimeZoneUnion,
 )
+from featurebyte.query_graph.node.generic import SnapshotsDatetimeJoinKey
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -173,3 +180,142 @@ def convert_timestamp_timezone_tuple(
     else:
         timezone_type = "name"
     return adapter.convert_utc_to_timezone(timestamp_utc_expr, timezone_offset_expr, timezone_type)
+
+
+def apply_snapshot_adjustment(
+    datetime_expr: Expression,
+    time_interval: TimeInterval,
+    feature_job_setting: Optional[CronFeatureJobSetting],
+    format_string: Optional[str],
+    adapter: BaseAdapter,
+) -> Expression:
+    """
+    Apply snapshot adjustments to a datetime expression including truncation, blind spot window,
+    and formatting. This is needed to allow joining with snapshot tables via exact match on the
+    adjusted datetime.
+
+    Parameters
+    ----------
+    datetime_expr: Expression
+        The datetime expression to adjust
+    time_interval: TimeInterval
+        Time interval for truncation
+    feature_job_setting: Optional[CronFeatureJobSetting]
+        Feature job setting containing blind spot window configuration
+    format_string: Optional[str]
+        Format string for timestamp formatting
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+        Adjusted datetime expression
+    """
+    adjusted_datetime_expr = adapter.timestamp_truncate(
+        datetime_expr,
+        time_interval.unit,
+    )
+
+    if feature_job_setting is not None:
+        blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
+        if blind_spot_window is not None:
+            if blind_spot_window.is_fixed_size():
+                adjusted_datetime_expr = adapter.subtract_seconds(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_seconds(),
+                )
+            else:
+                adjusted_datetime_expr = adapter.subtract_months(
+                    adjusted_datetime_expr,
+                    blind_spot_window.to_months(),
+                )
+
+    if format_string is not None:
+        adjusted_datetime_expr = adapter.format_timestamp(
+            adjusted_datetime_expr,
+            format_string,
+        )
+
+    return adjusted_datetime_expr
+
+
+def get_snapshots_datetime_transform_new_column_name(
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
+) -> str:
+    """
+    Get the new column name for the result of applying a snapshots datetime transform.
+
+    Parameters
+    ----------
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey
+        Snapshots datetime join key
+
+    Returns
+    -------
+    str
+    """
+    if snapshots_datetime_join_key.transform is None:
+        return snapshots_datetime_join_key.column_name
+    return InternalName.SNAPSHOTS_ADJUSTED_PREFIX + snapshots_datetime_join_key.column_name
+
+
+def apply_snapshots_datetime_transform(
+    table_expr: Select,
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey,
+    adapter: BaseAdapter,
+) -> Select:
+    """
+    Apply a SnapshotsDatetimeJoinKey by transforming the key column in the table expression and
+    return a new Select expression.
+
+    Parameters
+    ----------
+    table_expr: Select
+        Table expression
+    snapshots_datetime_join_key: SnapshotsDatetimeJoinKey
+        Snapshots datetime join key
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Select
+    """
+    transform = snapshots_datetime_join_key.transform
+    if transform is None:
+        return table_expr
+
+    col_expr = quoted_identifier(snapshots_datetime_join_key.column_name)
+    if transform.original_timestamp_schema:
+        col_timestamp_schema = transform.original_timestamp_schema
+    else:
+        col_timestamp_schema = TimestampSchema(is_utc_time=True)
+    utc_datetime_expr = convert_timestamp_to_utc(
+        column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
+    )
+    if transform.snapshot_timezone_name is not None:
+        snapshot_local_datetime_expr = convert_timezone(
+            target_tz="local",
+            timezone_obj=transform.snapshot_timezone_name,
+            adapter=adapter,
+            column_expr=utc_datetime_expr,
+        )
+    else:
+        snapshot_local_datetime_expr = utc_datetime_expr
+    adjusted_datetime_expr = apply_snapshot_adjustment(
+        datetime_expr=snapshot_local_datetime_expr,
+        time_interval=transform.snapshot_time_interval,
+        feature_job_setting=transform.snapshot_feature_job_setting,
+        format_string=transform.snapshot_format_string,
+        adapter=adapter,
+    )
+
+    output_expr = table_expr.select(
+        expressions.alias_(
+            adjusted_datetime_expr,
+            alias=get_snapshots_datetime_transform_new_column_name(snapshots_datetime_join_key),
+            quoted=True,
+        )
+    )
+    return output_expr

@@ -13,10 +13,18 @@ from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.generic import (
+    JoinNodeParameters,
+    SnapshotsDatetimeJoinKeys,
+)
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
+from featurebyte.query_graph.sql.timestamp_helper import (
+    apply_snapshots_datetime_transform,
+    get_snapshots_datetime_transform_new_column_name,
+)
 
 
 @dataclass
@@ -29,23 +37,60 @@ class Join(TableNode):
     right_node: TableNode
     left_on: str
     right_on: str
+    snapshots_datetime_join_keys: Optional[SnapshotsDatetimeJoinKeys]
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
     def from_query_impl(self, select_expr: Select) -> Select:
-        left_subquery = expressions.Subquery(this=self.left_node.sql, alias="L")
-        join_conditions = expressions.EQ(
-            this=get_qualified_column_identifier(self.left_on, "L"),
-            expression=get_qualified_column_identifier(self.right_on, "R"),
+        left_table_expr = cast(Select, self.left_node.sql)
+        right_table_expr = cast(Select, self.right_node.sql)
+        if self.snapshots_datetime_join_keys is not None:
+            left_table_expr = apply_snapshots_datetime_transform(
+                left_table_expr,
+                self.snapshots_datetime_join_keys.left_key,
+                self.context.adapter,
+            )
+            right_table_expr = apply_snapshots_datetime_transform(
+                right_table_expr,
+                self.snapshots_datetime_join_keys.right_key,
+                self.context.adapter,
+            )
+        left_subquery = expressions.Subquery(this=left_table_expr, alias="L")
+        join_conditions = [
+            expressions.EQ(
+                this=get_qualified_column_identifier(self.left_on, "L"),
+                expression=get_qualified_column_identifier(self.right_on, "R"),
+            )
+        ]
+        expected_primary_keys = [self.right_on]
+        if self.snapshots_datetime_join_keys is not None:
+            datetime_keys = self.snapshots_datetime_join_keys
+            expected_primary_keys.append(
+                get_snapshots_datetime_transform_new_column_name(datetime_keys.right_key)
+            )
+            join_conditions.append(
+                expressions.EQ(
+                    this=get_qualified_column_identifier(
+                        get_snapshots_datetime_transform_new_column_name(datetime_keys.left_key),
+                        "L",
+                    ),
+                    expression=get_qualified_column_identifier(
+                        get_snapshots_datetime_transform_new_column_name(datetime_keys.right_key),
+                        "R",
+                    ),
+                )
+            )
+        on_expr = (
+            expressions.and_(*join_conditions) if len(join_conditions) > 1 else join_conditions[0]
         )
         deduplicated_right_table_expr = get_deduplicated_expr(
             adapter=self.context.adapter,
-            table_expr=cast(Select, self.right_node.sql),
-            expected_primary_keys=[self.right_on],
+            table_expr=right_table_expr,
+            expected_primary_keys=expected_primary_keys,
         )
         select_expr = select_expr.from_(left_subquery).join(
             deduplicated_right_table_expr,
-            on=join_conditions,
+            on=on_expr,
             join_type=self.join_type,
             join_alias="R",
         )
@@ -55,24 +100,25 @@ class Join(TableNode):
     def build(cls, context: SQLNodeContext) -> Optional[Join]:
         if context.parameters.get("scd_parameters") is not None:
             return None
-        parameters = context.parameters
+        parameters = JoinNodeParameters(**context.parameters)
         columns_map = {}
         for input_col, output_col in zip(
-            parameters["left_input_columns"], parameters["left_output_columns"]
+            parameters.left_input_columns, parameters.left_output_columns
         ):
-            columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
+            columns_map[str(output_col)] = get_qualified_column_identifier(input_col, "L")
         for input_col, output_col in zip(
-            parameters["right_input_columns"], parameters["right_output_columns"]
+            parameters.right_input_columns, parameters.right_output_columns
         ):
-            columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
+            columns_map[str(output_col)] = get_qualified_column_identifier(input_col, "R")
         node = Join(
             context=context,
             columns_map=columns_map,
             left_node=cast(TableNode, context.input_sql_nodes[0]),
             right_node=cast(TableNode, context.input_sql_nodes[1]),
-            left_on=parameters["left_on"],
-            right_on=parameters["right_on"],
-            join_type=parameters["join_type"],
+            left_on=parameters.left_on,
+            right_on=parameters.right_on,
+            snapshots_datetime_join_keys=parameters.snapshots_datetime_join_keys,
+            join_type=parameters.join_type,
         )
         return node
 
