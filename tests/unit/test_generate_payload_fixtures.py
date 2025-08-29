@@ -180,7 +180,6 @@ def test_save_payload_fixtures(
         request_input=SourceTableObservationInput(
             source=snowflake_event_table.tabular_source,
         ),
-        context_id=context.id,
         primary_entity_ids=[cust_id_entity.id],
         purpose="other",
     )

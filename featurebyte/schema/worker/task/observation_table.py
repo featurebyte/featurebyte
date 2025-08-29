@@ -28,6 +28,7 @@ class ObservationTableTaskPayload(BaseTaskPayload, ObservationTableCreate):
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
+    primary_entity_ids: list[PydanticObjectId]
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     # internal use only
     to_add_row_index: bool = Field(default=True)

@@ -44,6 +44,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 **payload,
                 "_id": str(ObjectId()),
                 "name": "new_table",
+                "primary_entity_ids": None,
                 "context_id": unknown_context_id,
             },
             f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.',
@@ -61,6 +62,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             ("item_table", "item_table"),
             ("context", "context"),
             ("target", "target"),
+            ("use_case", "use_case"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -279,10 +281,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
 
-    def test_update_use_case_with_error(self, test_api_client_persistent, create_success_response):
+    def test_update_use_case_with_error(self, test_api_client_persistent):
         """Test update context route"""
         test_api_client, _ = test_api_client_persistent
-        doc_id = create_success_response.json()["_id"]
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = "646f6c1c0ed28a5271fb02d5"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        doc_id = response_dict["payload"]["output_document_id"]
 
         context_id = str(ObjectId())
         context_payload = BaseMaterializedTableTestSuite.load_payload(
@@ -443,6 +453,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             target_input=True,
             target_id=use_case_payload["target_id"],
         )
+
+        response = test_api_client.delete(f"use_case/{use_case_payload['_id']}")
+        assert response.status_code == HTTPStatus.OK, response.json()
 
         response = test_api_client.delete(f"target/{use_case_payload['target_id']}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
@@ -700,6 +713,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         }
         payload = copy.deepcopy(self.payload)
         payload["target_column"] = "target"
+        payload["context_id"] = None
         # reverse order to check order does not matter
         payload["primary_entity_ids"] = entity_ids[::-1]
         response = self.post(test_api_client, payload)
@@ -796,12 +810,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_update_use_case_without_target(
-        self, test_api_client_persistent, create_success_response
-    ):
+    async def test_update_use_case_without_target(self, test_api_client_persistent):
         """Test update use case"""
         test_api_client, _ = test_api_client_persistent
-        doc_id = create_success_response.json()["_id"]
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = "646f6c1c0ed28a5271fb02d5"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        doc_id = response_dict["payload"]["output_document_id"]
 
         use_case_id = str(ObjectId())
         use_case_payload = BaseMaterializedTableTestSuite.load_payload(
@@ -820,3 +840,153 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert use_case_id in response.json()["use_case_ids"]
+
+    @pytest.mark.asyncio
+    async def test_create_with_use_case_mismatch_422(self, test_api_client_persistent):
+        """Test create with target column that does not match use case"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target namespace
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
+        payload["name"] = "target"
+        payload["default_target_id"] = None
+        payload["target_ids"] = []
+        response = test_api_client.post("/target_namespace", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        assert response_dict["target_type"] == "regression"
+
+        payload = copy.deepcopy(self.payload)
+        payload["target_column"] = "target"
+        payload["primary_entity_ids"] = None
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"]
+            == 'Target "target" does not match use case target "float_target".'
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_context_primary_entities_422(self, test_api_client_persistent):
+        """Test create with primary entities and context"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        context_id = str(ObjectId())
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context.json"
+        )
+        context_payload["primary_entity_ids"] = ["63f94ed6ea1f050131379204"]
+        context_payload["_id"] = context_id
+        context_payload["name"] = "test_context"
+        response = test_api_client.post("/context", json=context_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        payload = copy.deepcopy(self.payload)
+        payload["context_id"] = context_id
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"]
+            == "Primary entities should not be specified if context is specified."
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_use_case_primary_entities_422(self, test_api_client_persistent):
+        """Test create with primary_entities and use case"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"]
+            == "Primary entities should not be specified if use case is specified."
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_context_use_case_422(self, test_api_client_persistent):
+        """Test create with context and use case"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = str(ObjectId())
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"] == "Context should not be specified if use case is specified."
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_use_case_201(self, test_api_client_persistent):
+        """Test create with use case specified"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = None
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        observation_table_id = response_dict["payload"]["output_document_id"]
+        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+
+    def test_upload_with_use_case_201(self, test_api_client_persistent):
+        """
+        Test upload route with use case specified
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # Prepare upload request
+        upload_request = ObservationTableUpload(
+            name="uploaded_observation_table",
+            purpose="other",
+            primary_entity_ids=None,
+            use_case_id="64dc9461ad86dba795606745",
+        )
+        df = pd.DataFrame({
+            "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+            "cust_id": ["C1"],
+        })
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".parquet") as write_file_obj:
+            uploaded_file_name = os.path.basename(write_file_obj.name)
+            df.to_parquet(write_file_obj, index=False)
+            write_file_obj.flush()
+            with open(write_file_obj.name, "rb") as file_obj:
+                files = {"observation_set": file_obj}
+                data = {"payload": upload_request.model_dump_json()}
+
+                # Call upload route
+                response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
+
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response_dict = response.json()
+        observation_table_id = response_dict["payload"]["output_document_id"]
+
+        # Get observation table
+        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
