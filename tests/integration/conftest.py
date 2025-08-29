@@ -2041,6 +2041,7 @@ def snapshots_table_fixture(
         CronFeatureJobSetting(
             crontab="0 8 * * *",
             timezone="Asia/Singapore",
+            blind_spot="3d",
         )
     )
     snapshots_table["snapshot_id_col"].as_entity(series_entity.name)

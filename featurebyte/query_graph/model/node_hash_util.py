@@ -47,6 +47,14 @@ def _exclude_timestamp_metadata_from_event_parameters(
     return node_parameters
 
 
+def _exclude_snapshots_datetime_join_keys_from_parameters(
+    node_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    if node_parameters.get("snapshots_datetime_join_keys") is None:
+        node_parameters.pop("snapshots_datetime_join_keys", None)
+    return node_parameters
+
+
 def exclude_aggregation_and_lookup_node_timestamp_metadata(
     node_type: NodeType, node_parameters: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -133,6 +141,8 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_metadata(
             )
         if node_parameters.get("event_parameters"):
             _exclude_timestamp_metadata_from_event_parameters(node_parameters["event_parameters"])
+        if node_parameters.get("snapshots_datetime_join_keys") is None:
+            node_parameters.pop("snapshots_datetime_join_keys", None)
 
     if node_type == NodeType.TRACK_CHANGES:
         if node_parameters.get("effective_timestamp_metadata") is None:

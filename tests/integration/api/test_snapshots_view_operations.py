@@ -39,6 +39,32 @@ def test_snapshots_view(snapshots_table):
     assert actual == expected
 
 
+def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table):
+    """
+    Test that SnapshotsView can be joined with TimeSeriesView correctly
+    """
+    snapshots_view = snapshots_table.get_view()
+    time_series_view = time_series_table.get_view()
+    joined_view = time_series_view.join(snapshots_view, rsuffix="_from_snapshots")
+    joined_view = joined_view[joined_view["series_id_col"] == "S0"]
+    df_preview = joined_view.preview(limit=10000)
+    df_preview = df_preview.sort_values("reference_datetime_col")
+    cols = [
+        "reference_datetime_col",
+        "series_id_col",
+        "snapshot_datetime_col_from_snapshots",
+        "value_col_from_snapshots",
+    ]
+    actual = df_preview[cols].iloc[-3:].to_dict(orient="list")
+    expected = {
+        "reference_datetime_col": ["2001|04|08", "2001|04|09", "2001|04|10"],
+        "series_id_col": ["S0", "S0", "S0"],
+        "snapshot_datetime_col_from_snapshots": ["2001|04|05", "2001|04|06", "2001|04|07"],
+        "value_col_from_snapshots": [0.9400000000000001, 0.9500000000000001, 0.96],
+    }
+    assert actual == expected
+
+
 def test_lookup_features(snapshots_table):
     """
     Test that lookup features can be created from SnapshotsView
@@ -54,5 +80,5 @@ def test_lookup_features(snapshots_table):
     ])
     feature_list = FeatureList([lookup_feature], "test_feature_list")
     expected = preview_params.copy()
-    expected["snapshot_lookup_feature"] = [0.09, 0.14]
+    expected["snapshot_lookup_feature"] = [0.06, 0.11]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)

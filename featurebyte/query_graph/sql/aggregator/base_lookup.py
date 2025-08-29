@@ -28,6 +28,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
+from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 
 
 class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
@@ -195,30 +196,15 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                     snapshots_parameters.snapshot_datetime_column,
                     serving_name,
                 ]
-                adjusted_point_in_time_expr = self.adapter.timestamp_truncate(
-                    get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
-                    snapshots_parameters.time_interval.unit,
+                adjusted_point_in_time_expr = apply_snapshot_adjustment(
+                    datetime_expr=get_qualified_column_identifier(
+                        SpecialColumnName.POINT_IN_TIME, "REQ"
+                    ),
+                    time_interval=snapshots_parameters.time_interval,
+                    feature_job_setting=snapshots_parameters.feature_job_setting,
+                    format_string=snapshots_parameters.snapshot_timestamp_format_string,
+                    adapter=self.adapter,
                 )
-                if snapshots_parameters.feature_job_setting is not None:
-                    blind_spot_window = (
-                        snapshots_parameters.feature_job_setting.get_blind_spot_calendar_window()
-                    )
-                    if blind_spot_window is not None:
-                        if blind_spot_window.is_fixed_size():
-                            adjusted_point_in_time_expr = self.adapter.subtract_seconds(
-                                adjusted_point_in_time_expr,
-                                blind_spot_window.to_seconds(),
-                            )
-                        else:
-                            adjusted_point_in_time_expr = self.adapter.subtract_months(
-                                adjusted_point_in_time_expr,
-                                blind_spot_window.to_months(),
-                            )
-                if snapshots_parameters.snapshot_timestamp_format_string is not None:
-                    adjusted_point_in_time_expr = self.adapter.format_timestamp(
-                        adjusted_point_in_time_expr,
-                        snapshots_parameters.snapshot_timestamp_format_string,
-                    )
                 left_table_join_keys = [
                     adjusted_point_in_time_expr,
                     get_qualified_column_identifier(serving_name, "REQ"),

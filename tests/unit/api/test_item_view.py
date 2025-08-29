@@ -198,6 +198,7 @@ def test_get_view__auto_join_columns(
                                 "cust_id_event_table",
                             ],
                             "scd_parameters": None,
+                            "snapshots_datetime_join_keys": None,
                             "metadata": {
                                 "type": "join_event_table_attributes",
                                 "columns": ["event_timestamp", "cust_id"],
@@ -383,6 +384,7 @@ def test_join_event_table_attributes__more_columns(
             "right_output_columns": ["col_float"],
             "join_type": "inner",
             "scd_parameters": None,
+            "snapshots_datetime_join_keys": None,
             "metadata": {
                 "type": "join_event_table_attributes",
                 "columns": ["col_float"],
@@ -581,6 +583,7 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
                             "right_output_columns": ["event_timestamp", "cust_id"],
                             "join_type": "inner",
                             "scd_parameters": None,
+                            "snapshots_datetime_join_keys": None,
                             "metadata": {
                                 "type": "join_event_table_attributes",
                                 "event_suffix": None,

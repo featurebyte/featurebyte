@@ -140,6 +140,7 @@ def test_event_view_join_scd_view(
             "end_timestamp_metadata": None,
             "left_timestamp_metadata": None,
         },
+        "snapshots_datetime_join_keys": None,
         "metadata": {"type": "join", "rsuffix": "_scd", "rprefix": ""},
     }
 

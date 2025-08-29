@@ -310,7 +310,8 @@
                                         "event_timestamp_event_table",
                                         "cust_id_event_table"
                                     ],
-                                    "scd_parameters": null
+                                    "scd_parameters": null,
+                                    "snapshots_datetime_join_keys": null
                                 },
                                 "type": "join"
                             }

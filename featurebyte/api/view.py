@@ -1156,6 +1156,22 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         _ = calling_view
         return {}
 
+    def _get_join_parameters_as_calling_view(self, other_view: View) -> dict[str, Any]:
+        """
+        Returns additional query node parameters for join operation
+
+        Parameters
+        ----------
+        other_view: View
+            Other view of the join
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = other_view
+        return {}
+
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         """
         Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
@@ -1511,6 +1527,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             "metadata": JoinMetadata(rsuffix=rsuffix, rprefix=rprefix),
         }
         node_params.update(other_view._get_join_parameters(self))
+        node_params.update(self._get_join_parameters_as_calling_view(other_view))
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
