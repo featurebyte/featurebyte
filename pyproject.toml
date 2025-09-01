@@ -1,19 +1,226 @@
-# Poetry pyproject.toml: https://python-poetry.org/docs/pyproject/
-
+# Packaging and building Python projects with uv
 [build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry_core>=1.0.0"]
+requires = ["uv_build>=0.8.12,<0.9.0"]
+build-backend = "uv_build"
+
+# https://docs.astral.sh/uv/concepts/build-backend/
+[tool.uv.build-backend]
+module-name = "featurebyte"
+module-root = ""
+
+# https://docs.astral.sh/uv/concepts/metadata/
+# Metadata for the package.
+# Add to the dependencies to include them in the distribution.
+[project]
+authors = [{name = "FeatureByte", email = "it-admin@featurebyte.com"}]
+name = "featurebyte"
+version = "3.2.0"
+description = "Python Library for FeatureOps"
+readme = "README.md"
+requires-python = ">=3.10"
+repository = "https://github.com/featurebyte/featurebyte"
+documentation = "https://docs.featurebyte.com"
+homepage = "https://featurebyte.com"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "License :: Other/Proprietary License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+license = { file = "LICENSE" }
+dependencies = [
+  "aiofiles",
+  "PyYAML",
+  "alive-progress",
+  "black",
+  "cachetools",
+  "cryptography",
+  "humanize",
+  "importlib-metadata",
+  "jinja2",
+  "lazy-object-proxy",
+  "numpy",
+  "orjson",
+  "pandas<2", # pickle files in test not compatible with pandas 2.x
+  "pillow",
+  "pyarrow",
+  "pydantic",
+  "pydantic-settings",
+  "pymongo",
+  "pyopenssl",
+  "python-on-whales",
+  "python-multipart",
+  "requests",
+  "rich",
+  "sqlglot",
+  "typeguard",
+  "typer",
+  "typing-extensions",
+  "croniter",
+  "websocket-client",
+  "pydantic-extra-types",
+]
+
+[project.optional-dependencies]
+server = [
+  "asyncache",
+  "celery[redis]",
+  "celerybeat-mongo",
+  "databricks-sdk",
+  "databricks-sql-connector",
+  "fastapi",
+  "feast[snowflake,redis,mysql,gcp]",
+  "featurebyte-freeware",
+  "gevent",
+  "google-cloud-bigquery",
+  "motor",
+  "pdfkit",
+  "pyhive[hive_pure_sasl]",
+  "redis",
+  "requests-kerberos",
+  "smart-open[azure,gcs]",
+  "snowflake-connector-python",
+  "thrift-sasl",
+  "uvicorn[standard]",
+  "google-cloud-bigquery-storage",
+  "aioboto3",
+]
+
+[dependency-groups]
+dev = [
+  { include-group = "lint" },
+  { include-group = "test" },
+]
+test = [
+  "tornado", # Maybe remove
+  "freezegun",
+  "junitparser",
+  "mongomock",
+  "mongomock-motor",
+  "pre-commit",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-rerunfailures",
+  "pytest-split",
+  "pytest-timeout",
+  "pytest-xdist",
+  "jupyterlab",
+]
+docs = [
+  "docstring-parser",
+  "mkautodoc",
+  "mkdocs",
+  "mkdocs-awesome-pages-plugin",
+  "mkdocs-enumerate-headings-plugin",
+  "mkdocs-gen-files",
+  "mkdocs-git-authors-plugin",
+  "mkdocs-git-revision-date-localized-plugin",
+  "mkdocs-jupyter",
+  "mkdocs-literate-nav",
+  "mkdocs-minify-plugin",
+  "mkdocs-print-site-plugin",
+  "mkdocs-section-index",
+  "mkdocs-table-reader-plugin",
+]
+lint = [
+  "bandit",
+  "darglint",
+  "mypy",
+  "mypy-extensions",
+  "pip-audit",
+  "types-Markdown",
+  "types-PyYAML",
+  "types-aiofiles",
+  "types-backports",
+  "types-cachetools",
+  "types-chardet",
+  "types-cryptography",
+  "types-decorator",
+  "types-paramiko",
+  "types-protobuf",
+  "types-pyOpenSSL",
+  "types-pycurl",
+  "types-python-dateutil",
+  "types-pytz",
+  "types-redis",
+  "types-requests",
+  "types-setuptools",
+  "types-simplejson",
+  "types-six",
+  "types-toml",
+  "types-typed-ast",
+  "types-tzlocal",
+  "types-ujson",
+  "types-urllib3",
+  "toml-sort",
+  "ruff",
+  "types-croniter",
+]
+
+[tool.poetry.group.dev.dependencies]
+protobuf = ">=4.25.8"
+urllib3 = ">=2.5.0"
+
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
+doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+filterwarnings = [
+  "ignore::Warning:pkg_resources",
+  "ignore::Warning:mongomock",
+]
+markers = [
+  "disable_task_manager_mock: disable use of autouse task manager fixture",
+  "no_mock_websocket_client: skip mocking websocket client",
+  "no_mock_api_client: skip mocking api client",
+]
+norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
+
+[tool.ruff]
+preview = true
+extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures", "docs/notebooks/"]
+line-length = 100
+indent-width = 4
+target-version = "py39"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+select = ["E1", "E4", "E7", "E9", "F", "I"]  # Rules to use by default. Consider adding "UP" for upgradability checks.
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F841", "E722"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 150
 
 [tool.bandit]
 skips = ["B608"]
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/6.4.1/config.html#run
 exclude_lines = [
-    "pragma: no cover",
-    "if TYPE_CHECKING:",
-    "@overload",
-    "@abstractmethod",
-    "NotImplementedError",
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "@overload",
+  "@abstractmethod",
+  "NotImplementedError",
 ]
 fail_under = 0  # Do not allow failure but report in Pull Request
 show_missing = true
@@ -49,208 +256,3 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
-
-[tool.poetry]
-authors = ["FeatureByte <it-admin@featurebyte.com>"]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "License :: Other/Proprietary License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-]
-description = "Python Library for FeatureOps"
-documentation = "https://docs.featurebyte.com"
-homepage = "https://featurebyte.com"
-include = [
-    "featurebyte/sql/spark/*.jar",
-]
-keywords = []
-license = "Elastic License 2.0"
-name = "featurebyte"
-readme = "README.md"
-repository = "https://github.com/featurebyte/featurebyte"
-version = "3.2.0"
-
-[tool.poetry.dependencies]
-aiofiles = "^24.1.0"
-PyYAML = "^6.0"
-alive-progress = "^3.1.1"
-asyncache = { version = "^0.3.1", optional = true }
-black = "^24.3.0"
-cachetools = ">=5.2.0"
-celery = { version = "^5.2.6", extras = ["redis"], optional = true }
-celerybeat-mongo = { version = "^0.2.0", optional = true }
-cryptography = ">44.0.1"
-databricks-sdk = { version = "^0.24.0", optional = true }
-databricks-sql-connector = { version = "^4.0.1", optional = true }
-fastapi = { version =  "*", optional = true }
-feast = { version = "^0.40.1", optional = true, extras = ["snowflake", "redis", "mysql", "gcp"]}
-featurebyte-freeware = { version = "^0.2.23", optional = true }
-gevent = {version = "^23.9.1", optional = true}
-google-cloud-bigquery = { version = "^3.25.0", optional = true}
-humanize = "^4.4.0"
-importlib_metadata = { version = "*", python = "^3.10"}
-jinja2 = "^3.1.5"
-lazy-object-proxy = "^1.7.1"
-motor = { version = "^3.0.0", optional = true }
-numpy = ">=1.22,<2"
-orjson = "^3.9.15"
-pandas = ">=1"
-pdfkit = { version = "^1.0.0", optional = true }
-pillow = "^11.3.0"
-pyarrow = "^17.0.0"
-pydantic = "^2.8.2"
-pydantic-settings = "^2.3.1"
-pyhive = { version = "^0.7.0", extras = ["hive_pure_sasl"], optional = true }
-pymongo = "^4.6.3"
-pyopenssl = "^24.1.0"
-python = ">=3.10,<4"
-python-on-whales = ">=0.60.0"
-python-multipart = "*"
-redis = {version = "^4.2.0", optional = true}
-requests = "^2.32.4"
-requests-kerberos = { version = "^0.14.0", optional = true }
-rich = "^13.3.4"
-smart-open = { version = "^6.3.0", extras = ["azure", "gcs"], optional = true }
-snowflake-connector-python = { version = "^3.14.0", optional = true }
-aiohttp = "^3.12.14" # bump vuln
-starlette = "^0.47.2" # bump vuln
-sqlglot = "^25.18.0,<26.0"
-thrift-sasl = { version = "^0.4.3", optional = true }
-typeguard = ">=4.0.0"
-typer = ">=0.4.1"
-typing-extensions = "^4.10.0"
-uvicorn = { version = ">=0.21.1", extras = ["standard"], optional = true }
-websocket-client = "^1.5.1"
-google-cloud-bigquery-storage = { version = "^2.25.0", optional = true}
-pydantic-extra-types = "^2.10.0"
-croniter = "^6.0.0"
-aioboto3 = { version = "^14.1.0", optional = true}
-
-[tool.poetry.extras]
-server = ["databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast", "asyncache", "google-cloud-bigquery", "google-cloud-bigquery-storage", "aioboto3"]
-
-[tool.poetry.group.dev.dependencies]
-setuptools = "^78.1.1"
-tornado = "^6.5.0"
-freezegun = "^1.2.1"
-junitparser = "^2.8.0"
-mongomock = "^4.0.0"
-mongomock-motor = "^0.0.34"
-pip-licenses = "^3.5.4"
-pre-commit = "^2.20.0"
-pytest = "^7.2.0"
-pytest-asyncio = "^0.19.0"
-pytest-cov = "^4.0.0"
-pytest-order = "^1.2.0"
-pytest-rerunfailures = "^11.1.2"
-pytest-split = "^0.8.2"
-pytest-timeout = "^2.1.0"
-pytest-xdist = "^3.0.2"
-pyupgrade = "^2.37.2"
-wheel = "0.40.0"
-jupyterlab = "^4.4.4"
-jupyter-core = ">=5.8.1"
-protobuf = ">=4.25.8"
-urllib3 = ">=2.5.0"
-
-[tool.poetry.group.docs.dependencies]
-docstring-parser = "^0.15"
-humanize = "^4.5.0"
-mkautodoc = "^0.2.0"
-mkdocs = "1.5.3"
-mkdocs-awesome-pages-plugin = "^2.9.0"
-mkdocs-enumerate-headings-plugin = "^0.5.0"
-mkdocs-gen-files = "^0.4.0"
-mkdocs-git-authors-plugin = "^0.6.5"
-mkdocs-git-revision-date-localized-plugin = "^1.1.0"
-mkdocs-jupyter = "^0.24.2"
-mkdocs-literate-nav = "^0.5.0"
-mkdocs-minify-plugin = "^0.6.1"
-mkdocs-print-site-plugin = "^2.3.4"
-mkdocs-section-index = "^0.3.4"
-mkdocs-table-reader-plugin = "^1.1.1"
-
-[tool.poetry.group.lint.dependencies]
-bandit = "^1.7.4"
-darglint = "^1.8.1"
-mypy = "^1.0.1"
-mypy-extensions = "^0.4.3"
-pip-audit = "^2.4.4"
-types-Markdown = "^3.4.2.1"
-types-PyYAML = "^6.0.11"
-types-aiofiles = "^23.1.0.2"
-types-backports = "^0.1.3"
-types-cachetools = "^5.2.1"
-types-chardet = "^5.0.2"
-types-cryptography = "^3.3.21"
-types-decorator = "^5.1.8.4"
-types-paramiko = "^3.2.0.1"
-types-protobuf = "^4.24.0.20240408"
-types-pyOpenSSL = "^22.0.4"
-types-pycurl = "^7.45.2.20240311"
-types-python-dateutil = "^2.8.19.6"
-types-pytz = "^2022.1.2"
-types-redis = "^4.3.7"
-types-requests = "^2.28.2"
-types-setuptools = "^63.2.1"
-types-simplejson = "^3.17.7"
-types-six = "^1.16.21.9"
-types-toml = "^0.10.0"
-types-typed-ast = "^1.5.8.4"
-types-tzlocal = "^4.2.2"
-types-ujson = "^5.4.0"
-types-urllib3 = "^1.26.16"
-toml-sort = "^0.20.0"
-ruff = "^0.5.1"
-types-croniter = "^6.0.0.20250626"
-
-[tool.poetry.scripts]
-featurebyte = "featurebyte.__main__:app"
-
-[tool.pytest.ini_options]
-addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
-doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
-filterwarnings = [
-    "ignore::Warning:pkg_resources",
-    "ignore::Warning:mongomock",
-]
-markers = [
-    "disable_task_manager_mock: disable use of autouse task manager fixture",
-    "no_mock_websocket_client: skip mocking websocket client",
-    "no_mock_api_client: skip mocking api client",
-]
-norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
-
-[tool.ruff]
-preview = true
-extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures", "docs/notebooks/"]
-line-length = 100
-indent-width = 4
-target-version = "py39"
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-docstring-code-format = true
-docstring-code-line-length = "dynamic"
-
-[tool.ruff.lint]
-select = ["E1", "E4", "E7", "E9", "F", "I"]  # Rules to use by default. Consider adding "UP" for upgradability checks.
-ignore = []
-fixable = ["ALL"]
-unfixable = []
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["F841", "E722"]
-
-[tool.ruff.lint.pycodestyle]
-max-line-length = 150
