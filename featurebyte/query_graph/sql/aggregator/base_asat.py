@@ -10,14 +10,18 @@ from typing import Any, TypeVar, cast
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
     CommonTable,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
+from featurebyte.query_graph.sql.aggregator.helper import (
+    join_aggregated_expr_with_distinct_point_in_time,
+)
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
+from featurebyte.query_graph.sql.aggregator.snapshots_request_table import SnapshotsRequestTablePlan
 from featurebyte.query_graph.sql.asat_helper import (
     ensure_end_timestamp_column,
     get_record_validity_condition,
@@ -41,6 +45,7 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
+        self.snapshots_request_table_plan = SnapshotsRequestTablePlan(adapter=self.adapter)
 
     @classmethod
     @abstractmethod
@@ -58,7 +63,12 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         aggregation_spec: AsAtSpecT
             Aggregation spec
         """
-        self.request_table_plan.add_aggregation_spec(aggregation_spec)
+        if aggregation_spec.parameters.snapshots_parameters is None:
+            self.request_table_plan.add_aggregation_spec(aggregation_spec)
+        else:
+            self.snapshots_request_table_plan.add_snapshots_parameters(
+                aggregation_spec.parameters.snapshots_parameters
+            )
 
     def update_aggregation_table_expr(
         self,
@@ -90,6 +100,12 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         -------
         LeftJoinableSubquery
         """
+        spec = specs[0]
+        if spec.parameters.snapshots_parameters is None:
+            return self._get_aggregation_subquery_from_scd(specs)
+        return self._get_aggregation_subquery_from_snapshots(specs)
+
+    def _get_aggregation_subquery_from_scd(self, specs: list[AsAtSpecT]) -> LeftJoinableSubquery:
         spec = specs[0]
         end_timestamp_column, scd_expr = ensure_end_timestamp_column(
             adapter=self.adapter,
@@ -203,5 +219,110 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
+    def _get_aggregation_subquery_from_snapshots(
+        self, specs: list[AsAtSpecT]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+        snapshots_parameters = spec.parameters.snapshots_parameters
+        assert snapshots_parameters is not None
+        snapshots_req = self.snapshots_request_table_plan.get_entry(snapshots_parameters)
+
+        # Lookup the current snapshots for each distinct adjusted point in time and perform
+        # as-at aggregation
+        groupby_input_expr = (
+            select()
+            .from_(
+                expressions.Table(
+                    this=quoted_identifier(snapshots_req.distinct_adjusted_point_in_time_table),
+                    alias="REQ",
+                )
+            )
+            .join(
+                spec.source_expr.subquery(alias="SNAPSHOTS"),
+                join_type="inner",
+                on=expressions.EQ(
+                    this=get_qualified_column_identifier(
+                        InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME, "REQ"
+                    ),
+                    expression=get_qualified_column_identifier(
+                        snapshots_parameters.snapshot_datetime_column, "SNAPSHOTS"
+                    ),
+                ),
+            )
+        )
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(
+                    InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME, "REQ"
+                ),
+                name=SpecialColumnName.POINT_IN_TIME,
+            )
+        ] + [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(key, "SNAPSHOTS"),
+                name=serving_name,
+            )
+            for (key, serving_name) in zip(spec.parameters.keys, spec.serving_names)
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "SNAPSHOTS"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "SNAPSHOTS")
+                    if s.parameters.parent
+                    else None
+                ),
+                result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
+                parent_cols=(
+                    [get_qualified_column_identifier(s.parameters.parent, "SNAPSHOTS")]
+                    if s.parameters.parent
+                    else []
+                ),
+            )
+            for s in specs
+        ]
+        aggregate_asat_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
+        )
+
+        # Map the aggregated results back to the original point in time using the distinct point in
+        # time to adjusted point in time table.
+        column_names = set()
+        for _spec in specs:
+            column_names.add(_spec.agg_result_name)
+        # TODO: maybe this serving names handling should be moved into the helper function
+        aggregated_column_names = spec.serving_names[:]
+        aggregated_column_names.extend(sorted(column_names))
+        aggregated_expr = join_aggregated_expr_with_distinct_point_in_time(
+            aggregated_expr=aggregate_asat_expr,
+            distinct_key=InternalName.CRON_JOB_SCHEDULE_DATETIME.value,
+            serving_names=[],  # the join condition should be based on POINT_IN_TIME only
+            aggregated_column_names=aggregated_column_names,
+            distinct_by_point_in_time_table_name=snapshots_req.distinct_adjusted_point_in_time_table,
+        )
+
+        return LeftJoinableSubquery(
+            expr=aggregated_expr,
+            column_names=aggregated_column_names,
+            join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+        )
+
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
-        return self.request_table_plan.construct_request_table_ctes(request_table_name)
+        result = self.request_table_plan.construct_request_table_ctes(request_table_name)
+        result.extend(
+            self.snapshots_request_table_plan.construct_request_table_ctes(request_table_name)
+        )
+        return result

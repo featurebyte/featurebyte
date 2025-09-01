@@ -1,0 +1,46 @@
+WITH "SNAPSHOTS_REQUEST_TABLE_DISTINCT_POINT_IN_TIME_ffb71d4a59547b0a" AS (
+  SELECT
+    "POINT_IN_TIME",
+    DATE_TRUNC('day', "POINT_IN_TIME") AS "__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME"
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME"
+    FROM "REQUEST_TABLE"
+  )
+), "SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_ffb71d4a59547b0a" AS (
+  SELECT DISTINCT
+    "__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME"
+  FROM "SNAPSHOTS_REQUEST_TABLE_DISTINCT_POINT_IN_TIME_ffb71d4a59547b0a"
+)
+SELECT
+  POINT_IN_TIME,
+  cust_id,
+  "T0"."serving_cust_id" AS "serving_cust_id",
+  "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+FROM REQUEST_TABLE
+LEFT JOIN (
+  SELECT
+    DISTINCT_POINT_IN_TIME."POINT_IN_TIME",
+    AGGREGATED."serving_cust_id",
+    AGGREGATED."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+  FROM "SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_ffb71d4a59547b0a" AS DISTINCT_POINT_IN_TIME
+  LEFT JOIN (
+    SELECT
+      REQ."__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME" AS "POINT_IN_TIME",
+      SNAPSHOTS."cust_id" AS "serving_cust_id",
+      SUM(SNAPSHOTS."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+    FROM "SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_ffb71d4a59547b0a" AS REQ
+    INNER JOIN (
+      SELECT
+        *
+      FROM SNAPSHOTS_TABLE
+    ) AS SNAPSHOTS
+      ON REQ."__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME" = SNAPSHOTS."snapshot_datetime_column"
+    GROUP BY
+      REQ."__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME",
+      SNAPSHOTS."cust_id"
+  ) AS AGGREGATED
+    ON AGGREGATED."__FB_CRON_JOB_SCHEDULE_DATETIME" = DISTINCT_POINT_IN_TIME."__FB_CRON_JOB_SCHEDULE_DATETIME"
+) AS T0
+  ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+  AND REQ."serving_cust_id" = T0."serving_cust_id"

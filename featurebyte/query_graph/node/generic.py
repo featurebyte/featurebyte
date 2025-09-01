@@ -2003,6 +2003,7 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
 
     name: OutColumnStr
     offset: Optional[str] = Field(default=None)
+    snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
     # Note: This is kept for backward compatibility and not used by SQL generation
     backward: Optional[bool] = Field(default=None)
 

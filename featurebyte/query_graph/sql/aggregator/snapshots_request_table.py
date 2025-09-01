@@ -1,0 +1,181 @@
+"""
+Request table processing for joining with snapshots tables
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass
+
+from sqlglot import expressions
+
+from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.query_graph.node.generic import SnapshotsLookupParameters
+from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
+from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
+
+
+@dataclass
+class ProcessedRequestTableEntry:
+    """
+    Represents an entry in the processed request table plan
+    """
+
+    distinct_adjusted_point_in_time_table: str
+    distinct_point_in_time_table: str
+    snapshots_parameters: SnapshotsLookupParameters
+
+
+class SnapshotsRequestTablePlan:
+    """
+    Responsible for generating a process request table ready to be joined with snapshots tables
+    """
+
+    def __init__(self, adapter: BaseAdapter):
+        self.entries: dict[str, ProcessedRequestTableEntry] = {}
+        self.adapter = adapter
+
+    def add_snapshots_parameters(self, snapshots_parameters: SnapshotsLookupParameters) -> None:
+        """
+        Update state given snapshots lookup parameters
+
+        Parameters
+        ----------
+        snapshots_parameters: SnapshotsLookupParameters
+            Snapshots lookup parameters
+        """
+        key = self.get_key(snapshots_parameters)
+        if key in self.entries:
+            return
+        entry = ProcessedRequestTableEntry(
+            distinct_adjusted_point_in_time_table=f"SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_{key}",
+            distinct_point_in_time_table=f"SNAPSHOTS_REQUEST_TABLE_DISTINCT_POINT_IN_TIME_{key}",
+            snapshots_parameters=snapshots_parameters,
+        )
+        self.entries[key] = entry
+
+    def get_entry(
+        self, snapshots_parameters: SnapshotsLookupParameters
+    ) -> ProcessedRequestTableEntry:
+        """
+        Get the processed request table information corresponding to a SnapshotsLookupParameters
+
+        Parameters
+        ----------
+        snapshots_parameters: SnapshotsLookupParameters
+            Snapshots lookup parameters
+
+        Returns
+        -------
+        str
+        """
+        key = self.get_key(snapshots_parameters)
+        return self.entries[key]
+
+    @staticmethod
+    def get_key(snapshots_parameters: SnapshotsLookupParameters) -> str:
+        """
+        Get an internal key used to determine request table sharing
+
+        Parameters
+        ----------
+        snapshots_parameters: SnapshotsLookupParameters
+            Snapshots lookup parameters
+
+        Returns
+        -------
+        AggSpecEntityIDs
+        """
+        parameters_dict = snapshots_parameters.model_dump()
+        hasher = hashlib.shake_128()
+        hasher.update(json.dumps(parameters_dict).encode("utf-8"))
+        return hasher.hexdigest(8)
+
+    def construct_request_table_ctes(
+        self,
+        request_table_name: str,
+    ) -> list[CommonTable]:
+        """
+        Construct SQL statements that build the processed request tables
+
+        Parameters
+        ----------
+        request_table_name : str
+            Name of request table to use
+
+        Returns
+        -------
+        list[tuple[str, expressions.Select]]
+        """
+        ctes = []
+        for key, entry in self.entries.items():
+            processed_tables = self.construct_processed_request_tables_for_entry(
+                entry, request_table_name
+            )
+            ctes.extend(processed_tables)
+        return ctes
+
+    def construct_processed_request_tables_for_entry(
+        self,
+        entry: ProcessedRequestTableEntry,
+        request_table_name: str,
+    ) -> list[CommonTable]:
+        """
+        Construct SQL statements that build the processed request tables
+
+        Parameters
+        ----------
+        entry: ProcessedRequestTableEntry
+            Processed request table entry
+        request_table_name: str
+            Name of the original request table that is determined at runtime
+
+        Returns
+        -------
+        expressions.Select
+        """
+        snapshots_parameters = entry.snapshots_parameters
+
+        # Distinct point-in-time table: Map distinct POINT_IN_TIME values to snapshot adjusted
+        # POINT_IN_TIME values
+        adjusted_point_in_time_expr = apply_snapshot_adjustment(
+            datetime_expr=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+            time_interval=snapshots_parameters.time_interval,
+            feature_job_setting=snapshots_parameters.feature_job_setting,
+            format_string=snapshots_parameters.snapshot_timestamp_format_string,
+            adapter=self.adapter,
+        )
+        distinct_point_in_time_to_adjusted_expr = expressions.select(
+            quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+            expressions.alias_(
+                adjusted_point_in_time_expr,
+                InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME,
+                quoted=True,
+            ),
+        ).from_(
+            expressions.select(quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+            .distinct()
+            .from_(expressions.Table(this=quoted_identifier(request_table_name)))
+            .subquery()
+        )
+
+        # Distinct adjusted point-in-time table: Distinct snapshot adjusted POINT_IN_TIME values for joining
+        # with source tables
+        distinct_adjusted_point_in_time_expr = (
+            expressions.select(quoted_identifier(InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME))
+            .distinct()
+            .from_(expressions.Table(this=quoted_identifier(entry.distinct_point_in_time_table)))
+        )
+        return [
+            CommonTable(
+                name=entry.distinct_point_in_time_table,
+                expr=distinct_point_in_time_to_adjusted_expr,
+            ),
+            CommonTable(
+                name=entry.distinct_adjusted_point_in_time_table,
+                expr=distinct_adjusted_point_in_time_expr,
+            ),
+        ]

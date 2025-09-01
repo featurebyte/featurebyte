@@ -65,6 +65,8 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
             parameters_dict.pop("effective_timestamp_metadata", None)
         if parameters_dict.get("end_timestamp_metadata") is None:
             parameters_dict.pop("end_timestamp_metadata", None)
+        if parameters_dict.get("snapshots_parameters") is None:
+            parameters_dict.pop("snapshots_parameters", None)
         params["parameters"] = parameters_dict
 
         return params
