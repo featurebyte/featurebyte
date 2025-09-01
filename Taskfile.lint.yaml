@@ -75,7 +75,7 @@ tasks:
     cmds:
       - task: style-ruff
       - task: style-darglint
-      - uv run toml-sort --check uv.lock    # Check if user been using pre-commit hook
+      - uv run toml-sort --check uv.lock
 
   style-ruff:
     desc: "Run the linter[style] with only ruff"
