@@ -2,11 +2,11 @@
 Use Case model
 """
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 import pymongo
-from pydantic import Field
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -15,27 +15,22 @@ from featurebyte.models.base import (
 )
 
 
-class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
-    """
-    UseCaseModel represents a use case within a feature store
+class UseCaseType(StrEnum):
+    """UseCaseType represents the type of use case"""
 
-    context_id: PydanticObjectId
-        The context id of ContextModel
-    target_id: Optional[PydanticObjectId]
-        The target id of TargetModel
-    target_namespace_id: Optional[PydanticObjectId]
-        The target namespace id of TargetModel
-    default_preview_table_id: PydanticObjectId
-        The default preview observation table
-    default_eda_table_id: PydanticObjectId
-        The default eda observation table
-    """
+    PREDICTIVE = "predictive"
+    DESCRIPTIVE = "descriptive"
 
+
+class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):
+    """BaseUseCaseModel represents the base model for a use case within a feature store"""
+
+    use_case_type: UseCaseType = UseCaseType.PREDICTIVE  # backward compatibility
     context_id: PydanticObjectId
-    target_id: Optional[PydanticObjectId] = Field(default=None)
-    target_namespace_id: PydanticObjectId
-    default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
-    default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
+    default_eda_table_id: Optional[PydanticObjectId] = None
+
+    # TODO: remove default_preview_table_id in future release
+    default_preview_table_id: Optional[PydanticObjectId] = None
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -57,9 +52,24 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("use_case_type"),
             pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),
                 ("description", pymongo.TEXT),
             ],
         ]
+
+
+class DescriptiveUseCaseModel(BaseUseCaseModel):
+    """DescriptiveUseCaseModel represents a descriptive use case within a feature store"""
+
+    use_case_type: Literal[UseCaseType.DESCRIPTIVE] = UseCaseType.DESCRIPTIVE
+
+
+class UseCaseModel(BaseUseCaseModel):
+    """PredictiveUseCaseModel represents a predictive use case within a feature store"""
+
+    use_case_type: Literal[UseCaseType.PREDICTIVE] = UseCaseType.PREDICTIVE
+    target_id: Optional[PydanticObjectId] = None
+    target_namespace_id: PydanticObjectId

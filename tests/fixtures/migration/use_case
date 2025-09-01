@@ -1,0 +1,101 @@
+[
+  {
+    "_id": {
+      "$oid": "6731ef3d0a3a81d7366a5cb8"
+    },
+    "user_id": {
+      "$oid": "662a7b245587863a7f672e7a"
+    },
+    "name": "Loan Default Prediction Use Case",
+    "created_at": {
+      "$date": "2024-11-15T04:31:28.154Z"
+    },
+    "updated_at": {
+      "$date": "2024-11-15T05:14:26.537Z"
+    },
+    "block_modification_by": [],
+    "description": "Use case for predicting loan defaults based on customer behavior",
+    "is_deleted": false,
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "context_id": {
+      "$oid": "6731ef3c0a3a81d7366a5cb7"
+    },
+    "target_id": {
+      "$oid": "64a80107d667dd0c2b13d8cd"
+    },
+    "target_namespace_id": {
+      "$oid": "6735812a9385427653344fb3"
+    },
+    "default_eda_table_id": {
+      "$oid": "6735823b9385427653344fb4"
+    },
+    "default_preview_table_id": {
+      "$oid": "6735824c9385427653344fb5"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6731ef3d0a3a81d7366a5cb9"
+    },
+    "user_id": {
+      "$oid": "662a7b245587863a7f672e7a"
+    },
+    "name": "Customer Segmentation Analysis",
+    "created_at": {
+      "$date": "2024-11-16T08:20:15.321Z"
+    },
+    "updated_at": {
+      "$date": "2024-11-16T08:20:15.321Z"
+    },
+    "block_modification_by": [],
+    "description": "Descriptive analysis for customer segmentation",
+    "is_deleted": false,
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "context_id": {
+      "$oid": "6731ef3c0a3a81d7366a5cb7"
+    },
+    "default_eda_table_id": {
+      "$oid": "6735825d9385427653344fb6"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6731ef3d0a3a81d7366a5cba"
+    },
+    "user_id": {
+      "$oid": "662a7b245587863a7f672e7a"
+    },
+    "name": "Risk Assessment Model",
+    "created_at": {
+      "$date": "2024-11-17T12:45:30.789Z"
+    },
+    "updated_at": {
+      "$date": "2024-11-17T14:22:18.456Z"
+    },
+    "block_modification_by": [],
+    "description": "Use case for assessing financial risk of loan applications",
+    "is_deleted": false,
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "context_id": {
+      "$oid": "6731ef3c0a3a81d7366a5cb7"
+    },
+    "target_id": {
+      "$oid": "64a80107d667dd0c2b13d8cd"
+    },
+    "target_namespace_id": {
+      "$oid": "6735812a9385427653344fb3"
+    },
+    "default_eda_table_id": {
+      "$oid": "6735826e9385427653344fb7"
+    },
+    "default_preview_table_id": {
+      "$oid": "6735827f9385427653344fb8"
+    }
+  }
+]

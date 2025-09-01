@@ -37,6 +37,7 @@ from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.migration.service.offline_store_feature_table import (
     OfflineStoreFeatureTableMigrationServiceV9,
 )
+from featurebyte.migration.service.use_case import UseCaseMigrationServiceV23
 from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
@@ -556,6 +557,7 @@ app_container_config.register_class(FeatureJobSettingAnalysisMigrationServiceV13
 app_container_config.register_class(DeploymentMigrationServiceV14)
 app_container_config.register_class(FeatureNamespaceMigrationServiceV19)
 app_container_config.register_class(FeatureStoreTableCleanupTaskMigrationServiceV22)
+app_container_config.register_class(UseCaseMigrationServiceV23)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
