@@ -102,7 +102,6 @@ test = [
   "junitparser",
   "mongomock",
   "mongomock-motor",
-  "pre-commit",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
@@ -164,9 +163,20 @@ lint = [
   "types-croniter",
 ]
 
-[tool.poetry.group.dev.dependencies]
-protobuf = ">=4.25.8"
-urllib3 = ">=2.5.0"
+# Packaging source metadata, this points to the source code repository.
+#     Use UV_INDEX_FEATUREBYTE_NP_USERNAME=_json_key_base64
+#     and UV_INDEX_FEATUREBYTE_NP_PASSWORD={base64 encoded service account key}
+[[tool.uv.index]]
+name = "featurebyte_np"
+url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
+publish-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/"
+explicit = true
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
 
 
 [tool.pytest.ini_options]
