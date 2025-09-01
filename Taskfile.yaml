@@ -7,22 +7,6 @@ includes:
   lint: Taskfile.lint.yaml
 
 tasks:
-  init:
-    desc: "Initialize the project for development"
-    preconditions:
-      - sh: poetry --version
-        msg: "Poetry is not installed. Please install it from https://python-poetry.org/docs/#installation"
-      - sh: docker --version
-        msg: "Docker is not installed. Please install it from https://docs.docker.com/get-docker/"
-      - sh: yq --version
-        msg: "yq is not installed. Please install it from https://github.com/mikefarah/yq"
-      - sh: jq --version
-        msg: "jq is not installed. Please install it from https://stedolan.github.io/jq/download/"
-    deps:
-      - task: install
-    cmds:
-      - poetry run pre-commit install
-
   install:
     desc: "Install the project dependencies"
     run: once

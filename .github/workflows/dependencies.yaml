@@ -1,116 +1,107 @@
 # This workflow checks the differences dependencies between main and the PR
 # Labelling a PR with `dependencies` will skip this check
 
-name: dependencies
-'on':
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
-    branches:
-      - main
-      - release/*
-    paths:
-      - pyproject.toml
-permissions:
-  contents: write
-  pull-requests: write
-  repository-projects: read
-concurrency:
-  group: "${{ github.workflow }}-${{ github.head_ref }}"
-  cancel-in-progress: true
-jobs:
-  diff-client-deps:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - 3.10.14
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - name: Checkout branch
-        run: git checkout "origin/${{ github.head_ref }}"
-      - uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-      - name: Check pyproject.toml and poetry.lock are consistent
-        run: task check-poetry
-      - name: Build package (branch)
-        run: |-
-          poetry version 1
-          poetry build
-          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
-          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
-      - name: Checkout merge base
-        run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
-      - name: Build package (main)
-        run: |-
-          poetry version 1
-          poetry build
-          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
-          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
-      - name: Diff dependencies
-        continue-on-error: true
-        run: |-
-          # Write diff to env
-          echo "DIFF<<EOF" >> $GITHUB_ENV
-          set +e
-          diff -u main.PKG-INFO branch.PKG-INFO >> $GITHUB_ENV
-          set -e
-          echo "EOF" >> $GITHUB_ENV
-
-          # Test if it actually fails
-          diff -u main.PKG-INFO branch.PKG-INFO
-      - uses: mshick/add-pr-comment@v2
-        with:
-          message-id: dependencies
-          message: |-
-            **Dependency Changes**
-            ```diff
-            ${{ env.DIFF }}
-            ```
-      - name: Check failure if not labelled as dependencies
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
-        run: diff -u main.PKG-INFO branch.PKG-INFO
-
-  diff-all-deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-      - uses: bushwhackr/poetry-diff@v1
-        id: poetry-diff
-      - uses: mshick/add-pr-comment@v2
-        if: ${{ steps.poetry-diff.outputs.diff_present != '0' }}
-        with:
-          message: |-
-            ${{ steps.poetry-diff.outputs.diff_content }}
+#name: dependencies
+#'on':
+#  pull_request:
+#    types:
+#      - opened
+#      - synchronize
+#      - reopened
+#      - labeled
+#      - unlabeled
+#    branches:
+#      - main
+#      - release/*
+#    paths:
+#      - pyproject.toml
+#permissions:
+#  contents: write
+#  pull-requests: write
+#  repository-projects: read
+#concurrency:
+#  group: "${{ github.workflow }}-${{ github.head_ref }}"
+#  cancel-in-progress: true
+#jobs:
+#  diff-client-deps:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python-version:
+#          - 3.10.14
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - name: Checkout branch
+#        run: git checkout "origin/${{ github.head_ref }}"
+#      - uses: arduino/setup-task@v2
+#        with:
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+#          version: 3.x
+#      - name: Install uv and set the python version
+#        uses: astral-sh/setup-uv@v6
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#          enable-cache: true
+#      - name: Check pyproject.toml and poetry.lock are consistent
+#        run: task check-poetry
+#      - name: Build package (branch)
+#        run: |-
+#          poetry version 1
+#          poetry build
+#          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
+#          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
+#      - name: Checkout merge base
+#        run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
+#      - name: Build package (main)
+#        run: |-
+#          poetry version 1
+#          poetry build
+#          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
+#          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
+#      - name: Diff dependencies
+#        continue-on-error: true
+#        run: |-
+#          # Write diff to env
+#          echo "DIFF<<EOF" >> $GITHUB_ENV
+#          set +e
+#          diff -u main.PKG-INFO branch.PKG-INFO >> $GITHUB_ENV
+#          set -e
+#          echo "EOF" >> $GITHUB_ENV
+#
+#          # Test if it actually fails
+#          diff -u main.PKG-INFO branch.PKG-INFO
+#      - uses: mshick/add-pr-comment@v2
+#        with:
+#          message-id: dependencies
+#          message: |-
+#            **Dependency Changes**
+#            ```diff
+#            ${{ env.DIFF }}
+#            ```
+#      - name: Check failure if not labelled as dependencies
+#        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+#        run: diff -u main.PKG-INFO branch.PKG-INFO
+#
+#  diff-all-deps:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: "3.10"
+#      - name: Install Poetry + Configure
+#        run: |-
+#          pip install poetry==2.1.2
+#          poetry config virtualenvs.in-project true
+#      - uses: bushwhackr/poetry-diff@v1
+#        id: poetry-diff
+#      - uses: mshick/add-pr-comment@v2
+#        if: ${{ steps.poetry-diff.outputs.diff_present != '0' }}
+#        with:
+#          message: |-
+#            ${{ steps.poetry-diff.outputs.diff_content }}
