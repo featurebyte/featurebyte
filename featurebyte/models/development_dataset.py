@@ -122,7 +122,7 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
 
     @model_validator(mode="after")
     def _normalize_status(self) -> "DevelopmentDatasetModel":
-        """If status is set to ACTIVE but there are no tables, force EMPTY"""
+        # If status is set to ACTIVE but there are no tables, force EMPTY
         if self.status == DevelopmentDatasetStatus.ACTIVE and not self.development_tables:
             self.status = DevelopmentDatasetStatus.EMPTY
         return self
