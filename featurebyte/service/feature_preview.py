@@ -429,10 +429,7 @@ class FeaturePreviewService(PreviewService):
                 job_schedule_table_set=job_schedule_table_set,
                 column_statistics_info=column_statistics_info,
             )
-            try:
-                _result = await db_session.execute_query(preview_sql)
-            except:
-                raise ValueError("here!")
+            _result = await db_session.execute_query(preview_sql)
             if result is None:
                 result = _result
             else:
