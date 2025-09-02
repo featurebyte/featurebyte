@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'breaking') }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       name: Send Slack notification to user-experience channel

@@ -29,7 +29,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: arduino/setup-task@v2
@@ -76,7 +76,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: arduino/setup-task@v2
@@ -123,7 +123,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: arduino/setup-task@v2
@@ -170,7 +170,7 @@ jobs:
       - test-deep-dive-notebooks
       - test-playground-notebooks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}
