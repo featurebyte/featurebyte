@@ -95,6 +95,7 @@ server = [
 dev = [
   { include-group = "lint" },
   { include-group = "test" },
+  { include-group = "docs" },
 ]
 test = [
   "tornado", # Maybe remove

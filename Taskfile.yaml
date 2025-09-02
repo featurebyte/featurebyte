@@ -16,7 +16,7 @@ tasks:
     deps:
       - task: build-jar
     cmds:
-      - poetry install -n --sync --extras=server
+      - uv sync --all-groups
 
   install-published-featurebyte:
     desc: "Install the published version of the featurebyte SDK"
