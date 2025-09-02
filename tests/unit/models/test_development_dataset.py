@@ -9,9 +9,24 @@ from pydantic import ValidationError
 from featurebyte.models.development_dataset import (
     DevelopmentDatasetModel,
     DevelopmentDatasetSourceType,
+    DevelopmentDatasetStatus,
     DevelopmentTable,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
+
+
+def test_empty_development_tables():
+    """
+    Test that an empty development dataset can't have an active status
+    """
+
+    empty_dev = DevelopmentDatasetModel(
+        name="test_dataset",
+        sample_from_timestamp="2023-01-01T00:00:00Z",
+        sample_to_timestamp="2023-01-02T00:00:00Z",
+        development_tables=[],
+    )
+    assert empty_dev.status == DevelopmentDatasetStatus.EMPTY
 
 
 def test_duplicate_table_ids_development_tables():
