@@ -516,6 +516,4 @@ class ColumnSpec(FeatureByteBaseModel):
             return False
         if not DBVarType.are_compatible_types(self.dtype, other.dtype):
             return False
-        if self.dtype_metadata != other.dtype_metadata:
-            return False
         return True
