@@ -255,7 +255,7 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
                 expr=get_qualified_column_identifier(
                     InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME, "REQ"
                 ),
-                name=SpecialColumnName.POINT_IN_TIME,
+                name=InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME,
             )
         ] + [
             GroupbyKey(
@@ -303,15 +303,14 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         column_names = set()
         for _spec in specs:
             column_names.add(_spec.agg_result_name)
-        # TODO: maybe this serving names handling should be moved into the helper function
-        aggregated_column_names = spec.serving_names[:]
-        aggregated_column_names.extend(sorted(column_names))
+        aggregated_column_names = sorted(column_names)
         aggregated_expr = join_aggregated_expr_with_distinct_point_in_time(
             aggregated_expr=aggregate_asat_expr,
-            distinct_key=InternalName.CRON_JOB_SCHEDULE_DATETIME.value,
-            serving_names=[],  # the join condition should be based on POINT_IN_TIME only
+            distinct_key=InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME.value,
+            serving_names=spec.serving_names,
             aggregated_column_names=aggregated_column_names,
             distinct_by_point_in_time_table_name=snapshots_req.distinct_adjusted_point_in_time_table,
+            join_on_serving_names=False,
         )
 
         return LeftJoinableSubquery(

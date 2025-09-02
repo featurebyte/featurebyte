@@ -21,6 +21,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.target import Target
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
@@ -89,7 +90,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SCDView, TimeSeriesView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView, TimeSeriesView, SnapshotsView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):

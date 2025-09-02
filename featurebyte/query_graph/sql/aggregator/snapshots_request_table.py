@@ -165,7 +165,10 @@ class SnapshotsRequestTablePlan:
         # Distinct adjusted point-in-time table: Distinct snapshot adjusted POINT_IN_TIME values for joining
         # with source tables
         distinct_adjusted_point_in_time_expr = (
-            expressions.select(quoted_identifier(InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME))
+            expressions.select(
+                quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                quoted_identifier(InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME),
+            )
             .distinct()
             .from_(expressions.Table(this=quoted_identifier(entry.distinct_point_in_time_table)))
         )
