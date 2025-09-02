@@ -27,6 +27,7 @@ class ProcessedRequestTableEntry:
     distinct_adjusted_point_in_time_table: str
     distinct_point_in_time_table: str
     snapshots_parameters: SnapshotsLookupParameters
+    serving_names: list[str]
 
 
 class SnapshotsRequestTablePlan:
@@ -38,7 +39,9 @@ class SnapshotsRequestTablePlan:
         self.entries: dict[str, ProcessedRequestTableEntry] = {}
         self.adapter = adapter
 
-    def add_snapshots_parameters(self, snapshots_parameters: SnapshotsLookupParameters) -> None:
+    def add_snapshots_parameters(
+        self, snapshots_parameters: SnapshotsLookupParameters, serving_names: list[str]
+    ) -> None:
         """
         Update state given snapshots lookup parameters
 
@@ -46,19 +49,22 @@ class SnapshotsRequestTablePlan:
         ----------
         snapshots_parameters: SnapshotsLookupParameters
             Snapshots lookup parameters
+        serving_names: list[str]
+            Serving names of the features
         """
-        key = self.get_key(snapshots_parameters)
+        key = self.get_key(snapshots_parameters, serving_names)
         if key in self.entries:
             return
         entry = ProcessedRequestTableEntry(
             distinct_adjusted_point_in_time_table=f"SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_{key}",
             distinct_point_in_time_table=f"SNAPSHOTS_REQUEST_TABLE_DISTINCT_POINT_IN_TIME_{key}",
             snapshots_parameters=snapshots_parameters,
+            serving_names=serving_names,
         )
         self.entries[key] = entry
 
     def get_entry(
-        self, snapshots_parameters: SnapshotsLookupParameters
+        self, snapshots_parameters: SnapshotsLookupParameters, serving_names: list[str]
     ) -> ProcessedRequestTableEntry:
         """
         Get the processed request table information corresponding to a SnapshotsLookupParameters
@@ -67,16 +73,18 @@ class SnapshotsRequestTablePlan:
         ----------
         snapshots_parameters: SnapshotsLookupParameters
             Snapshots lookup parameters
+        serving_names: list[str]
+            Serving names of the features
 
         Returns
         -------
         str
         """
-        key = self.get_key(snapshots_parameters)
+        key = self.get_key(snapshots_parameters, serving_names=serving_names)
         return self.entries[key]
 
     @staticmethod
-    def get_key(snapshots_parameters: SnapshotsLookupParameters) -> str:
+    def get_key(snapshots_parameters: SnapshotsLookupParameters, serving_names: list[str]) -> str:
         """
         Get an internal key used to determine request table sharing
 
@@ -84,14 +92,17 @@ class SnapshotsRequestTablePlan:
         ----------
         snapshots_parameters: SnapshotsLookupParameters
             Snapshots lookup parameters
+        serving_names: list[str]
+            Serving names of the features
 
         Returns
         -------
-        AggSpecEntityIDs
+        str
         """
         parameters_dict = snapshots_parameters.model_dump()
+        parameters_dict["serving_names"] = sorted(serving_names)
         hasher = hashlib.shake_128()
-        hasher.update(json.dumps(parameters_dict).encode("utf-8"))
+        hasher.update(json.dumps(parameters_dict, sort_keys=True).encode("utf-8"))
         return hasher.hexdigest(8)
 
     def construct_request_table_ctes(
@@ -150,13 +161,17 @@ class SnapshotsRequestTablePlan:
         )
         distinct_point_in_time_to_adjusted_expr = expressions.select(
             quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+            *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
             expressions.alias_(
                 adjusted_point_in_time_expr,
                 InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME,
                 quoted=True,
             ),
         ).from_(
-            expressions.select(quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+            expressions.select(
+                quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
+            )
             .distinct()
             .from_(expressions.Table(this=quoted_identifier(request_table_name)))
             .subquery()
@@ -167,6 +182,7 @@ class SnapshotsRequestTablePlan:
         distinct_adjusted_point_in_time_expr = (
             expressions.select(
                 quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
                 quoted_identifier(InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME),
             )
             .distinct()

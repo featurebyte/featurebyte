@@ -67,7 +67,7 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             self.request_table_plan.add_aggregation_spec(aggregation_spec)
         else:
             self.snapshots_request_table_plan.add_snapshots_parameters(
-                aggregation_spec.parameters.snapshots_parameters
+                aggregation_spec.parameters.snapshots_parameters, aggregation_spec.serving_names
             )
 
     def update_aggregation_table_expr(
@@ -225,7 +225,9 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         spec = specs[0]
         snapshots_parameters = spec.parameters.snapshots_parameters
         assert snapshots_parameters is not None
-        snapshots_req = self.snapshots_request_table_plan.get_entry(snapshots_parameters)
+        snapshots_req = self.snapshots_request_table_plan.get_entry(
+            snapshots_parameters, spec.serving_names
+        )
 
         # Lookup the current snapshots for each distinct adjusted point in time and perform
         # as-at aggregation
@@ -240,13 +242,25 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             .join(
                 spec.source_expr.subquery(alias="SNAPSHOTS"),
                 join_type="inner",
-                on=expressions.EQ(
-                    this=get_qualified_column_identifier(
-                        InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME, "REQ"
+                on=expressions.and_(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME, "REQ"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            snapshots_parameters.snapshot_datetime_column, "SNAPSHOTS"
+                        ),
                     ),
-                    expression=get_qualified_column_identifier(
-                        snapshots_parameters.snapshot_datetime_column, "SNAPSHOTS"
-                    ),
+                    *[
+                        expressions.EQ(
+                            this=get_qualified_column_identifier(serving_name, "REQ"),
+                            expression=get_qualified_column_identifier(
+                                key,
+                                "SNAPSHOTS",
+                            ),
+                        )
+                        for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
+                    ],
                 ),
             )
         )
@@ -259,10 +273,10 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             )
         ] + [
             GroupbyKey(
-                expr=get_qualified_column_identifier(key, "SNAPSHOTS"),
+                expr=get_qualified_column_identifier(serving_name, "REQ"),
                 name=serving_name,
             )
-            for (key, serving_name) in zip(spec.parameters.keys, spec.serving_names)
+            for serving_name in spec.serving_names
         ]
         value_by = (
             GroupbyKey(
@@ -310,7 +324,6 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             serving_names=spec.serving_names,
             aggregated_column_names=aggregated_column_names,
             distinct_by_point_in_time_table_name=snapshots_req.distinct_adjusted_point_in_time_table,
-            join_on_serving_names=False,
         )
 
         return LeftJoinableSubquery(
