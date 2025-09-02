@@ -2,35 +2,26 @@ FROM python:3.10.16-slim AS builder
 
 # Increase PIP read timeout to 120 seconds to avoid timeout issues
 ENV PIP_DEFAULT_TIMEOUT=120
+ENV UV_LINK_MODE=copy
 
 # install build tools
 RUN apt-get update && \
     apt-get install -y build-essential curl libsasl2-dev libkrb5-dev git pkg-config libmariadb-dev && \
     apt-get clean
 
-WORKDIR /app
-COPY pyproject.toml poetry.lock /app/
 
 # Installing featurebyte dependencies
-RUN pip install poetry==1.8.1 && \
-    python -m venv /opt/venv && \
-    poetry config virtualenvs.create false && \
-    . /opt/venv/bin/activate && \
-    poetry install -n --extras=server --without dev,docs,lint
+RUN pip install uv==0.7.3 && \
+    uv sync
 
-# Moving featurebyte source code
-COPY ./featurebyte /app/featurebyte
-COPY ./README.md /app/README.md
-COPY ./LICENSE /app/LICENSE
+WORKDIR /app
+COPY . /app
 
-RUN . /opt/venv/bin/activate && \
-    poetry build && \
-    pip install dist/*.whl
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-dev --locked
 
 
 FROM python:3.10.16-slim AS runner
-
-ARG USER_HOME=/app
 
 # Add runtime user and group and set permissions appropriately
 RUN groupadd -g 1000 runnergroup -o
@@ -40,9 +31,9 @@ RUN apt-get update && \
     apt-get install -y libsasl2-dev libsasl2-modules-gssapi-mit wkhtmltopdf gosu curl libkrb5-dev krb5-user && \
     apt-get clean
 
-WORKDIR $USER_HOME
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:${PATH}"
+WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
 
 ## Copy script
 COPY ./docker/entrypoint.sh /docker-entrypoint.sh
