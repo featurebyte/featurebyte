@@ -297,6 +297,7 @@
                     "serving_names": [
                         "gender"
                     ],
+                    "snapshots_parameters": null,
                     "value_by": null
                 },
                 "type": "aggregate_as_at"

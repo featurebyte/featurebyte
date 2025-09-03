@@ -1777,6 +1777,7 @@ def snowflake_snapshots_table_with_entity_fixture(
     snowflake_snapshots_table,
     cust_id_entity,
     transaction_entity,
+    another_entity,
     mock_api_object_cache,
     mock_detect_and_update_column_dtypes,
     patch_initialize_entity_dtype,
@@ -1787,6 +1788,7 @@ def snowflake_snapshots_table_with_entity_fixture(
     _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
     snowflake_snapshots_table.store_id.as_entity(cust_id_entity.name)
     snowflake_snapshots_table.col_int.as_entity(transaction_entity.name)
+    snowflake_snapshots_table.col_binary.as_entity(another_entity.name)
     yield snowflake_snapshots_table
 
 

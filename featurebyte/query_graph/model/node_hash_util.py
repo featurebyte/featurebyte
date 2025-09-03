@@ -55,6 +55,14 @@ def _exclude_snapshots_datetime_join_keys_from_parameters(
     return node_parameters
 
 
+def _exclude_snapshots_parameters_from_asat_parameters(
+    node_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    if node_parameters.get("snapshots_parameters") is None:
+        node_parameters.pop("snapshots_parameters", None)
+    return node_parameters
+
+
 def exclude_aggregation_and_lookup_node_timestamp_metadata(
     node_type: NodeType, node_parameters: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -89,6 +97,7 @@ def exclude_aggregation_and_lookup_node_timestamp_metadata(
 
     if node_type in {NodeType.AGGREGATE_AS_AT, NodeType.FORWARD_AGGREGATE_AS_AT}:
         _exclude_timestamp_metadata_from_scd_base_parameters(node_parameters)
+        _exclude_snapshots_parameters_from_asat_parameters(node_parameters)
     return node_parameters
 
 

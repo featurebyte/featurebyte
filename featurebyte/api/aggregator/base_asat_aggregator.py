@@ -5,10 +5,11 @@ This module contains as at aggregator base class
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import List, Optional, Type, cast
+from typing import List, Optional, Type
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.view import View
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.enum import AggFunc
@@ -50,11 +51,18 @@ class BaseAsAtAggregator(BaseAggregator):
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
-        view = cast(SCDView, self.view)
+        if isinstance(self.view, SCDView):
+            forbidden_key = self.view.natural_key_column
+            forbidden_key_name = "Natural key column"
+        else:
+            assert isinstance(self.view, SnapshotsView)
+            forbidden_key = self.view.snapshot_id_column
+            forbidden_key_name = "Snapshot ID column"
+
         for key in self.keys:
-            if key == view.natural_key_column:
+            if key == forbidden_key:
                 raise ValueError(
-                    "Natural key column cannot be used as a groupby key in aggregate_asat"
+                    f"{forbidden_key_name} cannot be used as a groupby key in aggregate_asat"
                 )
 
         if offset is not None:

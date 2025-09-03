@@ -7,8 +7,9 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
+from featurebyte import TimeInterval
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.node.generic import AggregateAsAtParameters
+from featurebyte.query_graph.node.generic import AggregateAsAtParameters, SnapshotsLookupParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
@@ -16,6 +17,8 @@ from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
     ForwardAggregateAsAtSpec,
 )
 from featurebyte.query_graph.sql.specs import AggregationSource
+from tests.unit.query_graph.util import get_combined_aggregation_expr_from_aggregator
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
@@ -217,6 +220,35 @@ def forward_aggregation_spec_with_offset(
         serving_names_mapping=None,
         parameters=parameters,
         aggregation_source=scd_aggregation_source,
+        entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
+        agg_result_name_include_serving_names=True,
+    )
+
+
+@pytest.fixture
+def aggregation_spec_with_snapshots_parameters(entity_id):
+    node_parameters = AggregateAsAtParameters(
+        keys=["cust_id"],
+        serving_names=["serving_cust_id"],
+        parent="value",
+        agg_func="sum",
+        effective_timestamp_column="snapshot_datetime_column",
+        name="asat_feature",
+        entity_ids=[entity_id],
+        snapshots_parameters=SnapshotsLookupParameters(
+            snapshot_datetime_column="snapshot_datetime_column",
+            time_interval=TimeInterval(unit="DAY", value=1),
+        ),
+    )
+    source_expr = select("*").from_("SNAPSHOTS_TABLE")
+    return AggregateAsAtSpec(
+        node_name="aggregate_as_at_1",
+        feature_name=node_parameters.name,
+        serving_names=["serving_cust_id"],
+        serving_names_mapping=None,
+        parameters=node_parameters,
+        aggregation_source=AggregationSource(expr=source_expr, query_node_name="input_1"),
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
@@ -715,3 +747,34 @@ def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset
         """
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
+
+
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "snapshots",
+    ],
+)
+def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source_info):
+    """
+    Test lookup aggregator for snapshots table
+    """
+    test_case_mapping = {
+        "snapshots": "aggregation_spec_with_snapshots_parameters",
+    }
+    fixture_name = test_case_mapping[test_case_name]
+    fixture_obj = request.getfixturevalue(fixture_name)
+    if isinstance(fixture_obj, list):
+        agg_specs = fixture_obj
+    else:
+        agg_specs = [fixture_obj]
+
+    aggregator = AsAtAggregator(source_info=source_info)
+    for agg_spec in agg_specs:
+        aggregator.update(agg_spec)
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
+    assert_equal_with_expected_fixture(
+        result_expr.sql(pretty=True),
+        f"tests/fixtures/aggregator/expected_asat_aggregator_{test_case_name}.sql",
+        update_fixture=update_fixtures,
+    )

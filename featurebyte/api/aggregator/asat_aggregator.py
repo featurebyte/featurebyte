@@ -4,7 +4,7 @@ This module contains as at aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from typeguard import typechecked
 
@@ -12,10 +12,13 @@ from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.view import View
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.query_graph.node.generic import SnapshotsLookupParameters
 from featurebyte.typing import OptionalScalar
 
 
@@ -26,7 +29,7 @@ class AsAtAggregator(BaseAsAtAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SCDView]
+        return [SCDView, SnapshotsView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -93,8 +96,7 @@ class AsAtAggregator(BaseAsAtAggregator):
             skip_fill_na=skip_fill_na,
         )
 
-        view = cast(SCDView, self.view)
-        node_params = {
+        node_params: dict[str, Any] = {
             "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
@@ -104,8 +106,22 @@ class AsAtAggregator(BaseAsAtAggregator):
             "entity_ids": self.entity_ids,
             "offset": offset,
             "backward": backward,
-            **view.get_common_scd_parameters().model_dump(),
         }
+        if isinstance(self.view, SCDView):
+            node_params.update(**self.view.get_common_scd_parameters().model_dump())
+        else:
+            assert isinstance(self.view, SnapshotsView)
+            snapshots_lookup_parameters = SnapshotsLookupParameters(
+                snapshot_datetime_column=self.view.snapshot_datetime_column,
+                time_interval=self.view.time_interval,
+                snapshot_datetime_metadata=DBVarTypeMetadata(
+                    timestamp_schema=self.view.snapshot_datetime_schema
+                ),
+                feature_job_setting=self.view.default_feature_job_setting,
+            ).model_dump()
+            node_params["effective_timestamp_column"] = self.view.snapshot_datetime_column
+            node_params["snapshots_parameters"] = snapshots_lookup_parameters
+
         asat_node = self.view.graph.add_operation(
             node_type=NodeType.AGGREGATE_AS_AT,
             node_params=node_params,

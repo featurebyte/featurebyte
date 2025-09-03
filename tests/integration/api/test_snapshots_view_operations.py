@@ -82,3 +82,27 @@ def test_lookup_features(snapshots_table):
     expected = preview_params.copy()
     expected["snapshot_lookup_feature"] = [0.06, 0.11]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+
+
+def test_aggregate_as_at_feature(snapshots_table):
+    """
+    Test that aggregate as at feature can be created from SnapshotsView
+    """
+    view = snapshots_table.get_view()
+    df = view.preview()
+    agg_feature = view.groupby("user_id_col").aggregate_asat(
+        method="sum",
+        value_column="value_col",
+        feature_name="value_col_by_user_id_asat",
+    )
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": dt,
+            "üser id": 3,
+        }
+        for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
+    ])
+    feature_list = FeatureList([agg_feature], "test_feature_list")
+    expected = preview_params.copy()
+    expected["value_col_by_user_id_asat"] = [9.06, 5.11]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
