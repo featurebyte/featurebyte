@@ -304,16 +304,25 @@ class ObservationTableService(
             If the use case is not valid.
         """
         use_case: Optional[UseCaseModel] = None
+
+        entity_id_to_name_mapping = {}
+        async for entity in self.entity_service.list_documents_as_dict_iterator(
+            projection={"_id": 1, "name": 1}
+        ):
+            entity_id_to_name_mapping[entity["_id"]] = entity["name"]
+
+        def _get_entity_names(entity_ids: List[PydanticObjectId]) -> str:
+            return ", ".join([
+                entity_id_to_name_mapping.get(entity_id, "Unknown Entity")
+                for entity_id in entity_ids
+            ])
+
         if data.use_case_id is not None:
             # Check if the use case document exists when provided.
             use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
             if data.context_id is not None:
                 raise ObservationTableInvalidContextError(
                     "Context should not be specified if use case is specified."
-                )
-            if data.primary_entity_ids:
-                raise ObservationTableInvalidContextError(
-                    "Primary entities should not be specified if use case is specified."
                 )
             data.context_id = use_case.context_id
 
@@ -322,9 +331,10 @@ class ObservationTableService(
             # validation once additional information such as request schema are available in the
             # context.
             context = await self.context_service.get_document(document_id=data.context_id)
-            if data.primary_entity_ids:
+            if data.primary_entity_ids and data.primary_entity_ids != context.primary_entity_ids:
                 raise ObservationTableInvalidContextError(
-                    "Primary entities should not be specified if context is specified."
+                    f"Specified primary entity ({_get_entity_names(data.primary_entity_ids)}) does not match "
+                    f"context primary entity ({_get_entity_names(context.primary_entity_ids)})."
                 )
             data.primary_entity_ids = context.primary_entity_ids
 
