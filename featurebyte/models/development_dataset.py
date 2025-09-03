@@ -34,6 +34,7 @@ class DevelopmentDatasetStatus(StrEnum):
         "Sampling tables and statistics generated; development tables not yet created.",
     )
     ACTIVE = "Active", "Development tables mapped to source tables."
+    EMPTY = "Empty", "No development table mapped to source tables."
 
 
 class DevelopmentDatasetSourceType(StrEnum):
@@ -117,6 +118,13 @@ class DevelopmentDatasetModel(FeatureByteCatalogBaseDocumentModel):
                     "Both development_plan_id and observation_table_id should be null "
                     "when source_type is SOURCE_TABLES."
                 )
+        return self
+
+    @model_validator(mode="after")
+    def _normalize_status(self) -> "DevelopmentDatasetModel":
+        # If status is set to ACTIVE but there are no tables, force EMPTY
+        if self.status == DevelopmentDatasetStatus.ACTIVE and not self.development_tables:
+            self.status = DevelopmentDatasetStatus.EMPTY
         return self
 
     @field_validator("development_tables", mode="after")
