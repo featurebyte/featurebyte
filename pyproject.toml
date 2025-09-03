@@ -57,7 +57,7 @@ dependencies = [
   "python-multipart",
   "requests",
   "rich",
-  "sqlglot",
+  "sqlglot~=25.0", # Breaking change
   "typeguard",
   "typer",
   "typing-extensions",
