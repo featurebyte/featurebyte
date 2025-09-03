@@ -78,7 +78,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):

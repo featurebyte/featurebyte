@@ -1426,7 +1426,7 @@ class BaseSchemaInitializer(ABC):
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
         items = self._sort_sql_objects(items)
         for item in items:
-            logger.debug(f'Registering {item["identifier"]}')
+            logger.debug(f"Registering {item['identifier']}")
             async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
                 query = await f_handle.read()
             await self.session.execute_query(query)

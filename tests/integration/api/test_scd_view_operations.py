@@ -119,14 +119,14 @@ async def test_scd_join_small(session, data_source, source_type, config):
     table_name = f"{table_prefix}_EVENT"
     await session.register_table(table_name, df_events)
     await session.execute_query(
-        f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
+        f"UPDATE {table_name} SET {_quote('ts')} = NULL WHERE {_quote('event_id')} = 4"
     )
 
     # Register scd table
     table_name = f"{table_prefix}_SCD"
     await session.register_table(table_name, df_scd)
     await session.execute_query(
-        f'UPDATE {table_name} SET {_quote("effective_ts")} = NULL WHERE {_quote("scd_value")} = 3'
+        f"UPDATE {table_name} SET {_quote('effective_ts')} = NULL WHERE {_quote('scd_value')} = 3"
     )
 
     event_source_table = data_source.get_source_table(

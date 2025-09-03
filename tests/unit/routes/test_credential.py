@@ -65,7 +65,7 @@ class TestCredentialApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             payload["feature_store_id"] = feature_store["_id"]
             yield payload
 

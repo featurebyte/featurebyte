@@ -125,5 +125,5 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
         for i in range(2):
             data = self.payload.copy()
             data["_id"] = ObjectId()
-            data["name"] = f'{self.payload["name"]}_{i}'
+            data["name"] = f"{self.payload['name']}_{i}"
             yield PeriodicTask(**data).json_dict()

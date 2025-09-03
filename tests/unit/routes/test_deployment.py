@@ -103,7 +103,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             feat_list_payload = feature_list_payload.copy()
             feature_list_id = str(ObjectId())
             feat_list_payload["_id"] = feature_list_id
-            feat_list_payload["name"] = f'{feat_list_payload["name"]}_{feature_list_id}'
+            feat_list_payload["name"] = f"{feat_list_payload['name']}_{feature_list_id}"
             feat_list_payload["feature_ids"] = [new_feature_id]
             feat_list_payload["feature_list_namespace_id"] = str(ObjectId())
             response = api_client.post("/feature_list", json=feat_list_payload)
@@ -113,7 +113,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["feature_list_id"] = feature_list_id
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     def update_catalog_online_store_id(self, api_client, catalog_id):

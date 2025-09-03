@@ -313,9 +313,9 @@ class DecomposePointState:
                 if source_column.name == node.parameters.entity_column:
                     aggregation_info.primary_entity_dtypes = [source_column.dtype]
                     break
-            assert (
-                len(aggregation_info.primary_entity_dtypes) == 1
-            ), "Primary entity dtype not found"
+            assert len(aggregation_info.primary_entity_dtypes) == 1, (
+                "Primary entity dtype not found"
+            )
 
         if isinstance(node, RequestColumnNode):
             # request columns introduced by request column node
