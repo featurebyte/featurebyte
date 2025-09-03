@@ -104,7 +104,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     def test_create_422__batch_request_table_failed_validation_check(

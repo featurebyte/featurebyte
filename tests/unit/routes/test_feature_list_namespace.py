@@ -80,7 +80,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         for i in range(3):
             feature_list_payload = feature_list_payload.copy()
             feature_list_payload["_id"] = str(ObjectId())
-            feature_list_payload["name"] = f'{feature_list_payload["name"]}_{i}'
+            feature_list_payload["name"] = f"{feature_list_payload['name']}_{i}"
             yield feature_list_payload
 
     @pytest_asyncio.fixture

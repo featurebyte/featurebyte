@@ -426,9 +426,9 @@ async def check_get_batch_features_feature_table(
         # for spark based data source, ensure location remain the same after populating the table
         df = await session.execute_query(f"DESCRIBE EXTENDED {output_table_name}")
         table_location = df.data_type[df.col_name == "Location"].iloc[0]
-        assert (
-            table_location == original_table_location
-        ), "Table location should remain the same after populating the table"
+        assert table_location == original_table_location, (
+            "Table location should remain the same after populating the table"
+        )
 
 
 async def check_concurrent_online_store_table_updates(

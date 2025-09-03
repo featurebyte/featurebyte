@@ -407,9 +407,7 @@ def test_catalog__update_name(new_catalog):
     another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
     with pytest.raises(RecordRetrievalException) as exc:
         Catalog.get("CreditCard")
-    expected_msg = (
-        'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
-    )
+    expected_msg = 'Catalog (name: "CreditCard") not found. Please save the Catalog object first.'
     assert expected_msg in str(exc.value)
     assert another_catalog.name == "CreditCard"
     another_catalog.update_name("creditcard")
@@ -446,9 +444,7 @@ def test_catalog__update_online_store(new_catalog):
     another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
     with pytest.raises(RecordRetrievalException) as exc:
         Catalog.get("CreditCard")
-    expected_msg = (
-        'Catalog (name: "CreditCard") not found. ' "Please save the Catalog object first."
-    )
+    expected_msg = 'Catalog (name: "CreditCard") not found. Please save the Catalog object first.'
     assert expected_msg in str(exc.value)
     with pytest.raises(AssertionError) as exc:
         another_catalog.update_online_store("test_online_store")

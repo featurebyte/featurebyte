@@ -765,9 +765,9 @@ class FeatureTableCacheService:
         if progress_callback:
             await progress_callback(1, "Checking feature table cache status")
 
-        assert (
-            observation_table.has_row_index
-        ), "Observation Tables without row index are not supported"
+        assert observation_table.has_row_index, (
+            "Observation Tables without row index are not supported"
+        )
 
         cached_definitions = await self.feature_table_cache_metadata_service.get_cached_definitions(
             observation_table_id=observation_table.id

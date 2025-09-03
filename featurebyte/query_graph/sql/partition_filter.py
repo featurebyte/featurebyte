@@ -87,9 +87,9 @@ def get_partition_filter(
 
     from_timestamp = partition_column_filter.from_timestamp
     to_timestamp = partition_column_filter.to_timestamp
-    assert (
-        from_timestamp is not None or to_timestamp is not None
-    ), "At least one of from_timestamp or to_timestamp must be provided"
+    assert from_timestamp is not None or to_timestamp is not None, (
+        "At least one of from_timestamp or to_timestamp must be provided"
+    )
 
     if isinstance(partition_column, str):
         partition_column_expr = quoted_identifier(partition_column)

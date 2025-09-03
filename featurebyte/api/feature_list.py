@@ -1245,8 +1245,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> my_feature_list = catalog.get_feature_list(<feature_list_name>)  # doctest: +SKIP
         >>> # Decide the name of the historical feature table
         >>> training_table_name = (  # doctest: +SKIP
-        ...     "2y Features for Customer Purchase next 2w "
-        ...     "up to end 22 with Improved Feature List"
+        ...     "2y Features for Customer Purchase next 2w up to end 22 with Improved Feature List"
         ... )
         >>> # Compute the historical feature table
         >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP

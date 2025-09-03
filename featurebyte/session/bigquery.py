@@ -718,7 +718,7 @@ class BigQuerySchemaInitializer(BaseSchemaInitializer):
         items = self._sort_sql_objects(items)
         session = cast(BigQuerySession, self.session)
         for item in items:
-            logger.debug(f'Registering {item["identifier"]}')
+            logger.debug(f"Registering {item['identifier']}")
             async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
                 query = await f_handle.read()
                 query = query.format(project=session.project_name, dataset=session.dataset_name)

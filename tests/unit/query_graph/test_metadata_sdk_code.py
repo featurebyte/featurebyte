@@ -161,7 +161,7 @@ def test_code_generator():
         statements=[(VariableNameStr("event_table"), ClassEnum.EVENT_TABLE(name="event_table"))],
     )
     assert code_gen.generate(remove_unused_variables=False).strip() == (
-        "from featurebyte import EventTable\n\n" 'event_table = EventTable(name="event_table")'
+        'from featurebyte import EventTable\n\nevent_table = EventTable(name="event_table")'
     )
 
     code_gen.add_statements(
