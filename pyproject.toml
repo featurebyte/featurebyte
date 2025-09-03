@@ -44,7 +44,7 @@ dependencies = [
   "importlib-metadata",
   "jinja2",
   "lazy-object-proxy",
-  "numpy",
+  "numpy<2", # Pandas <2.2 does not support numpy 2.x
   "orjson",
   "pandas<2", # pickle files in test not compatible with pandas 2.x
   "pillow",
@@ -225,21 +225,6 @@ max-line-length = 150
 [tool.bandit]
 skips = ["B608"]
 
-[tool.coverage.report] # https://coverage.readthedocs.io/en/6.4.1/config.html#run
-exclude_lines = [
-  "pragma: no cover",
-  "if TYPE_CHECKING:",
-  "@overload",
-  "@abstractmethod",
-  "NotImplementedError",
-]
-fail_under = 0  # Do not allow failure but report in Pull Request
-show_missing = true
-
-[tool.coverage.run]
-branch = true
-command_line = "-m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte"
-source = ["featurebyte"]
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false
