@@ -116,7 +116,7 @@ class DevelopmentDatasetService(
         non_existent_table_ids = set(source_table_ids) - found_table_ids
         if non_existent_table_ids:
             raise DocumentNotFoundError(
-                f'Development table source ids not found: {", ".join(map(str, non_existent_table_ids))}'
+                f"Development table source ids not found: {', '.join(map(str, non_existent_table_ids))}"
             )
 
     async def _validate_development_tables(

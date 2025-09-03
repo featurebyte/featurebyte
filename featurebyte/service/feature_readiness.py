@@ -246,9 +246,9 @@ class FeatureReadinessService:
                 update_dict["default_feature_id"] = default_feature["_id"]
                 update_dict["readiness"] = default_feature["readiness"]
         else:
-            assert (
-                document.default_feature_id not in excluded_feature_ids
-            ), "default feature should not be deleted"
+            assert document.default_feature_id not in excluded_feature_ids, (
+                "default feature should not be deleted"
+            )
             # use projection to reduce the amount of data transfer &
             # default feature is used within this function only
             default_feature = await self.feature_service.get_document_as_dict(
