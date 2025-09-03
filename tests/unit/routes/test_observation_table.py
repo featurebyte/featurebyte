@@ -872,7 +872,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_create_with_context_primary_entities_422(self, test_api_client_persistent):
+    async def test_create_with_context_primary_entities_mismatch_422(
+        self, test_api_client_persistent
+    ):
         """Test create with primary entities and context"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -894,23 +896,32 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert (
             response_dict["detail"]
-            == "Primary entities should not be specified if context is specified."
+            == "Specified primary entity (customer) does not match context primary entity (transaction)."
         )
 
     @pytest.mark.asyncio
-    async def test_create_with_use_case_primary_entities_422(self, test_api_client_persistent):
+    async def test_create_with_use_case_primary_entities_mismatch_422(
+        self, test_api_client_persistent
+    ):
         """Test create with primary_entities and use case"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         payload = copy.deepcopy(self.payload)
         payload["use_case_id"] = "64dc9461ad86dba795606745"
-        response = self.post(test_api_client, payload)
+        payload["primary_entity_ids"] = ["63f94ed6ea1f050131379204"]
+
+        with patch(
+            "featurebyte.service.observation_table.ObservationTableService._validate_columns"
+        ) as mock__validate_columns:
+            mock__validate_columns.return_value = ObjectId()
+            response = self.post(test_api_client, payload)
+
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert (
             response_dict["detail"]
-            == "Primary entities should not be specified if use case is specified."
+            == "Specified primary entity (transaction) does not match context primary entity (customer)."
         )
 
     @pytest.mark.asyncio
