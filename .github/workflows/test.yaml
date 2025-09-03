@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +84,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -145,7 +145,7 @@ jobs:
     env:
       PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -217,7 +217,7 @@ jobs:
     env:
       PYTEST_SPLITS: 1  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -295,7 +295,7 @@ jobs:
     env:
       PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -399,7 +399,7 @@ jobs:
     env:
       PYTEST_SPLITS: 5  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -467,7 +467,7 @@ jobs:
     env:
       PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -535,7 +535,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -580,7 +580,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: arduino/setup-task@v2
@@ -651,7 +651,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: arduino/setup-task@v2
@@ -684,7 +684,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}

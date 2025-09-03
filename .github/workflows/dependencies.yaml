@@ -30,7 +30,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Checkout branch
@@ -96,7 +96,7 @@ jobs:
   diff-all-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Set up Python
