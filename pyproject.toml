@@ -74,7 +74,9 @@ server = [
   "databricks-sdk",
   "databricks-sql-connector",
   "fastapi",
-  "feast[snowflake,redis,mysql,gcp]",
+  # import changes 'feast.infra.online_stores.contrib'
+  # Change in RepoContents.__init__
+  "feast[snowflake,redis,mysql,gcp]==0.40.1", 
   "featurebyte-freeware",
   "gevent",
   "google-cloud-bigquery",
