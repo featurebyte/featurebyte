@@ -11,7 +11,7 @@ tasks:
       - pyproject.toml
       - uv.lock
     cmds:
-      - uv sync --dev
+      - uv sync --all-groups --all-extras
 
   default:
     desc: "Run ALL the linter checks."

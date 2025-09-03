@@ -16,7 +16,7 @@ tasks:
     deps:
       - task: build-jar
     cmds:
-      - uv sync --all-groups
+      - uv sync --all-groups --all-extras
 
   install-published-featurebyte:
     desc: "Install the published version of the featurebyte SDK"
