@@ -9,11 +9,9 @@ from __future__ import annotations
 import datetime
 import functools
 import os
-from collections import defaultdict
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, AsyncGenerator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
 
 from bson import ObjectId
-from cachetools import TTLCache
 from cachetools.keys import hashkey
 
 from featurebyte.common.utils import dataframe_to_json
@@ -27,6 +25,7 @@ from featurebyte.exception import (
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store_cache import FeatureStoreCacheModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -42,7 +41,9 @@ from featurebyte.schema.feature_store import (
     FeatureStoreShape,
     validate_select_sql,
 )
+from featurebyte.schema.feature_store_cache import FeatureStoreCacheCreate
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_cache import FeatureStoreCacheService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import (
     INTERACTIVE_SESSION_TIMEOUT_SECONDS,
@@ -54,78 +55,48 @@ MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
 )  # 10 million rows, 300 columns
 
-DATABASE_CACHE_MAX_SIZE = 100
-DATABASE_CACHE_TTL_SECONDS = 3600
-
-
-def cache_factory() -> TTLCache[Any, Any]:
-    """
-    Factory function to create a TTLCache instance with specified max size and TTL.
-
-    Returns
-    -------
-    TTLCache[Any, Any]
-    """
-    return TTLCache(maxsize=DATABASE_CACHE_MAX_SIZE, ttl=DATABASE_CACHE_TTL_SECONDS)
-
-
-list_database_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
-list_schema_cache: Dict[ObjectId, TTLCache[Any, list[str]]] = defaultdict(cache_factory)
-list_table_cache: Dict[ObjectId, TTLCache[Any, list[TableSpec]]] = defaultdict(cache_factory)
-list_column_cache: Dict[ObjectId, TTLCache[Any, list[ColumnSpecWithDescription]]] = defaultdict(
-    cache_factory
-)
-table_details_cache: Dict[ObjectId, TTLCache[Any, TableDetails]] = defaultdict(cache_factory)
-
 logger = get_logger(__name__)
 
 
 T = TypeVar("T")
 
 
-def async_cache(
-    cache_dict: Dict[ObjectId, TTLCache[Any, Any]],
-) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
-    """
-    Decorator for async cache lookup and storage that preserves return types.
+def async_cache(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    @functools.wraps(func)
+    async def wrapper(
+        self: FeatureStoreWarehouseService,
+        feature_store: FeatureStoreModel,
+        *args: Any,
+        refresh: bool = True,
+        **kwargs: Any,
+    ) -> T:
+        credentials = await self.session_manager_service.credential_service.get_credentials(
+            user_id=self.session_manager_service.user.id, feature_store=feature_store
+        )
+        keys = hashkey(func.__name__, credentials.id if credentials else None, *args, **kwargs)
+        str_keys = [str(key) for key in keys]
+        query_filter = {"feature_store_id": feature_store.id, "keys": str_keys}
+        cached_results: List[
+            FeatureStoreCacheModel
+        ] = await self.feature_store_cache_service.list_documents(query_filter=query_filter)
+        if cached_results and not refresh:
+            return cast(T, cached_results[0].value)
 
-    Parameters
-    ----------
-    cache_dict: Dict[ObjectId, TTLCache[Any, Any]]
-        Dictionary to store the cache for different feature stores.
+        result = await func(
+            self, feature_store, *args, refresh=refresh, credentials=credentials, **kwargs
+        )
 
-    Returns
-    -------
-    Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]
-        Decorator function that wraps the original function while preserving return type.
-    """
-
-    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
-        @functools.wraps(func)
-        async def wrapper(
-            self: FeatureStoreWarehouseService,
-            feature_store: FeatureStoreModel,
-            *args: Any,
-            refresh: bool = True,
-            **kwargs: Any,
-        ) -> T:
-            if refresh:
-                cache_dict[feature_store.id].clear()
-            credentials = await self.session_manager_service.credential_service.get_credentials(
-                user_id=self.session_manager_service.user.id, feature_store=feature_store
+        await self.feature_store_cache_service.delete_many(query_filter=query_filter)
+        await self.feature_store_cache_service.create_document(
+            data=FeatureStoreCacheCreate(
+                feature_store_id=feature_store.id,
+                keys=str_keys,
+                value=result,
             )
-            key = hashkey(credentials.id if credentials else None, *args, **kwargs)
-            result = cache_dict[feature_store.id].get(key)
-            if result is None:
-                result = await func(
-                    self, feature_store, *args, refresh=refresh, credentials=credentials, **kwargs
-                )
-                cache_dict[feature_store.id][key] = result
-            return result
+        )
+        return result
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 class FeatureStoreWarehouseService:
@@ -139,9 +110,11 @@ class FeatureStoreWarehouseService:
         self,
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
+        feature_store_cache_service: FeatureStoreCacheService,
     ):
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
+        self.feature_store_cache_service = feature_store_cache_service
 
     async def check_user_defined_function_exists(
         self,
@@ -163,7 +136,7 @@ class FeatureStoreWarehouseService:
         )
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
-    @async_cache(list_database_cache)
+    @async_cache
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
@@ -193,7 +166,7 @@ class FeatureStoreWarehouseService:
         )
         return await db_session.list_databases()
 
-    @async_cache(list_schema_cache)
+    @async_cache
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
@@ -278,7 +251,7 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error:
             return False
 
-    @async_cache(list_table_cache)
+    @async_cache
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
@@ -334,7 +307,7 @@ class FeatureStoreWarehouseService:
             table for table in tables if self._is_visible_table(table.name, is_featurebyte_schema)
         ]
 
-    @async_cache(list_column_cache)
+    @async_cache
     async def list_columns(
         self,
         feature_store: FeatureStoreModel,
@@ -391,7 +364,7 @@ class FeatureStoreWarehouseService:
         }
         return list(table_schema.values())
 
-    @async_cache(table_details_cache)
+    @async_cache
     async def get_table_details(
         self,
         feature_store: FeatureStoreModel,
@@ -644,11 +617,9 @@ class FeatureStoreWarehouseService:
         feature_store_id: ObjectId
             Feature store ID for which to clear the cache
         """
-        list_database_cache[feature_store_id].clear()
-        list_schema_cache[feature_store_id].clear()
-        list_table_cache[feature_store_id].clear()
-        list_column_cache[feature_store_id].clear()
-        table_details_cache[feature_store_id].clear()
+        await self.feature_store_cache_service.delete_many(
+            query_filter={"feature_store_id": feature_store_id}
+        )
 
 
 class NonInteractiveFeatureStoreWarehouseService(FeatureStoreWarehouseService):
