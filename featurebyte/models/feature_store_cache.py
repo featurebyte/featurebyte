@@ -2,9 +2,10 @@
 FeatureStoreCache document model
 """
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pymongo
+from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -21,7 +22,12 @@ class FeatureStoreCacheModel(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    keys: List[str]
+    key: str
+    function_name: str
+    database_name: Optional[str] = Field(None)
+    schema_name: Optional[str] = Field(None)
+    table_name: Optional[str] = Field(None)
+
     value: FeatureStoreCachedValue
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
@@ -31,8 +37,11 @@ class FeatureStoreCacheModel(FeatureByteBaseDocumentModel):
 
         collection_name = "feature_store_cache"
         unique_constraints = []
-        indexes = [
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_store_id"),
+            pymongo.operations.IndexModel("database_name"),
+            pymongo.operations.IndexModel("schema_name"),
+            pymongo.operations.IndexModel("table_name"),
             pymongo.operations.IndexModel("key"),
             pymongo.operations.IndexModel("created_at", expireAfterSeconds=3600),
         ]

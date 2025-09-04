@@ -2,7 +2,9 @@
 FeatureStoreCacheCreate schema
 """
 
-from typing import List
+from typing import Optional
+
+from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store_cache import FeatureStoreCachedValue
@@ -14,5 +16,9 @@ class FeatureStoreCacheCreate(FeatureByteBaseModel):
     """
 
     feature_store_id: PydanticObjectId
-    keys: List[str]
+    key: str
+    function_name: str
+    database_name: Optional[str] = Field(None)
+    schema_name: Optional[str] = Field(None)
+    table_name: Optional[str] = Field(None)
     value: FeatureStoreCachedValue

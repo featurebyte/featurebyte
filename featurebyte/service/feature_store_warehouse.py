@@ -73,25 +73,28 @@ def async_cache(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
         credentials = await self.session_manager_service.credential_service.get_credentials(
             user_id=self.session_manager_service.user.id, feature_store=feature_store
         )
-        keys = hashkey(func.__name__, credentials.id if credentials else None, *args, **kwargs)
-        str_keys = [str(key) for key in keys]
-        query_filter = {"feature_store_id": feature_store.id, "keys": str_keys}
-        cached_results: List[
-            FeatureStoreCacheModel
-        ] = await self.feature_store_cache_service.list_documents(query_filter=query_filter)
-        if cached_results and not refresh:
-            return cast(T, cached_results[0].value)
+        key = str(hashkey(func.__name__, credentials.id if credentials else None, *args, **kwargs))
+        query_filter = {"feature_store_id": feature_store.id, "key": key}
+
+        if not refresh:
+            # try to get from cache
+            cached_results: List[
+                FeatureStoreCacheModel
+            ] = await self.feature_store_cache_service.list_documents(query_filter=query_filter)
+            if cached_results:
+                return cast(T, cached_results[0].value)
 
         result = await func(
             self, feature_store, *args, refresh=refresh, credentials=credentials, **kwargs
         )
-
         await self.feature_store_cache_service.delete_many(query_filter=query_filter)
         await self.feature_store_cache_service.create_document(
             data=FeatureStoreCacheCreate(
                 feature_store_id=feature_store.id,
-                keys=str_keys,
+                function_name=func.__name__,
+                key=key,
                 value=result,
+                **kwargs,
             )
         )
         return result
@@ -140,6 +143,7 @@ class FeatureStoreWarehouseService:
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
+        *,
         refresh: bool = True,
         credentials: Optional[CredentialModel] = None,
     ) -> List[str]:
@@ -170,8 +174,9 @@ class FeatureStoreWarehouseService:
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
-        database_name: str,
+        *,
         refresh: bool = True,
+        database_name: str,
         credentials: Optional[CredentialModel] = None,
     ) -> List[str]:
         """
@@ -255,9 +260,10 @@ class FeatureStoreWarehouseService:
     async def list_tables(
         self,
         feature_store: FeatureStoreModel,
+        *,
+        refresh: bool = True,
         database_name: str,
         schema_name: str,
-        refresh: bool = True,
         credentials: Optional[CredentialModel] = None,
     ) -> List[TableSpec]:
         """
@@ -311,10 +317,11 @@ class FeatureStoreWarehouseService:
     async def list_columns(
         self,
         feature_store: FeatureStoreModel,
+        *,
+        refresh: bool = True,
         database_name: str,
         schema_name: str,
         table_name: str,
-        refresh: bool = True,
         credentials: Optional[CredentialModel] = None,
     ) -> List[ColumnSpecWithDescription]:
         """
@@ -368,10 +375,11 @@ class FeatureStoreWarehouseService:
     async def get_table_details(
         self,
         feature_store: FeatureStoreModel,
+        *,
+        refresh: bool = True,
         database_name: str,
         schema_name: str,
         table_name: str,
-        refresh: bool = True,
         credentials: Optional[CredentialModel] = None,
     ) -> TableDetails:
         """
