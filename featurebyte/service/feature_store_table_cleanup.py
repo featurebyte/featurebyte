@@ -237,7 +237,7 @@ class FeatureStoreTableCleanupService:
                 await self.warehouse_table_service.drop_table_with_session(
                     session=db_session,
                     warehouse_table=warehouse_table,
-                    exists=True,
+                    if_exists=True,
                 )
                 cleanup_count += 1
                 logger.info(

@@ -139,11 +139,11 @@ async def test_run_cleanup_with_drop_failure_increments_counter(
         # Run cleanup - should not raise exception even though drop fails
         await service.run_cleanup(feature_store_id=feature_store.id)
 
-        # Verify drop_table_with_session was called with correct parameters including exists=True
+        # Verify drop_table_with_session was called with correct parameters including if_exists=True
         mock_drop.assert_called_once_with(
             session=mock_session_manager,
             warehouse_table=expired_warehouse_table,
-            exists=True,
+            if_exists=True,
         )
 
         # After cleanup - document should still exist with incremented failure counter
@@ -191,11 +191,11 @@ async def test_run_cleanup_force_delete_after_max_failures(
         # Run cleanup - this should force delete the document
         await service.run_cleanup(feature_store_id=feature_store.id)
 
-        # Verify drop_table_with_session was called with correct parameters including exists=True
+        # Verify drop_table_with_session was called with correct parameters including if_exists=True
         mock_drop.assert_called_once_with(
             session=mock_session_manager,
             warehouse_table=warehouse_table,
-            exists=True,
+            if_exists=True,
         )
 
         # After cleanup - document should be force deleted

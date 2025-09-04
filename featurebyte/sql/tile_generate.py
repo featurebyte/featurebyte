@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.system_metrics import SqlQueryMetrics, SqlQueryType, TileComputeMetrics
 from featurebyte.models.tile import TileType
+from featurebyte.models.warehouse_table import WarehouseTableModel
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -51,6 +52,7 @@ class TileComputeSuccess:
     computed_tiles_table_name: str
     tile_sql: str
     tile_compute_metrics: TileComputeMetrics
+    warehouse_table_model: WarehouseTableModel
 
 
 TileComputeResult = TileComputeSuccess | TileComputeError
@@ -86,10 +88,9 @@ class TileGenerate(TileCommon):
                 tile_sql=tile_compute_result.tile_sql,
             )
         finally:
-            await self._session.drop_table(
-                tile_compute_result.computed_tiles_table_name,
-                schema_name=self._session.schema_name,
-                database_name=self._session.database_name,
+            await self.warehouse_table_service.drop_table_with_session(
+                session=self._session,
+                warehouse_table=tile_compute_result.warehouse_table_model,
                 if_exists=True,
             )
         return tile_compute_result.tile_compute_metrics
@@ -143,7 +144,7 @@ class TileGenerate(TileCommon):
         computed_tiles_table_name = f"__TEMP_TILE_TABLE_{ObjectId()}".upper()
         try:
             query_metadata = QueryMetadata()
-            await self.warehouse_table_service.create_table_as_with_session(
+            warehouse_table_model = await self.warehouse_table_service.create_table_as_with_session(
                 session=self._session,
                 feature_store_id=self.feature_store_id,
                 tag=temp_tile_tables_tag,
@@ -170,6 +171,7 @@ class TileGenerate(TileCommon):
                     view_cache_seconds=view_cache_seconds,
                     compute_seconds=compute_seconds,
                 ),
+                warehouse_table_model=warehouse_table_model,
             )
         except Exception:
             if raise_on_error:
