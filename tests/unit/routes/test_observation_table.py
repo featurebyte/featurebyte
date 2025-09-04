@@ -951,6 +951,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["primary_entity_ids"] = None
         payload["context_id"] = None
         payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["purpose"] = "eda"
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
@@ -961,6 +962,13 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+        assert response_dict["purpose"] == "eda"
+
+        # check that use case default eda table is set
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["default_eda_table_id"] == observation_table_id
 
     def test_upload_with_use_case_201(self, test_api_client_persistent):
         """
