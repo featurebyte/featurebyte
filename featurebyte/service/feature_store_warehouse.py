@@ -82,7 +82,7 @@ def async_cache(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
                 FeatureStoreCacheModel
             ] = await self.feature_store_cache_service.list_documents(query_filter=query_filter)
             if cached_results:
-                return cast(T, cached_results[0].value)
+                return cast(T, cached_results[0].value.value)
 
         result = await func(
             self, feature_store, *args, refresh=refresh, credentials=credentials, **kwargs
@@ -91,9 +91,8 @@ def async_cache(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
         await self.feature_store_cache_service.create_document(
             data=FeatureStoreCacheCreate(
                 feature_store_id=feature_store.id,
-                function_name=func.__name__,
                 key=key,
-                value=result,
+                value={"function_name": func.__name__, "value": result},
                 **kwargs,
             )
         )

@@ -17,7 +17,6 @@ class FeatureStoreCacheCreate(FeatureByteBaseModel):
 
     feature_store_id: PydanticObjectId
     key: str
-    function_name: str
     database_name: Optional[str] = Field(None)
     schema_name: Optional[str] = Field(None)
     table_name: Optional[str] = Field(None)

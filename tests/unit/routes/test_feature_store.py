@@ -1389,37 +1389,35 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert cache_records == [
             {
                 "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-                "function_name": "list_databases",
-                "value": ["x"],
+                "value": {"function_name": "list_databases", "value": ["x"]},
             },
             {
                 "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-                "function_name": "list_schemas",
                 "database_name": "X",
-                "value": ["y"],
+                "value": {"function_name": "list_schemas", "value": ["y"]},
             },
             {
                 "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-                "function_name": "list_tables",
                 "database_name": "X",
                 "schema_name": "Y",
-                "value": [
-                    {"name": "a", "description": None},
-                    {"name": "b", "description": None},
-                    {"name": "c", "description": None},
-                ],
+                "value": {
+                    "function_name": "list_tables",
+                    "value": [
+                        {"name": "a", "description": None},
+                        {"name": "b", "description": None},
+                        {"name": "c", "description": None},
+                    ],
+                },
             },
             {
                 "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-                "function_name": "list_schemas",
                 "database_name": "Y",
-                "value": [],
+                "value": {"function_name": "list_schemas", "value": []},
             },
             {
                 "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
-                "function_name": "list_tables",
                 "database_name": "X",
                 "schema_name": "Z",
-                "value": [],
+                "value": {"function_name": "list_tables", "value": []},
             },
         ]
