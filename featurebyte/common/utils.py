@@ -246,12 +246,40 @@ def dataframe_to_json(
     dict[str, Any]
         Dict containing JSON string and type conversions
     """
+    dataframe = dataframe.copy()
     if not skip_prepare:
         prepare_dataframe_for_json(dataframe)
 
     # convert infinity values to string as these gets converted to null
     numeric_cols = dataframe.select_dtypes(include=[np.number]).columns
     dataframe[numeric_cols] = dataframe[numeric_cols].replace({np.inf: "inf", -np.inf: "-inf"})
+
+    # handle binary columns
+    def _binary_to_str(value: Any) -> str:
+        """
+        Convert binary value to string
+
+        Parameters
+        ----------
+        value: Any
+            Value to convert
+
+        Returns
+        -------
+        str
+            Converted string value
+        """
+        if isinstance(value, (bytes, bytearray)):
+            try:
+                return value.decode("utf-8")
+            except UnicodeDecodeError:
+                pass
+
+        # for non utf-8 decodable bytes, convert to hex string
+        return str(value.hex())
+
+    for column in dataframe.select_dtypes(include=[object]).columns:
+        dataframe[column] = dataframe[column].apply(_binary_to_str)
 
     return {
         "data": dataframe.to_json(orient="table", date_unit="ns", double_precision=15),

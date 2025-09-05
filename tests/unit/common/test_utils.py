@@ -2,11 +2,14 @@
 Test helper functions in featurebyte.common.utils
 """
 
+import pickle
+
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pytest
 import toml
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import (
@@ -34,6 +37,10 @@ def data_to_convert_fixture():
         "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
         "c": [f"2020-01-03 12:00:{i:02d}" for i in range(10)],
         "d": [f"2020-01-{i:02d}" for i in range(1, 11)],
+        "binary_string": [f"string_{i}".encode("utf-8") for i in range(10)],
+        "binary_non_string": [
+            pickle.dumps(ObjectId("574b4454ba8c5eb4f98a8f59")) for _ in range(10)
+        ],
     })
     type_conversions = {"b": DBVarType.TIMESTAMP_TZ, "c": DBVarType.TIMESTAMP, "d": DBVarType.DATE}
     return dataframe, type_conversions
@@ -60,6 +67,8 @@ def test_dataframe_to_json(data_to_convert):
     original_df["b"] = pd.to_datetime(original_df["b"])
     original_df["c"] = pd.to_datetime(original_df["c"])
     original_df["d"] = pd.to_datetime(original_df["d"]).apply(lambda x: x.date())
+    original_df["binary_string"] = original_df["binary_string"].astype("str")
+    original_df["binary_non_string"] = original_df["binary_non_string"].apply(lambda x: x.hex())
     assert_frame_equal(output_df, original_df)
 
 

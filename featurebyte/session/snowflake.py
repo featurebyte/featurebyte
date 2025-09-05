@@ -417,6 +417,12 @@ class SnowflakeSession(BaseSession):
             ):
                 # Consider the type as an OBJECT if all elements are None, or a dict.
                 db_type = "OBJECT"
+            elif (
+                dataframe.shape[0] > 0
+                and dataframe[colname].apply(lambda x: x is None or isinstance(x, bytes)).all()
+            ):
+                # Consider the type as a BINARY if all elements are None, or bytes.
+                db_type = "BINARY"
             else:
                 db_type = "VARCHAR"
             schema.append((colname, db_type))

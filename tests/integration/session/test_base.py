@@ -30,6 +30,7 @@ def sample_dataframe():
     Test dataframe
     """
     df = pd.DataFrame({
+        "index": list(range(12)),
         "bool": [False, True] * 6,
         "int": [1] * 10 + [2, 3],
         "float": [1.1] * 10 + [2.2, 3.3],
@@ -42,6 +43,7 @@ def sample_dataframe():
         "float_list": [None] * 10 + [[1.4, 2.5, 3.6], [1.7, 2.8, 3.9]],
         "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
         "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
+        "binary": [None] * 10 + [b"abc", b"def"],
     })
     return truncate_timestamps(df)
 
@@ -51,7 +53,26 @@ async def test_session_fixture(session_without_datasets):
     """
     Setup module
     """
-    await session_without_datasets.register_table("TEST_DATA_TABLE", sample_dataframe())
+    test_df = sample_dataframe()
+    if session_without_datasets.source_type == SourceType.SNOWFLAKE:
+        # register table does not work well with binary data for Snowflake, convert to string first
+        test_df["binary"] = test_df.binary.apply(lambda x: x.decode("utf-8") if x else x)
+        await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
+        # add binary column separately
+        table_fqn = session_without_datasets.get_fully_qualified_table_name("TEST_DATA_TABLE")
+        await session_without_datasets.execute_query(
+            f'CREATE OR REPLACE TABLE {table_fqn} AS SELECT * EXCLUDE ("binary"), TO_BINARY("binary", \'UTF-8\') AS "binary" FROM {table_fqn}'
+        )
+    elif session_without_datasets.source_type == SourceType.BIGQUERY:
+        await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
+        # register table converts binary data to string for BigQuery, convert to bytes
+        table_fqn = session_without_datasets.get_fully_qualified_table_name("TEST_DATA_TABLE")
+        await session_without_datasets.execute_query(
+            f"CREATE OR REPLACE TABLE {table_fqn} AS SELECT * EXCEPT (binary), CAST(binary AS BYTES) AS binary FROM {table_fqn} ORDER BY index"
+        )
+    else:
+        await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
+
     await session_without_datasets.register_table(
         table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(10000))})
     )
@@ -81,7 +102,7 @@ async def test_fetch_empty(test_session):
     df = await session.execute_query(query)
 
     # expect empty dataframe with correct schema
-    assert df.shape == (0, 10)
+    assert df.shape == (0, 12)
     assert df.dtypes.to_dict() == sample_dataframe().dtypes.to_dict()
 
 
@@ -102,6 +123,7 @@ async def test_arrow_schema(test_session):
 
     # expect arrays and dicts to be converted to strings
     expected_schema = pa.schema([
+        pa.field("index", pa.int64()),
         pa.field("bool", pa.bool_()),
         pa.field("int", pa.int64()),
         pa.field("float", pa.float64()),
@@ -112,6 +134,7 @@ async def test_arrow_schema(test_session):
         pa.field("float_list", pa.string()),
         pa.field("string_list", pa.string()),
         pa.field("dict", pa.string()),
+        pa.field("binary", pa.binary()),
     ])
     assert arrow_table.schema == expected_schema
 
@@ -120,6 +143,7 @@ async def test_arrow_schema(test_session):
         field.metadata.get(ARROW_METADATA_DB_VAR_TYPE).decode() for field in arrow_table.schema
     ]
     assert db_var_types == [
+        "INT",
         "BOOL",
         "INT",
         "FLOAT",
@@ -130,6 +154,7 @@ async def test_arrow_schema(test_session):
         "ARRAY",
         "ARRAY",
         "DICT",
+        "BINARY",
     ]
 
 
