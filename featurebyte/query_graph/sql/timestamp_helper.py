@@ -25,6 +25,7 @@ from featurebyte.query_graph.node.generic import SnapshotsDatetimeJoinKey
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.offset import OffsetDirection
 
 
 def convert_timezone(
@@ -187,7 +188,9 @@ def apply_snapshot_adjustment(
     time_interval: TimeInterval,
     feature_job_setting: Optional[CronFeatureJobSetting],
     format_string: Optional[str],
+    offset_size: Optional[int],
     adapter: BaseAdapter,
+    offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
 ) -> Expression:
     """
     Apply snapshot adjustments to a datetime expression including truncation, blind spot window,
@@ -230,6 +233,20 @@ def apply_snapshot_adjustment(
                     adjusted_datetime_expr,
                     blind_spot_window.to_months(),
                 )
+
+    if offset_size is not None:
+        if offset_direction == OffsetDirection.FORWARD:
+            offset_size = offset_size * -1
+        if time_interval.unit.is_fixed_size():
+            adjusted_datetime_expr = adapter.subtract_seconds(
+                adjusted_datetime_expr,
+                offset_size,
+            )
+        else:
+            adjusted_datetime_expr = adapter.subtract_months(
+                adjusted_datetime_expr,
+                offset_size,
+            )
 
     if format_string is not None:
         adjusted_datetime_expr = adapter.format_timestamp(
@@ -308,6 +325,7 @@ def apply_snapshots_datetime_transform(
         time_interval=transform.snapshot_time_interval,
         feature_job_setting=transform.snapshot_feature_job_setting,
         format_string=transform.snapshot_format_string,
+        offset_size=None,
         adapter=adapter,
     )
 

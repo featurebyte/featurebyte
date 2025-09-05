@@ -1137,7 +1137,7 @@ class SnapshotsLookupParameters(FeatureByteBaseModel):
     time_interval: TimeInterval
     snapshot_datetime_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
     feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
-    offset: Optional[CalendarWindow] = Field(default=None)
+    offset_size: Optional[int] = Field(default=None)
 
     @property
     def snapshot_timestamp_schema(self) -> Optional[TimestampSchema]:

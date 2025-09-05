@@ -152,11 +152,13 @@ class SnapshotsRequestTablePlan:
 
         # Distinct point-in-time table: Map distinct POINT_IN_TIME values to snapshot adjusted
         # POINT_IN_TIME values
+        # TODO: handle offset here
         adjusted_point_in_time_expr = apply_snapshot_adjustment(
             datetime_expr=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
             time_interval=snapshots_parameters.time_interval,
             feature_job_setting=snapshots_parameters.feature_job_setting,
             format_string=snapshots_parameters.snapshot_timestamp_format_string,
+            offset_size=None,
             adapter=self.adapter,
         )
         distinct_point_in_time_to_adjusted_expr = expressions.select(

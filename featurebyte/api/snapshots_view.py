@@ -17,6 +17,7 @@ from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import (
     InputNode,
@@ -284,9 +285,14 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         # For joining with SCDView, the parameters are handled in SCDView::_get_join_parameters()
         return {}
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
-        # TODO: support offset
-        _ = offset
+    def get_additional_lookup_parameters(
+        self, offset: Optional[str | CalendarWindow] = None
+    ) -> dict[str, Any]:
+        if offset is not None:
+            assert isinstance(offset, CalendarWindow)
+            offset_size = offset.size
+        else:
+            offset_size = None
         return {
             "snapshots_parameters": {
                 "snapshot_datetime_column": self.snapshot_datetime_column,
@@ -295,5 +301,24 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
                     timestamp_schema=self.snapshot_datetime_schema
                 ),
                 "feature_job_setting": self.default_feature_job_setting,
+                "offset_size": offset_size,
             }
         }
+
+    def validate_offset(self, offset: Optional[str | CalendarWindow]) -> None:
+        """
+        Validate the offset parameter in as_features and as_target.
+
+        Parameters
+        ----------
+        offset: Optional[str | CalendarWindow]
+            Offset for lookup feature / target.
+        """
+        if offset is None:
+            return
+        if isinstance(offset, str):
+            raise ValueError("CalendarWindow offset is not supported for SnapshotsView")
+        if offset.unit != self.time_interval.unit:
+            raise ValueError(
+                f"Offset unit is not compatible with SnapshotsTable's time interval: {self.time_interval.unit}"
+            )

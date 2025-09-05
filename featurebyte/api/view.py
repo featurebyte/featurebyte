@@ -64,6 +64,7 @@ from featurebyte.models.static_source_table import ViewStaticSourceInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import (
     CleaningOperation,
@@ -313,7 +314,7 @@ class ViewColumn(Series, SampleMixin):
     def as_target(
         self,
         target_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[str | CalendarWindow] = None,
         target_type: Optional[TargetType] = None,
         fill_value: Union[OptionalScalar, Unset] = UNSET,
     ) -> Target:
@@ -369,7 +370,7 @@ class ViewColumn(Series, SampleMixin):
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
 
         # Perform validation
-        validate_offset(offset)
+        view.validate_offset(offset)
 
         # Add lookup node to graph, and return Target
         lookup_node_params = view.get_lookup_node_params([input_column_name], [target_name], offset)
@@ -1172,7 +1173,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         _ = other_view
         return {}
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(
+        self, offset: Optional[str | CalendarWindow] = None
+    ) -> dict[str, Any]:
         """
         Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
         as_target (LookupTargetNode).
@@ -1182,7 +1185,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         Parameters
         ----------
-        offset : str
+        offset : Optional[str | CalendarWindow]
             Optional offset parameter
 
         Returns
@@ -1680,7 +1683,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return node_before_projection
 
     def get_lookup_node_params(
-        self, column_names: List[str], feature_names: List[str], offset: Optional[str]
+        self,
+        column_names: List[str],
+        feature_names: List[str],
+        offset: Optional[str | CalendarWindow],
     ) -> Dict[str, Any]:
         """
         Get the parameters for the lookup node in as_features().
@@ -1691,8 +1697,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             List of column names to be used as input to the lookup node
         feature_names: List[str]
             List of feature names to be used as output of the lookup node
-        offset: Optional[str]
-            Offset to be used for the lookup node
+        offset: Optional[str | CalendarWindow]
+            Offset to be used for the lookup node. For lookup features derived from SnapshotsView,
+            the offset should be a CalendarWindow.
 
         Returns
         -------
@@ -1723,16 +1730,30 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             "entity_column": entity_column,
             "serving_name": serving_name,
             "entity_id": entity_id,
-            "offset": offset,
+            "offset": offset if isinstance(offset, str) else None,
             **additional_params,
         }
+
+    def validate_offset(self, offset: Optional[str | CalendarWindow]) -> None:
+        """
+        Validate the offset parameter in as_features and as_target.
+
+        Parameters
+        ----------
+        offset: Optional[str | CalendarWindow]
+            Offset for lookup feature / target.
+        """
+        if isinstance(offset, str):
+            validate_offset(offset)
+        else:
+            raise ValueError("CalendarWindow offset is not supported")
 
     @typechecked
     def as_features(
         self,
         column_names: List[str],
         feature_names: List[str],
-        offset: Optional[str] = None,
+        offset: Optional[str | CalendarWindow] = None,
     ) -> FeatureGroup:
         """
         Creates lookup features directly from the column in the View. The primary entity associated with the features
@@ -1757,7 +1778,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         feature_names: List[str]
             Feature names corresponding to column_names
         offset: Optional[str]
-            When specified, retrieve feature values as of this offset prior to the point-in-time
+            When specified, retrieve feature values as of this offset prior to the point-in-time.
+            For lookup features derived from SnapshotsView, the offset should be a CalendarWindow.
 
         Returns
         -------
@@ -1777,7 +1799,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             feature_names=feature_names,
         )
 
-        validate_offset(offset)
+        self.validate_offset(offset)
 
         lookup_node_params = self.get_lookup_node_params(column_names, feature_names, offset)
         input_node = self.get_input_node_for_lookup_node()

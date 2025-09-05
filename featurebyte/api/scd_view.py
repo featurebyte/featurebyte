@@ -14,6 +14,7 @@ from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 
 logger = get_logger(__name__)
@@ -192,7 +193,9 @@ class SCDView(View, GroupByMixin, RawMixin):
             excluded_columns.append(self.end_timestamp_column)
         return excluded_columns
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(
+        self, offset: Optional[str | CalendarWindow] = None
+    ) -> dict[str, Any]:
         return {
             "scd_parameters": {
                 "offset": offset,

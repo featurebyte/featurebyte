@@ -196,6 +196,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                     snapshots_parameters.snapshot_datetime_column,
                     serving_name,
                 ]
+                # TODO: set offset direction for target
                 adjusted_point_in_time_expr = apply_snapshot_adjustment(
                     datetime_expr=get_qualified_column_identifier(
                         SpecialColumnName.POINT_IN_TIME, "REQ"
@@ -203,6 +204,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                     time_interval=snapshots_parameters.time_interval,
                     feature_job_setting=snapshots_parameters.feature_job_setting,
                     format_string=snapshots_parameters.snapshot_timestamp_format_string,
+                    offset_size=snapshots_parameters.offset_size,
                     adapter=self.adapter,
                 )
                 left_table_join_keys = [
