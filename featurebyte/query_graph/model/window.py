@@ -32,7 +32,7 @@ class CalendarWindow(FeatureByteBaseModel):
         return f"{self.size}_{self.unit}"
 
     def is_fixed_size(self) -> bool:
-        return self.unit.is_fixed_size()
+        return self.unit in TimeIntervalUnit.fixed_size_units()
 
     def to_seconds(self) -> int:
         """

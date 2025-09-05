@@ -140,6 +140,27 @@ def monthly_snapshots_table_agg_spec_blind_spot(daily_snapshots_table_agg_spec):
 
 
 @pytest.fixture
+def daily_snapshots_table_agg_spec_with_offset(daily_snapshots_table_agg_spec):
+    """
+    Fixture for daily snapshots table aggregation specification with offset
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.offset_size = 2
+    return agg_spec
+
+
+@pytest.fixture
+def monthly_snapshots_table_agg_spec_with_offset(daily_snapshots_table_agg_spec):
+    """
+    Fixture for monthly snapshots table aggregation specification with offset
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.time_interval = TimeInterval(unit="MONTH", value=1)
+    agg_spec.snapshots_parameters.offset_size = 1
+    return agg_spec
+
+
+@pytest.fixture
 def offline_lookup_aggregator(source_info):
     """
     Fixture for a LookupAggregator for serving offline features
@@ -463,8 +484,10 @@ def test_lookup_aggregator__event_table(
     [
         "snapshots_daily",
         "snapshots_daily_with_blind_spot",
+        "snapshots_daily_with_offset",
         "snapshots_monthly",
         "snapshots_monthly_with_blind_spot",
+        "snapshots_monthly_with_offset",
     ],
 )
 def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source_info):
@@ -474,8 +497,10 @@ def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source
     test_case_mapping = {
         "snapshots_daily": "daily_snapshots_table_agg_spec",
         "snapshots_daily_with_blind_spot": "daily_snapshots_table_agg_spec_blind_spot",
+        "snapshots_daily_with_offset": "daily_snapshots_table_agg_spec_with_offset",
         "snapshots_monthly": "monthly_snapshots_table_agg_spec",
         "snapshots_monthly_with_blind_spot": "monthly_snapshots_table_agg_spec_blind_spot",
+        "snapshots_monthly_with_offset": "monthly_snapshots_table_agg_spec_with_offset",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)

@@ -138,9 +138,6 @@ class TimeIntervalUnit(OrderedStrEnum):
             TimeIntervalUnit.WEEK,
         ]
 
-    def is_fixed_size(self) -> bool:
-        return self in TimeIntervalUnit.fixed_size_units()
-
 
 class DBVarType(StrEnum):
     """

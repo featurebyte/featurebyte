@@ -10,7 +10,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -237,7 +237,7 @@ def apply_snapshot_adjustment(
     if offset_size is not None:
         if offset_direction == OffsetDirection.FORWARD:
             offset_size = offset_size * -1
-        if time_interval.unit.is_fixed_size():
+        if time_interval.unit in TimeIntervalUnit.fixed_size_units():
             adjusted_datetime_expr = adapter.subtract_seconds(
                 adjusted_datetime_expr,
                 offset_size,
