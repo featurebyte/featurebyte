@@ -134,6 +134,7 @@ from featurebyte.service.feature_offline_store_info import OfflineStoreInfoIniti
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_cache import FeatureStoreCacheService
 from featurebyte.service.feature_store_table_cleanup import FeatureStoreTableCleanupService
 from featurebyte.service.feature_store_table_cleanup_scheduler import (
     FeatureStoreTableCleanupSchedulerService,
@@ -364,6 +365,7 @@ app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
+app_container_config.register_class(FeatureStoreCacheService)
 app_container_config.register_class(FeatureTableCacheService)
 app_container_config.register_class(FeatureTableCacheMetadataService)
 app_container_config.register_class(HistoricalFeatureExecutor)
