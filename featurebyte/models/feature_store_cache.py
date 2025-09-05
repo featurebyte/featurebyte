@@ -69,6 +69,7 @@ class FeatureStoreCacheModel(FeatureByteBaseDocumentModel):
             pymongo.operations.IndexModel("schema_name"),
             pymongo.operations.IndexModel("table_name"),
             pymongo.operations.IndexModel("key"),
+            pymongo.operations.IndexModel("value.function_name"),
             pymongo.operations.IndexModel("created_at", expireAfterSeconds=3600),
         ]
         auditable = False
