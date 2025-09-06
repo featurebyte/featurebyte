@@ -26,6 +26,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
+from featurebyte.query_graph.sql.offset import OffsetDirection
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
@@ -196,15 +197,22 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                     snapshots_parameters.snapshot_datetime_column,
                     serving_name,
                 ]
-                # TODO: set offset direction for target
+                if specs[0].is_target:
+                    # No need to apply blind spot when adjusting for snapshots when computing target
+                    feature_job_setting = None
+                else:
+                    feature_job_setting = snapshots_parameters.feature_job_setting
                 adjusted_point_in_time_expr = apply_snapshot_adjustment(
                     datetime_expr=get_qualified_column_identifier(
                         SpecialColumnName.POINT_IN_TIME, "REQ"
                     ),
                     time_interval=snapshots_parameters.time_interval,
-                    feature_job_setting=snapshots_parameters.feature_job_setting,
+                    feature_job_setting=feature_job_setting,
                     format_string=snapshots_parameters.snapshot_timestamp_format_string,
                     offset_size=snapshots_parameters.offset_size,
+                    offset_direction=(
+                        OffsetDirection.FORWARD if specs[0].is_target else OffsetDirection.BACKWARD
+                    ),
                     adapter=self.adapter,
                 )
                 left_table_join_keys = [

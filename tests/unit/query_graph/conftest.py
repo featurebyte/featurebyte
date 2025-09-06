@@ -1460,6 +1460,39 @@ def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_no
     return feature_node
 
 
+@pytest.fixture(name="snapshots_lookup_target_node")
+def snapshots_lookup_target_node_fixture(global_graph, snapshots_table_input_node, entity_id):
+    """
+    Fixture for a snapshots lookup target_node
+    """
+    node_params = {
+        "input_column_names": ["a"],
+        "feature_names": ["lookup_feature_a"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": entity_id,
+        "snapshots_parameters": {
+            "snapshot_datetime_column": "snapshot_date",
+            "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
+            "feature_job_setting": CronFeatureJobSetting(crontab="10 * * * *").model_dump(),
+            "time_interval": {"unit": "DAY", "value": 1},
+        },
+    }
+    lookup_agg_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP_TARGET,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[snapshots_table_input_node],
+    )
+    target_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["lookup_target_a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_agg_node.name)],
+    )
+    return target_node
+
+
 @pytest.fixture(name="window_aggregate_on_simple_view_feature_node")
 def window_aggregate_on_simple_view_feature_node_fixture(
     global_graph, event_table_input_node_with_id

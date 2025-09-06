@@ -753,7 +753,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
                     "timestamp_tuple_schema": None,
                 },
                 "feature_job_setting": None,
-                "offset": None,
+                "offset_size": None,
             },
         },
     }
@@ -762,6 +762,62 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     table_columns_info = snowflake_snapshots_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_snapshots_table.id: {
+                "name": snowflake_snapshots_table.name,
+                "record_creation_timestamp_column": snowflake_snapshots_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+
+
+def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
+    """
+    Test SnapshotsView as_target configures additional parameters
+    """
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+    target = view["col_float"].as_target("FloatTarget", fill_value=0)
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node == {
+        "name": "lookup_target_1",
+        "type": NodeType.LOOKUP_TARGET,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatTarget"],
+            "entity_column": "col_int",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": {
+                "snapshot_datetime_column": "date",
+                "time_interval": {"unit": "DAY", "value": 1},
+                "snapshot_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "is_utc_time": None,
+                        "timezone": "Etc/UTC",
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "feature_job_setting": None,
+                "offset_size": None,
+            },
+            "offset": None,
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_snapshots_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        target,
         to_use_saved_data=False,
         table_id_to_info={
             snowflake_snapshots_table.id: {
