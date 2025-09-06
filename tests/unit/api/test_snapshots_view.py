@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pandas as pd
 import pytest
 
+from featurebyte import CalendarWindow
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.snapshots_view import SnapshotsView
@@ -726,7 +727,9 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     """
     snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
     view = snowflake_snapshots_table.get_view()
-    feature = view["col_float"].as_feature("FloatFeature")
+    feature = view["col_float"].as_feature(
+        "FloatFeature", offset=CalendarWindow(unit="DAY", size=7)
+    )
     graph_dict = feature.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_1")
     assert lookup_node == {
@@ -753,7 +756,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
                     "timestamp_tuple_schema": None,
                 },
                 "feature_job_setting": None,
-                "offset_size": None,
+                "offset_size": 7,
             },
         },
     }
@@ -773,6 +776,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
             }
         },
     )
+    feature.save()
 
 
 def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
@@ -781,7 +785,11 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
     """
     snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
     view = snowflake_snapshots_table.get_view()
-    target = view["col_float"].as_target("FloatTarget", fill_value=0)
+    target = view["col_float"].as_target(
+        "FloatTarget",
+        fill_value=0,
+        offset=CalendarWindow(unit="DAY", size=7),
+    )
     graph_dict = target.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_target_1")
     assert lookup_node == {
@@ -808,7 +816,7 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
                     "timestamp_tuple_schema": None,
                 },
                 "feature_job_setting": None,
-                "offset_size": None,
+                "offset_size": 7,
             },
             "offset": None,
         },
@@ -829,3 +837,4 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
             }
         },
     )
+    target.save()

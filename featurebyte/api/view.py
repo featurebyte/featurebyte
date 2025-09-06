@@ -400,7 +400,7 @@ class ViewColumn(Series, SampleMixin):
     def as_feature(
         self,
         feature_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[str | CalendarWindow] = None,
         fill_value: OptionalScalar = None,
     ) -> Feature:
         """
@@ -415,8 +415,9 @@ class ViewColumn(Series, SampleMixin):
         ----------
         feature_name: str
             Name of the feature to create.
-        offset: str
-            When specified, retrieve feature value as of this offset prior to the point-in-time.
+        offset: Optional[str | CalendarWindow]
+            When specified, retrieve feature value as of this offset prior to the point-in-time. For
+            lookup features derived from SnapshotsView, the offset should be a CalendarWindow.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
@@ -1730,6 +1731,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             "entity_column": entity_column,
             "serving_name": serving_name,
             "entity_id": entity_id,
+            # CalendarWindow offset is handled in SnapshotsLookupParameters
             "offset": offset if isinstance(offset, str) else None,
             **additional_params,
         }

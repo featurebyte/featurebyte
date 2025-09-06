@@ -1310,20 +1310,31 @@ class LookupNode(BaseLookupNode):
         )
         input_column_names = self.parameters.input_column_names
         feature_names = self.parameters.feature_names
-        offset = None
+        offset: Optional[str | ObjectClass]
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
-        grouped = (
-            f"{var_name}.as_features(column_names={input_column_names}, "
-            f"feature_names={feature_names}, "
-            f"offset={ValueStr.create(offset)})"
-        )
-        out_var_name = var_name_generator.generate_variable_name(
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
+        elif self.parameters.snapshots_parameters:
+            offset_size = self.parameters.snapshots_parameters.offset_size
+            if offset_size is not None:
+                offset = ClassEnum.CALENDAR_WINDOW(
+                    unit=self.parameters.snapshots_parameters.time_interval.unit,
+                    size=self.parameters.snapshots_parameters.offset_size,
+                )
+            else:
+                offset = None
+        else:
+            offset = None
+        out_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="feature",
             node_name=self.name,
         )
-        statements.append((out_var_name, ExpressionStr(grouped)))
+        expression = get_object_class_from_function_call(
+            callable_name=f"{var_name}.as_features",
+            column_names=input_column_names,
+            feature_names=feature_names,
+            offset=offset,
+        )
+        statements.append((out_var_name, expression))
         return statements, out_var_name
 
 
@@ -1359,13 +1370,31 @@ class LookupTargetNode(BaseLookupNode):
             to_associate_with_node_name=False,
         )
         feature_names = self.parameters.feature_names
-        offset = self.parameters.offset
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
-        lookup_target_str = (
-            f"{var_name}[{input_column_name}].as_target(target_name={ValueStr.create(feature_names[0])}, "
-            f"offset={ValueStr.create(offset)}, fill_value=None)"
+        offset: Optional[str | ObjectClass]
+        if self.parameters.snapshots_parameters is not None:
+            offset_size = self.parameters.snapshots_parameters.offset_size
+            if offset_size is not None:
+                offset = ClassEnum.CALENDAR_WINDOW(
+                    unit=self.parameters.snapshots_parameters.time_interval.unit,
+                    size=self.parameters.snapshots_parameters.offset_size,
+                )
+            else:
+                offset = None
+        else:
+            offset = ValueStr.create(self.parameters.offset)
+        out_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="target",
+            node_name=self.name,
         )
-        return statements, ExpressionStr(lookup_target_str)
+        expression = get_object_class_from_function_call(
+            callable_name=f"{var_name}[{input_column_name}].as_target",
+            target_name=feature_names[0],
+            offset=offset,
+            fill_value=None,
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class JoinMetadata(FeatureByteBaseModel):
