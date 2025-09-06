@@ -207,8 +207,12 @@ def apply_snapshot_adjustment(
         Feature job setting containing blind spot window configuration
     format_string: Optional[str]
         Format string for timestamp formatting
+    offset_size: Optional[int]
+        Size of the offset to apply
     adapter: BaseAdapter
         SQL adapter
+    offset_direction: OffsetDirection
+        Direction of the offset (default: BACKWARD)
 
     Returns
     -------

@@ -1324,8 +1324,9 @@ class LookupNode(BaseLookupNode):
                 offset = None
         else:
             offset = None
-        out_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="feature",
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
             node_name=self.name,
         )
         expression = get_object_class_from_function_call(
@@ -1382,7 +1383,7 @@ class LookupTargetNode(BaseLookupNode):
             else:
                 offset = None
         else:
-            offset = ValueStr.create(self.parameters.offset)
+            offset = self.parameters.offset
         out_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="target",
             node_name=self.name,

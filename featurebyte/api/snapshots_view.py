@@ -313,6 +313,11 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         ----------
         offset: Optional[str | CalendarWindow]
             Offset for lookup feature / target.
+
+        Raises
+        ------
+        ValueError
+            If offset is invalid for SnapshotsView
         """
         if offset is None:
             return

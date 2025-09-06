@@ -212,7 +212,7 @@ def test_aggregate_asat_snapshots_view(snowflake_snapshots_table_with_entity, an
             "serving_names": ["another_key"],
             "snapshots_parameters": {
                 "feature_job_setting": None,
-                "offset": None,
+                "offset_size": None,
                 "snapshot_datetime_column": "date",
                 "snapshot_datetime_metadata": {
                     "timestamp_schema": {

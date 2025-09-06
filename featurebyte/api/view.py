@@ -1744,7 +1744,14 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         ----------
         offset: Optional[str | CalendarWindow]
             Offset for lookup feature / target.
+
+        Raises
+        ------
+        ValueError
+            If offset is invalid for this view type
         """
+        if offset is None:
+            return
         if isinstance(offset, str):
             validate_offset(offset)
         else:
