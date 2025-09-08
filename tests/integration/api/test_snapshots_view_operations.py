@@ -4,7 +4,7 @@ Integration tests for SnapshotsView
 
 import pandas as pd
 
-from featurebyte import CalendarWindow, FeatureList
+from featurebyte import FeatureList
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
     fb_assert_frame_equal,
@@ -94,7 +94,7 @@ def test_lookup_target(snapshots_table):
     view = snapshots_table.get_view()
     lookup_target = view["value_col"].as_target(
         "snapshot_lookup_target",
-        offset=CalendarWindow(unit="DAY", size=3),
+        offset=3,
         fill_value=0,
     )
     preview_params = pd.DataFrame([

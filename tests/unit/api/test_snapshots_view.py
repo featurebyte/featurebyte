@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, patch
 import pandas as pd
 import pytest
 
-from featurebyte import CalendarWindow
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.snapshots_view import SnapshotsView
@@ -727,9 +726,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     """
     snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
     view = snowflake_snapshots_table.get_view()
-    feature = view["col_float"].as_feature(
-        "FloatFeature", offset=CalendarWindow(unit="DAY", size=7)
-    )
+    feature = view["col_float"].as_feature("FloatFeature", offset=7)
     graph_dict = feature.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_1")
     assert lookup_node == {
@@ -788,7 +785,7 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
     target = view["col_float"].as_target(
         "FloatTarget",
         fill_value=0,
-        offset=CalendarWindow(unit="DAY", size=7),
+        offset=7,
     )
     graph_dict = target.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_target_1")
@@ -838,3 +835,33 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
         },
     )
     target.save()
+
+
+def test_snapshots_view_offset_validation(snowflake_snapshots_table, cust_id_entity):
+    """
+    Test that SnapshotsView properly validates offset parameter types
+    """
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+
+    # Test that integer offset works
+    feature = view["col_float"].as_feature("FloatFeature", offset=7)
+    assert feature is not None
+
+    # Test that string offset is rejected
+    with pytest.raises(ValueError, match="String offset is not supported for SnapshotsView"):
+        view["col_float"].as_feature("FloatFeature", offset="7d")
+
+    # Test that negative integer offset is rejected
+    with pytest.raises(ValueError, match="Offset for SnapshotsView must be a non-negative integer"):
+        view["col_float"].as_feature("FloatFeature", offset=-1)
+
+    # Test as_target with similar validations
+    target = view["col_float"].as_target("FloatTarget", offset=5, fill_value=0)
+    assert target is not None
+
+    with pytest.raises(ValueError, match="String offset is not supported for SnapshotsView"):
+        view["col_float"].as_target("FloatTarget", offset="5d", fill_value=0)
+
+    with pytest.raises(ValueError, match="Offset for SnapshotsView must be a non-negative integer"):
+        view["col_float"].as_target("FloatTarget", offset=-1, fill_value=0)

@@ -1310,18 +1310,11 @@ class LookupNode(BaseLookupNode):
         )
         input_column_names = self.parameters.input_column_names
         feature_names = self.parameters.feature_names
-        offset: Optional[str | ObjectClass]
+        offset: Optional[str | int]
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
         elif self.parameters.snapshots_parameters:
-            offset_size = self.parameters.snapshots_parameters.offset_size
-            if offset_size is not None:
-                offset = ClassEnum.CALENDAR_WINDOW(
-                    unit=self.parameters.snapshots_parameters.time_interval.unit,
-                    size=self.parameters.snapshots_parameters.offset_size,
-                )
-            else:
-                offset = None
+            offset = self.parameters.snapshots_parameters.offset_size
         else:
             offset = None
         out_var_name = var_name_generator.generate_variable_name(
@@ -1372,16 +1365,9 @@ class LookupTargetNode(BaseLookupNode):
         )
         feature_names = self.parameters.feature_names
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
-        offset: Optional[str | ObjectClass]
+        offset: Optional[str | int]
         if self.parameters.snapshots_parameters is not None:
-            offset_size = self.parameters.snapshots_parameters.offset_size
-            if offset_size is not None:
-                offset = ClassEnum.CALENDAR_WINDOW(
-                    unit=self.parameters.snapshots_parameters.time_interval.unit,
-                    size=self.parameters.snapshots_parameters.offset_size,
-                )
-            else:
-                offset = None
+            offset = self.parameters.snapshots_parameters.offset_size
         else:
             offset = self.parameters.offset
         out_var_name = var_name_generator.convert_to_variable_name(

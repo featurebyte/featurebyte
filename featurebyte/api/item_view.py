@@ -18,7 +18,6 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.model.table import ItemTableData
-from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 
@@ -335,7 +334,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         return self.item_id_column
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | CalendarWindow] = None
+        self, offset: Optional[str | int] = None
     ) -> dict[str, Any]:
         _ = offset
         return {

@@ -64,7 +64,6 @@ from featurebyte.models.static_source_table import ViewStaticSourceInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
-from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import (
     CleaningOperation,
@@ -314,7 +313,7 @@ class ViewColumn(Series, SampleMixin):
     def as_target(
         self,
         target_name: str,
-        offset: Optional[str | CalendarWindow] = None,
+        offset: Optional[str | int] = None,
         target_type: Optional[TargetType] = None,
         fill_value: Union[OptionalScalar, Unset] = UNSET,
     ) -> Target:
@@ -400,7 +399,7 @@ class ViewColumn(Series, SampleMixin):
     def as_feature(
         self,
         feature_name: str,
-        offset: Optional[str | CalendarWindow] = None,
+        offset: Optional[str | int] = None,
         fill_value: OptionalScalar = None,
     ) -> Feature:
         """
@@ -415,9 +414,10 @@ class ViewColumn(Series, SampleMixin):
         ----------
         feature_name: str
             Name of the feature to create.
-        offset: Optional[str | CalendarWindow]
+        offset: Optional[str | int]
             When specified, retrieve feature value as of this offset prior to the point-in-time. For
-            lookup features derived from SnapshotsView, the offset should be a CalendarWindow.
+            lookup features derived from SnapshotsView, the offset should be an integer specifying
+            the number of time interval steps.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
@@ -1175,7 +1175,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return {}
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | CalendarWindow] = None
+        self, offset: Optional[str | int] = None
     ) -> dict[str, Any]:
         """
         Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
@@ -1186,7 +1186,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         Parameters
         ----------
-        offset : Optional[str | CalendarWindow]
+        offset : Optional[str | int]
             Optional offset parameter
 
         Returns
@@ -1687,7 +1687,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         column_names: List[str],
         feature_names: List[str],
-        offset: Optional[str | CalendarWindow],
+        offset: Optional[str | int],
     ) -> Dict[str, Any]:
         """
         Get the parameters for the lookup node in as_features().
@@ -1698,9 +1698,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             List of column names to be used as input to the lookup node
         feature_names: List[str]
             List of feature names to be used as output of the lookup node
-        offset: Optional[str | CalendarWindow]
+        offset: Optional[str | int]
             Offset to be used for the lookup node. For lookup features derived from SnapshotsView,
-            the offset should be a CalendarWindow.
+            the offset should be an integer specifying the number of time interval steps.
 
         Returns
         -------
@@ -1736,13 +1736,13 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             **additional_params,
         }
 
-    def validate_offset(self, offset: Optional[str | CalendarWindow]) -> None:
+    def validate_offset(self, offset: Optional[str | int]) -> None:
         """
         Validate the offset parameter in as_features and as_target.
 
         Parameters
         ----------
-        offset: Optional[str | CalendarWindow]
+        offset: Optional[str | int]
             Offset for lookup feature / target.
 
         Raises
@@ -1754,15 +1754,17 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             return
         if isinstance(offset, str):
             validate_offset(offset)
+        elif isinstance(offset, int):
+            raise ValueError("Integer offset is only supported for SnapshotsView")
         else:
-            raise ValueError("CalendarWindow offset is not supported")
+            raise ValueError("Invalid offset type")
 
     @typechecked
     def as_features(
         self,
         column_names: List[str],
         feature_names: List[str],
-        offset: Optional[str | CalendarWindow] = None,
+        offset: Optional[str | int] = None,
     ) -> FeatureGroup:
         """
         Creates lookup features directly from the column in the View. The primary entity associated with the features
@@ -1786,9 +1788,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             Column names to be used to create the features
         feature_names: List[str]
             Feature names corresponding to column_names
-        offset: Optional[str]
+        offset: Optional[str | int]
             When specified, retrieve feature values as of this offset prior to the point-in-time.
-            For lookup features derived from SnapshotsView, the offset should be a CalendarWindow.
+            For lookup features derived from SnapshotsView, the offset should be an integer specifying
+            the number of time interval steps.
 
         Returns
         -------

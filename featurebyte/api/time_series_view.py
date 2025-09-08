@@ -16,7 +16,6 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
-from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.input import InputNode, TimeSeriesTableInputNodeParameters
 
 
@@ -162,7 +161,7 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
         return self.series_id_column
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | CalendarWindow] = None
+        self, offset: Optional[str | int] = None
     ) -> dict[str, Any]:
         _ = offset
         return {

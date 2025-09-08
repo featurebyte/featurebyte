@@ -17,7 +17,6 @@ from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import (
     InputNode,
@@ -286,11 +285,11 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         return {}
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | CalendarWindow] = None
+        self, offset: Optional[str | int] = None
     ) -> dict[str, Any]:
         if offset is not None:
-            assert isinstance(offset, CalendarWindow)
-            offset_size = offset.size
+            assert isinstance(offset, int)
+            offset_size = offset
         else:
             offset_size = None
         return {
@@ -305,14 +304,15 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
             }
         }
 
-    def validate_offset(self, offset: Optional[str | CalendarWindow]) -> None:
+    def validate_offset(self, offset: Optional[str | int]) -> None:
         """
         Validate the offset parameter in as_features and as_target.
 
         Parameters
         ----------
-        offset: Optional[str | CalendarWindow]
-            Offset for lookup feature / target.
+        offset: Optional[str | int]
+            Offset for lookup feature / target. For SnapshotsView, should be an integer
+            specifying the number of time interval steps.
 
         Raises
         ------
@@ -322,8 +322,12 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         if offset is None:
             return
         if isinstance(offset, str):
-            raise ValueError("CalendarWindow offset is not supported for SnapshotsView")
-        if offset.unit != self.time_interval.unit:
             raise ValueError(
-                f"Offset unit is not compatible with SnapshotsTable's time interval: {self.time_interval.unit}"
+                "String offset is not supported for SnapshotsView. Use integer offset instead."
             )
+        if not isinstance(offset, int):
+            raise ValueError(
+                "Offset for SnapshotsView must be an integer specifying the number of time interval steps."
+            )
+        if offset < 0:
+            raise ValueError("Offset for SnapshotsView must be a non-negative integer.")
