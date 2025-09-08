@@ -1230,9 +1230,11 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
-        offset = None
+        offset: Optional[str | int] = None
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
+        elif self.parameters.snapshots_parameters:
+            offset = self.parameters.snapshots_parameters.offset_size
         return [
             AggregationColumn(
                 name=feature_name,
@@ -2056,6 +2058,9 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
+        offset: Optional[str | int] = None
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
         return [
             AggregationColumn(
                 name=self.parameters.name,
@@ -2063,7 +2068,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=None,
                 category=self.parameters.value_by,
-                offset=self.parameters.offset,
+                offset=offset,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,  # type: ignore[arg-type]
@@ -2107,7 +2112,12 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
         value_column = ValueStr.create(self.parameters.parent)
         method = ValueStr.create(self.parameters.agg_func)
         feature_name = ValueStr.create(self.parameters.name)
-        offset = ValueStr.create(self.parameters.offset)
+        offset: Optional[str | int]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
+        offset = ValueStr.create(offset)
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate_asat(value_column={value_column}, "

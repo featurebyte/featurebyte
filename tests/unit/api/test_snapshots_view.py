@@ -775,6 +775,21 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     )
     feature.save()
 
+    agg_info = feature.info()["metadata"]["aggregations"]
+    assert agg_info == {
+        "F0": {
+            "aggregation_type": "lookup",
+            "category": None,
+            "column": "Input0",
+            "filter": False,
+            "function": None,
+            "keys": ["col_int"],
+            "name": "FloatFeature",
+            "offset": 7,
+            "window": None,
+        }
+    }
+
 
 def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
     """

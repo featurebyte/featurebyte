@@ -359,7 +359,7 @@ class AggregationColumn(BaseDataColumn):
     keys: Sequence[str]
     window: Optional[str]
     category: Optional[str]
-    offset: Optional[str]
+    offset: Optional[str | int]
     column: Optional[ViewDataColumn]
     aggregation_type: Literal[
         NodeType.GROUPBY,

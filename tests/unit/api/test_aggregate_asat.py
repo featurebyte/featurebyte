@@ -178,7 +178,7 @@ def test_aggregate_asat_snapshots_view(snowflake_snapshots_table_with_entity, an
         value_column="col_float",
         method="sum",
         feature_name="asat_feature",
-        offset="7d",
+        offset=7,
     )
 
     # Check node and parameters
@@ -207,12 +207,12 @@ def test_aggregate_asat_snapshots_view(snowflake_snapshots_table_with_entity, an
             "keys": ["col_binary"],
             "name": "asat_feature",
             "natural_key_column": None,
-            "offset": "7d",
+            "offset": None,
             "parent": "col_float",
             "serving_names": ["another_key"],
             "snapshots_parameters": {
                 "feature_job_setting": None,
-                "offset_size": None,
+                "offset_size": 7,
                 "snapshot_datetime_column": "date",
                 "snapshot_datetime_metadata": {
                     "timestamp_schema": {
@@ -243,7 +243,7 @@ def test_aggregate_asat_snapshots_view(snowflake_snapshots_table_with_entity, an
             "function": "sum",
             "keys": ["col_binary"],
             "name": "asat_feature",
-            "offset": "7d",
+            "offset": 7,
             "window": None,
         }
     }

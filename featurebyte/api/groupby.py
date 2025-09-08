@@ -287,7 +287,7 @@ class GroupBy:
         value_column: Optional[str],
         method: Union[AggFunc, str],
         feature_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[str | int] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,

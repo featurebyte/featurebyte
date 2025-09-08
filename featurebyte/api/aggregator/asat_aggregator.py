@@ -45,7 +45,7 @@ class AsAtAggregator(BaseAsAtAggregator):
         value_column: Optional[str],
         method: str,
         feature_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[str | int] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
@@ -104,13 +104,18 @@ class AsAtAggregator(BaseAsAtAggregator):
             "name": feature_name,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
-            "offset": offset,
+            "offset": offset if isinstance(offset, str) else None,
             "backward": backward,
         }
         if isinstance(self.view, SCDView):
             node_params.update(**self.view.get_common_scd_parameters().model_dump())
         else:
             assert isinstance(self.view, SnapshotsView)
+            if offset is not None:
+                assert isinstance(offset, int)
+                offset_size = offset
+            else:
+                offset_size = None
             snapshots_lookup_parameters = SnapshotsLookupParameters(
                 snapshot_datetime_column=self.view.snapshot_datetime_column,
                 time_interval=self.view.time_interval,
@@ -118,6 +123,7 @@ class AsAtAggregator(BaseAsAtAggregator):
                     timestamp_schema=self.view.snapshot_datetime_schema
                 ),
                 feature_job_setting=self.view.default_feature_job_setting,
+                offset_size=offset_size,
             ).model_dump()
             node_params["effective_timestamp_column"] = self.view.snapshot_datetime_column
             node_params["snapshots_parameters"] = snapshots_lookup_parameters

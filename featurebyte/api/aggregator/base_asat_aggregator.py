@@ -11,7 +11,6 @@ from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.view import View
-from featurebyte.common.model_util import validate_offset_string
 from featurebyte.enum import AggFunc
 from featurebyte.typing import OptionalScalar
 
@@ -23,7 +22,7 @@ class BaseAsAtAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SCDView]
+        return [SCDView, SnapshotsView]
 
     @property
     @abstractmethod
@@ -44,7 +43,7 @@ class BaseAsAtAggregator(BaseAggregator):
         self,
         method: str,
         value_column: Optional[str],
-        offset: Optional[str],
+        offset: Optional[str | int],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:
@@ -66,4 +65,4 @@ class BaseAsAtAggregator(BaseAggregator):
                 )
 
         if offset is not None:
-            validate_offset_string(offset)
+            self.view.validate_offset(offset)
