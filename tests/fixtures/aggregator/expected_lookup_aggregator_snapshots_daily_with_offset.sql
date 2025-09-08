@@ -25,5 +25,5 @@ LEFT JOIN (
     "snapshot_date",
     "CUSTOMER_ID"
 ) AS T0
-  ON DATE_ADD(DATE_TRUNC('day', REQ."POINT_IN_TIME"), -2, 'SECOND') = T0."snapshot_date"
+  ON DATE_ADD(DATE_TRUNC('day', REQ."POINT_IN_TIME"), -172800, 'SECOND') = T0."snapshot_date"
   AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"

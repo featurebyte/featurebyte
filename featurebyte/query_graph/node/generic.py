@@ -2058,9 +2058,11 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
-        offset: Optional[str | int] = None
+        offset: Optional[str | int]
         if self.parameters.snapshots_parameters is not None:
             offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
         return [
             AggregationColumn(
                 name=self.parameters.name,

@@ -21,6 +21,7 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimeZoneColumn,
     TimeZoneUnion,
 )
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeJoinKey
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -241,15 +242,19 @@ def apply_snapshot_adjustment(
     if offset_size is not None:
         if offset_direction == OffsetDirection.FORWARD:
             offset_size = offset_size * -1
+        offset_window = CalendarWindow(
+            unit=time_interval.unit,
+            size=offset_size,
+        )
         if time_interval.unit in TimeIntervalUnit.fixed_size_units():
             adjusted_datetime_expr = adapter.subtract_seconds(
                 adjusted_datetime_expr,
-                offset_size,
+                offset_window.to_seconds(),
             )
         else:
             adjusted_datetime_expr = adapter.subtract_months(
                 adjusted_datetime_expr,
-                offset_size,
+                offset_window.to_months(),
             )
 
     if format_string is not None:
