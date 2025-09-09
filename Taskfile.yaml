@@ -12,7 +12,7 @@ tasks:
     run: once
     sources:
       - pyproject.toml
-      - poetry.lock
+      - uv.lock
     deps:
       - task: build-jar
     cmds:
@@ -21,17 +21,8 @@ tasks:
   install-published-featurebyte:
     desc: "Install the published version of the featurebyte SDK"
     cmds:
-      - poetry run pip uninstall --yes featurebyte
-      - poetry run pip install featurebyte
-
-  check-poetry:
-    desc: "Check that pyproject.toml and poetry.lock are consistent"
-    run: once
-    sources:
-      - pyproject.toml
-      - poetry.lock
-    cmds:
-      - poetry check
+      - uv run pip uninstall --yes featurebyte
+      - uv run pip install featurebyte
 
   build-jar:
     desc: "Compile the hive jar files"
@@ -66,13 +57,13 @@ tasks:
     deps:
       - task: install
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - featurebyte/**/*
       - tests/**/*
     cmds:
       - task: test-setup
-      - poetry run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --dist=loadscope --cov=featurebyte tests/unit
+      - uv run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --dist=loadscope --cov=featurebyte tests/unit
       - task: test-teardown
 
   generate-unit-test-fixtures:
@@ -80,12 +71,12 @@ tasks:
     deps:
       - task: install
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - featurebyte/**/*
       - tests/unit/test_generate_payload_fixtures.py
     cmds:
-      - poetry run pytest --timeout=240 --update-fixtures tests/unit/test_generate_payload_fixtures.py
+      - uv run pytest --timeout=240 --update-fixtures tests/unit/test_generate_payload_fixtures.py
 
   test-integration:
     desc: Runs integration tests
@@ -113,7 +104,7 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations --ignore=tests/integration/worker/test_task_manager.py
+      - uv run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations --ignore=tests/integration/worker/test_task_manager.py
       - task: test-teardown
 
   test-integration-task-manager:
@@ -131,7 +122,7 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - DISABLE_TASK_MANAGER_MOCK=1 poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1b --cov=featurebyte tests/integration/worker/test_task_manager.py --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - DISABLE_TASK_MANAGER_MOCK=1 uv run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1b --cov=featurebyte tests/integration/worker/test_task_manager.py --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-reset:
@@ -163,7 +154,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - uv run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - cmd: |
           if [ "{{.TEARDOWN}}" == "true" ]; then
               task test-teardown
@@ -184,7 +175,7 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=1800 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - uv run pytest --timeout=1800 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-integration-bigquery:
@@ -202,7 +193,7 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=1800 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - uv run pytest --timeout=1800 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-docs:
@@ -213,7 +204,7 @@ tasks:
       - task: install
     cmds:
       - task: test-docs-setup
-      - poetry run pytest --timeout=240 featurebyte
+      - uv run pytest --timeout=240 featurebyte
       - task: test-docs-teardown
 
   test-docs-setup:
@@ -221,40 +212,40 @@ tasks:
     deps:
       - task: docker-build
     cmds:
-      - poetry run python scripts/test-docs-setup.py
+      - uv run python scripts/test-docs-setup.py
 
   test-docs-teardown:
     desc: "Teardown the test environment for docs"
     cmds:
-      - poetry run featurebyte stop
+      - uv run featurebyte stop
 
   test-merge:
     desc: Runs tests on merge
     cmds:
       - "echo 'coverage: platform' > pytest-coverage.txt"
-      - poetry run coverage combine
-      - poetry run coverage report >> pytest-coverage.txt
-      - poetry run junitparser merge pytest.xml.* pytest.xml
+      - uv run coverage combine
+      - uv run coverage report >> pytest-coverage.txt
+      - uv run junitparser merge pytest.xml.* pytest.xml
 
   test-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml tests/notebooks
+      - uv run pytest --junitxml=pytest.xml tests/notebooks
 
   test-quick-start-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest-quick.xml -k quick tests/notebooks
+      - uv run pytest --junitxml=pytest-quick.xml -k quick tests/notebooks
 
   test-deep-dive-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml -k deep tests/notebooks
+      - uv run pytest --junitxml=pytest.xml -k deep tests/notebooks
 
   test-playground-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml -k playground tests/notebooks
+      - uv run pytest --junitxml=pytest.xml -k playground tests/notebooks
 
   test-setup:
     desc: "Setup the test environment"
@@ -304,7 +295,7 @@ tasks:
         sh: echo "$(pwd)/docs/extensions"
       FB_DOCS_DEBUG_MODE: True
     cmds:
-      - poetry run mkdocs serve --config-file mkdocs.yaml
+      - uv run mkdocs serve --config-file mkdocs.yaml
 
   docs-persist-reference:
     desc: "Build the documentation and persist the docs locally."
@@ -314,7 +305,7 @@ tasks:
       PYTHONPATH:
         sh: echo "$(pwd)/docs/extensions"
     cmds:
-      - poetry run mkdocs build --config-file mkdocs.yaml
+      - uv run mkdocs build --config-file mkdocs.yaml
 
   docs-dump-csv:
     desc: "Dump the documentation into a CSV file for easy browsing."
@@ -325,7 +316,7 @@ tasks:
         sh: echo "$(pwd)/docs/extensions"
 
     cmds:
-      - poetry run python featurebyte/common/documentation/extract_csv.py
+      - uv run python featurebyte/common/documentation/extract_csv.py
 
   docker-build:
     desc: "Build the docker image"
@@ -340,13 +331,13 @@ tasks:
       - task: install
     cmds:
       - task: docker-build
-      - poetry run featurebyte start
-      - poetry run featurebyte start spark
+      - uv run featurebyte start
+      - uv run featurebyte start spark
 
   docker-dev-stop:
     desc: "Stops featurebyte-server in development mode"
     cmds:
-      - poetry run featurebyte stop
+      - uv run featurebyte stop
 
   changelog:
     desc: "Generate all changelog entries in .changelog"

@@ -248,7 +248,7 @@ def test_get_view(snowflake_event_table):
     """
     catalog = Catalog.get_active()
     view = catalog.get_view(snowflake_event_table.name)
-    assert type(view) == EventView
+    assert isinstance(view, EventView)
 
 
 def catalog_methods_to_test():
