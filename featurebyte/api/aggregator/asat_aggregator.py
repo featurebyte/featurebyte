@@ -19,7 +19,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.generic import SnapshotsLookupParameters
-from featurebyte.typing import OptionalScalar
+from featurebyte.typing import OffsetType, OptionalScalar
 
 
 class AsAtAggregator(BaseAsAtAggregator):
@@ -45,7 +45,7 @@ class AsAtAggregator(BaseAsAtAggregator):
         value_column: Optional[str],
         method: str,
         feature_name: str,
-        offset: Optional[str | int] = None,
+        offset: Optional[OffsetType] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,

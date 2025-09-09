@@ -75,7 +75,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
-from featurebyte.typing import UNSET, OptionalScalar, ScalarSequence, Unset
+from featurebyte.typing import UNSET, OffsetType, OptionalScalar, ScalarSequence, Unset
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -313,7 +313,7 @@ class ViewColumn(Series, SampleMixin):
     def as_target(
         self,
         target_name: str,
-        offset: Optional[str | int] = None,
+        offset: Optional[OffsetType] = None,
         target_type: Optional[TargetType] = None,
         fill_value: Union[OptionalScalar, Unset] = UNSET,
     ) -> Target:
@@ -399,7 +399,7 @@ class ViewColumn(Series, SampleMixin):
     def as_feature(
         self,
         feature_name: str,
-        offset: Optional[str | int] = None,
+        offset: Optional[OffsetType] = None,
         fill_value: OptionalScalar = None,
     ) -> Feature:
         """
@@ -414,7 +414,7 @@ class ViewColumn(Series, SampleMixin):
         ----------
         feature_name: str
             Name of the feature to create.
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
             When specified, retrieve feature value as of this offset prior to the point-in-time. For
             lookup features derived from SnapshotsView, the offset should be an integer specifying
             the number of time interval steps.
@@ -1175,7 +1175,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return {}
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | int] = None
+        self, offset: Optional[OffsetType] = None
     ) -> dict[str, Any]:
         """
         Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
@@ -1186,7 +1186,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         Parameters
         ----------
-        offset : Optional[str | int]
+        offset : Optional[OffsetType]
             Optional offset parameter
 
         Returns
@@ -1687,7 +1687,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         column_names: List[str],
         feature_names: List[str],
-        offset: Optional[str | int],
+        offset: Optional[OffsetType],
     ) -> Dict[str, Any]:
         """
         Get the parameters for the lookup node in as_features().
@@ -1698,7 +1698,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             List of column names to be used as input to the lookup node
         feature_names: List[str]
             List of feature names to be used as output of the lookup node
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
             Offset to be used for the lookup node. For lookup features derived from SnapshotsView,
             the offset should be an integer specifying the number of time interval steps.
 
@@ -1736,13 +1736,13 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             **additional_params,
         }
 
-    def validate_offset(self, offset: Optional[str | int]) -> None:
+    def validate_offset(self, offset: Optional[OffsetType]) -> None:
         """
         Validate the offset parameter in as_features and as_target.
 
         Parameters
         ----------
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
             Offset for lookup feature / target.
 
         Raises
@@ -1764,7 +1764,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         column_names: List[str],
         feature_names: List[str],
-        offset: Optional[str | int] = None,
+        offset: Optional[OffsetType] = None,
     ) -> FeatureGroup:
         """
         Creates lookup features directly from the column in the View. The primary entity associated with the features
@@ -1788,7 +1788,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             Column names to be used to create the features
         feature_names: List[str]
             Feature names corresponding to column_names
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
             When specified, retrieve feature values as of this offset prior to the point-in-time.
             For lookup features derived from SnapshotsView, the offset should be an integer specifying
             the number of time interval steps.

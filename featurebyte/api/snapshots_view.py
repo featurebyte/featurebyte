@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.input import (
     InputNode,
     SnapshotsTableInputNodeParameters,
 )
+from featurebyte.typing import OffsetType
 
 
 class SnapshotsViewColumn(LaggableViewColumn):
@@ -285,7 +286,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         return {}
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | int] = None
+        self, offset: Optional[OffsetType] = None
     ) -> dict[str, Any]:
         if offset is not None:
             assert isinstance(offset, int)
@@ -304,13 +305,13 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
             }
         }
 
-    def validate_offset(self, offset: Optional[str | int]) -> None:
+    def validate_offset(self, offset: Optional[OffsetType]) -> None:
         """
         Validate the offset parameter in as_features and as_target.
 
         Parameters
         ----------
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
             Offset for lookup feature / target. For SnapshotsView, should be an integer
             specifying the number of time interval steps.
 

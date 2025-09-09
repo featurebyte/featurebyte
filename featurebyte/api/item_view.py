@@ -19,6 +19,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
+from featurebyte.typing import OffsetType
 
 
 class ItemViewColumn(ViewColumn):
@@ -334,7 +335,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         return self.item_id_column
 
     def get_additional_lookup_parameters(
-        self, offset: Optional[str | int] = None
+        self, offset: Optional[OffsetType] = None
     ) -> dict[str, Any]:
         _ = offset
         return {

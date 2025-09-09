@@ -28,6 +28,7 @@ from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.typing import OffsetType
 
 
 class NodeOutputCategory(StrEnum):
@@ -359,7 +360,7 @@ class AggregationColumn(BaseDataColumn):
     keys: Sequence[str]
     window: Optional[str]
     category: Optional[str]
-    offset: Optional[str | int]
+    offset: Optional[OffsetType]
     column: Optional[ViewDataColumn]
     aggregation_type: Literal[
         NodeType.GROUPBY,

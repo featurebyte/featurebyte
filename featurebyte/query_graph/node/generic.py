@@ -70,6 +70,7 @@ from featurebyte.query_graph.util import (
     hash_input_node_hashes,
     sort_lists_by_first_list,
 )
+from featurebyte.typing import OffsetType
 
 
 class ProjectNode(BaseNode):
@@ -1230,7 +1231,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
-        offset: Optional[str | int] = None
+        offset: Optional[OffsetType] = None
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
         elif self.parameters.snapshots_parameters:
@@ -1312,7 +1313,7 @@ class LookupNode(BaseLookupNode):
         )
         input_column_names = self.parameters.input_column_names
         feature_names = self.parameters.feature_names
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
         elif self.parameters.snapshots_parameters:
@@ -1367,7 +1368,7 @@ class LookupTargetNode(BaseLookupNode):
         )
         feature_names = self.parameters.feature_names
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
         if self.parameters.snapshots_parameters is not None:
             offset = self.parameters.snapshots_parameters.offset_size
         else:
@@ -2058,7 +2059,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
         if self.parameters.snapshots_parameters is not None:
             offset = self.parameters.snapshots_parameters.offset_size
         else:
@@ -2114,7 +2115,7 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
         value_column = ValueStr.create(self.parameters.parent)
         method = ValueStr.create(self.parameters.agg_func)
         feature_name = ValueStr.create(self.parameters.name)
-        offset: Optional[str | int]
+        offset: Optional[OffsetType]
         if self.parameters.snapshots_parameters is not None:
             offset = self.parameters.snapshots_parameters.offset_size
         else:

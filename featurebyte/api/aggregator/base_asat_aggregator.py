@@ -12,7 +12,7 @@ from featurebyte.api.scd_view import SCDView
 from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.view import View
 from featurebyte.enum import AggFunc
-from featurebyte.typing import OptionalScalar
+from featurebyte.typing import OffsetType, OptionalScalar
 
 
 class BaseAsAtAggregator(BaseAggregator):
@@ -43,7 +43,7 @@ class BaseAsAtAggregator(BaseAggregator):
         self,
         method: str,
         value_column: Optional[str],
-        offset: Optional[str | int],
+        offset: Optional[OffsetType],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:
