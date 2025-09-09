@@ -18,7 +18,11 @@ from featurebyte.query_graph.node.generic import (
     TimeSeriesWindowAggregateNode,
     TimeSeriesWindowAggregateParameters,
 )
-from featurebyte.query_graph.node.input import InputNode, TimeSeriesTableInputNodeParameters
+from featurebyte.query_graph.node.input import (
+    InputNode,
+    SnapshotsTableInputNodeParameters,
+    TimeSeriesTableInputNodeParameters,
+)
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
     AggregationType,
@@ -187,19 +191,28 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         -------
         bool
         """
+        if column_statistics_info is None:
+            return False
+
+        datetime_column: Optional[str] = None
+        table_id: Optional[ObjectId] = None
         parameters = input_node.parameters
-        if isinstance(parameters, TimeSeriesTableInputNodeParameters):
-            if (
-                parameters.id is not None
-                and parameters.reference_datetime_column is not None
-                and column_statistics_info is not None
-            ):
-                column_statistics = column_statistics_info.get_column_statistics(
-                    parameters.id, parameters.reference_datetime_column
+        if isinstance(parameters, TimeSeriesTableInputNodeParameters) and parameters.id is not None:
+            datetime_column = parameters.reference_datetime_column
+            table_id = parameters.id
+        elif (
+            isinstance(parameters, SnapshotsTableInputNodeParameters) and parameters.id is not None
+        ):
+            datetime_column = parameters.snapshot_datetime_column
+            table_id = parameters.id
+
+        if datetime_column is not None and table_id is not None:
+            column_statistics = column_statistics_info.get_column_statistics(
+                table_id, datetime_column
+            )
+            if column_statistics is not None:
+                return (
+                    column_statistics.stats.distinct_count
+                    < DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD
                 )
-                if column_statistics is not None:
-                    return (
-                        column_statistics.stats.distinct_count
-                        < DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD
-                    )
         return False

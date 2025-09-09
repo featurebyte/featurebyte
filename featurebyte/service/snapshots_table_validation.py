@@ -17,3 +17,7 @@ class SnapshotsTableValidationService(
     """
     SnapshotsTableValidationService class
     """
+
+    @classmethod
+    def _get_compute_column_statistics_columns(cls, table_model: SnapshotsTableModel) -> list[str]:
+        return [table_model.snapshot_datetime_column]

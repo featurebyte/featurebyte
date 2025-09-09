@@ -12,6 +12,7 @@ from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
@@ -40,7 +41,7 @@ class WindowAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [EventView, ItemView, ChangeView, TimeSeriesView]
+        return [EventView, ItemView, ChangeView, TimeSeriesView, SnapshotsView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -326,6 +327,12 @@ class WindowAggregator(BaseAggregator):
                 reference_datetime_column = self.view.reference_datetime_column
                 reference_datetime_metadata = self.view.operation_structure.get_dtype_metadata(
                     self.view.reference_datetime_column
+                )
+                time_interval = self.view.time_interval
+            elif isinstance(self.view, SnapshotsView):
+                reference_datetime_column = self.view.snapshot_datetime_column
+                reference_datetime_metadata = self.view.operation_structure.get_dtype_metadata(
+                    self.view.snapshot_datetime_column
                 )
                 time_interval = self.view.time_interval
             else:
