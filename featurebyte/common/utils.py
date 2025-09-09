@@ -255,7 +255,7 @@ def dataframe_to_json(
     dataframe[numeric_cols] = dataframe[numeric_cols].replace({np.inf: "inf", -np.inf: "-inf"})
 
     # handle binary columns
-    def _binary_to_str(value: Any) -> str:
+    def _binary_to_str(value: Any) -> Any:
         """
         Convert binary value to string
 
@@ -266,17 +266,16 @@ def dataframe_to_json(
 
         Returns
         -------
-        str
+        Any
             Converted string value
         """
         if isinstance(value, (bytes, bytearray)):
             try:
                 return value.decode("utf-8")
             except UnicodeDecodeError:
-                pass
-
-        # for non utf-8 decodable bytes, convert to hex string
-        return str(value.hex())
+                # for non utf-8 decodable bytes, convert to hex string
+                return str(value.hex())
+        return value
 
     for column in dataframe.select_dtypes(include=[object]).columns:
         dataframe[column] = dataframe[column].apply(_binary_to_str)
