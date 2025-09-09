@@ -74,11 +74,11 @@ class UseCaseMigrationServiceV23(BaseMongoCollectionMigration):
 
         # Sanity check that use_case_type field is present and has correct value
         for use_case_dict in sample_records:
-            assert (
-                "use_case_type" in use_case_dict
-            ), f"use_case_type field missing in {use_case_dict['_id']}"
-            assert (
-                use_case_dict["use_case_type"] == UseCaseType.PREDICTIVE
-            ), f"Unexpected use_case_type value in {use_case_dict['_id']}"
+            assert "use_case_type" in use_case_dict, (
+                f"use_case_type field missing in {use_case_dict['_id']}"
+            )
+            assert use_case_dict["use_case_type"] == UseCaseType.PREDICTIVE, (
+                f"Unexpected use_case_type value in {use_case_dict['_id']}"
+            )
 
         logger.info("Migrated all records successfully (total: %d)", total)

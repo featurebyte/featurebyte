@@ -44,20 +44,20 @@
 #        with:
 #          python-version: ${{ matrix.python-version }}
 #          enable-cache: true
-#      - name: Check pyproject.toml and poetry.lock are consistent
-#        run: task check-poetry
+#      - name: Check pyproject.toml and uv.lock are consistent
+#        run: task check-uv
 #      - name: Build package (branch)
 #        run: |-
-#          poetry version 1
-#          poetry build
+#          uv version 1
+#          uv build
 #          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
 #          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > branch.PKG-INFO
 #      - name: Checkout merge base
 #        run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
 #      - name: Build package (main)
 #        run: |-
-#          poetry version 1
-#          poetry build
+#          uv version 1
+#          uv build
 #          tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
 #          awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
 #      - name: Diff dependencies
@@ -94,11 +94,11 @@
 #        uses: actions/setup-python@v5
 #        with:
 #          python-version: "3.10"
-#      - name: Install Poetry + Configure
+#      - name: Install uv + Configure
 #        run: |-
-#          pip install poetry==2.1.2
-#          poetry config virtualenvs.in-project true
-#      - uses: bushwhackr/poetry-diff@v1
+#          pip install uv==2.1.2
+#          uv config virtualenvs.in-project true
+#      - uses: bushwhackr/uv-diff@v1
 #        id: poetry-diff
 #      - uses: mshick/add-pr-comment@v2
 #        if: ${{ steps.poetry-diff.outputs.diff_present != '0' }}
