@@ -216,7 +216,7 @@ def test_aggregate_asat_snapshots_view(snowflake_snapshots_table_with_entity, an
                 "snapshot_datetime_column": "date",
                 "snapshot_datetime_metadata": {
                     "timestamp_schema": {
-                        "format_string": "YYYY-MM-DD " "HH24:MI:SS",
+                        "format_string": "YYYY-MM-DD HH24:MI:SS",
                         "is_utc_time": None,
                         "timezone": "Etc/UTC",
                     },
