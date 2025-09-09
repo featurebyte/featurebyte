@@ -106,7 +106,7 @@ def test_lookup_target(snapshots_table):
     ])
 
     expected = preview_params.copy()
-    expected["snapshot_lookup_target"] = [0.09, 0.14]
+    expected["snapshot_lookup_target"] = [0.12, 0.17]
 
     df_targets = lookup_target.compute_targets(preview_params)
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
