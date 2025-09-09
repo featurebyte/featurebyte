@@ -49,7 +49,7 @@ dependencies = [
   "pandas<2", # pickle files in test not compatible with pandas 2.x
   "pillow",
   "pyarrow",
-  "pydantic",
+  "pydantic~=2.8",
   "pydantic-settings",
   "pymongo",
   "pyopenssl",
