@@ -1668,7 +1668,7 @@ requires-dist = [
   {name = "pdfkit", marker = "extra == 'server'"},
   {name = "pillow"},
   {name = "pyarrow"},
-  {name = "pydantic"},
+  {name = "pydantic", specifier = "~=2.8"},
   {name = "pydantic-extra-types"},
   {name = "pydantic-settings"},
   {name = "pyhive", extras = ["hive-pure-sasl"], marker = "extra == 'server'"},
