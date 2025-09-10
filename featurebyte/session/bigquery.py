@@ -95,7 +95,7 @@ pa_type_mapping = {
     SqlTypeNames.FLOAT: pa.float64(),
     SqlTypeNames.FLOAT64: pa.float64(),
     SqlTypeNames.STRING: pa.string(),
-    SqlTypeNames.BYTES: pa.large_binary(),
+    SqlTypeNames.BYTES: pa.binary(),
     SqlTypeNames.TIMESTAMP: pa.timestamp("us", tz=None),
     SqlTypeNames.DATETIME: pa.timestamp("us", tz=None),
     SqlTypeNames.DATE: pa.date64(),
@@ -442,7 +442,12 @@ class BigQuerySession(BaseSession):
             if not records:
                 # return empty table to ensure correct schema is returned
                 return pa.record_batch([[]] * len(schema), schema=schema)
-            table = pa.table(list(zip(*[list(i.values()) for i in records])), schema=schema)
+            table = pa.table(
+                list(
+                    zip(*[list(self._format_value(value) for value in i.values()) for i in records])
+                ),
+                schema=schema,
+            )
             return table.to_pandas()
         return None
 

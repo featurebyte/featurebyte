@@ -55,7 +55,7 @@ pa_type_mapping = {
     "SMALLINT": pa.int16(),
     "INT": pa.int32(),
     "BIGINT": pa.int64(),
-    "BINARY": pa.large_binary(),
+    "BINARY": pa.binary(),
     "BOOLEAN": pa.bool_(),
     "DATE": pa.date64(),
     "TIME": pa.time32("ms"),
