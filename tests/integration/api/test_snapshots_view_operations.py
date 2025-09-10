@@ -4,7 +4,7 @@ Integration tests for SnapshotsView
 
 import pandas as pd
 
-from featurebyte import FeatureList
+from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
     fb_assert_frame_equal,
@@ -66,6 +66,33 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
         "value_col_from_snapshots": [0.9400000000000001, 0.9500000000000001, 0.96],
     }
     assert actual == expected
+
+
+def test_aggregate_over(snapshots_table):
+    """
+    Test aggregate over on snapshots table
+    """
+    view = snapshots_table.get_view()
+    feature = view.groupby("snapshot_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["value_col_sum_7d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["value_col_sum_7d"]
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
+            "series_id": "S0",
+        }
+    ])
+    feature_list = FeatureList([feature], "test_feature_list")
+    expected = preview_params.copy()
+    expected["value_col_sum_7d"] = [0.35]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_lookup_features(snapshots_table):

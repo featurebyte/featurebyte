@@ -529,3 +529,63 @@ def test_aggregate_over__default_cron_feature_job_setting(
         "execution_buffer": "0s",
     }
     feature.save()
+
+
+def test_aggregate_over__snapshots_view(snowflake_snapshots_table_with_entity):
+    """
+    Test aggregate_over on SnapshotsView
+    """
+    view = snowflake_snapshots_table_with_entity.get_view()
+    feature = view.groupby("col_int").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        feature_names=["sum_3m"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["sum_3m"]
+
+    feature_dict = feature.model_dump()
+    node = get_node(feature_dict["graph"], "time_series_window_aggregate_1")
+    assert node == {
+        "name": "time_series_window_aggregate_1",
+        "type": "time_series_window_aggregate",
+        "output_type": "frame",
+        "parameters": {
+            "keys": ["col_int"],
+            "parent": "col_float",
+            "agg_func": "sum",
+            "value_by": None,
+            "serving_names": ["transaction_id"],
+            "entity_ids": [ObjectId("63f94ed6ea1f050131379204")],
+            "windows": [{"unit": "MONTH", "size": 3}],
+            "reference_datetime_column": "date",
+            "reference_datetime_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                },
+                "timestamp_tuple_schema": None,
+            },
+            "time_interval": {"unit": "DAY", "value": 1},
+            "names": ["sum_3m"],
+            "feature_job_setting": {
+                "crontab": {
+                    "minute": 0,
+                    "hour": 8,
+                    "day_of_month": 1,
+                    "month_of_year": "*",
+                    "day_of_week": "*",
+                },
+                "timezone": "Etc/UTC",
+                "reference_timezone": None,
+                "blind_spot": None,
+            },
+            "offset": None,
+        },
+    }
+
+    # check feature can be saved
+    feature.save()
