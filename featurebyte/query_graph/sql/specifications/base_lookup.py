@@ -4,7 +4,7 @@ Base lookup spec
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -33,6 +33,13 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     event_parameters: Optional[EventLookupParameters]
     snapshots_parameters: Optional[SnapshotsLookupParameters]
     is_parent_lookup: bool = False
+
+    @property
+    @abstractmethod
+    def is_target(self) -> bool:
+        """
+        Whether this lookup spec is for computing a target
+        """
 
     @property
     def agg_result_name(self) -> str:

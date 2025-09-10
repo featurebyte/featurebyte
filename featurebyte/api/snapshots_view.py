@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.input import (
     InputNode,
     SnapshotsTableInputNodeParameters,
 )
+from featurebyte.typing import OffsetType
 
 
 class SnapshotsViewColumn(LaggableViewColumn):
@@ -284,9 +285,14 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         # For joining with SCDView, the parameters are handled in SCDView::_get_join_parameters()
         return {}
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
-        # TODO: support offset
-        _ = offset
+    def get_additional_lookup_parameters(
+        self, offset: Optional[OffsetType] = None
+    ) -> dict[str, Any]:
+        if offset is not None:
+            assert isinstance(offset, int)
+            offset_size = offset
+        else:
+            offset_size = None
         return {
             "snapshots_parameters": {
                 "snapshot_datetime_column": self.snapshot_datetime_column,
@@ -295,5 +301,34 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
                     timestamp_schema=self.snapshot_datetime_schema
                 ),
                 "feature_job_setting": self.default_feature_job_setting,
+                "offset_size": offset_size,
             }
         }
+
+    def validate_offset(self, offset: Optional[OffsetType]) -> None:
+        """
+        Validate the offset parameter in as_features and as_target.
+
+        Parameters
+        ----------
+        offset: Optional[OffsetType]
+            Offset for lookup feature / target. For SnapshotsView, should be an integer
+            specifying the number of time interval steps.
+
+        Raises
+        ------
+        ValueError
+            If offset is invalid for SnapshotsView
+        """
+        if offset is None:
+            return
+        if isinstance(offset, str):
+            raise ValueError(
+                "String offset is not supported for SnapshotsView. Use integer offset instead."
+            )
+        if not isinstance(offset, int):
+            raise ValueError(
+                "Offset for SnapshotsView must be an integer specifying the number of time interval steps."
+            )
+        if offset < 0:
+            raise ValueError("Offset for SnapshotsView must be a non-negative integer.")

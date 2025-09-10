@@ -223,10 +223,12 @@ def test_lookup_target_node(node_code_gen_output_factory):
         config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
+    assert str(info) == "target"
+    statement_str = str(statements[0][1])
     assert (
-        info == 'view["target_col"].as_target(target_name="target", offset="7d", fill_value=None)'
+        statement_str
+        == 'view["target_col"].as_target(target_name="target", offset="7d", fill_value=None)'
     )
-    assert statements == []
 
 
 def test_haversine_node(node_code_gen_output_factory):

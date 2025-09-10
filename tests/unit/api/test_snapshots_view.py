@@ -726,7 +726,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
     """
     snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
     view = snowflake_snapshots_table.get_view()
-    feature = view["col_float"].as_feature("FloatFeature")
+    feature = view["col_float"].as_feature("FloatFeature", offset=7)
     graph_dict = feature.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_1")
     assert lookup_node == {
@@ -753,7 +753,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
                     "timestamp_tuple_schema": None,
                 },
                 "feature_job_setting": None,
-                "offset": None,
+                "offset_size": 7,
             },
         },
     }
@@ -773,3 +773,110 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
             }
         },
     )
+    feature.save()
+
+    agg_info = feature.info()["metadata"]["aggregations"]
+    assert agg_info == {
+        "F0": {
+            "aggregation_type": "lookup",
+            "category": None,
+            "column": "Input0",
+            "filter": False,
+            "function": None,
+            "keys": ["col_int"],
+            "name": "FloatFeature",
+            "offset": 7,
+            "window": None,
+        }
+    }
+
+
+def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
+    """
+    Test SnapshotsView as_target configures additional parameters
+    """
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+    target = view["col_float"].as_target(
+        "FloatTarget",
+        fill_value=0,
+        offset=7,
+    )
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node == {
+        "name": "lookup_target_1",
+        "type": NodeType.LOOKUP_TARGET,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatTarget"],
+            "entity_column": "col_int",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": {
+                "snapshot_datetime_column": "date",
+                "time_interval": {"unit": "DAY", "value": 1},
+                "snapshot_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "is_utc_time": None,
+                        "timezone": "Etc/UTC",
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "feature_job_setting": None,
+                "offset_size": 7,
+            },
+            "offset": None,
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_snapshots_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        target,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_snapshots_table.id: {
+                "name": snowflake_snapshots_table.name,
+                "record_creation_timestamp_column": snowflake_snapshots_table.record_creation_timestamp_column,
+                # since the table is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+    target.save()
+
+
+def test_snapshots_view_offset_validation(snowflake_snapshots_table, cust_id_entity):
+    """
+    Test that SnapshotsView properly validates offset parameter types
+    """
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+
+    # Test that integer offset works
+    feature = view["col_float"].as_feature("FloatFeature", offset=7)
+    assert feature is not None
+
+    # Test that string offset is rejected
+    with pytest.raises(ValueError, match="String offset is not supported for SnapshotsView"):
+        view["col_float"].as_feature("FloatFeature", offset="7d")
+
+    # Test that negative integer offset is rejected
+    with pytest.raises(ValueError, match="Offset for SnapshotsView must be a non-negative integer"):
+        view["col_float"].as_feature("FloatFeature", offset=-1)
+
+    # Test as_target with similar validations
+    target = view["col_float"].as_target("FloatTarget", offset=5, fill_value=0)
+    assert target is not None
+
+    with pytest.raises(ValueError, match="String offset is not supported for SnapshotsView"):
+        view["col_float"].as_target("FloatTarget", offset="5d", fill_value=0)
+
+    with pytest.raises(ValueError, match="Offset for SnapshotsView must be a non-negative integer"):
+        view["col_float"].as_target("FloatTarget", offset=-1, fill_value=0)

@@ -34,6 +34,7 @@ OptionalScalar = Optional[Scalar]
 ScalarSequence = Sequence[Scalar]
 Numeric = Union[StrictInt, StrictFloat]
 Timestamp = Union[pd.Timestamp]
+OffsetType = Union[str, int]
 
 AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
 

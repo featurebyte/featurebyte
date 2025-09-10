@@ -70,6 +70,7 @@ from featurebyte.query_graph.util import (
     hash_input_node_hashes,
     sort_lists_by_first_list,
 )
+from featurebyte.typing import OffsetType
 
 
 class ProjectNode(BaseNode):
@@ -1137,7 +1138,7 @@ class SnapshotsLookupParameters(FeatureByteBaseModel):
     time_interval: TimeInterval
     snapshot_datetime_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
     feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
-    offset: Optional[CalendarWindow] = Field(default=None)
+    offset_size: Optional[int] = Field(default=None)
 
     @property
     def snapshot_timestamp_schema(self) -> Optional[TimestampSchema]:
@@ -1230,9 +1231,11 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
-        offset = None
+        offset: Optional[OffsetType] = None
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
+        elif self.parameters.snapshots_parameters:
+            offset = self.parameters.snapshots_parameters.offset_size
         return [
             AggregationColumn(
                 name=feature_name,
@@ -1310,20 +1313,25 @@ class LookupNode(BaseLookupNode):
         )
         input_column_names = self.parameters.input_column_names
         feature_names = self.parameters.feature_names
-        offset = None
+        offset: Optional[OffsetType]
         if self.parameters.scd_parameters:
             offset = self.parameters.scd_parameters.offset
-        grouped = (
-            f"{var_name}.as_features(column_names={input_column_names}, "
-            f"feature_names={feature_names}, "
-            f"offset={ValueStr.create(offset)})"
-        )
+        elif self.parameters.snapshots_parameters:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = None
         out_var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
             node_name=self.name,
         )
-        statements.append((out_var_name, ExpressionStr(grouped)))
+        expression = get_object_class_from_function_call(
+            callable_name=f"{var_name}.as_features",
+            column_names=input_column_names,
+            feature_names=feature_names,
+            offset=offset,
+        )
+        statements.append((out_var_name, expression))
         return statements, out_var_name
 
 
@@ -1359,13 +1367,24 @@ class LookupTargetNode(BaseLookupNode):
             to_associate_with_node_name=False,
         )
         feature_names = self.parameters.feature_names
-        offset = self.parameters.offset
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
-        lookup_target_str = (
-            f"{var_name}[{input_column_name}].as_target(target_name={ValueStr.create(feature_names[0])}, "
-            f"offset={ValueStr.create(offset)}, fill_value=None)"
+        offset: Optional[OffsetType]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
+        out_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="target",
+            node_name=self.name,
         )
-        return statements, ExpressionStr(lookup_target_str)
+        expression = get_object_class_from_function_call(
+            callable_name=f"{var_name}[{input_column_name}].as_target",
+            target_name=feature_names[0],
+            offset=offset,
+            fill_value=None,
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class JoinMetadata(FeatureByteBaseModel):
@@ -2040,6 +2059,11 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
+        offset: Optional[OffsetType]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
         return [
             AggregationColumn(
                 name=self.parameters.name,
@@ -2047,7 +2071,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 keys=self.parameters.keys,
                 window=None,
                 category=self.parameters.value_by,
-                offset=self.parameters.offset,
+                offset=offset,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,  # type: ignore[arg-type]
@@ -2091,7 +2115,12 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
         value_column = ValueStr.create(self.parameters.parent)
         method = ValueStr.create(self.parameters.agg_func)
         feature_name = ValueStr.create(self.parameters.name)
-        offset = ValueStr.create(self.parameters.offset)
+        offset: Optional[OffsetType]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
+        offset = ValueStr.create(offset)
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate_asat(value_column={value_column}, "

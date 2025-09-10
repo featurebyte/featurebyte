@@ -255,6 +255,18 @@ def aggregation_spec_with_snapshots_parameters(entity_id):
     )
 
 
+@pytest.fixture
+def aggregation_spec_with_snapshots_parameters_and_offset(
+    aggregation_spec_with_snapshots_parameters,
+):
+    """
+    AggregateAsAtSpec for snapshots table with offset
+    """
+    agg_spec = aggregation_spec_with_snapshots_parameters
+    agg_spec.parameters.snapshots_parameters.offset_size = 3
+    return agg_spec
+
+
 def test_asat_aggregate_scd_table_without_end_timestamp(
     aggregation_spec_without_end_timestamp, source_info
 ):
@@ -753,14 +765,16 @@ def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset
     "test_case_name",
     [
         "snapshots",
+        "snapshots_with_offset",
     ],
 )
-def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source_info):
+def test_snapshots_aggregate_asat(request, test_case_name, update_fixtures, source_info):
     """
-    Test lookup aggregator for snapshots table
+    Test asat aggregator for snapshots table
     """
     test_case_mapping = {
         "snapshots": "aggregation_spec_with_snapshots_parameters",
+        "snapshots_with_offset": "aggregation_spec_with_snapshots_parameters_and_offset",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)
