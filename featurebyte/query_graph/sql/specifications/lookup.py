@@ -22,6 +22,10 @@ class LookupSpec(BaseLookupSpec):
     """
 
     @property
+    def is_target(self) -> bool:
+        return False
+
+    @property
     def aggregation_type(self) -> AggregationType:
         return AggregationType.LOOKUP
 

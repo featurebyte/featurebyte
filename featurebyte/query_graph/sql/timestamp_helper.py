@@ -10,7 +10,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -21,10 +21,12 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimeZoneColumn,
     TimeZoneUnion,
 )
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeJoinKey
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.offset import OffsetDirection
 
 
 def convert_timezone(
@@ -187,7 +189,9 @@ def apply_snapshot_adjustment(
     time_interval: TimeInterval,
     feature_job_setting: Optional[CronFeatureJobSetting],
     format_string: Optional[str],
+    offset_size: Optional[int],
     adapter: BaseAdapter,
+    offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
 ) -> Expression:
     """
     Apply snapshot adjustments to a datetime expression including truncation, blind spot window,
@@ -204,8 +208,12 @@ def apply_snapshot_adjustment(
         Feature job setting containing blind spot window configuration
     format_string: Optional[str]
         Format string for timestamp formatting
+    offset_size: Optional[int]
+        Size of the offset to apply
     adapter: BaseAdapter
         SQL adapter
+    offset_direction: OffsetDirection
+        Direction of the offset (default: BACKWARD)
 
     Returns
     -------
@@ -230,6 +238,24 @@ def apply_snapshot_adjustment(
                     adjusted_datetime_expr,
                     blind_spot_window.to_months(),
                 )
+
+    if offset_size is not None:
+        if offset_direction == OffsetDirection.FORWARD:
+            offset_size = offset_size * -1
+        offset_window = CalendarWindow(
+            unit=time_interval.unit,
+            size=offset_size,
+        )
+        if time_interval.unit in TimeIntervalUnit.fixed_size_units():
+            adjusted_datetime_expr = adapter.subtract_seconds(
+                adjusted_datetime_expr,
+                offset_window.to_seconds(),
+            )
+        else:
+            adjusted_datetime_expr = adapter.subtract_months(
+                adjusted_datetime_expr,
+                offset_window.to_months(),
+            )
 
     if format_string is not None:
         adjusted_datetime_expr = adapter.format_timestamp(
@@ -308,6 +334,7 @@ def apply_snapshots_datetime_transform(
         time_interval=transform.snapshot_time_interval,
         feature_job_setting=transform.snapshot_feature_job_setting,
         format_string=transform.snapshot_format_string,
+        offset_size=None,
         adapter=adapter,
     )
 

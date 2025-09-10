@@ -32,7 +32,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
 )
 from featurebyte.query_graph.model.window import CalendarWindow
-from featurebyte.typing import UNSET, OptionalScalar, Unset
+from featurebyte.typing import UNSET, OffsetType, OptionalScalar, Unset
 
 
 class GroupBy:
@@ -287,7 +287,7 @@ class GroupBy:
         value_column: Optional[str],
         method: Union[AggFunc, str],
         feature_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[OffsetType] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,

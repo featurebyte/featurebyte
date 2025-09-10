@@ -33,4 +33,5 @@ class LookupTargetAggregator(BaseLookupAggregator[LookupTargetSpec]):
         )
 
     def get_forward_point_in_time_offset(self, base_lookup_spec: LookupTargetSpec) -> Optional[str]:
+        # TODO: handle CalendarWindow offset
         return base_lookup_spec.offset

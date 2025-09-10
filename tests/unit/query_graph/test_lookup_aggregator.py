@@ -14,6 +14,7 @@ from featurebyte import CalendarWindow, TimeInterval
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from tests.unit.query_graph.util import get_combined_aggregation_expr_from_aggregator
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -104,6 +105,22 @@ def daily_snapshots_table_agg_spec(global_graph, snapshots_lookup_feature_node, 
 
 
 @pytest.fixture
+def daily_snapshots_table_target_agg_spec(global_graph, snapshots_lookup_target_node, source_info):
+    """
+    Fixture for daily snapshots table aggregation specification
+    """
+    parent_nodes = global_graph.get_input_node_names(snapshots_lookup_target_node)
+    assert len(parent_nodes) == 1
+    agg_node = global_graph.get_node_by_name(parent_nodes[0])
+    return LookupTargetSpec.from_query_graph_node(
+        node=agg_node,
+        graph=global_graph,
+        source_info=source_info,
+        agg_result_name_include_serving_names=True,
+    )[0]
+
+
+@pytest.fixture
 def daily_snapshots_table_agg_spec_blind_spot(daily_snapshots_table_agg_spec):
     """
     Fixture for daily snapshots table aggregation specification with blind spot
@@ -136,6 +153,37 @@ def monthly_snapshots_table_agg_spec_blind_spot(daily_snapshots_table_agg_spec):
         unit="MONTH",
         size=3,
     )
+    return agg_spec
+
+
+@pytest.fixture
+def daily_snapshots_table_agg_spec_with_offset(daily_snapshots_table_agg_spec):
+    """
+    Fixture for daily snapshots table aggregation specification with offset
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.offset_size = 2
+    return agg_spec
+
+
+@pytest.fixture
+def monthly_snapshots_table_agg_spec_with_offset(daily_snapshots_table_agg_spec):
+    """
+    Fixture for monthly snapshots table aggregation specification with offset
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_agg_spec)
+    agg_spec.snapshots_parameters.time_interval = TimeInterval(unit="MONTH", value=1)
+    agg_spec.snapshots_parameters.offset_size = 1
+    return agg_spec
+
+
+@pytest.fixture
+def daily_snapshots_table_target_agg_spec_with_offset(daily_snapshots_table_target_agg_spec):
+    """
+    Fixture for
+    """
+    agg_spec = copy.deepcopy(daily_snapshots_table_target_agg_spec)
+    agg_spec.snapshots_parameters.offset_size = 3
     return agg_spec
 
 
@@ -463,8 +511,11 @@ def test_lookup_aggregator__event_table(
     [
         "snapshots_daily",
         "snapshots_daily_with_blind_spot",
+        "snapshots_daily_with_offset",
+        "snapshots_daily_target_with_offset",
         "snapshots_monthly",
         "snapshots_monthly_with_blind_spot",
+        "snapshots_monthly_with_offset",
     ],
 )
 def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source_info):
@@ -474,8 +525,11 @@ def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source
     test_case_mapping = {
         "snapshots_daily": "daily_snapshots_table_agg_spec",
         "snapshots_daily_with_blind_spot": "daily_snapshots_table_agg_spec_blind_spot",
+        "snapshots_daily_with_offset": "daily_snapshots_table_agg_spec_with_offset",
+        "snapshots_daily_target_with_offset": "daily_snapshots_table_target_agg_spec_with_offset",
         "snapshots_monthly": "monthly_snapshots_table_agg_spec",
         "snapshots_monthly_with_blind_spot": "monthly_snapshots_table_agg_spec_blind_spot",
+        "snapshots_monthly_with_offset": "monthly_snapshots_table_agg_spec_with_offset",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)

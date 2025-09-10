@@ -22,7 +22,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
-from featurebyte.typing import validate_type_is_feature
+from featurebyte.typing import OffsetType, validate_type_is_feature
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
@@ -168,7 +168,9 @@ class EventView(View, GroupByMixin, RawMixin):
     def _get_join_column(self) -> Optional[str]:
         return self.event_id_column
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(
+        self, offset: Optional[OffsetType] = None
+    ) -> dict[str, Any]:
         _ = offset
         return {
             "event_parameters": {

@@ -7,6 +7,7 @@ import pandas as pd
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
+    fb_assert_frame_equal,
 )
 
 
@@ -113,12 +114,36 @@ def test_lookup_features(snapshots_table):
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
+def test_lookup_target(snapshots_table):
+    """
+    Test that lookup target can be created from SnapshotsView
+    """
+    view = snapshots_table.get_view()
+    lookup_target = view["value_col"].as_target(
+        "snapshot_lookup_target",
+        offset=3,
+        fill_value=0,
+    )
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": dt,
+            "series_id": "S0",
+        }
+        for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
+    ])
+
+    expected = preview_params.copy()
+    expected["snapshot_lookup_target"] = [0.12, 0.17]
+
+    df_targets = lookup_target.compute_targets(preview_params)
+    fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
+
+
 def test_aggregate_as_at_feature(snapshots_table):
     """
     Test that aggregate as at feature can be created from SnapshotsView
     """
     view = snapshots_table.get_view()
-    df = view.preview()
     agg_feature = view.groupby("user_id_col").aggregate_asat(
         method="sum",
         value_column="value_col",

@@ -24,6 +24,10 @@ class LookupTargetSpec(BaseLookupSpec):
     offset: Optional[str] = None
 
     @property
+    def is_target(self) -> bool:
+        return True
+
+    @property
     def aggregation_type(self) -> AggregationType:
         return AggregationType.LOOKUP_TARGET
 

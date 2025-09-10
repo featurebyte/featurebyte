@@ -157,6 +157,7 @@ class SnapshotsRequestTablePlan:
             time_interval=snapshots_parameters.time_interval,
             feature_job_setting=snapshots_parameters.feature_job_setting,
             format_string=snapshots_parameters.snapshot_timestamp_format_string,
+            offset_size=snapshots_parameters.offset_size,
             adapter=self.adapter,
         )
         distinct_point_in_time_to_adjusted_expr = expressions.select(

@@ -204,9 +204,9 @@ class BaseTableDocumentController(
         )
         table_details = await self.feature_store_warehouse_service.get_table_details(
             feature_store,
-            cast(str, document.tabular_source.table_details.database_name),
-            cast(str, document.tabular_source.table_details.schema_name),
-            document.tabular_source.table_details.table_name,
+            database_name=cast(str, document.tabular_source.table_details.database_name),
+            schema_name=cast(str, document.tabular_source.table_details.schema_name),
+            table_name=document.tabular_source.table_details.table_name,
         )
         if table_details.description:
             document = await self.update_description(

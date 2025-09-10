@@ -1317,8 +1317,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == []
 
-    def test_cache_is_parameter_specific(
-        self, test_api_client_persistent, create_success_response, mock_get_session
+    @pytest.mark.asyncio
+    async def test_cache_is_parameter_specific(
+        self, test_api_client_persistent, create_success_response, mock_get_session, persistent
     ):
         """Test cache is parameter specific"""
         test_api_client, _ = test_api_client_persistent
@@ -1368,3 +1369,55 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == []
+
+        cache_records, _ = await persistent.find(
+            collection_name="feature_store_cache", query_filter={}
+        )
+        for record in cache_records:
+            for excluded_fields in [
+                "_id",
+                "user_id",
+                "created_at",
+                "key",
+                "block_modification_by",
+                "is_deleted",
+            ]:
+                record.pop(excluded_fields)
+            empty_keys = [key for key, value in record.items() if value is None]
+            for key in empty_keys:
+                record.pop(key)
+        assert cache_records == [
+            {
+                "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                "value": {"function_name": "list_databases", "value": ["x"]},
+            },
+            {
+                "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                "database_name": "X",
+                "value": {"function_name": "list_schemas", "value": ["y"]},
+            },
+            {
+                "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                "database_name": "X",
+                "schema_name": "Y",
+                "value": {
+                    "function_name": "list_tables",
+                    "value": [
+                        {"name": "a", "description": None},
+                        {"name": "b", "description": None},
+                        {"name": "c", "description": None},
+                    ],
+                },
+            },
+            {
+                "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                "database_name": "Y",
+                "value": {"function_name": "list_schemas", "value": []},
+            },
+            {
+                "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                "database_name": "X",
+                "schema_name": "Z",
+                "value": {"function_name": "list_tables", "value": []},
+            },
+        ]
