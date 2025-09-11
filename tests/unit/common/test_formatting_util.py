@@ -12,10 +12,10 @@ def test_codestr_formatting():
     code = CodeStr("import featurebyte")
     assert str(code) == "import featurebyte"
     assert code._repr_html_() == (
-        '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
-        '<div class="highlight"><pre style="line-height: 125%;"><span></span>'
-        '<span style="color: #008000; font-weight: bold">import</span> '
-        '<span style="color: #0000FF; font-weight: bold">featurebyte</span>\n'
+        '<div style="margin:30px; padding: 20px; border:1px solid #aaa"><div class="highlight">'
+        '<pre style="line-height: 125%;"><span></span>'
+        '<span style="color: #008000; font-weight: bold">import</span>'
+        '<span style="color: #BBB"> </span><span style="color: #00F; font-weight: bold">featurebyte</span>\n'
         "</pre></div>\n</div>"
     )
 

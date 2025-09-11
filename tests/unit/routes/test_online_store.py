@@ -52,7 +52,7 @@ class TestOnlineStoreApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             payload["details"] = {
                 key: f"{value}_{i}" if key not in ["type", "credential"] else value
                 for key, value in self.payload["details"].items()

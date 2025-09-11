@@ -410,7 +410,7 @@ def test_time_delta(odfv_config, udf_config, unit, node_code_gen_output_factory)
     )
     code_gen = CodeGenerator(statements=odfv_stats + [(VariableNameStr("output"), odfv_expr)])
     codes = code_gen.generate().strip()
-    assert codes == f'feat = pd.to_timedelta(val, unit="{unit}")\n' "output = feat"
+    assert codes == f'feat = pd.to_timedelta(val, unit="{unit}")\noutput = feat'
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -419,4 +419,4 @@ def test_time_delta(odfv_config, udf_config, unit, node_code_gen_output_factory)
     )
     code_gen = CodeGenerator(statements=udf_stats + [(VariableNameStr("output"), udf_expr)])
     codes = code_gen.generate().strip()
-    assert codes == f'feat = pd.to_timedelta(val, unit="{unit}")\n' "output = feat"
+    assert codes == f'feat = pd.to_timedelta(val, unit="{unit}")\noutput = feat'

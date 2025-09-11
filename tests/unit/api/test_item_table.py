@@ -392,7 +392,7 @@ def test_update_record_creation_timestamp_column__saved_object(saved_item_table)
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_table.update_record_creation_timestamp_column("item_id_col")
     expected_msg = (
-        'Column "item_id_col" is expected to have type(s): ' "['TIMESTAMP', 'TIMESTAMP_TZ']"
+        "Column \"item_id_col\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ']"
     )
     assert expected_msg in str(exc.value)
 
@@ -412,8 +412,7 @@ def test_get_item_table(saved_item_table, snowflake_item_table):
         ItemTable.get("unknown_item_table")
 
     expected_msg = (
-        'ItemTable (name: "unknown_item_table") not found. '
-        "Please save the ItemTable object first."
+        'ItemTable (name: "unknown_item_table") not found. Please save the ItemTable object first.'
     )
     assert expected_msg in str(exc.value)
 

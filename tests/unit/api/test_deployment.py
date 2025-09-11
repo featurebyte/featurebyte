@@ -53,7 +53,7 @@ def test_list(deployment):
             "id": str(deployment.id),
             "name": deployment.name,
             "feature_list_name": "my_feature_list",
-            "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',
+            "feature_list_version": f"V{pd.Timestamp.now().strftime('%y%m%d')}",
             "num_feature": 1,
             "enabled": False,
         }
@@ -64,7 +64,7 @@ def test_list(deployment):
 def test_info(deployment):
     """Test get deployment info"""
     info_dict = deployment.info()
-    expected_version = f'V{pd.Timestamp.now().strftime("%y%m%d")}'
+    expected_version = f"V{pd.Timestamp.now().strftime('%y%m%d')}"
     assert info_dict == {
         "name": f"Deployment with my_feature_list_{expected_version}",
         "feature_list_name": "my_feature_list",
