@@ -194,7 +194,6 @@ class DataRequirementsExtractor(ABC):
     Extracts data requirements from query graph nodes.
     """
 
-    @abstractmethod
     def get_data_requirements(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
@@ -216,6 +215,31 @@ class DataRequirementsExtractor(ABC):
         Optional[DataRequirements]
             The data requirements for the node.
         """
+        # Don't filter by partition for SCD tables
+        if isinstance(input_node_parameters, SCDTableInputNodeParameters):
+            return None
+
+        return self.get_data_requirements_impl(node, input_node_parameters)
+
+    @abstractmethod
+    def get_data_requirements_impl(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        """
+        Implementation-specific data requirements extraction.
+
+        Parameters
+        ----------
+        node: Node
+            The query graph node to extract data requirements from.
+        input_node_parameters: InputNodeParameters
+            Input node parameters for the primary input node.
+
+        Returns
+        -------
+        Optional[DataRequirements]
+            The data requirements for the node.
+        """
 
 
 class WindowAggregateDataRequirementsExtractor(DataRequirementsExtractor):
@@ -223,7 +247,7 @@ class WindowAggregateDataRequirementsExtractor(DataRequirementsExtractor):
     Extracts data requirements from window aggregate nodes.
     """
 
-    def get_data_requirements(
+    def get_data_requirements_impl(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
         parameters = node.parameters
@@ -248,7 +272,7 @@ class TimeSeriesWindowAggregateDataRequirementsExtractor(DataRequirementsExtract
     Extracts data requirements from time series window aggregate nodes.
     """
 
-    def get_data_requirements(
+    def get_data_requirements_impl(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
         _ = input_node_parameters
@@ -266,9 +290,10 @@ class LookupDataRequirementsExtractor(DataRequirementsExtractor):
     Extracts data requirements from lookup nodes.
     """
 
-    def get_data_requirements(
+    def get_data_requirements_impl(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
+        _ = input_node_parameters
         parameters = node.parameters
         assert isinstance(parameters, LookupParameters)
         if parameters.snapshots_parameters is not None:
@@ -283,9 +308,10 @@ class LookupTargetDataRequirementsExtractor(DataRequirementsExtractor):
     Extracts data requirements from lookup target nodes.
     """
 
-    def get_data_requirements(
+    def get_data_requirements_impl(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
+        _ = input_node_parameters
         parameters = node.parameters
         assert isinstance(parameters, LookupParameters)
         if parameters.snapshots_parameters is not None:
@@ -309,7 +335,7 @@ class AggregateAsAtDataRequirementsExtractor(DataRequirementsExtractor):
     Extracts data requirements from as-at aggregate nodes.
     """
 
-    def get_data_requirements(
+    def get_data_requirements_impl(
         self, node: Node, input_node_parameters: InputNodeParameters
     ) -> Optional[DataRequirements]:
         _ = input_node_parameters
@@ -470,9 +496,6 @@ def get_partition_filters_from_graph(
                 node, input_node.parameters
             )
             if current_requirements is None:
-                continue
-            if isinstance(input_node.parameters, SCDTableInputNodeParameters):
-                # Don't filter by partition for SCD tables
                 continue
             if input_node.name not in input_node_infos:
                 parameters_dict = input_node.parameters.model_dump()
