@@ -202,6 +202,21 @@ def test_scd_lookup_feature(global_graph, scd_lookup_feature_node, min_max_point
     assert partition_column_filters == PartitionColumnFilters(mapping={})
 
 
+def test_aggregate_as_from_scd_feature(
+    global_graph, aggregate_asat_feature_node, min_max_point_in_time, adapter
+):
+    """
+    Test that partition filters are not generated for aggregate_as_from_scd features
+    """
+    _ = aggregate_asat_feature_node
+    partition_column_filters = get_partition_filters_from_graph(
+        global_graph,
+        *min_max_point_in_time,
+        adapter,
+    )
+    assert partition_column_filters == PartitionColumnFilters(mapping={})
+
+
 def test_latest_feature_with_unbounded_window(
     global_graph,
     latest_value_offset_without_window_feature_node,
@@ -218,6 +233,42 @@ def test_latest_feature_with_unbounded_window(
         adapter,
     )
     assert partition_column_filters == PartitionColumnFilters(mapping={})
+
+
+@pytest.mark.parametrize(
+    "snapshots_table_blind_spot, snapshots_table_feature_offset_size, expected_from_timestamp",
+    [
+        (None, None, "CAST('2023-01-01 00:00:00' AS TIMESTAMP)"),
+        ("3d", None, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -4320, 'MINUTE')"),
+        (None, 2, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -2880, 'MINUTE')"),
+        ("3d", 2, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -7200, 'MINUTE')"),
+    ],
+)
+def test_snapshots_table_lookup_feature(
+    global_graph,
+    snapshots_lookup_feature_node,
+    snapshots_table_input_node,
+    min_max_point_in_time,
+    expected_from_timestamp,
+    adapter,
+):
+    """
+    Test partition filters on snapshots lookup feature
+    """
+    _ = snapshots_lookup_feature_node
+    partition_column_filters = get_partition_filters_from_graph(
+        global_graph,
+        *min_max_point_in_time,
+        adapter,
+    )
+    expected_mapping = {
+        snapshots_table_input_node.parameters.id: {
+            "from_timestamp": expected_from_timestamp,
+            "to_timestamp": "CAST('2023-06-01 00:00:00' AS TIMESTAMP)",
+            "buffer": TimeInterval(unit="MONTH", value=1),
+        }
+    }
+    check_partition_column_filters(partition_column_filters, expected_mapping)
 
 
 def test_mixed_features(

@@ -3,6 +3,7 @@ Helpers to derive partition filers from query graph
 """
 
 import math
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Optional
@@ -13,15 +14,18 @@ from sqlglot.expressions import Expression
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import TimeIntervalUnit
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.window import CalendarWindow
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     BaseWindowAggregateParameters,
+    LookupParameters,
     TimeSeriesWindowAggregateParameters,
 )
 from featurebyte.query_graph.node.input import (
+    InputNodeParameters,
     SCDTableInputNodeParameters,
     TimeSeriesTableInputNodeParameters,
 )
@@ -107,6 +111,164 @@ class DataRequirements:
         self.after_max = merge_range(self.after_max, other.after_max)
 
 
+def get_relativedelta_from_window_and_offset(
+    window: CalendarWindow, offset: Optional[CalendarWindow]
+) -> relativedelta:
+    """
+    Get relativedelta representing window of required data from feature derivation window and offset.
+
+    Parameters
+    ----------
+    window: CalendarWindow
+        The calendar window for feature derivation.
+    offset: Optional[CalendarWindow]
+        The calendar window for offset.
+
+    Returns
+    -------
+    relativedelta
+    """
+    if window.is_fixed_size():
+        seconds = window.to_seconds()
+        if offset is not None:
+            seconds += offset.to_seconds()
+        delta = relativedelta(seconds=seconds)
+    else:
+        months = window.to_months()
+        if offset is not None:
+            months += offset.to_months()
+        delta = relativedelta(months=months)
+    return delta
+
+
+class DataRequirementsExtractor(ABC):
+    """
+    Extracts data requirements from query graph nodes.
+    """
+
+    @abstractmethod
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        """
+        Get data requirements for a given node.
+
+        Return None if the node does not impose any data requirements and will not influence the
+        outcome of partition filtering.
+
+        Parameters
+        ----------
+        node: Node
+            The query graph node to extract data requirements from.
+
+        Returns
+        -------
+        Optional[DataRequirements]
+            The data requirements for the node.
+        """
+
+
+class WindowAggregateDataRequirementsExtractor(DataRequirementsExtractor):
+    """
+    Extracts data requirements from window aggregate nodes.
+    """
+
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        parameters = node.parameters
+        assert isinstance(parameters, BaseWindowAggregateParameters)
+        _ = input_node_parameters
+        out = DataRequirements()
+        for window in parameters.windows:
+            if window is None:
+                return DataRequirements(before_min=InfiniteRange())
+            duration_minutes = math.ceil(parse_duration_string(window) / 60)
+            if parameters.offset is not None:
+                duration_minutes += math.ceil(parse_duration_string(parameters.offset) / 60)
+            window_requirements = DataRequirements(
+                before_min=RelativeDeltaRange(value=relativedelta(minutes=duration_minutes)),
+            )
+            out.merge(window_requirements)
+        return out
+
+
+class TimeSeriesWindowAggregateDataRequirementsExtractor(DataRequirementsExtractor):
+    """
+    Extracts data requirements from time series window aggregate nodes.
+    """
+
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        _ = input_node_parameters
+        parameters = node.parameters
+        assert isinstance(parameters, TimeSeriesWindowAggregateParameters)
+        out = DataRequirements()
+        for window in parameters.windows:
+            delta = get_relativedelta_from_window_and_offset(window, parameters.offset)
+            out.merge(DataRequirements(before_min=RelativeDeltaRange(value=delta)))
+        return out
+
+
+class LookupDataRequirementsExtractor(DataRequirementsExtractor):
+    """
+    Extracts data requirements from lookup nodes.
+    """
+
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        parameters = node.parameters
+        assert isinstance(parameters, LookupParameters)
+        if parameters.snapshots_parameters is not None:
+            snapshots_parameters = parameters.snapshots_parameters
+            feature_job_setting = snapshots_parameters.feature_job_setting
+            if feature_job_setting is not None:
+                blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
+            else:
+                blind_spot_window = None
+            if blind_spot_window is None:
+                blind_spot_window = CalendarWindow(
+                    unit=snapshots_parameters.time_interval.unit,
+                    size=0,
+                )
+            offset_size = parameters.snapshots_parameters.offset_size
+            if offset_size is not None:
+                offset_window = CalendarWindow(
+                    unit=parameters.snapshots_parameters.time_interval.unit,
+                    size=offset_size,
+                )
+            else:
+                offset_window = None
+            delta = get_relativedelta_from_window_and_offset(blind_spot_window, offset_window)
+            return DataRequirements(before_min=RelativeDeltaRange(value=delta))
+        return None
+
+
+def get_data_requirements_extractor(node: Node) -> Optional[DataRequirementsExtractor]:
+    """
+    Get the appropriate DataRequirementsExtractor for a given node.
+
+    Parameters
+    ----------
+    node: Node
+        The query graph node to extract data requirements from.
+
+    Returns
+    -------
+    Optional[DataRequirementsExtractor]
+        The appropriate DataRequirementsExtractor for the node, or None if not applicable.
+    """
+    if isinstance(node.parameters, BaseWindowAggregateParameters):
+        return WindowAggregateDataRequirementsExtractor()
+    if isinstance(node.parameters, TimeSeriesWindowAggregateParameters):
+        return TimeSeriesWindowAggregateDataRequirementsExtractor()
+    if isinstance(node.parameters, LookupParameters):
+        return LookupDataRequirementsExtractor()
+    return None
+
+
 def get_default_partition_column_filter_buffer() -> TimeInterval:
     """
     Get the default buffer for partition filters when a conservative filtering is required
@@ -116,92 +278,6 @@ def get_default_partition_column_filter_buffer() -> TimeInterval:
     TimeInterval
     """
     return TimeInterval(unit=TimeIntervalUnit.DAY, value=7)
-
-
-def get_relativedeltas_from_window_aggregate_params(
-    parameters: BaseWindowAggregateParameters,
-) -> DataRequirements:
-    """
-    Get relativedeltas representing feature derivation window sizes from window aggregate
-    parameters.
-
-    Parameters
-    ----------
-    parameters: BaseWindowAggregateParameters
-        The window aggregate parameters containing the windows and optional offset.
-
-    Returns
-    -------
-    DataRequirements
-    """
-    out = DataRequirements()
-    for window in parameters.windows:
-        if window is None:
-            return DataRequirements(before_min=InfiniteRange())
-        duration_minutes = math.ceil(parse_duration_string(window) / 60)
-        if parameters.offset is not None:
-            duration_minutes += math.ceil(parse_duration_string(parameters.offset) / 60)
-        window_requirements = DataRequirements(
-            before_min=RelativeDeltaRange(value=relativedelta(minutes=duration_minutes)),
-        )
-        out.merge(window_requirements)
-    return out
-
-
-def get_relativedeltas_from_time_series_params(
-    parameters: TimeSeriesWindowAggregateParameters,
-) -> DataRequirements:
-    """
-    Get relativedeltas representing feature derivation window sizes from time series parameters.
-
-    Parameters
-    ----------
-    parameters: TimeSeriesWindowAggregateParameters
-        The time series window aggregate parameters containing the windows and optional offset.
-
-    Returns
-    -------
-    Optional[list[relativedelta]]
-        List of relativedelta objects if windows are valid, otherwise None.
-    """
-    out = DataRequirements()
-    for window in parameters.windows:
-        if window.is_fixed_size():
-            seconds = window.to_seconds()
-            if parameters.offset is not None:
-                seconds += parameters.offset.to_seconds()
-            delta = relativedelta(seconds=seconds)
-        else:
-            months = window.to_months()
-            if parameters.offset is not None:
-                months += parameters.offset.to_months()
-            delta = relativedelta(months=months)
-        out.merge(DataRequirements(before_min=RelativeDeltaRange(value=delta)))
-    return out
-
-
-def get_larger_window(current: Optional[relativedelta], new_value: relativedelta) -> relativedelta:
-    """
-    Get the larger of two relativedelta objects.
-
-    Parameters
-    ----------
-    current: Optional[relativedelta]
-        The current largest window, or None if no window has been set.
-    new_value: relativedelta
-        The new relativedelta value to compare.
-
-    Returns
-    -------
-    relativedelta
-        The larger of the two relativedelta objects.
-    """
-    reference_datetime = datetime(2025, 1, 1)
-    if current is None:
-        return new_value
-    if reference_datetime + new_value > reference_datetime + current:
-        return new_value
-    return current
 
 
 def convert_relativedelta_to_time_interval(delta: relativedelta) -> TimeInterval:
@@ -306,18 +382,17 @@ def get_partition_filters_from_graph(
     """
     input_node_infos = {}
     for node in query_graph.nodes:
-        if node.type not in NodeType.aggregation_and_lookup_node_types():
+        requirements_extractor = get_data_requirements_extractor(node)
+        if not requirements_extractor:
             continue
-        parameters = node.parameters
         primary_input_nodes = QueryGraph.get_primary_input_nodes_from_graph_model(
             query_graph, node.name
         )
         for input_node in primary_input_nodes:
-            if isinstance(parameters, BaseWindowAggregateParameters):
-                current_requirements = get_relativedeltas_from_window_aggregate_params(parameters)
-            elif isinstance(parameters, TimeSeriesWindowAggregateParameters):
-                current_requirements = get_relativedeltas_from_time_series_params(parameters)
-            else:
+            current_requirements = requirements_extractor.get_data_requirements(
+                node, input_node.parameters
+            )
+            if current_requirements is None:
                 continue
             if isinstance(input_node.parameters, SCDTableInputNodeParameters):
                 # Don't filter by partition for SCD tables

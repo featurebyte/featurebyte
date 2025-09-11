@@ -1427,8 +1427,31 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
     return feature_node
 
 
+@pytest.fixture(name="snapshots_table_blind_spot")
+def snapshots_table_blind_spot_fixture():
+    """
+    Fixture for snapshots table blind spot in the feature job setting. Default to None and can be
+    overwritten by tests.
+    """
+    return None
+
+
+@pytest.fixture(name="snapshots_table_feature_offset_size")
+def snapshots_table_feature_offset_size_fixture():
+    """
+    Fixture for a snapshots table feature offset size, can be overridden in tests
+    """
+    return None
+
+
 @pytest.fixture(name="snapshots_lookup_feature_node")
-def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_node, entity_id):
+def snapshots_lookup_feature_node_fixture(
+    global_graph,
+    snapshots_table_input_node,
+    snapshots_table_blind_spot,
+    snapshots_table_feature_offset_size,
+    entity_id,
+):
     """
     Fixture for a snapshots lookup feature node
     """
@@ -1441,7 +1464,10 @@ def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_no
         "snapshots_parameters": {
             "snapshot_datetime_column": "snapshot_date",
             "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
-            "feature_job_setting": CronFeatureJobSetting(crontab="10 * * * *").model_dump(),
+            "feature_job_setting": CronFeatureJobSetting(
+                crontab="10 * * * *", blind_spot=snapshots_table_blind_spot
+            ).model_dump(),
+            "offset_size": snapshots_table_feature_offset_size,
             "time_interval": {"unit": "DAY", "value": 1},
         },
     }
