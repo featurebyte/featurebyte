@@ -95,6 +95,14 @@ def merge_range(range1: RangeType, range2: RangeType) -> RangeType:
 class DataRequirements:
     """
     Data requirements relative to the minimum and maximum point in time for a source table.
+
+    These ranges are derived from aggregate nodes and exclude the additional buffer that may be
+    applied to final partition filters.
+
+    before_min: RangeType
+        The minimum range of data required before the minimum point in time.
+    after_max: RangeType
+        The maximum range of data required after the maximum point in time.
     """
 
     before_min: RangeType = RelativeDeltaRange.zero()
@@ -200,6 +208,8 @@ class DataRequirementsExtractor(ABC):
         ----------
         node: Node
             The query graph node to extract data requirements from.
+        input_node_parameters: InputNodeParameters
+            Input node parameters for the primary input node.
 
         Returns
         -------
