@@ -14,14 +14,17 @@ from sqlglot.expressions import Expression
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import TimeIntervalUnit
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
+    AggregateAsAtParameters,
     BaseWindowAggregateParameters,
     LookupParameters,
+    SnapshotsLookupParameters,
     TimeSeriesWindowAggregateParameters,
 )
 from featurebyte.query_graph.node.input import (
@@ -141,6 +144,43 @@ def get_relativedelta_from_window_and_offset(
     return delta
 
 
+def get_data_requirements_from_snapshots_parameters(
+    snapshots_parameters: SnapshotsLookupParameters,
+) -> DataRequirements:
+    """
+    Get data requirements from snapshots lookup parameters.
+
+    Parameters
+    ----------
+    snapshots_parameters: SnapshotsLookupParameters
+        The snapshots lookup parameters.
+
+    Returns
+    -------
+    DataRequirements
+    """
+    feature_job_setting = snapshots_parameters.feature_job_setting
+    if feature_job_setting is not None:
+        blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
+    else:
+        blind_spot_window = None
+    if blind_spot_window is None:
+        blind_spot_window = CalendarWindow(
+            unit=snapshots_parameters.time_interval.unit,
+            size=0,
+        )
+    offset_size = snapshots_parameters.offset_size
+    if offset_size is not None:
+        offset_window = CalendarWindow(
+            unit=snapshots_parameters.time_interval.unit,
+            size=offset_size,
+        )
+    else:
+        offset_window = None
+    delta = get_relativedelta_from_window_and_offset(blind_spot_window, offset_window)
+    return DataRequirements(before_min=RelativeDeltaRange(value=delta))
+
+
 class DataRequirementsExtractor(ABC):
     """
     Extracts data requirements from query graph nodes.
@@ -222,27 +262,25 @@ class LookupDataRequirementsExtractor(DataRequirementsExtractor):
         parameters = node.parameters
         assert isinstance(parameters, LookupParameters)
         if parameters.snapshots_parameters is not None:
-            snapshots_parameters = parameters.snapshots_parameters
-            feature_job_setting = snapshots_parameters.feature_job_setting
-            if feature_job_setting is not None:
-                blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
-            else:
-                blind_spot_window = None
-            if blind_spot_window is None:
-                blind_spot_window = CalendarWindow(
-                    unit=snapshots_parameters.time_interval.unit,
-                    size=0,
-                )
-            offset_size = parameters.snapshots_parameters.offset_size
-            if offset_size is not None:
-                offset_window = CalendarWindow(
-                    unit=parameters.snapshots_parameters.time_interval.unit,
-                    size=offset_size,
-                )
-            else:
-                offset_window = None
-            delta = get_relativedelta_from_window_and_offset(blind_spot_window, offset_window)
-            return DataRequirements(before_min=RelativeDeltaRange(value=delta))
+            # Lookup from snapshots table performs join using exact match, so we can discard data
+            # prior to minimum point in time after adjusting for blind spot and offset
+            return get_data_requirements_from_snapshots_parameters(parameters.snapshots_parameters)
+        return None
+
+
+class AggregateAsAtDataRequirementsExtractor(DataRequirementsExtractor):
+    """
+    Extracts data requirements from as-at aggregate nodes.
+    """
+
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        _ = input_node_parameters
+        parameters = node.parameters
+        assert isinstance(parameters, AggregateAsAtParameters)
+        if parameters.snapshots_parameters is not None:
+            return get_data_requirements_from_snapshots_parameters(parameters.snapshots_parameters)
         return None
 
 
@@ -260,12 +298,14 @@ def get_data_requirements_extractor(node: Node) -> Optional[DataRequirementsExtr
     Optional[DataRequirementsExtractor]
         The appropriate DataRequirementsExtractor for the node, or None if not applicable.
     """
-    if isinstance(node.parameters, BaseWindowAggregateParameters):
-        return WindowAggregateDataRequirementsExtractor()
-    if isinstance(node.parameters, TimeSeriesWindowAggregateParameters):
-        return TimeSeriesWindowAggregateDataRequirementsExtractor()
-    if isinstance(node.parameters, LookupParameters):
-        return LookupDataRequirementsExtractor()
+    mapping = {
+        NodeType.GROUPBY: WindowAggregateDataRequirementsExtractor,
+        NodeType.TIME_SERIES_WINDOW_AGGREGATE: TimeSeriesWindowAggregateDataRequirementsExtractor,
+        NodeType.LOOKUP: LookupDataRequirementsExtractor,
+        NodeType.AGGREGATE_AS_AT: AggregateAsAtDataRequirementsExtractor,
+    }
+    if node.type in mapping:
+        return mapping[node.type]()  # type: ignore[abstract]
     return None
 
 

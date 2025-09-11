@@ -271,6 +271,42 @@ def test_snapshots_table_lookup_feature(
     check_partition_column_filters(partition_column_filters, expected_mapping)
 
 
+@pytest.mark.parametrize(
+    "snapshots_table_blind_spot, snapshots_table_feature_offset_size, expected_from_timestamp",
+    [
+        (None, None, "CAST('2023-01-01 00:00:00' AS TIMESTAMP)"),
+        ("3d", None, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -4320, 'MINUTE')"),
+        (None, 2, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -2880, 'MINUTE')"),
+        ("3d", 2, "DATE_ADD(CAST('2023-01-01 00:00:00' AS TIMESTAMP), -7200, 'MINUTE')"),
+    ],
+)
+def test_snapshots_table_aggregate_asat_feature(
+    global_graph,
+    snapshots_aggregate_asat_feature_node,
+    snapshots_table_input_node,
+    min_max_point_in_time,
+    expected_from_timestamp,
+    adapter,
+):
+    """
+    Test partition filters on snapshots aggregate asat feature
+    """
+    _ = snapshots_aggregate_asat_feature_node
+    partition_column_filters = get_partition_filters_from_graph(
+        global_graph,
+        *min_max_point_in_time,
+        adapter,
+    )
+    expected_mapping = {
+        snapshots_table_input_node.parameters.id: {
+            "from_timestamp": expected_from_timestamp,
+            "to_timestamp": "CAST('2023-06-01 00:00:00' AS TIMESTAMP)",
+            "buffer": TimeInterval(unit="MONTH", value=1),
+        }
+    }
+    check_partition_column_filters(partition_column_filters, expected_mapping)
+
+
 def test_mixed_features(
     global_graph,
     window_aggregate_on_view_with_scd_join_feature_node,
