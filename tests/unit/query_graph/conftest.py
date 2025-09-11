@@ -1494,7 +1494,9 @@ def snapshots_lookup_feature_node_fixture(
 
 
 @pytest.fixture(name="snapshots_lookup_target_node")
-def snapshots_lookup_target_node_fixture(global_graph, snapshots_parameters, entity_id):
+def snapshots_lookup_target_node_fixture(
+    global_graph, snapshots_table_input_node, snapshots_parameters, entity_id
+):
     """
     Fixture for a snapshots lookup target_node
     """

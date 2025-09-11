@@ -33,5 +33,7 @@ class LookupTargetAggregator(BaseLookupAggregator[LookupTargetSpec]):
         )
 
     def get_forward_point_in_time_offset(self, base_lookup_spec: LookupTargetSpec) -> Optional[str]:
-        # TODO: handle CalendarWindow offset
+        # Note: this is for non-SCD and non-Snapshot tables target lookup only. For the former two,
+        # the offset parameters are defined in SCDLookupParameters and SnapshotLookupParameters
+        # respectively and handled elsewhere.
         return base_lookup_spec.offset

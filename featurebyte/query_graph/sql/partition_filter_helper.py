@@ -268,6 +268,32 @@ class LookupDataRequirementsExtractor(DataRequirementsExtractor):
         return None
 
 
+class LookupTargetDataRequirementsExtractor(DataRequirementsExtractor):
+    """
+    Extracts data requirements from lookup target nodes.
+    """
+
+    def get_data_requirements(
+        self, node: Node, input_node_parameters: InputNodeParameters
+    ) -> Optional[DataRequirements]:
+        parameters = node.parameters
+        assert isinstance(parameters, LookupParameters)
+        if parameters.snapshots_parameters is not None:
+            # No need to consider feature job setting's blind spot for lookup target, only the
+            # offset. Extend data requirements to after maximum point in time by the offset size
+            # since this is target derivation.
+            offset_size = parameters.snapshots_parameters.offset_size
+            if offset_size is not None:
+                offset_window = CalendarWindow(
+                    unit=parameters.snapshots_parameters.time_interval.unit,
+                    size=offset_size,
+                )
+                delta = get_relativedelta_from_window_and_offset(offset_window, None)
+                return DataRequirements(after_max=RelativeDeltaRange(value=delta))
+            return DataRequirements()
+        return None
+
+
 class AggregateAsAtDataRequirementsExtractor(DataRequirementsExtractor):
     """
     Extracts data requirements from as-at aggregate nodes.
@@ -302,6 +328,7 @@ def get_data_requirements_extractor(node: Node) -> Optional[DataRequirementsExtr
         NodeType.GROUPBY: WindowAggregateDataRequirementsExtractor,
         NodeType.TIME_SERIES_WINDOW_AGGREGATE: TimeSeriesWindowAggregateDataRequirementsExtractor,
         NodeType.LOOKUP: LookupDataRequirementsExtractor,
+        NodeType.LOOKUP_TARGET: LookupTargetDataRequirementsExtractor,
         NodeType.AGGREGATE_AS_AT: AggregateAsAtDataRequirementsExtractor,
     }
     if node.type in mapping:

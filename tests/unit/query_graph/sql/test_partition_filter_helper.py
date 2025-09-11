@@ -272,6 +272,45 @@ def test_snapshots_table_lookup_feature(
 
 
 @pytest.mark.parametrize(
+    "snapshots_table_blind_spot, snapshots_table_feature_offset_size, expected_to_timestamp",
+    [
+        (None, None, "CAST('2023-06-01 00:00:00' AS TIMESTAMP)"),
+        (
+            "3d",
+            None,
+            "CAST('2023-06-01 00:00:00' AS TIMESTAMP)",
+        ),  # no change for forward-looking window
+        (None, 2, "DATE_ADD(CAST('2023-06-01 00:00:00' AS TIMESTAMP), 2880, 'MINUTE')"),
+    ],
+)
+def test_snapshots_table_lookup_target(
+    global_graph,
+    snapshots_lookup_target_node,
+    snapshots_table_input_node,
+    min_max_point_in_time,
+    expected_to_timestamp,
+    adapter,
+):
+    """
+    Test partition filters on snapshots lookup target
+    """
+    _ = snapshots_lookup_target_node
+    partition_column_filters = get_partition_filters_from_graph(
+        global_graph,
+        *min_max_point_in_time,
+        adapter,
+    )
+    expected_mapping = {
+        snapshots_table_input_node.parameters.id: {
+            "from_timestamp": "CAST('2023-01-01 00:00:00' AS TIMESTAMP)",
+            "to_timestamp": expected_to_timestamp,
+            "buffer": TimeInterval(unit="MONTH", value=1),
+        }
+    }
+    check_partition_column_filters(partition_column_filters, expected_mapping)
+
+
+@pytest.mark.parametrize(
     "snapshots_table_blind_spot, snapshots_table_feature_offset_size, expected_from_timestamp",
     [
         (None, None, "CAST('2023-01-01 00:00:00' AS TIMESTAMP)"),
