@@ -44,9 +44,9 @@ dependencies = [
   "importlib-metadata",
   "jinja2",
   "lazy-object-proxy",
-  "numpy<2", # Pandas <2.2 does not support numpy 2.x
+  "numpy",
   "orjson",
-  "pandas<2", # pickle files in test not compatible with pandas 2.x
+  "pandas>2.2",
   "pillow",
   "pyarrow",
   "pydantic~=2.8",
