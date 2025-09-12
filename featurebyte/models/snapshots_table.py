@@ -66,6 +66,9 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("snapshot_datetime_column", "snapshot_datetime_schema"),
             ],
+            datetime_partition_schema_pair=ColumnToTimestampSchema(
+                "datetime_partition_column", "datetime_partition_schema"
+            ),
         ),
     )
 

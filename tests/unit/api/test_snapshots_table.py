@@ -134,7 +134,10 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "critical_data_info": None,
                 "description": "Date column",
                 "dtype_metadata": {"timestamp_schema": ts_schema, "timestamp_tuple_schema": None},
-                "partition_metadata": None,
+                "partition_metadata": {
+                    "is_partition_key": True,
+                    "is_partition_key_candidate": False,
+                },
             },
             {
                 "entity_id": None,
@@ -170,8 +173,12 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
         "snapshot_id_column": "col_int",
         "snapshot_datetime_column": "date",
         "snapshot_datetime_schema": ts_schema,
-        "datetime_partition_column": None,
-        "datetime_partition_schema": None,
+        "datetime_partition_column": "date",
+        "datetime_partition_schema": {
+            "format_string": "YYYY-MM-DD HH24:MI:SS",
+            "is_utc_time": None,
+            "timezone": "Etc/UTC",
+        },
         "time_interval": {"unit": "DAY", "value": 1},
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
@@ -198,6 +205,10 @@ def test_create_snapshots_table(snowflake_database_snapshots_table, snapshots_ta
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
     )
 
     # check that node parameter is set properly

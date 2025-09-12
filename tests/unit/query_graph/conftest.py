@@ -1427,8 +1427,46 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
     return feature_node
 
 
+@pytest.fixture(name="snapshots_table_blind_spot")
+def snapshots_table_blind_spot_fixture():
+    """
+    Fixture for snapshots table blind spot in the feature job setting. Default to None and can be
+    overwritten by tests.
+    """
+    return None
+
+
+@pytest.fixture(name="snapshots_table_feature_offset_size")
+def snapshots_table_feature_offset_size_fixture():
+    """
+    Fixture for a snapshots table feature offset size, can be overridden in tests
+    """
+    return None
+
+
+@pytest.fixture(name="snapshots_parameters")
+def snapshots_parameters_fixture(snapshots_table_blind_spot, snapshots_table_feature_offset_size):
+    """
+    Fixture for snapshots parameters
+    """
+    return {
+        "snapshot_datetime_column": "snapshot_date",
+        "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
+        "feature_job_setting": CronFeatureJobSetting(
+            crontab="10 * * * *", blind_spot=snapshots_table_blind_spot
+        ).model_dump(),
+        "offset_size": snapshots_table_feature_offset_size,
+        "time_interval": {"unit": "DAY", "value": 1},
+    }
+
+
 @pytest.fixture(name="snapshots_lookup_feature_node")
-def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_node, entity_id):
+def snapshots_lookup_feature_node_fixture(
+    global_graph,
+    snapshots_table_input_node,
+    snapshots_parameters,
+    entity_id,
+):
     """
     Fixture for a snapshots lookup feature node
     """
@@ -1438,12 +1476,7 @@ def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_no
         "entity_column": "cust_id",
         "serving_name": "CUSTOMER_ID",
         "entity_id": entity_id,
-        "snapshots_parameters": {
-            "snapshot_datetime_column": "snapshot_date",
-            "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
-            "feature_job_setting": CronFeatureJobSetting(crontab="10 * * * *").model_dump(),
-            "time_interval": {"unit": "DAY", "value": 1},
-        },
+        "snapshots_parameters": snapshots_parameters,
     }
     lookup_agg_node = global_graph.add_operation(
         node_type=NodeType.LOOKUP,
@@ -1461,7 +1494,9 @@ def snapshots_lookup_feature_node_fixture(global_graph, snapshots_table_input_no
 
 
 @pytest.fixture(name="snapshots_lookup_target_node")
-def snapshots_lookup_target_node_fixture(global_graph, snapshots_table_input_node, entity_id):
+def snapshots_lookup_target_node_fixture(
+    global_graph, snapshots_table_input_node, snapshots_parameters, entity_id
+):
     """
     Fixture for a snapshots lookup target_node
     """
@@ -1471,12 +1506,7 @@ def snapshots_lookup_target_node_fixture(global_graph, snapshots_table_input_nod
         "entity_column": "cust_id",
         "serving_name": "CUSTOMER_ID",
         "entity_id": entity_id,
-        "snapshots_parameters": {
-            "snapshot_datetime_column": "snapshot_date",
-            "snapshot_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
-            "feature_job_setting": CronFeatureJobSetting(crontab="10 * * * *").model_dump(),
-            "time_interval": {"unit": "DAY", "value": 1},
-        },
+        "snapshots_parameters": snapshots_parameters,
     }
     lookup_agg_node = global_graph.add_operation(
         node_type=NodeType.LOOKUP_TARGET,
@@ -1491,6 +1521,43 @@ def snapshots_lookup_target_node_fixture(global_graph, snapshots_table_input_nod
         input_nodes=[global_graph.get_node_by_name(lookup_agg_node.name)],
     )
     return target_node
+
+
+@pytest.fixture(name="snapshots_aggregate_asat_feature_node")
+def snapshots_aggregate_asat_feature_node_fixture(
+    global_graph,
+    snapshots_table_input_node,
+    snapshots_parameters,
+    entity_id,
+):
+    """
+    Fixture for a snapshots lookup feature node
+    """
+    node_params = {
+        "keys": ["membership_status"],
+        "serving_names": ["MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "name": "asat_feature",
+        "entity_ids": [entity_id],
+        "effective_timestamp_column": "effective_ts",
+        "natural_key_column": "cust_id",
+        "snapshots_parameters": snapshots_parameters,
+    }
+    agg_node = global_graph.add_operation(
+        node_type=NodeType.AGGREGATE_AS_AT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[snapshots_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["asat_feature"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(agg_node.name)],
+    )
+    return feature_node
 
 
 @pytest.fixture(name="window_aggregate_on_simple_view_feature_node")
