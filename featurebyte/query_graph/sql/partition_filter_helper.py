@@ -4,7 +4,7 @@ Helpers to derive partition filers from query graph
 
 import math
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -105,8 +105,8 @@ class DataRequirements:
         The maximum range of data required after the maximum point in time.
     """
 
-    before_min: RangeType = RelativeDeltaRange.zero()
-    after_max: RangeType = RelativeDeltaRange.zero()
+    before_min: RangeType = field(default_factory=RelativeDeltaRange.zero)
+    after_max: RangeType = field(default_factory=RelativeDeltaRange.zero)
 
     def merge(self, other: "DataRequirements") -> None:
         """
