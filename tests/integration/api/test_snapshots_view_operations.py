@@ -3,8 +3,10 @@ Integration tests for SnapshotsView
 """
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
+from tests.util.deployment import deploy_and_get_online_features
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
     fb_assert_frame_equal,
@@ -68,31 +70,46 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     assert actual == expected
 
 
-def test_aggregate_over(snapshots_table):
+def make_unique(name):
+    """
+    Make name unique by appending ObjectId
+    """
+    return f"{name}_{str(ObjectId())}"
+
+
+def test_aggregate_over(client, snapshots_table):
     """
     Test aggregate over on snapshots table
     """
     view = snapshots_table.get_view()
+    feature_name = make_unique("value_col_sum_7d")
     feature = view.groupby("snapshot_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
         windows=[CalendarWindow(unit="DAY", size=7)],
-        feature_names=["value_col_sum_7d"],
+        feature_names=[feature_name],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",
             timezone="Asia/Singapore",
         ),
-    )["value_col_sum_7d"]
+    )[feature_name]
     preview_params = pd.DataFrame([
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
             "series_id": "S0",
         }
     ])
-    feature_list = FeatureList([feature], "test_feature_list")
+    feature_list = FeatureList([feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected["value_col_sum_7d"] = [0.35]
+    expected[feature_name] = [0.35]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    online_features = deploy_and_get_online_features(
+        client,
+        feature_list,
+        pd.Timestamp("2001-01-10 10:00:00"),
+        [{"series_id": "S0"}],
+    )
+    fb_assert_frame_equal(online_features, expected.drop(["POINT_IN_TIME"], axis=1))
 
 
 def test_lookup_features(snapshots_table):
