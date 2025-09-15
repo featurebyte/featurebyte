@@ -20,17 +20,20 @@ from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.proxy_table import TableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
+    EventLookupParameters,
     GroupByNode,
     ItemGroupbyNode,
     LookupNode,
     NonTileWindowAggregateNode,
     SCDBaseParameters,
+    SnapshotsLookupParameters,
     TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
@@ -45,8 +48,11 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.entity_filter import get_timestamp_filter_conditions
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
-from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
+from featurebyte.query_graph.sql.partition_filter_helper import (
+    get_partition_filters_from_graph,
+)
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
@@ -98,7 +104,27 @@ def get_dummy_entity_universe() -> Select:
     )
 
 
-def get_timestamp_expr_from_scd_lookup_parameters(
+def get_timestamp_filter(
+    timestamp_column: str, timestamp_metadata: Optional[DBVarTypeMetadata], adapter: BaseAdapter
+) -> Expression:
+    """
+    Get the timestamp expression from SCD lookup parameters
+
+    Returns
+    -------
+    Expression
+    """
+    timestamp_filter_conditions = get_timestamp_filter_conditions(
+        original_timestamp_expr=quoted_identifier(timestamp_column),
+        start_expr=expressions.Identifier(this=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER),
+        end_expr=expressions.Identifier(this=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+        timestamp_metadata=timestamp_metadata,
+        adapter=adapter,
+    )
+    return expressions.and_(*timestamp_filter_conditions)
+
+
+def get_timestamp_filter_from_scd_parameters(
     scd_parameters: SCDBaseParameters, adapter: BaseAdapter
 ) -> Expression:
     """
@@ -115,15 +141,52 @@ def get_timestamp_expr_from_scd_lookup_parameters(
     -------
     Expression
     """
-    ts_col = quoted_identifier(scd_parameters.effective_timestamp_column)
-    timestamp_schema = scd_parameters.effective_timestamp_schema
-    if timestamp_schema is not None:
-        ts_col = convert_timestamp_to_utc(
-            column_expr=ts_col,
-            timestamp_schema=timestamp_schema,
-            adapter=adapter,
-        )
-    return ts_col
+    return get_timestamp_filter(
+        timestamp_column=scd_parameters.effective_timestamp_column,
+        timestamp_metadata=scd_parameters.effective_timestamp_metadata,
+        adapter=adapter,
+    )
+
+
+def get_timestamp_filter_from_event_parameters(
+    event_parameters: EventLookupParameters, adapter: BaseAdapter
+) -> Expression:
+    """
+    Get the timestamp expression from event lookup parameters
+
+    Parameters
+    ----------
+    event_parameters: EventLookupParameters
+        Event lookup parameters
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+    """
+    return get_timestamp_filter(
+        timestamp_column=event_parameters.event_timestamp_column,
+        timestamp_metadata=event_parameters.event_timestamp_metadata,
+        adapter=adapter,
+    )
+
+
+def get_timestamp_filter_from_snapshots_parameters(
+    snapshots_parameters: SnapshotsLookupParameters, adapter: BaseAdapter
+) -> Expression:
+    """
+    Get the timestamp expression from SCD lookup parameters
+
+    Returns
+    -------
+    Expression
+    """
+    return get_timestamp_filter(
+        timestamp_column=snapshots_parameters.snapshot_datetime_column,
+        timestamp_metadata=snapshots_parameters.snapshot_datetime_metadata,
+        adapter=adapter,
+    )
 
 
 def filter_aggregate_input_for_window_aggregate(
@@ -346,29 +409,22 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(LookupNode, self.node)
 
         if node.parameters.scd_parameters is not None:
-            ts_col = get_timestamp_expr_from_scd_lookup_parameters(
-                node.parameters.scd_parameters,
-                self.adapter,
+            filter_condition = get_timestamp_filter_from_scd_parameters(
+                node.parameters.scd_parameters, self.adapter
             )
         elif node.parameters.event_parameters is not None:
-            ts_col = quoted_identifier(node.parameters.event_parameters.event_timestamp_column)
-        else:
-            ts_col = None
-
-        if ts_col:
-            ts_col_expr = self.adapter.normalize_timestamp_before_comparison(ts_col)
-            aggregate_input_expr = self.aggregate_input_expr.where(
-                expressions.and_(
-                    expressions.GTE(
-                        this=ts_col_expr,
-                        expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
-                    ),
-                    expressions.LT(
-                        this=ts_col_expr,
-                        expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
-                    ),
-                )
+            filter_condition = get_timestamp_filter_from_event_parameters(
+                node.parameters.event_parameters, self.adapter
             )
+        elif node.parameters.snapshots_parameters is not None:
+            filter_condition = get_timestamp_filter_from_snapshots_parameters(
+                node.parameters.snapshots_parameters, self.adapter
+            )
+        else:
+            filter_condition = None
+
+        if filter_condition is not None:
+            aggregate_input_expr = self.aggregate_input_expr.where(filter_condition)
         else:
             aggregate_input_expr = self.aggregate_input_expr
 
@@ -402,20 +458,16 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         if not node.parameters.serving_names:
             return [DUMMY_ENTITY_UNIVERSE]
 
-        ts_col_expr = get_timestamp_expr_from_scd_lookup_parameters(
-            node.parameters,
-            self.adapter,
-        )
-        ts_col_expr = self.adapter.normalize_timestamp_before_comparison(ts_col_expr)
-        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
-            expressions.and_(
-                expressions.GTE(
-                    this=ts_col_expr,
-                    expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
-                ),
-                expressions.LT(this=ts_col_expr, expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+        if node.parameters.snapshots_parameters is not None:
+            filter_condition = get_timestamp_filter_from_snapshots_parameters(
+                node.parameters.snapshots_parameters, self.adapter
             )
-        )
+        else:
+            filter_condition = get_timestamp_filter_from_scd_parameters(
+                node.parameters,
+                self.adapter,
+            )
+        filtered_aggregate_input_expr = self.aggregate_input_expr.where(filter_condition)
         universe_expr = (
             select(*[
                 expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)

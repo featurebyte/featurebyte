@@ -2863,6 +2863,30 @@ def ts_window_aggregate_feature_from_event_table_fixture(snowflake_event_view_wi
     return feature
 
 
+@pytest.fixture(name="snapshots_lookup_feature")
+def snapshots_lookup_feature_fixture(snowflake_snapshots_table_with_entity):
+    """
+    Fixture to get a lookup feature from Snapshots table
+    """
+    snapshots_view = snowflake_snapshots_table_with_entity.get_view()
+    feature = snapshots_view["col_float"].as_feature("snapshots_lookup_feature")
+    return feature
+
+
+@pytest.fixture(name="snapshots_aggregate_asat_feature")
+def snapshots_aggregate_asat_feature_fixture(snowflake_snapshots_table_with_entity):
+    """
+    Fixture to get an aggregate asat feature from Snapshots table
+    """
+    snapshots_view = snowflake_snapshots_table_with_entity.get_view()
+    feature = snapshots_view.groupby("col_binary").aggregate_asat(
+        value_column="col_float",
+        method="sum",
+        feature_name="snapshots_asat_col_int_sum",
+    )
+    return feature
+
+
 @pytest.fixture(name="request_column_point_in_time")
 def request_column_point_in_time():
     """
