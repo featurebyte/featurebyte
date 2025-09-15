@@ -988,6 +988,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+        assert response_dict["purpose"] == "eda"
 
         # check that use case default eda table is set
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")

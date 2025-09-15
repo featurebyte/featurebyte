@@ -244,8 +244,12 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             )
 
             purpose: Optional[Purpose] = None
+            context_id = payload.context_id
             if isinstance(observation_set, ObservationTableModel):
+                # inherit purpose and context_id from observation set if available
                 purpose = observation_set.purpose
+                if context_id is None:
+                    context_id = observation_set.context_id
                 use_case_ids = observation_set.use_case_ids
             else:
                 use_case_ids = []
@@ -255,7 +259,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,
-                context_id=payload.context_id,
+                context_id=context_id,
                 use_case_ids=use_case_ids,
                 request_input=TargetInput(
                     target_id=target_id,
