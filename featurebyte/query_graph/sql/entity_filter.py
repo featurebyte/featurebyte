@@ -36,6 +36,24 @@ def get_timestamp_filter_conditions(
 
     The goal is to avoid transforming the original timestamp column. When transformation is needed,
     a partition column filter style condition will be applied with additional buffer.
+
+    Parameters
+    ----------
+    original_timestamp_expr: Expression
+        The original timestamp expression to filter on
+    start_expr: Expression
+        The start timestamp expression for filtering
+    end_expr: Expression
+        The end timestamp expression for filtering
+    timestamp_metadata: Optional[DBVarTypeMetadata]
+        Metadata for the timestamp column including schema information
+    adapter: BaseAdapter
+        SQL adapter for database-specific operations
+
+    Returns
+    -------
+    list[Expression]
+        List of SQL expressions representing the timestamp filter conditions
     """
     join_conditions: list[Expression] = []
 

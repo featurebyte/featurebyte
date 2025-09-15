@@ -110,9 +110,19 @@ def get_timestamp_filter(
     """
     Get the timestamp expression from SCD lookup parameters
 
+    Parameters
+    ----------
+    timestamp_column: str
+        Name of the timestamp column to filter on
+    timestamp_metadata: Optional[DBVarTypeMetadata]
+        Metadata for the timestamp column including schema information
+    adapter: BaseAdapter
+        SQL adapter for database-specific operations
+
     Returns
     -------
     Expression
+        SQL expression representing the timestamp filter
     """
     timestamp_filter_conditions = get_timestamp_filter_conditions(
         original_timestamp_expr=quoted_identifier(timestamp_column),
@@ -176,11 +186,19 @@ def get_timestamp_filter_from_snapshots_parameters(
     snapshots_parameters: SnapshotsLookupParameters, adapter: BaseAdapter
 ) -> Expression:
     """
-    Get the timestamp expression from SCD lookup parameters
+    Get the timestamp expression from snapshots lookup parameters
+
+    Parameters
+    ----------
+    snapshots_parameters: SnapshotsLookupParameters
+        Snapshots lookup parameters containing timestamp column information
+    adapter: BaseAdapter
+        SQL adapter for database-specific operations
 
     Returns
     -------
     Expression
+        SQL expression representing the timestamp filter
     """
     return get_timestamp_filter(
         timestamp_column=snapshots_parameters.snapshot_datetime_column,
