@@ -9,13 +9,10 @@ RUN apt-get update && \
     apt-get install -y build-essential curl libsasl2-dev libkrb5-dev git pkg-config libmariadb-dev && \
     apt-get clean
 
-
 # Installing featurebyte dependencies
-RUN pip install uv==0.7.3 && \
-    uv sync
-
 WORKDIR /app
 COPY . /app
+RUN pip install uv==0.7.3 && uv sync
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev --locked
