@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
+from featurebyte.schema.use_case import UseCaseUpdate
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
@@ -29,6 +30,7 @@ from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -55,6 +57,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         target_computer: TargetComputer,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_service: TargetService,
+        use_case_service: UseCaseService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -65,6 +68,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.target_computer = target_computer
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.target_service = target_service
+        self.use_case_service = use_case_service
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -242,6 +246,9 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             purpose: Optional[Purpose] = None
             if isinstance(observation_set, ObservationTableModel):
                 purpose = observation_set.purpose
+                use_case_ids = observation_set.use_case_ids
+            else:
+                use_case_ids = []
 
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
@@ -249,6 +256,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 name=payload.name,
                 location=location,
                 context_id=payload.context_id,
+                use_case_ids=use_case_ids,
                 request_input=TargetInput(
                     target_id=target_id,
                     observation_table_id=payload.observation_table_id,
@@ -269,6 +277,19 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             observation_table = await self.observation_table_service.create_document(
                 observation_table
             )
+
+            # if use case is linked and purpose of the observation table is EDA,
+            # check if the use case has default EDA table set
+            if observation_table.purpose == Purpose.EDA:
+                for use_case_id in use_case_ids:
+                    use_case = await self.use_case_service.get_document(document_id=use_case_id)
+                    if use_case.default_eda_table_id is None:
+                        # use case does not have default EDA table set, set it to this table
+                        if observation_table.target_namespace_id == use_case.target_namespace_id:
+                            await self.use_case_service.update_use_case(
+                                document_id=use_case_id,
+                                data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                            )
 
             if target_namespace_id is not None:
                 # update target namespace with unique target values if applicable
