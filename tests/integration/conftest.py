@@ -333,6 +333,14 @@ def config_fixture(storage):
                         yield Configurations(config_file_path=config_file_path)
 
 
+@pytest.fixture(name="client", scope="session")
+def client_fixture(config):
+    """
+    Fixture for a client obtained from the config
+    """
+    return config.get_client()
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     """

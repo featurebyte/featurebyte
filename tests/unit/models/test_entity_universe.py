@@ -153,6 +153,28 @@ def ts_window_aggregate_graph_and_node(ts_window_aggregate_feature):
 
 
 @pytest.fixture
+def snapshots_lookup_graph_and_node(snapshots_lookup_feature):
+    """
+    Fixture for a lookup node from snapshots table
+    """
+    graph = snapshots_lookup_feature.graph
+    lookup_node = get_node_from_feature(snapshots_lookup_feature, NodeType.LOOKUP)
+    return graph, lookup_node
+
+
+@pytest.fixture
+def snapshots_aggregate_asat_graph_and_node(snapshots_aggregate_asat_feature):
+    """
+    Fixture for an aggregate_asat node from snapshots table
+    """
+    graph = snapshots_aggregate_asat_feature.graph
+    aggregate_asat_node = get_node_from_feature(
+        snapshots_aggregate_asat_feature, NodeType.AGGREGATE_AS_AT
+    )
+    return graph, aggregate_asat_node
+
+
+@pytest.fixture
 def join_steps(snowflake_scd_table_with_entity):
     """
     Fixture for a join steps to be applied when constructing entity universe
@@ -218,6 +240,50 @@ def test_lookup_feature(catalog, lookup_graph_and_node, source_info):
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
+def test_snapshots_lookup_feature(catalog, snapshots_lookup_graph_and_node, source_info):
+    """
+    Test snapshots lookup feature's universe
+    """
+    _ = catalog
+    graph, node = snapshots_lookup_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, source_info)
+    # Note the two filters: the first on __fb_current_feature_timestamp comes from partition column
+    # filtering and only exists when a partition column is specified; the second filter based on
+    # __fb_last_materialized_timestamp and __fb_current_feature_timestamp comes from entity universe
+    # construction.
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "col_int" AS "transaction_id"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "date" AS "date",
+            "store_id" AS "store_id",
+            "another_timestamp_col" AS "another_timestamp_col"
+          FROM "sf_database"."sf_schema"."snapshots_table"
+          WHERE
+            (
+              "date" >= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, -1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+              AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+            )
+            AND (
+              "date" >= TO_CHAR(DATE_ADD(__fb_last_materialized_timestamp, -7, 'DAY'), 'YYYY-MM-DD HH24:MI:SS')
+              AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 7, 'DAY'), 'YYYY-MM-DD HH24:MI:SS')
+            )
+        )
+        WHERE
+          "col_int" IS NOT NULL
+        """
+    ).strip()
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
+
+
 def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node, source_info):
     """
     Test aggregate as-at feature's universe
@@ -248,6 +314,48 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node, source_
         )
         WHERE
           "col_boolean" IS NOT NULL
+        """
+    ).strip()
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
+
+
+def test_snapshots_aggregate_asat_universe(
+    catalog, snapshots_aggregate_asat_graph_and_node, source_info
+):
+    """
+    Test aggregate as-at feature's universe
+    """
+    _ = catalog
+    graph, node = snapshots_aggregate_asat_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, source_info)
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "col_binary" AS "another_key"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "date" AS "date",
+            "store_id" AS "store_id",
+            "another_timestamp_col" AS "another_timestamp_col"
+          FROM "sf_database"."sf_schema"."snapshots_table"
+          WHERE
+            (
+              "date" >= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, -1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+              AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+            )
+            AND (
+              "date" >= TO_CHAR(DATE_ADD(__fb_last_materialized_timestamp, -7, 'DAY'), 'YYYY-MM-DD HH24:MI:SS')
+              AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 7, 'DAY'), 'YYYY-MM-DD HH24:MI:SS')
+            )
+        )
+        WHERE
+          "col_binary" IS NOT NULL
         """
     ).strip()
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected

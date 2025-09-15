@@ -3,8 +3,10 @@ Integration tests for SnapshotsView
 """
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
+from tests.util.deployment import deploy_and_get_online_features
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
     fb_assert_frame_equal,
@@ -68,39 +70,55 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     assert actual == expected
 
 
-def test_aggregate_over(snapshots_table):
+def make_unique(name):
+    """
+    Make name unique by appending ObjectId
+    """
+    return f"{name}_{str(ObjectId())}"
+
+
+def test_aggregate_over(client, snapshots_table):
     """
     Test aggregate over on snapshots table
     """
     view = snapshots_table.get_view()
+    feature_name = make_unique("value_col_sum_7d")
     feature = view.groupby("snapshot_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
         windows=[CalendarWindow(unit="DAY", size=7)],
-        feature_names=["value_col_sum_7d"],
+        feature_names=[feature_name],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",
             timezone="Asia/Singapore",
         ),
-    )["value_col_sum_7d"]
+    )[feature_name]
     preview_params = pd.DataFrame([
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
             "series_id": "S0",
         }
     ])
-    feature_list = FeatureList([feature], "test_feature_list")
+    feature_list = FeatureList([feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected["value_col_sum_7d"] = [0.35]
+    expected[feature_name] = [0.35]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    online_features = deploy_and_get_online_features(
+        client,
+        feature_list,
+        pd.Timestamp("2001-01-10 10:00:00"),
+        [{"series_id": "S0"}],
+    )
+    fb_assert_frame_equal(online_features, expected.drop(["POINT_IN_TIME"], axis=1))
 
 
-def test_lookup_features(snapshots_table):
+def test_lookup_features(client, snapshots_table):
     """
     Test that lookup features can be created from SnapshotsView
     """
     view = snapshots_table.get_view()
-    lookup_feature = view["value_col"].as_feature("snapshot_lookup_feature")
+    feature_name = make_unique("snapshot_lookup_feature")
+    lookup_feature = view["value_col"].as_feature(feature_name)
     preview_params = pd.DataFrame([
         {
             "POINT_IN_TIME": dt,
@@ -108,10 +126,19 @@ def test_lookup_features(snapshots_table):
         }
         for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
     ])
-    feature_list = FeatureList([lookup_feature], "test_feature_list")
+    feature_list = FeatureList([lookup_feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected["snapshot_lookup_feature"] = [0.06, 0.11]
+    expected[feature_name] = [0.06, 0.11]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    online_features = deploy_and_get_online_features(
+        client,
+        feature_list,
+        pd.Timestamp("2001-01-10 10:00:00"),
+        [{"series_id": "S0"}],
+    )
+    fb_assert_frame_equal(
+        online_features.iloc[:1], expected.iloc[:1].drop(["POINT_IN_TIME"], axis=1)
+    )
 
 
 def test_lookup_target(snapshots_table):
@@ -139,15 +166,16 @@ def test_lookup_target(snapshots_table):
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
-def test_aggregate_as_at_feature(snapshots_table):
+def test_aggregate_as_at_feature(client, snapshots_table):
     """
     Test that aggregate as at feature can be created from SnapshotsView
     """
     view = snapshots_table.get_view()
+    feature_name = make_unique("value_col_by_user_id_asat")
     agg_feature = view.groupby("user_id_col").aggregate_asat(
         method="sum",
         value_column="value_col",
-        feature_name="value_col_by_user_id_asat",
+        feature_name=feature_name,
     )
     preview_params = pd.DataFrame([
         {
@@ -156,7 +184,16 @@ def test_aggregate_as_at_feature(snapshots_table):
         }
         for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
     ])
-    feature_list = FeatureList([agg_feature], "test_feature_list")
+    feature_list = FeatureList([agg_feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected["value_col_by_user_id_asat"] = [9.06, 5.11]
+    expected[feature_name] = [9.06, 5.11]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    online_features = deploy_and_get_online_features(
+        client,
+        feature_list,
+        pd.Timestamp("2001-01-10 10:00:00"),
+        [{"üser id": 3}],
+    )
+    fb_assert_frame_equal(
+        online_features.iloc[:1], expected.iloc[:1].drop(["POINT_IN_TIME"], axis=1)
+    )
