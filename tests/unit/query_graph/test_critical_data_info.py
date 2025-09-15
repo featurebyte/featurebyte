@@ -242,7 +242,7 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
         (
             # should include type in repr as there are multiple types
             ValueBeyondEndpointImputation(type="greater_than", end_point=0, imputed_value=0),
-            "ValueBeyondEndpointImputation(type=greater_than, imputed_value=0, end_point=0)",
+            "ValueBeyondEndpointImputation(type='greater_than', imputed_value=0, end_point=0)",
         ),
         (StringValueImputation(imputed_value=None), "StringValueImputation(imputed_value=None)"),
     ],

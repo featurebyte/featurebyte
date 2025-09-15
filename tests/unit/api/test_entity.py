@@ -69,7 +69,7 @@ def test_entity__update_name(entity):
         Entity.get("AnotherCustomer")
 
     expected_msg = (
-        'Entity (name: "AnotherCustomer") not found. ' "Please save the Entity object first."
+        'Entity (name: "AnotherCustomer") not found. Please save the Entity object first.'
     )
     assert expected_msg in str(exc.value)
     assert another_entity.name == "AnotherCustomer"

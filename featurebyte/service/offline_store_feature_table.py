@@ -164,9 +164,9 @@ class OfflineStoreFeatureTableService(
             document_id=document_id, populate_remote_attributes=False
         )
         if isinstance(data, FeaturesUpdate):
-            assert (
-                data.feature_cluster_path is None
-            ), "feature_cluster_path should not be set in update"
+            assert data.feature_cluster_path is None, (
+                "feature_cluster_path should not be set in update"
+            )
             if original_doc.feature_cluster_path:
                 # attempt to remove the old feature cluster
                 await self.storage.try_delete_if_exists(Path(original_doc.feature_cluster_path))

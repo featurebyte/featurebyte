@@ -15,6 +15,8 @@ env:
   GCR_PYPI_LOCATION: us-central1
   SERVER_IMAGE_REPO: us-central1-docker.pkg.dev/vpc-host-nonprod-xa739-xz970/docker/featurebyte-server
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  UV_INDEX_FEATUREBYTE_NP_USERNAME: _json_key_base64
+  UV_INDEX_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -34,20 +36,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -62,8 +55,8 @@ jobs:
       - name: Get Version to Publish
         id: get_version
         run: |
-          export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
-          export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
+          export PACKAGE=$(uv version | cut -d ' ' -f1)
+          export VERSION=$(uv version --short)
           if [ "$BRANCH_NAME" = "main" ]; then
             export SUFFIX="dev"
           else
@@ -76,7 +69,7 @@ jobs:
             grep -oP "\d+$"
           )
           export DEV_VERSION=${DEV_VERSION:-0}  # Set dev version to 0 if not exist
-          export DEV_VERSION="$(poetry version -s).${SUFFIX}$((DEV_VERSION+=1))"
+          export DEV_VERSION="$(uv version --short).${SUFFIX}$((DEV_VERSION+=1))"
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -88,8 +81,8 @@ jobs:
           git config --global user.email "featurebyte[bot]@users.noreply.github.com"
       - name: Tagging Version in git
         run: |-
-          git tag "$(poetry version -s)"
-          git push origin "$(poetry version -s)"
+          git tag "$(uv version --short)"
+          git push origin "$(uv version --short)"
       - name: Replace docker-compose image tag (server)
         uses: mikefarah/yq@master
         with:
@@ -100,8 +93,7 @@ jobs:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
       - name: Publish to non-prod artifact registry
         run: |-
-          poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
-          poetry publish --build -r featurebyte_np --username='_json_key_base64' --password='${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}'
+          uv publish --index featurebyte_np --username="${UV_INDEX_FEATUREBYTE_NP_USERNAME}" --password="${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}"
   test-install:
     runs-on: ${{ matrix.runner }}
     needs:

@@ -303,9 +303,9 @@ class BaseNode(FeatureByteBaseModel):
         operation_structure: Optional[OperationStructure],
         variable_name_prefix: Optional[str],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        assert (
-            operation_structure or variable_name_prefix
-        ), "Either operation_structure or variable_name_prefix should be provided"
+        assert operation_structure or variable_name_prefix, (
+            "Either operation_structure or variable_name_prefix should be provided"
+        )
 
         if (
             self._auto_convert_expression_to_variable

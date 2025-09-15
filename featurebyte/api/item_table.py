@@ -98,7 +98,7 @@ class ItemTable(TableApiObject):
     type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     event_table_id: PydanticObjectId = Field(
         frozen=True,
-        description="Returns the ID of the event table that " "is associated with the item table.",
+        description="Returns the ID of the event table that is associated with the item table.",
     )
 
     # pydantic instance variable (internal use)

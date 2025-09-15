@@ -42,7 +42,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
-            f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
+            f"ObjectId('{payload['tabular_source']['feature_store_id']}'), 'table_details': "
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'time_series_table'}}\") "
             f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),

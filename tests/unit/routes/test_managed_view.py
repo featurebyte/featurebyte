@@ -30,7 +30,7 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{payload["name"]}_{i}'
+            payload["name"] = f"{payload['name']}_{i}"
             yield payload
 
     @pytest.mark.parametrize(
@@ -159,14 +159,14 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(
             self.base_route,
             params={
-                "name": f'{self.payload["name"]}_0',
+                "name": f"{self.payload['name']}_0",
                 "feature_store_id": feature_store_id,
             },
         )
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         assert response_dict["total"] == 1
-        assert response_dict["data"][0]["name"] == f'{self.payload["name"]}_0'
+        assert response_dict["data"][0]["name"] == f"{self.payload['name']}_0"
 
         # test filter by random feature_store_id
         random_id = str(ObjectId())
