@@ -3,6 +3,7 @@ Tests for ObservationTable routes
 """
 
 import copy
+import json
 import os
 import tempfile
 import textwrap
@@ -955,6 +956,33 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        observation_table_id = response_dict["payload"]["output_document_id"]
+        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+        assert response_dict["purpose"] == "eda"
+
+        # check that use case default eda table is not set
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["default_eda_table_id"] is None
+
+        # create target table
+        target_table_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_table.json"
+        )
+        response = test_api_client.post(
+            "/target_table", data={"payload": json.dumps(target_table_payload)}
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
         observation_table_id = response_dict["payload"]["output_document_id"]
         response = test_api_client.get(f"{self.base_route}/{observation_table_id}")

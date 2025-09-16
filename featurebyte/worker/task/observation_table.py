@@ -244,10 +244,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 use_case = await self.use_case_service.get_document(document_id=payload.use_case_id)
                 if use_case.default_eda_table_id is None:
                     # use case does not have default EDA table set, set it to this table
-                    await self.use_case_service.update_use_case(
-                        document_id=use_case.id,
-                        data=UseCaseUpdate(default_eda_table_id=observation_table.id),
-                    )
+                    if payload.target_namespace_id == use_case.target_namespace_id:
+                        await self.use_case_service.update_use_case(
+                            document_id=use_case.id,
+                            data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                        )
 
             if payload.target_namespace_id:
                 # update the target namespace with the unique target values if applicable
