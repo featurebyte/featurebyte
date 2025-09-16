@@ -163,7 +163,7 @@ async def test_execute_feature_query_set(
 
     # Check progress update calls
     assert progress_callback.call_args_list == [
-        call(90, progress_message),
+        call(90, progress_message, metadata={"num_features_materialized": 2}),
         call(100, progress_message),
     ]
 

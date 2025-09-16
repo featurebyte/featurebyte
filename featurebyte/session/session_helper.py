@@ -285,6 +285,9 @@ async def execute_feature_query_set(
             await feature_queries_progress_callback(
                 int(100 * processed / total_num_nodes),
                 feature_query_set.progress_message,
+                metadata={
+                    "num_features_materialized": processed,
+                },
             )
 
     generator = feature_query_set.feature_query_generator
