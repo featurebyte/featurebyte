@@ -18,8 +18,10 @@ from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,
 )
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
+from featurebyte.schema.context import ContextUpdate
 from featurebyte.schema.use_case import UseCaseUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
@@ -50,6 +52,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         use_case_service: UseCaseService,
+        context_service: ContextService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -58,6 +61,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.use_case_service = use_case_service
+        self.context_service = context_service
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from source table.'
@@ -238,16 +242,41 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 observation_table
             )
 
-            # if use case is linked and purpose of the observation table is EDA,
-            # check if the use case has default EDA table set
-            if payload.use_case_id is not None and payload.purpose == Purpose.EDA:
+            # Update default eda and preview tables in the use case if applicable
+            if payload.use_case_id is not None:
                 use_case = await self.use_case_service.get_document(document_id=payload.use_case_id)
-                if use_case.default_eda_table_id is None:
-                    # use case does not have default EDA table set, set it to this table
-                    if payload.target_namespace_id == use_case.target_namespace_id:
+                if payload.purpose == Purpose.EDA:
+                    if use_case.default_eda_table_id is None:
+                        # use case does not have default EDA table set, set it to this table
+                        if payload.target_namespace_id == use_case.target_namespace_id:
+                            await self.use_case_service.update_use_case(
+                                document_id=use_case.id,
+                                data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                            )
+                if payload.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+                    if use_case.default_preview_table_id is None:
+                        # use case does not have default preview table set, set it to this table
                         await self.use_case_service.update_use_case(
                             document_id=use_case.id,
-                            data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                            data=UseCaseUpdate(default_preview_table_id=observation_table.id),
+                        )
+
+            # Update default eda and preview tables in the context if applicable
+            if payload.context_id is not None:
+                context = await self.context_service.get_document(document_id=payload.context_id)
+                if payload.purpose == Purpose.EDA:
+                    if context.default_eda_table_id is None:
+                        # context does not have default EDA table set, set it to this table
+                        await self.context_service.update_document(
+                            document_id=context.id,
+                            data=ContextUpdate(default_eda_table_id=observation_table.id),
+                        )
+                if payload.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+                    if context.default_preview_table_id is None:
+                        # context does not have default preview table set, set it to this table
+                        await self.context_service.update_document(
+                            document_id=context.id,
+                            data=ContextUpdate(default_preview_table_id=observation_table.id),
                         )
 
             if payload.target_namespace_id:

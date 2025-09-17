@@ -20,9 +20,11 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
+from featurebyte.schema.context import ContextUpdate
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.use_case import UseCaseUpdate
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
+from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
@@ -58,6 +60,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_service: TargetService,
         use_case_service: UseCaseService,
+        context_service: ContextService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -69,6 +72,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.target_service = target_service
         self.use_case_service = use_case_service
+        self.context_service = context_service
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -282,8 +286,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 observation_table
             )
 
-            # if use case is linked and purpose of the observation table is EDA,
-            # check if the use case has default EDA table set
+            # Update default eda and preview tables in the use case if applicable
             if observation_table.purpose == Purpose.EDA:
                 for use_case_id in use_case_ids:
                     use_case = await self.use_case_service.get_document(document_id=use_case_id)
@@ -294,6 +297,33 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                                 document_id=use_case_id,
                                 data=UseCaseUpdate(default_eda_table_id=observation_table.id),
                             )
+            if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+                for use_case_id in use_case_ids:
+                    use_case = await self.use_case_service.get_document(document_id=use_case_id)
+                    if use_case.default_preview_table_id is None:
+                        # use case does not have default preview table set, set it to this table
+                        await self.use_case_service.update_use_case(
+                            document_id=use_case_id,
+                            data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                        )
+
+            # Update default eda and preview tables in the context if applicable
+            if context_id is not None:
+                context = await self.context_service.get_document(document_id=context_id)
+                if observation_table.purpose == Purpose.EDA:
+                    if context.default_eda_table_id is None:
+                        # context does not have default EDA table set, set it to this table
+                        await self.context_service.update_document(
+                            document_id=context.id,
+                            data=ContextUpdate(default_eda_table_id=observation_table.id),
+                        )
+                if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+                    if context.default_preview_table_id is None:
+                        # context does not have default preview table set, set it to this table
+                        await self.context_service.update_document(
+                            document_id=context.id,
+                            data=ContextUpdate(default_preview_table_id=observation_table.id),
+                        )
 
             if target_namespace_id is not None:
                 # update target namespace with unique target values if applicable
