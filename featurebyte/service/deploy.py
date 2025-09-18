@@ -784,7 +784,7 @@ class DeployService:
 
             await feature_update_progress(
                 int(i / len(feature_list.feature_ids) * 100),
-                f"Enabling feature online ({feature.name}) ...",
+                f"Deploying feature: {feature.name}",
             )
 
         tic = time.time()
@@ -934,7 +934,7 @@ class DeployService:
                 features.append(updated_feature)
                 await feature_update_progress(
                     int(len(features) / len(feature_list.feature_ids) * 100),
-                    f"Disabling features online ({feature.name}) ...",
+                    f"Undeploying feature: {feature.name}",
                 )
 
             # update offline feature table deployment reference
