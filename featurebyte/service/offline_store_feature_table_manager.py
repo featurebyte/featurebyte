@@ -263,7 +263,7 @@ class OfflineStoreFeatureTableManagerService:
 
             if update_progress:
                 message = (
-                    f"Materializing features to online store for table {offline_store_table_name} "
+                    f"Processing feature table: {offline_store_table_name} "
                     f"({idx + 1} / {offline_table_count} tables)"
                 )
                 await update_progress(int((idx + 1) / offline_table_count * 90), message)
@@ -383,7 +383,7 @@ class OfflineStoreFeatureTableManagerService:
 
             if update_progress:
                 message = (
-                    f"Updating offline store feature table {feature_table_dict['name']} for online disabling features "
+                    f"Updating feature table {feature_table_dict['name']} for deployment removal "
                     f"({idx + 1} / {offline_table_count} tables)"
                 )
                 await update_progress(int((idx + 1) / offline_table_count * 90), message)
