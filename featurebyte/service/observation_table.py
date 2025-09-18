@@ -34,7 +34,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
-from featurebyte.models.observation_table import ObservationTableModel, TargetInput
+from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
 from featurebyte.models.request_input import BaseRequestInput
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.models.use_case import UseCaseModel
@@ -51,12 +51,14 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
+from featurebyte.schema.context import ContextUpdate
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableServiceUpdate,
     ObservationTableUpload,
 )
+from featurebyte.schema.use_case import UseCaseUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.schema.worker.task.observation_table_upload import (
     ObservationTableUploadTaskPayload,
@@ -280,6 +282,52 @@ class ObservationTableService(
     @property
     def class_name(self) -> str:
         return "ObservationTable"
+
+    async def create_document(self, data: ObservationTableModel) -> ObservationTableModel:
+        observation_table = await super().create_document(data)
+
+        # Update default eda and preview tables in the context if applicable
+        if observation_table.context_id is not None:
+            context = await self.context_service.get_document(
+                document_id=observation_table.context_id
+            )
+            if observation_table.purpose == Purpose.EDA:
+                if context.default_eda_table_id is None:
+                    # context does not have default EDA table set, set it to this table
+                    await self.context_service.update_document(
+                        document_id=context.id,
+                        data=ContextUpdate(default_eda_table_id=observation_table.id),
+                    )
+            if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+                if context.default_preview_table_id is None:
+                    # context does not have default preview table set, set it to this table
+                    await self.context_service.update_document(
+                        document_id=context.id,
+                        data=ContextUpdate(default_preview_table_id=observation_table.id),
+                    )
+
+        # Update default eda and preview tables in the use case if applicable
+        if observation_table.purpose == Purpose.EDA:
+            for use_case_id in observation_table.use_case_ids:
+                use_case = await self.use_case_service.get_document(document_id=use_case_id)
+                if use_case.default_eda_table_id is None:
+                    # use case does not have default EDA table set, set it to this table
+                    if observation_table.target_namespace_id == use_case.target_namespace_id:
+                        await self.use_case_service.update_use_case(
+                            document_id=use_case_id,
+                            data=UseCaseUpdate(default_eda_table_id=observation_table.id),
+                        )
+        if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+            for use_case_id in observation_table.use_case_ids:
+                use_case = await self.use_case_service.get_document(document_id=use_case_id)
+                if use_case.default_preview_table_id is None:
+                    # use case does not have default preview table set, set it to this table
+                    await self.use_case_service.update_use_case(
+                        document_id=use_case_id,
+                        data=UseCaseUpdate(default_preview_table_id=observation_table.id),
+                    )
+
+        return observation_table
 
     async def _validate_context_use_case(
         self,
