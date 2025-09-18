@@ -2,6 +2,7 @@
 SessionManager service
 """
 
+import copy
 import json
 import time
 from asyncio.exceptions import TimeoutError
@@ -219,8 +220,12 @@ class SessionManagerService:
                 feature_store.details, feature_store.details.compute_option_field
             )
             logger.info(
-                f'Replace feature store "{feature_store.details.compute_option_field}": "{original_value}" with "{compute_option_value_override}"'
+                f'Replace compute option "{feature_store.details.compute_option_field}": "{original_value}"'
+                f' with "{compute_option_value_override}" for feature store "{feature_store.name}"'
             )
+            # make a copy to avoid modifying the original feature store object
+            feature_store = copy.deepcopy(feature_store)
+            assert feature_store.details.compute_option_field is not None
             setattr(
                 feature_store.details,
                 feature_store.details.compute_option_field,

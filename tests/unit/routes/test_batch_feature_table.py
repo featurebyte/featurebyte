@@ -774,7 +774,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         self.update_deployment_enabled(test_api_client, deployment_id, catalog_id)
 
         # expect to be using regular warehouse up to now
-        assert len(mocked_get_session.call_args_list) == 4
         assert all([
             (
                 call_args.args[0] if call_args.args else call_args.kwargs["feature_store"]
@@ -787,19 +786,24 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         )
 
         # expect batch feature table to be using the overridden warehouse
-        response = test_api_client.post(
-            f"{self.base_route}/feature_table", json=payload_for_external_feature_table
-        )
-        response = self.wait_for_results(test_api_client, response)
-        response_dict = response.json()
-        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+        with patch(
+            "featurebyte.service.session_manager.SessionManagerService.get_session"
+        ) as mocked_get_session_for_batch_feature_table:
+            mocked_get_session_for_batch_feature_table.return_value = (
+                mocked_get_session.return_value
+            )
+            response = test_api_client.post(
+                f"{self.base_route}/feature_table", json=payload_for_external_feature_table
+            )
+            response = self.wait_for_results(test_api_client, response)
+            response_dict = response.json()
+            assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
-        # expect to be using alt warehouse for all calls after the initial 4
-        assert len(mocked_get_session.call_args_list) == 8
-        assert all([
-            (
-                call_args.args[0] if call_args.args else call_args.kwargs["feature_store"]
-            ).details.warehouse
-            == "alt_warehouse"
-            for call_args in mocked_get_session.call_args_list[4:]
-        ])
+            # expect to be using alt warehouse for all calls after the initial 4
+            assert all([
+                (
+                    call_args.args[0] if call_args.args else call_args.kwargs["feature_store"]
+                ).details.warehouse
+                == "alt_warehouse"
+                for call_args in mocked_get_session_for_batch_feature_table.call_args_list
+            ])
