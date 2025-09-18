@@ -11,14 +11,13 @@ from dateutil import tz
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
+from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,
 )
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
-from featurebyte.schema.use_case import UseCaseUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -26,7 +25,6 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -49,7 +47,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         observation_table_service: ObservationTableService,
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
-        use_case_service: UseCaseService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -57,7 +54,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.observation_table_service = observation_table_service
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
-        self.use_case_service = use_case_service
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from source table.'
@@ -237,19 +233,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             observation_table = await self.observation_table_service.create_document(
                 observation_table
             )
-
-            # if use case is linked and purpose of the observation table is EDA,
-            # check if the use case has default EDA table set
-            if payload.use_case_id is not None and payload.purpose == Purpose.EDA:
-                use_case = await self.use_case_service.get_document(document_id=payload.use_case_id)
-                if use_case.default_eda_table_id is None:
-                    # use case does not have default EDA table set, set it to this table
-                    if payload.target_namespace_id == use_case.target_namespace_id:
-                        await self.use_case_service.update_use_case(
-                            document_id=use_case.id,
-                            data=UseCaseUpdate(default_eda_table_id=observation_table.id),
-                        )
-
             if payload.target_namespace_id:
                 # update the target namespace with the unique target values if applicable
                 await self.target_namespace_service.update_target_namespace_classification_metadata(

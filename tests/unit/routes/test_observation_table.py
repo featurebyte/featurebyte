@@ -965,11 +965,19 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
         assert response_dict["purpose"] == "eda"
 
-        # check that use case default eda table is not set
+        # check that context default eda and preview tables are set
+        response = test_api_client.get("/context/646f6c1c0ed28a5271fb02d5")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["default_eda_table_id"] == observation_table_id
+        assert response_dict["default_preview_table_id"] == observation_table_id
+
+        # check that use case default eda table is not set and preview table is set
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] is None
+        assert response_dict["default_preview_table_id"] == observation_table_id
 
         # create target table
         target_table_payload = BaseMaterializedTableTestSuite.load_payload(
