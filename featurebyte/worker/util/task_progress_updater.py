@@ -4,8 +4,9 @@ Task progress updater
 
 import asyncio
 import os
+from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Generator, Optional
 from uuid import UUID
 
 from featurebyte.models.task import ProgressHistory, Task
@@ -24,6 +25,7 @@ class TaskProgressUpdater:
         self.task_id = task_id
         self.user = user
         self.progress = progress
+        self._from_to_percent: tuple[float, float] = (0, 100)
 
     @property
     def max_progress_history(self) -> int:
@@ -36,6 +38,46 @@ class TaskProgressUpdater:
             Maximum progress history
         """
         return int(os.getenv("FEATUREBYTE_MAX_PROGRESS_HISTORY", MAX_PROGRESS_HISTORY))
+
+    @contextmanager
+    def set_progress_range(
+        self, from_percent: float, to_percent: float
+    ) -> Generator[None, None, None]:
+        """
+        Context manager to temporarily set a progress range.
+        The original range is automatically restored when exiting the context.
+
+        Parameters
+        ----------
+        from_percent: float
+            The starting percentage of the range (0-100)
+        to_percent: float
+            The ending percentage of the range (0-100)
+
+        Yields
+        ------
+        None
+            Sets the progress range within the context
+
+        Raises
+        ------
+        ValueError
+            If from_percent is not less than to_percent or if either value is out of bounds
+        """
+        if not (0 <= from_percent < to_percent <= 100):
+            raise ValueError(
+                "from_percent must be less than to_percent and both must be between 0 and 100"
+            )
+
+        # Save the current range
+        original_range = self._from_to_percent
+        try:
+            # Set the new range
+            self._from_to_percent = (from_percent, to_percent)
+            yield
+        finally:
+            # Restore the original range
+            self._from_to_percent = original_range
 
     async def update_progress(
         self, percent: int, message: Optional[str] = None, **kwargs: Any
@@ -52,7 +94,12 @@ class TaskProgressUpdater:
         **kwargs: Any
             Optional parameters
         """
-        progress = ProgressModel(percent=percent, message=message, **kwargs)
+        scaled_percent = percent
+        if self._from_to_percent != (0, 100):
+            from_percent, to_percent = self._from_to_percent
+            scaled_percent = int(from_percent + (percent / 100) * (to_percent - from_percent))
+
+        progress = ProgressModel(percent=scaled_percent, message=message, **kwargs)
         progress_dict = progress.model_dump(exclude_none=True)
 
         # write to persistent
