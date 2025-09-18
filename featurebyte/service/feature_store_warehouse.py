@@ -264,6 +264,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         credentials: Optional[CredentialModel] = None,
+        session: Optional[BaseSession] = None,
     ) -> List[TableSpec]:
         """
         List tables in feature store
@@ -280,6 +281,8 @@ class FeatureStoreWarehouseService:
             Whether to refresh the list of tables
         credentials: Optional[CredentialModel]
             Credentials to use for the session. If None, will use the credentials from the session manager
+        session: Optional[BaseSession]
+            Optional database session. If provided, will use this session instead of creating a new one.
 
         Raises
         ------
@@ -291,10 +294,13 @@ class FeatureStoreWarehouseService:
         List[TableSpec]
             List of tables
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
-            credentials_override=credentials,
-        )
+        if session is not None:
+            db_session = session
+        else:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
+            )
         try:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name
@@ -322,6 +328,7 @@ class FeatureStoreWarehouseService:
         schema_name: str,
         table_name: str,
         credentials: Optional[CredentialModel] = None,
+        session: Optional[BaseSession] = None,
     ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
@@ -340,6 +347,8 @@ class FeatureStoreWarehouseService:
             Whether to refresh the list of columns
         credentials: Optional[CredentialModel]
             Credentials to use for the session. If None, will use the credentials from the session manager
+        session: Optional[BaseSession]
+            Optional database session. If provided, will use this session instead of creating a new one.
 
         Raises
         ------
@@ -351,10 +360,13 @@ class FeatureStoreWarehouseService:
         List[ColumnSpecWithDescription]
             List of ColumnSpecWithDescription object
         """
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
-            credentials_override=credentials,
-        )
+        if session is not None:
+            db_session = session
+        else:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                credentials_override=credentials,
+            )
 
         try:
             table_schema = await db_session.list_table_schema(
@@ -443,7 +455,9 @@ class FeatureStoreWarehouseService:
             columns,
         )
 
-    async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
+    async def table_shape(
+        self, location: TabularSource, session: Optional[BaseSession] = None
+    ) -> FeatureStoreShape:
         """
         Get the shape table from location.
 
@@ -451,6 +465,8 @@ class FeatureStoreWarehouseService:
         ----------
         location: TabularSource
             Location to get shape from
+        session: Optional[BaseSession]
+            Optional session to use. If not provided, a new session will be created.
 
         Returns
         -------
@@ -460,9 +476,12 @@ class FeatureStoreWarehouseService:
         feature_store = await self.feature_store_service.get_document(
             document_id=location.feature_store_id
         )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=self.session_initialization_timeout
-        )
+        if session is not None:
+            db_session = session
+        else:
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store, timeout=self.session_initialization_timeout
+            )
         shape, _, _ = await self._get_table_shape(location, db_session)
         return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
 

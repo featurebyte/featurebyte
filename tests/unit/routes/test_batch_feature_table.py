@@ -591,10 +591,11 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         output_table_list_columns,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
-        mock_snowflake_session,
+        mocked_get_session,
         update_fixtures,
     ):
         """Test create success append to table"""
+        mocked_get_session.return_value.source_type = SourceType.DATABRICKS_UNITY
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
@@ -602,19 +603,15 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         payload_for_external_feature_table["output_table_info"]["name"] = (
             '"db"."schema"."new_batch_prediction_table"'
         )
-        with patch(
-            "featurebyte.service.batch_external_feature_table.BatchExternalFeatureTableService._get_source_type"
-        ) as mock_get_source_type:
-            mock_get_source_type.return_value = SourceType.DATABRICKS_UNITY
-            response = test_api_client.post(
-                f"{self.base_route}/feature_table", json=payload_for_external_feature_table
-            )
-            response = self.wait_for_results(test_api_client, response)
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_external_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
-        mock_snowflake_session.execute_query_long_running = mock_execute_query_long_running
-        queries = extract_session_executed_queries(mock_snowflake_session)
+        mocked_get_session.execute_query_long_running = mock_execute_query_long_running
+        queries = extract_session_executed_queries(mocked_get_session)
         fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_new_databricks_table_queries.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
@@ -626,10 +623,11 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         output_table_list_columns,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
-        mock_snowflake_session,
+        mocked_get_session,
         update_fixtures,
     ):
         """Test create success append to table"""
+        mocked_get_session.return_value.source_type = SourceType.DATABRICKS_UNITY
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
@@ -640,19 +638,15 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         payload_for_external_feature_table["output_table_info"][
             "snapshot_date_as_timeseries_key"
         ] = True
-        with patch(
-            "featurebyte.service.batch_external_feature_table.BatchExternalFeatureTableService._get_source_type"
-        ) as mock_get_source_type:
-            mock_get_source_type.return_value = SourceType.DATABRICKS_UNITY
-            response = test_api_client.post(
-                f"{self.base_route}/feature_table", json=payload_for_external_feature_table
-            )
-            response = self.wait_for_results(test_api_client, response)
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_external_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
-        mock_snowflake_session.execute_query_long_running = mock_execute_query_long_running
-        queries = extract_session_executed_queries(mock_snowflake_session)
+        mocked_get_session.execute_query_long_running = mock_execute_query_long_running
+        queries = extract_session_executed_queries(mocked_get_session)
         fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_new_databricks_table_queries_ts_key.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
@@ -664,27 +658,24 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         output_table_list_columns,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
-        mock_snowflake_session,
+        mocked_get_session,
         update_fixtures,
     ):
         """Test create success append to table"""
+        mocked_get_session.return_value.source_type = SourceType.DATABRICKS_UNITY
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
 
-        with patch(
-            "featurebyte.service.batch_external_feature_table.BatchExternalFeatureTableService._get_source_type"
-        ) as mock_get_source_type:
-            mock_get_source_type.return_value = SourceType.DATABRICKS_UNITY
-            response = test_api_client.post(
-                f"{self.base_route}/feature_table", json=payload_for_external_feature_table
-            )
-            response = self.wait_for_results(test_api_client, response)
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_external_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
-        mock_snowflake_session.execute_query_long_running = mock_execute_query_long_running
-        queries = extract_session_executed_queries(mock_snowflake_session)
+        mocked_get_session.execute_query_long_running = mock_execute_query_long_running
+        queries = extract_session_executed_queries(mocked_get_session)
         fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_existing_databricks_table_queries.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
@@ -728,28 +719,91 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         test_api_client_persistent,
         payload_for_external_feature_table,
         snowflake_execute_query_for_materialized_table,
-        mock_snowflake_session,
+        mocked_get_session,
         update_fixtures,
     ):
         """Test create success append to existing empty table"""
+        mocked_get_session.return_value.source_type = SourceType.DATABRICKS_UNITY
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
 
         # empty schema for existing table
         mock_table_shape.return_value = FeatureStoreShape(num_cols=1, num_rows=0)
+        response = test_api_client.post(
+            f"{self.base_route}/feature_table", json=payload_for_external_feature_table
+        )
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        mocked_get_session.execute_query_long_running = mock_execute_query_long_running
+        queries = extract_session_executed_queries(mocked_get_session)
+        fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_existing_empty_databricks_table_queries.sql"
+        assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+    @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query_long_running")
+    def test_create_success_deployment_compute_option_override(
+        self,
+        mock_execute_query_long_running,
+        test_api_client_persistent,
+        output_table_list_columns,
+        payload_for_external_feature_table,
+        snowflake_execute_query_for_materialized_table,
+        mocked_get_session,
+        update_fixtures,
+    ):
+        """Test create success using overridden compute option from deployment"""
+        test_api_client, _ = test_api_client_persistent
+        mock_execute_query_long_running.side_effect = snowflake_execute_query_for_materialized_table
+        self.setup_creation_route(test_api_client)
+
+        # update deployment to use a different compute option value
+        deployment_id = self.payload["deployment_id"]
+        response = test_api_client.get(f"/deployment/{deployment_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        deployment_dict = response.json()
+        catalog_id = deployment_dict["catalog_id"]
+
+        self.update_deployment_enabled(test_api_client, deployment_id, catalog_id, enabled=False)
+        response = test_api_client.patch(
+            f"/deployment/{deployment_id}",
+            json={"compute_option_value": "alt_warehouse"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        self.update_deployment_enabled(test_api_client, deployment_id, catalog_id)
+
+        # expect to be using regular warehouse up to now
+        assert all([
+            (
+                call_args.args[0] if call_args.args else call_args.kwargs["feature_store"]
+            ).details.warehouse
+            == "sf_warehouse"
+            for call_args in mocked_get_session.call_args_list
+        ])
+        payload_for_external_feature_table["output_table_info"]["name"] = (
+            '"db"."schema"."new_batch_prediction_table"'
+        )
+
+        # expect batch feature table to be using the overridden warehouse
         with patch(
-            "featurebyte.service.batch_external_feature_table.BatchExternalFeatureTableService._get_source_type"
-        ) as mock_get_source_type:
-            mock_get_source_type.return_value = SourceType.DATABRICKS_UNITY
+            "featurebyte.service.session_manager.SessionManagerService.get_session"
+        ) as mocked_get_session_for_batch_feature_table:
+            mocked_get_session_for_batch_feature_table.return_value = (
+                mocked_get_session.return_value
+            )
             response = test_api_client.post(
                 f"{self.base_route}/feature_table", json=payload_for_external_feature_table
             )
             response = self.wait_for_results(test_api_client, response)
-        response_dict = response.json()
-        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+            response_dict = response.json()
+            assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
-        mock_snowflake_session.execute_query_long_running = mock_execute_query_long_running
-        queries = extract_session_executed_queries(mock_snowflake_session)
-        fixture_filename = "tests/fixtures/batch_feature_table_task/expected_batch_external_feature_table_existing_empty_databricks_table_queries.sql"
-        assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+            # expect to be using alt warehouse for all calls after the initial 4
+            assert all([
+                (
+                    call_args.args[0] if call_args.args else call_args.kwargs["feature_store"]
+                ).details.warehouse
+                == "alt_warehouse"
+                for call_args in mocked_get_session_for_batch_feature_table.call_args_list
+            ])

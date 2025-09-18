@@ -127,6 +127,7 @@ class OnlineServingService:
         batch_feature_table_id: Optional[PydanticObjectId] = None,
         point_in_time: Optional[datetime] = None,
         use_deployed_tile_tables: bool = True,
+        deployment: Optional[DeploymentModel] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -145,6 +146,8 @@ class OnlineServingService:
             Point in time to use for the request. If not provided, the current time will be used.
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for online serving
+        deployment: Optional[DeploymentModel]
+            Deployment for which the online features are requested
 
         Returns
         -------
@@ -187,6 +190,7 @@ class OnlineServingService:
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
+            compute_option_value_override=deployment.compute_option_value if deployment else None,
         )
         features = await get_online_features(
             session_handler=SessionHandler(

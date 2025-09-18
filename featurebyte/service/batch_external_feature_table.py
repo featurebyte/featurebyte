@@ -88,6 +88,7 @@ class BatchExternalFeatureTableService:
         self,
         data: BatchExternalFeatureTableCreate,
         output_columns_and_dtypes: dict[str, DBVarType],
+        session: Optional[BaseSession] = None,
     ) -> BatchFeatureTableTaskPayload:
         """
         Validate and convert a BatchFeatureCreate schema to a BatchFeatureTableTaskPayload schema
@@ -99,6 +100,8 @@ class BatchExternalFeatureTableService:
             BatchFeatureCreate payload
         output_columns_and_dtypes: dict[str, DBVarType]
             Dictionary mapping output column names to their data types
+        session: Optional[BaseSession]
+            Optional database session to use for validation
 
         Returns
         -------
@@ -124,6 +127,7 @@ class BatchExternalFeatureTableService:
                 feature_store=feature_store,
                 database_name=table_expr.catalog,
                 schema_name=table_expr.db,
+                session=session,
             )
         except SchemaNotFoundError as exc:
             raise InvalidTableNameError("Invalid output table name: schema not found") from exc
@@ -135,6 +139,7 @@ class BatchExternalFeatureTableService:
                 database_name=table_expr.catalog,
                 schema_name=table_expr.db,
                 table_name=table_expr.name,
+                session=session,
             )
 
             table_shape = await self.feature_store_warehouse_service.table_shape(
@@ -145,7 +150,8 @@ class BatchExternalFeatureTableService:
                         schema_name=table_expr.db,
                         table_name=table_expr.name,
                     ),
-                )
+                ),
+                session=session,
             )
             # if table exists but has no rows, it is considered empty.
             # In such case we will not validate columns but alter the schema before writing
@@ -196,10 +202,9 @@ class BatchExternalFeatureTableService:
         output_feature_table_name: str,
         output_table_info: OutputTableInfo,
         batch_feature_table: BatchFeatureTableModel,
-        source_type: SourceType,
     ) -> None:
         # Add primary key constraint if applicable
-        if source_type == SourceType.DATABRICKS_UNITY:
+        if db_session.source_type == SourceType.DATABRICKS_UNITY:
             # Get serving entity names from batch feature table
             deployment = await self.deployment_service.get_document(
                 document_id=batch_feature_table.deployment_id
@@ -248,7 +253,6 @@ class BatchExternalFeatureTableService:
         output_feature_table_name: str,
         output_table_info: OutputTableInfo,
         batch_feature_table: BatchFeatureTableModel,
-        source_type: SourceType,
     ) -> None:
         """
         Create output feature table
@@ -267,8 +271,6 @@ class BatchExternalFeatureTableService:
             Information about the output table to create
         batch_feature_table: BatchFeatureTableModel
             Batch feature table model containing the feature values to write
-        source_type: SourceType
-            Source type of the database session
         """
         # Create the output table
         await db_session.create_table_as(
@@ -283,7 +285,6 @@ class BatchExternalFeatureTableService:
             output_feature_table_name=output_feature_table_name,
             output_table_info=output_table_info,
             batch_feature_table=batch_feature_table,
-            source_type=source_type,
         )
 
     async def _overwrite_output_table(
@@ -295,7 +296,6 @@ class BatchExternalFeatureTableService:
         output_feature_table_name: str,
         output_table_info: OutputTableInfo,
         batch_feature_table: BatchFeatureTableModel,
-        source_type: SourceType,
     ) -> None:
         """
         Create output feature table
@@ -316,11 +316,9 @@ class BatchExternalFeatureTableService:
             Information about the output table to create
         batch_feature_table: BatchFeatureTableModel
             Batch feature table model containing the feature values to write
-        source_type: SourceType
-            Source type of the database session
         """
 
-        if source_type == SourceType.DATABRICKS_UNITY:
+        if db_session.source_type == SourceType.DATABRICKS_UNITY:
             # For Databricks Unity, we will overwrite the existing table without replacing it.
             # Add POINT_IN_TIME column to the empty table
             alter_table_sql_expr = expressions.Alter(
@@ -336,7 +334,7 @@ class BatchExternalFeatureTableService:
                 ],
             )
             await db_session.execute_query_long_running(
-                sql_to_string(alter_table_sql_expr, source_type=source_type)
+                sql_to_string(alter_table_sql_expr, source_type=db_session.source_type)
             )
             # Append the new data to the existing table
             merge_table_sql_expr = expressions.Merge(
@@ -364,7 +362,7 @@ class BatchExternalFeatureTableService:
                     ),
                 ],
             )
-            sql = sql_to_string(merge_table_sql_expr, source_type=source_type)
+            sql = sql_to_string(merge_table_sql_expr, source_type=db_session.source_type)
             await db_session.execute_query_long_running(
                 re.sub(r"MERGE\s+INTO", "MERGE WITH SCHEMA EVOLUTION INTO", sql, count=1)
             )
@@ -383,7 +381,6 @@ class BatchExternalFeatureTableService:
             output_feature_table_name=output_feature_table_name,
             output_table_info=output_table_info,
             batch_feature_table=batch_feature_table,
-            source_type=source_type,
         )
 
     async def _append_output_table(
@@ -395,7 +392,6 @@ class BatchExternalFeatureTableService:
         output_table_info: OutputTableInfo,
         snapshot_date_expr: expressions.Literal,
         output_columns_expr: List[expressions.Expression],
-        source_type: SourceType,
     ) -> None:
         """
         Create output feature table
@@ -416,8 +412,6 @@ class BatchExternalFeatureTableService:
             Snapshot date expression to use for the features to be written to the table
         output_columns_expr: List[expressions.Expression]
             List of output columns expressions to use for the features to be written to the table
-        source_type: SourceType
-            Source type of the database session
         """
 
         # get predicate for partitioning
@@ -426,7 +420,7 @@ class BatchExternalFeatureTableService:
             expression=snapshot_date_expr,
         )
 
-        if source_type == SourceType.DATABRICKS_UNITY:
+        if db_session.source_type == SourceType.DATABRICKS_UNITY:
             # Overwrite to the existing output table
             insert_expr = expressions.Insert(
                 expression=input_select_expr,
@@ -435,11 +429,11 @@ class BatchExternalFeatureTableService:
                 columns=output_columns_expr,
             )
             await db_session.execute_query_long_running(
-                sql_to_string(insert_expr, source_type=source_type)
+                sql_to_string(insert_expr, source_type=db_session.source_type)
             )
 
             # Optimize the table for better performance
-            snapshot_date = sql_to_string(snapshot_date_expr, source_type=source_type)
+            snapshot_date = sql_to_string(snapshot_date_expr, source_type=db_session.source_type)
             await db_session.execute_query_long_running(
                 textwrap.dedent(
                     f"""
@@ -455,7 +449,7 @@ class BatchExternalFeatureTableService:
                 where=partition_predicate,
             )
             await db_session.execute_query_long_running(
-                sql_to_string(delete_expr, source_type=source_type)
+                sql_to_string(delete_expr, source_type=db_session.source_type)
             )
 
             # Append to the existing output table
@@ -465,11 +459,12 @@ class BatchExternalFeatureTableService:
                 columns=output_columns_expr,  # type: ignore
             )
             await db_session.execute_query_long_running(
-                sql_to_string(insert_expr, source_type=source_type)
+                sql_to_string(insert_expr, source_type=db_session.source_type)
             )
 
     async def write_batch_features_to_table(
         self,
+        db_session: BaseSession,
         batch_feature_table: BatchFeatureTableModel,
         output_table_info: OutputTableInfo,
         point_in_time: datetime.datetime | None = None,
@@ -479,6 +474,8 @@ class BatchExternalFeatureTableService:
 
         Parameters
         ----------
+        db_session: BaseSession
+            Database session to use for writing the features
         batch_feature_table: BatchFeatureTableModel
             Batch feature table model containing the feature values to write
         output_table_info: OutputTableInfo
@@ -491,13 +488,6 @@ class BatchExternalFeatureTableService:
             "Appending output table from batch feature table",
             extra={"table_name": output_table_info.name},
         )
-
-        # get database session
-        feature_store = await self.feature_store_service.get_document(
-            document_id=batch_feature_table.location.feature_store_id
-        )
-        source_type = self._get_source_type(feature_store)
-        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         # get point-in-time and snapshot date expressions
         point_in_time = point_in_time or datetime.datetime.utcnow()
@@ -539,7 +529,7 @@ class BatchExternalFeatureTableService:
         # get output table details
         output_table_expr = get_table_expr_from_fully_qualified_table_name(
             fully_qualified_table_name=output_table_info.name,
-            source_type=source_type,
+            source_type=db_session.source_type,
         )
         output_table_details = TableDetails(
             database_name=output_table_expr.catalog,
@@ -548,7 +538,7 @@ class BatchExternalFeatureTableService:
         )
         output_feature_table_name = sql_to_string(
             output_table_expr,
-            source_type=source_type,
+            source_type=db_session.source_type,
         )
 
         output_table_exists = await db_session.table_exists(output_table_details)
@@ -560,11 +550,18 @@ class BatchExternalFeatureTableService:
                 output_feature_table_name=output_feature_table_name,
                 output_table_info=output_table_info,
                 batch_feature_table=batch_feature_table,
-                source_type=source_type,
             )
         else:
+            # get database session
+            feature_store = await self.feature_store_service.get_document(
+                document_id=batch_feature_table.location.feature_store_id
+            )
             table_shape = await self.feature_store_warehouse_service.table_shape(
-                TabularSource(feature_store_id=feature_store.id, table_details=output_table_details)
+                TabularSource(
+                    feature_store_id=feature_store.id,
+                    table_details=output_table_details,
+                    db_session=db_session,
+                )
             )
             if table_shape.num_rows == 0:
                 # If the table exists but has no rows, it is considered empty.
@@ -576,7 +573,6 @@ class BatchExternalFeatureTableService:
                     output_feature_table_name=output_feature_table_name,
                     output_table_info=output_table_info,
                     batch_feature_table=batch_feature_table,
-                    source_type=source_type,
                 )
             else:
                 output_columns_expr = [
@@ -591,5 +587,4 @@ class BatchExternalFeatureTableService:
                     output_table_info=output_table_info,
                     snapshot_date_expr=snapshot_date_expr,
                     output_columns_expr=output_columns_expr,
-                    source_type=source_type,
                 )

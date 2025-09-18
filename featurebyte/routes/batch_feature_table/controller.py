@@ -116,7 +116,8 @@ class BatchFeatureTableController(
         else:
             assert data.request_input is not None
             db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
-                feature_store=feature_store
+                feature_store=feature_store,
+                compute_option_value_override=deployment.compute_option_value,
             )
             (
                 _,
@@ -145,9 +146,14 @@ class BatchFeatureTableController(
                 input_columns_and_dtypes[doc["name"]] = doc["dtype"]
 
             # prepare task payload for appending batch features to an unmanaged feature table
+            db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+                compute_option_value_override=deployment.compute_option_value,
+            )
             payload = await self.batch_external_feature_table_service.get_batch_feature_table_task_payload(
                 data=data,
                 output_columns_and_dtypes=input_columns_and_dtypes,
+                session=db_session,
             )
         else:
             # prepare task payload for creating a batch feature table

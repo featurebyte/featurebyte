@@ -2,6 +2,7 @@
 SessionManager service
 """
 
+import copy
 import json
 import time
 from asyncio.exceptions import TimeoutError
@@ -181,6 +182,7 @@ class SessionManagerService:
         user_override: Optional[User] = None,
         credentials_override: Optional[CredentialModel] = None,
         timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        compute_option_value_override: Optional[str] = None,
     ) -> BaseSession:
         """
         Get session for feature store. If provided a user, it will use that user's credentials.
@@ -196,6 +198,8 @@ class SessionManagerService:
             Credentials object to override
         timeout: float
             timeout for session creation
+        compute_option_value_override: Optional[str]
+            Compute option value to override, if applicable
 
         Returns
         -------
@@ -209,6 +213,24 @@ class SessionManagerService:
         """
         credentials = credentials_override
         credentials_user = self.user if user_override is None else user_override
+
+        # replace compute option value if provided
+        if compute_option_value_override and feature_store.details.compute_option_field:
+            original_value = getattr(
+                feature_store.details, feature_store.details.compute_option_field
+            )
+            logger.info(
+                f'Replace compute option "{feature_store.details.compute_option_field}": "{original_value}"'
+                f' with "{compute_option_value_override}" for feature store "{feature_store.name}"'
+            )
+            # make a copy to avoid modifying the original feature store object
+            feature_store = copy.deepcopy(feature_store)
+            assert feature_store.details.compute_option_field is not None
+            setattr(
+                feature_store.details,
+                feature_store.details.compute_option_field,
+                compute_option_value_override,
+            )
 
         if not credentials:
             # This could return None for feature store sessions that don't require credentials

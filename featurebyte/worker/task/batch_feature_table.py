@@ -71,7 +71,12 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
-        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        deployment: DeploymentModel = await self.deployment_service.get_document(
+            document_id=payload.deployment_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store, compute_option_value_override=deployment.compute_option_value
+        )
 
         if payload.batch_request_table_id:
             batch_request_table_model = await self.batch_request_table_service.get_document(
@@ -94,13 +99,11 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
             )
 
         location = await self.batch_feature_table_service.generate_materialized_table_location(
-            payload.feature_store_id
+            payload.feature_store_id,
+            session=db_session,
         )
 
         # retrieve feature list from deployment
-        deployment: DeploymentModel = await self.deployment_service.get_document(
-            document_id=payload.deployment_id
-        )
         feature_list: FeatureListModel = await self.feature_list_service.get_document(
             document_id=deployment.feature_list_id
         )
@@ -130,6 +133,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     batch_feature_table_id=payload.output_document_id,
                     point_in_time=payload.point_in_time,
                     use_deployed_tile_tables=payload.use_deployed_tile_tables,
+                    deployment=deployment,
                 )
                 (
                     columns_info,
@@ -153,6 +157,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                 if payload.output_table_info is not None:
                     # Append feature values from temporary batch request table to output table
                     await self.batch_external_feature_table_service.write_batch_features_to_table(
+                        db_session=db_session,
                         batch_feature_table=batch_feature_table_model,
                         output_table_info=payload.output_table_info,
                         point_in_time=payload.point_in_time,
