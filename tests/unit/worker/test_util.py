@@ -128,3 +128,72 @@ async def test_progress_update(persistent, user_id):
         ],
     }
     assert updated_doc["progress"] == {"percent": 100, "message": "Second test progress 100"}
+
+
+@pytest.mark.asyncio
+async def test_set_progress_range(persistent, user_id):
+    """Test set_progress_range context manager"""
+    task_id = str(ObjectId())
+
+    # create a task document
+    await persistent.insert_one(
+        collection_name=Task.collection_name(),
+        document={
+            "_id": task_id,
+            "user_id": user_id,
+            "description": "Test task",
+            "start_time": None,
+            "end_time": None,
+            "status": "running",
+        },
+        user_id=user_id,
+        disable_audit=True,
+    )
+
+    progress = AsyncMock()
+    progress_updater = TaskProgressUpdater(
+        persistent=persistent, task_id=task_id, user=User(id=user_id), progress=progress
+    )
+
+    # Test that initial range is (0, 100)
+    assert progress_updater._from_to_percent == (0, 100)
+
+    # Test setting a valid range and updating progress within it
+    with progress_updater.set_progress_range(20, 80):
+        assert progress_updater._from_to_percent == (20, 80)
+
+        # Update progress to 50% within the range (should map to 50% of 20-80 = 50)
+        await progress_updater.update_progress(percent=50, message="Mid range progress")
+
+        # Check that the actual progress was scaled correctly: 20 + (50/100) * (80-20) = 50
+        updated_doc = await persistent.find_one(
+            collection_name=Task.collection_name(),
+            query_filter={"_id": task_id},
+        )
+        assert updated_doc["progress"]["percent"] == 50
+        assert updated_doc["progress"]["message"] == "Mid range progress"
+
+    # Test that range is restored after exiting context
+    assert progress_updater._from_to_percent == (0, 100)
+
+    # Test nested ranges
+    with progress_updater.set_progress_range(0, 50):
+        assert progress_updater._from_to_percent == (0, 50)
+
+        with progress_updater.set_progress_range(10, 30):
+            assert progress_updater._from_to_percent == (10, 30)
+
+            # Update progress to 100% within nested range (should map to 30)
+            await progress_updater.update_progress(percent=100, message="Nested range progress")
+
+            updated_doc = await persistent.find_one(
+                collection_name=Task.collection_name(),
+                query_filter={"_id": task_id},
+            )
+            assert updated_doc["progress"]["percent"] == 30
+
+        # Should be back to first nested range
+        assert progress_updater._from_to_percent == (0, 50)
+
+    # Should be back to original range
+    assert progress_updater._from_to_percent == (0, 100)
