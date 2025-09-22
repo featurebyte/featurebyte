@@ -72,7 +72,7 @@ server = [
   "celery[redis]",
   "celerybeat-mongo",
   "databricks-sdk==0.24.0",
-  "databricks-sql-connector",
+  "databricks-sql-connector~=4.0.0",
   "fastapi",
   # import changes 'feast.infra.online_stores.contrib'
   # Change in RepoContents.__init__

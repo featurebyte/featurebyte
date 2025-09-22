@@ -1298,22 +1298,21 @@ wheels = [
 
 [[package]]
 name = "databricks-sql-connector"
-version = "4.1.3"
+version = "4.0.5"
 source = {registry = "https://pypi.org/simple"}
 dependencies = [
   {name = "lz4"},
   {name = "oauthlib"},
   {name = "openpyxl"},
   {name = "pandas"},
-  {name = "pyjwt"},
   {name = "python-dateutil"},
   {name = "requests"},
   {name = "thrift"},
   {name = "urllib3"}
 ]
-sdist = {url = "https://files.pythonhosted.org/packages/e5/e9/6f538a27ffa79a34ddb7ea61e18fdce8420aca899c7cecdcad61b56d75c7/databricks_sql_connector-4.1.3.tar.gz", hash = "sha256:225cef7c3454e93d7a700dd336c665a44b04ab8f80236bd9be815bc42e7d2468", size = 175553, upload-time = "2025-09-17T17:56:28.733Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/4d/ad/ff08658d486812d10d37c7b9e893a635852bf8f5a9e07310a6c3d09848e9/databricks_sql_connector-4.0.5.tar.gz", hash = "sha256:ade3143b3b55e8c236bea7da8579c63c43432dd07df9dc05b1d8f2f7bbeb144e", size = 126693, upload-time = "2025-06-26T04:17:26.676Z"}
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/c7/6f/56617e6a866d8f0ba54f1df1b7d2feb9fe63e27e06033c81ce20ad894721/databricks_sql_connector-4.1.3-py3-none-any.whl", hash = "sha256:471c5acc2ce4ee4efedf66d33e6f86f5cd349496a85826ee95fc59b485d2daef", size = 198774, upload-time = "2025-09-17T17:56:27.112Z"}
+  {url = "https://files.pythonhosted.org/packages/1d/37/708835f8c1731e48891fbc7c7f2775f2211c541f0f4b442834d7a74d0d9c/databricks_sql_connector-4.0.5-py3-none-any.whl", hash = "sha256:8df9b0288f18ec699e2980319983c43080fe0a9a540261d26c37e63b2cb44b58", size = 133854, upload-time = "2025-06-26T04:17:24.875Z"}
 ]
 
 [[package]]
@@ -1709,7 +1708,7 @@ requires-dist = [
   {name = "croniter"},
   {name = "cryptography"},
   {name = "databricks-sdk", marker = "extra == 'server'", specifier = "==0.24.0"},
-  {name = "databricks-sql-connector", marker = "extra == 'server'"},
+  {name = "databricks-sql-connector", marker = "extra == 'server'", specifier = "~=4.0.0"},
   {name = "fastapi", marker = "extra == 'server'"},
   {name = "feast", extras = ["snowflake", "redis", "mysql", "gcp"], marker = "extra == 'server'", specifier = "==0.40.1"},
   {name = "featurebyte-freeware", marker = "extra == 'server'"},
