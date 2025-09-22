@@ -71,7 +71,7 @@ server = [
   "asyncache",
   "celery[redis]",
   "celerybeat-mongo",
-  "databricks-sdk",
+  "databricks-sdk==0.24.0",
   "databricks-sql-connector",
   "fastapi",
   # import changes 'feast.infra.online_stores.contrib'

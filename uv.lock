@@ -1285,15 +1285,15 @@ dataframe = [
 
 [[package]]
 name = "databricks-sdk"
-version = "0.65.0"
+version = "0.24.0"
 source = {registry = "https://pypi.org/simple"}
 dependencies = [
   {name = "google-auth"},
   {name = "requests"}
 ]
-sdist = {url = "https://files.pythonhosted.org/packages/95/8f/5428287241727605be298cf952d6282d814cbf256ec73ddb96751ac0f476/databricks_sdk-0.65.0.tar.gz", hash = "sha256:be744c844d1e1e9bf1a4ad2982ef2c8b88f2ef8ad36b6ea8b77591fd3b1f1bbb", size = 749239, upload-time = "2025-09-02T10:50:42.476Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/23/dd/0568f64adad87776e467fd0e6c5bb6453c322e7f579f0d2945fb26c905a7/databricks-sdk-0.24.0.tar.gz", hash = "sha256:54cd549e76acc23d945d83048e050e7ce4cd7ad33fb2e58ddeaaf87a1ad03c79", size = 470190, upload-time = "2024-04-02T07:04:12.951Z"}
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/0e/70/4bd71d09b7d7f7bc9b4d0ceb20a020fd4f667d82aafc43e4d115bd41989e/databricks_sdk-0.65.0-py3-none-any.whl", hash = "sha256:594e61138071d7ae830412cfd3fbc5bd16aba9b67a423f44f4c13ca70c493a9f", size = 705907, upload-time = "2025-09-02T10:50:40.619Z"}
+  {url = "https://files.pythonhosted.org/packages/bc/b8/e02e508ace3515e53b7533147812aeab29bfd11c8b5c444de03c6899a277/databricks_sdk-0.24.0-py3-none-any.whl", hash = "sha256:0bf14a63d22895d399559cf06bab17d73fdb1bda7c0f8c287f91471d3258371c", size = 468819, upload-time = "2024-04-02T07:04:10.22Z"}
 ]
 
 [[package]]
@@ -1708,7 +1708,7 @@ requires-dist = [
   {name = "celerybeat-mongo", marker = "extra == 'server'"},
   {name = "croniter"},
   {name = "cryptography"},
-  {name = "databricks-sdk", marker = "extra == 'server'"},
+  {name = "databricks-sdk", marker = "extra == 'server'", specifier = "==0.24.0"},
   {name = "databricks-sql-connector", marker = "extra == 'server'"},
   {name = "fastapi", marker = "extra == 'server'"},
   {name = "feast", extras = ["snowflake", "redis", "mysql", "gcp"], marker = "extra == 'server'", specifier = "==0.40.1"},
