@@ -49,7 +49,7 @@ dependencies = [
   "pandas>2.2",
   "pillow",
   "pyarrow",
-  "pydantic~=2.8",
+  "pydantic==2.8.2",
   "pydantic-settings",
   "pymongo",
   "pyopenssl",
@@ -103,7 +103,7 @@ test = [
   "tornado", # Maybe remove
   "freezegun",
   "junitparser",
-  "mongomock",
+  "mongomock==4.1.2",
   "mongomock-motor",
   "pytest",
   "pytest-asyncio",
