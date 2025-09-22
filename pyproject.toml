@@ -76,7 +76,7 @@ server = [
   "fastapi",
   # import changes 'feast.infra.online_stores.contrib'
   # Change in RepoContents.__init__
-  "feast[snowflake,redis,mysql,gcp]==0.40.1", 
+  "feast[snowflake,redis,mysql,gcp]==0.40.1",
   "featurebyte-freeware",
   "gevent",
   "google-cloud-bigquery",
@@ -145,6 +145,7 @@ lint = [
   "types-chardet",
   "types-cryptography",
   "types-decorator",
+  "types-pymysql==1.1.0.20250822",  # Linting error: featurebyte/feast/online_store/mysql.py:48:13: error: _C? has no attribute "execute"  [attr-defined]
   "types-paramiko",
   "types-protobuf",
   "types-pyOpenSSL",

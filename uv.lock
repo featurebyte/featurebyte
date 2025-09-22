@@ -1612,6 +1612,7 @@ dev = [
   {name = "types-paramiko"},
   {name = "types-protobuf"},
   {name = "types-pycurl"},
+  {name = "types-pymysql"},
   {name = "types-pyopenssl"},
   {name = "types-python-dateutil"},
   {name = "types-pytz"},
@@ -1662,6 +1663,7 @@ lint = [
   {name = "types-paramiko"},
   {name = "types-protobuf"},
   {name = "types-pycurl"},
+  {name = "types-pymysql"},
   {name = "types-pyopenssl"},
   {name = "types-python-dateutil"},
   {name = "types-pytz"},
@@ -1798,6 +1800,7 @@ dev = [
   {name = "types-paramiko"},
   {name = "types-protobuf"},
   {name = "types-pycurl"},
+  {name = "types-pymysql", specifier = "==1.1.0.20250822"},
   {name = "types-pyopenssl"},
   {name = "types-python-dateutil"},
   {name = "types-pytz"},
@@ -1848,6 +1851,7 @@ lint = [
   {name = "types-paramiko"},
   {name = "types-protobuf"},
   {name = "types-pycurl"},
+  {name = "types-pymysql", specifier = "==1.1.0.20250822"},
   {name = "types-pyopenssl"},
   {name = "types-python-dateutil"},
   {name = "types-pytz"},
@@ -6729,11 +6733,11 @@ wheels = [
 
 [[package]]
 name = "types-pymysql"
-version = "1.1.0.20250916"
+version = "1.1.0.20250822"
 source = {registry = "https://pypi.org/simple"}
-sdist = {url = "https://files.pythonhosted.org/packages/1f/12/bda1d977c07e0e47502bede1c44a986dd45946494d89e005e04cdeb0f8de/types_pymysql-1.1.0.20250916.tar.gz", hash = "sha256:98d75731795fcc06723a192786662bdfa760e1e00f22809c104fbb47bac5e29b", size = 22131, upload-time = "2025-09-16T02:49:22.039Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/9d/33/e4ea1c4a0aa4c8580cf493ad2369d6b4230e49b1e92bd31cd500eea07b41/types_pymysql-1.1.0.20250822.tar.gz", hash = "sha256:18448c957360b3d21dea75a651e81209b75c1d647ad58a9984af8b2b1b255a5c", size = 21735, upload-time = "2025-08-22T03:02:55.903Z"}
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/21/eb/a225e32a6e7b196af67ab2f1b07363595f63255374cc3b88bfdab53b4ee8/types_pymysql-1.1.0.20250916-py3-none-any.whl", hash = "sha256:873eb9836bb5e3de4368cc7010ca72775f86e9692a5c7810f8c7f48da082e55b", size = 23063, upload-time = "2025-09-16T02:49:20.933Z"}
+  {url = "https://files.pythonhosted.org/packages/ab/c0/fcfc61e43c7dc59106092b5cb39e6d5613ff594f51d5fed0d1e19a7bcf26/types_pymysql-1.1.0.20250822-py3-none-any.whl", hash = "sha256:d506556cbb0d4b5122e4b209c2d6c1156b408f5b89a2d958b85b5b89ada01bc6", size = 22816, upload-time = "2025-08-22T03:02:54.908Z"}
 ]
 
 [[package]]
