@@ -134,7 +134,7 @@ docs = [
 lint = [
   "bandit",
   "darglint",
-  "mypy",
+  "mypy==1.0.1",
   "mypy-extensions",
   "pip-audit",
   "types-Markdown",
