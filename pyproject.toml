@@ -118,7 +118,7 @@ test = [
 docs = [
   "docstring-parser",
   "mkautodoc",
-  "mkdocs",
+  "mkdocs==1.5.3",  # Failed to compile docs
   "mkdocs-awesome-pages-plugin",
   "mkdocs-enumerate-headings-plugin",
   "mkdocs-gen-files",
