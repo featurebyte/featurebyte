@@ -14,8 +14,7 @@ WORKDIR /app
 COPY . /app
 RUN pip install uv==0.7.3 && uv sync --all-groups --all-extras
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev --locked
+RUN uv build && uv run pip install dist/featurebyte-*.whl
 
 
 FROM python:3.10.16-slim AS runner
