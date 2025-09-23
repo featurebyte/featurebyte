@@ -124,7 +124,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 "1 validation error for FeatureModel\n"
                 "  Value error, Feature or target graph must have exactly one aggregation output [type=value_error, "
                 "input_value={'_id': ObjectId('646f6c1...de_serving_names': True}, input_type=dict]\n"
-                "    For further information visit https://errors.pydantic.dev/2.11/v/value_error"
+                "    For further information visit https://errors.pydantic.dev/2.8/v/value_error"
             ),
         ),
     ]
