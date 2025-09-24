@@ -12,7 +12,10 @@ from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
 from featurebyte.models.credential import UsernamePasswordCredential
-from featurebyte.models.observation_table import SourceTableObservationInput
+from featurebyte.models.observation_table import (
+    ObservationTableObservationInput,
+    SourceTableObservationInput,
+)
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.static_source_table import SourceTableStaticSourceInput
 from featurebyte.models.user_defined_function import FunctionParameter
@@ -183,6 +186,16 @@ def test_save_payload_fixtures(
         primary_entity_ids=[cust_id_entity.id],
         purpose="other",
     )
+    observation_table_from_obs_table = ObservationTableCreate(
+        _id="68ccea50820076b52bbcceb4",
+        name="observation_table_from_obs_table",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=ObservationTableObservationInput(
+            observation_table_id=observation_table.id,
+        ),
+        primary_entity_ids=[cust_id_entity.id],
+        purpose="other",
+    )
     historical_feature_table = HistoricalFeatureTableCreate(
         _id="646f6c1c0ed28a5271fb02d8",
         name="historical_feature_table",
@@ -347,6 +360,7 @@ def test_save_payload_fixtures(
         (deployment, "deployment"),
         (relationship_info, "relationship_info"),
         (observation_table, "observation_table"),
+        (observation_table_from_obs_table, "observation_table_from_obs_table"),
         (historical_feature_table, "historical_feature_table"),
         (target_table, "target_table"),
         (batch_request_table, "batch_request_table"),

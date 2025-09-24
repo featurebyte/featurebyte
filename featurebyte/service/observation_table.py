@@ -34,7 +34,12 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
-from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
+from featurebyte.models.observation_table import (
+    ObservationTableModel,
+    ObservationTableObservationInput,
+    Purpose,
+    TargetInput,
+)
 from featurebyte.models.request_input import BaseRequestInput
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.models.use_case import UseCaseModel
@@ -481,7 +486,19 @@ class ObservationTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
-        if isinstance(data.request_input, BaseRequestInput):
+        if isinstance(data.request_input, ObservationTableObservationInput):
+            source_observation_table = await self.get_document(
+                document_id=data.request_input.observation_table_id
+            )
+            # primary entity, context, use case ids and target namespace id are
+            # inherited from source observation table and will be populated in the task
+            data.primary_entity_ids = source_observation_table.primary_entity_ids
+            data.context_id = None
+            data.use_case_id = None
+            target_namespace_id = source_observation_table.target_namespace_id
+            # no need to perform entity validation checks since we are copying from existing observation table
+            data.skip_entity_validation_checks = True
+        elif isinstance(data.request_input, BaseRequestInput):
             feature_store = await self.feature_store_service.get_document(
                 document_id=data.feature_store_id
             )

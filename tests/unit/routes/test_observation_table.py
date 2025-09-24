@@ -1045,3 +1045,38 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table(self, test_api_client_persistent, create_success_response):
+        """Test create with an observation table"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["purpose"] = "preview"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+
+        assert response_dict["request_input"] == {
+            "observation_table_id": source_observation_table["_id"],
+            "type": "source_observation_table",
+        }
+        assert (
+            response_dict["target_namespace_id"] == source_observation_table["target_namespace_id"]
+        )
+        assert response_dict["primary_entity_ids"] == source_observation_table["primary_entity_ids"]
+        assert response_dict["context_id"] == source_observation_table["context_id"]
+        assert response_dict["use_case_ids"] == source_observation_table["use_case_ids"]
+        assert response_dict["purpose"] == "preview"
+        assert response_dict["columns_info"] == source_observation_table["columns_info"]

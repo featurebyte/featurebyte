@@ -1445,7 +1445,7 @@ class SourceTable(AbstractTableData):
         ...     timestamp_column_name: "POINT_IN_TIME",
         ...     entity_column_name: <entity_serving_name>,
         ...   },
-        ...   context_id=context_id,
+        ...   context_name=context_name,
         ... )
         """
 

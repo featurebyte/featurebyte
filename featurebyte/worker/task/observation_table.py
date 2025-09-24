@@ -9,9 +9,15 @@ from typing import Any, Optional
 
 from dateutil import tz
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel, TargetInput
+from featurebyte.models.observation_table import (
+    ObservationInput,
+    ObservationTableModel,
+    ObservationTableObservationInput,
+    SourceTableObservationInput,
+    TargetInput,
+)
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
@@ -157,7 +163,32 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         else:
             sample_to_timestamp = max_timestamp
 
-        await payload.request_input.materialize(
+        request_input: ObservationInput
+        if isinstance(payload.request_input, ObservationTableObservationInput):
+            # for observation input, materialize using source table request input without column filters or remapping
+            source_observation_table = await self.observation_table_service.get_document(
+                document_id=payload.request_input.observation_table_id
+            )
+            request_input = SourceTableObservationInput(
+                source=source_observation_table.location,
+            )
+            # exclude row index from source table
+            column_names_and_dtypes = await request_input.get_column_names_and_dtypes(
+                session=db_session
+            )
+            request_input.columns = [
+                column_name
+                for column_name in column_names_and_dtypes.keys()
+                if column_name != InternalName.TABLE_ROW_INDEX
+            ]
+            context_id = source_observation_table.context_id
+            use_case_ids = source_observation_table.use_case_ids
+        else:
+            request_input = payload.request_input
+            context_id = payload.context_id
+            use_case_ids = [payload.use_case_id] if payload.use_case_id else []
+
+        await request_input.materialize(
             session=db_session,
             destination=location.table_details,
             sample_rows=payload.sample_rows,
@@ -215,8 +246,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "user_id": payload.user_id,
                 "name": payload.name,
                 "location": location,
-                "context_id": payload.context_id,
-                "use_case_ids": [payload.use_case_id] if payload.use_case_id else [],
+                "context_id": context_id,
+                "use_case_ids": use_case_ids,
                 "request_input": payload.request_input,
                 "purpose": payload.purpose,
                 "primary_entity_ids": primary_entity_ids,
