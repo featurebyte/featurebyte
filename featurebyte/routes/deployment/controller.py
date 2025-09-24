@@ -62,6 +62,7 @@ class DeploymentController(
     """
 
     paginated_document_class = DeploymentList
+    deployment_create_update_task_payload_class = DeploymentCreateUpdateTaskPayload
 
     def __init__(
         self,
@@ -88,6 +89,32 @@ class DeploymentController(
         self.feast_feature_store_service = feast_feature_store_service
         self.entity_serving_names_service = entity_serving_names_service
         self.feature_job_history_service = feature_job_history_service
+
+    @classmethod
+    def get_create_deployment_payload(
+        cls, data: DeploymentCreate, context_id: Optional[ObjectId]
+    ) -> CreateDeploymentPayload:
+        """
+        Construct deployment payload for creating deployment.
+
+        Parameters
+        ----------
+        data : DeploymentCreate
+            Deployment data to create.
+        context_id : Optional[ObjectId]
+            Context ID associated with the deployment.
+
+        Returns
+        -------
+        CreateDeploymentPayload
+        """
+        return CreateDeploymentPayload(
+            name=data.name,
+            feature_list_id=data.feature_list_id,
+            enabled=False,
+            use_case_id=data.use_case_id,
+            context_id=context_id,
+        )
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -126,14 +153,8 @@ class DeploymentController(
                     "Primary entity of the use case is not in the feature list's supported serving entities."
                 )
 
-        payload = DeploymentCreateUpdateTaskPayload(
-            deployment_payload=CreateDeploymentPayload(
-                name=data.name,
-                feature_list_id=data.feature_list_id,
-                enabled=False,
-                use_case_id=data.use_case_id,
-                context_id=context_id,
-            ),
+        payload = self.deployment_create_update_task_payload_class(
+            deployment_payload=self.get_create_deployment_payload(data=data, context_id=context_id),
             user_id=self.service.user.id,
             catalog_id=self.service.catalog_id,
             output_document_id=data.id or ObjectId(),

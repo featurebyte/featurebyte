@@ -30,6 +30,7 @@ from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployed_tile_table_manager import DeployedTileTableManagerService
 from featurebyte.service.deployment import DeploymentService
@@ -973,14 +974,43 @@ class DeployService:
         )
         await self._update_progress(100, "Deployment disabled successfully!")
 
-    async def create_deployment(
+    async def get_deployment_model_from_create_payload(
         self,
-        feature_list_id: ObjectId,
         deployment_id: ObjectId,
-        deployment_name: Optional[str],
-        to_enable_deployment: bool,
-        use_case_id: Optional[ObjectId] = None,
-        context_id: Optional[ObjectId] = None,
+        payload: CreateDeploymentPayload,
+        feature_list: FeatureListModel,
+    ) -> DeploymentModel:
+        """
+        Get deployment model from create payload
+        """
+        feature_list_id = payload.feature_list_id
+        deployment_name = payload.name
+        use_case_id = payload.use_case_id
+        context_id = payload.context_id
+
+        default_deployment_name = (
+            f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
+        )
+        serving_entity_ids = (
+            await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
+                feature_list_id=feature_list_id,
+                use_case_id=use_case_id,
+                context_id=context_id,
+            )
+        )
+        return DeploymentModel(
+            _id=deployment_id or ObjectId(),
+            name=deployment_name or default_deployment_name,
+            feature_list_id=feature_list_id,
+            feature_list_namespace_id=feature_list.feature_list_namespace_id,
+            enabled=False,
+            use_case_id=use_case_id,
+            context_id=context_id,
+            serving_entity_ids=serving_entity_ids,
+        )
+
+    async def create_deployment(
+        self, deployment_id: ObjectId, payload: CreateDeploymentPayload
     ) -> None:
         """
         Create deployment for the given feature list
@@ -1005,33 +1035,17 @@ class DeployService:
         DocumentCreationError
             When there is an unexpected error during deployment creation
         """
+        feature_list_id = payload.feature_list_id
+        to_enable_deployment = payload.enabled
         feature_list = await self.feature_list_management_service.get_feature_list(
             feature_list_id=feature_list_id
         )
-        default_deployment_name = (
-            f"Deployment with {feature_list.name}_{feature_list.version.to_str()}"
-        )
         deployment = None
+        deployment_model = await self.get_deployment_model_from_create_payload(
+            deployment_id=deployment_id, payload=payload, feature_list=feature_list
+        )
         try:
-            serving_entity_ids = (
-                await self.deployment_serving_entity_service.get_deployment_serving_entity_ids(
-                    feature_list_id=feature_list_id,
-                    use_case_id=use_case_id,
-                    context_id=context_id,
-                )
-            )
-            deployment = await self.deployment_service.create_document(
-                data=DeploymentModel(
-                    _id=deployment_id or ObjectId(),
-                    name=deployment_name or default_deployment_name,
-                    feature_list_id=feature_list_id,
-                    feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                    enabled=False,
-                    use_case_id=use_case_id,
-                    context_id=context_id,
-                    serving_entity_ids=serving_entity_ids,
-                )
-            )
+            deployment = await self.deployment_service.create_document(data=deployment_model)
             if to_enable_deployment:
                 await self.enable_deployment(deployment, feature_list)
         except Exception as exc:

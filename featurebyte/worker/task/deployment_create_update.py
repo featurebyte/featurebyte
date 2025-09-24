@@ -83,12 +83,8 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             create_deployment_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
             await self.deploy_service.create_deployment(
-                feature_list_id=create_deployment_payload.feature_list_id,
                 deployment_id=payload.output_document_id,
-                deployment_name=create_deployment_payload.name,
-                to_enable_deployment=create_deployment_payload.enabled,
-                use_case_id=create_deployment_payload.use_case_id,
-                context_id=create_deployment_payload.context_id,
+                payload=create_deployment_payload,
             )
 
         if payload.deployment_payload.type == DeploymentPayloadType.UPDATE:
