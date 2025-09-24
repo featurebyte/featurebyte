@@ -2074,3 +2074,20 @@ def test_update_feature_type(
     assert feature.feature_type == "categorical"
     feature.update_feature_type("numeric")
     assert feature.feature_type == "numeric"
+
+
+def test_feature_generated_from_item_view(snowflake_item_table, saved_event_table, cust_id_entity):
+    """Test feature generated from item view with empty event_join_column_names"""
+    # construct an item view with empty event_join_column_names
+    saved_event_table.cust_id.as_entity(None)
+    snowflake_item_table.event_id_col.as_entity(cust_id_entity.name)
+    item_view = snowflake_item_table.get_view()
+    assert item_view.node.parameters.metadata.event_join_column_names == []
+
+    # create feature from item view & save it should not raise error
+    feat = item_view.groupby("event_id_col").aggregate(
+        "item_amount",
+        method="sum",
+        feature_name="order_size",
+    )
+    feat.save()
