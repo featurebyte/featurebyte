@@ -256,7 +256,9 @@ class ItemTable(TableApiObject):
         drop_column_names = drop_column_names or []
         event_drop_column_names = event_drop_column_names or []
         event_column_cleaning_operations = event_column_cleaning_operations or []
-        event_join_column_names = event_join_column_names or [event_view.timestamp_column]
+        event_join_column_names = event_join_column_names
+        if event_join_column_names is None:
+            event_join_column_names = [event_view.timestamp_column]
         if view_mode == ViewMode.AUTO:
             if self.record_creation_timestamp_column:
                 drop_column_names.append(self.record_creation_timestamp_column)
