@@ -490,12 +490,12 @@ class ObservationTableService(
             source_observation_table = await self.get_document(
                 document_id=data.request_input.observation_table_id
             )
-            # primary entity, context, use case ids and target namespace id are
-            # inherited from source observation table and will be populated in the task
+            # set primary entity and target namespace ids in the payload using values from source observation table
             data.primary_entity_ids = source_observation_table.primary_entity_ids
+            target_namespace_id = source_observation_table.target_namespace_id
+            # context and use case ids will be populated in the task and can be set to None in the payload
             data.context_id = None
             data.use_case_id = None
-            target_namespace_id = source_observation_table.target_namespace_id
             # no need to perform entity validation checks since we are copying from existing observation table
             data.skip_entity_validation_checks = True
         elif isinstance(data.request_input, BaseRequestInput):
