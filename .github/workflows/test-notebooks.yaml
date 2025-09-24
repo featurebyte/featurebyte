@@ -65,7 +65,6 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
