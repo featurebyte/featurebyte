@@ -5,6 +5,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.feast.schema.registry import FeastRegistryUpdate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 
 
 @pytest.fixture(name="registry_service")
@@ -43,10 +44,12 @@ async def deployment_id_fixture(app_container, feature_list):
     deploy_service = app_container.deploy_service
     deployment_id = ObjectId()
     await deploy_service.create_deployment(
-        feature_list_id=feature_list.id,
         deployment_id=deployment_id,
-        deployment_name="test_deployment",
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            name="test_deployment",
+            feature_list_id=feature_list.id,
+            enabled=False,
+        ),
     )
     return deployment_id
 

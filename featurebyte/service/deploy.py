@@ -981,7 +981,21 @@ class DeployService:
         feature_list: FeatureListModel,
     ) -> DeploymentModel:
         """
-        Get deployment model from create payload
+        Construct the deployment document from the creation payload.
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Identifier of the deployment to create.
+        payload: CreateDeploymentPayload
+            Payload describing the deployment to create.
+        feature_list: FeatureListModel
+            Feature list that will be associated with the new deployment.
+
+        Returns
+        -------
+        DeploymentModel
+            Deployment model ready to be persisted.
         """
         feature_list_id = payload.feature_list_id
         deployment_name = payload.name
@@ -999,7 +1013,7 @@ class DeployService:
             )
         )
         return DeploymentModel(
-            _id=deployment_id or ObjectId(),
+            _id=deployment_id,
             name=deployment_name or default_deployment_name,
             feature_list_id=feature_list_id,
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
@@ -1017,18 +1031,10 @@ class DeployService:
 
         Parameters
         ----------
-        feature_list_id: ObjectId
-            Feature list ID
         deployment_id: ObjectId
             Deployment ID
-        deployment_name: Optional[str]
-            Deployment name
-        to_enable_deployment: bool
-            Whether to enable deployment
-        use_case_id: ObjectId
-            Use Case ID
-        context_id: ObjectId
-            Context ID
+        payload: CreateDeploymentPayload
+            Payload describing the deployment to create
 
         Raises
         ------
