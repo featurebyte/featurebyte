@@ -25,7 +25,10 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.routes.deployment.controller import DeploymentController
+from featurebyte.routes.deployment.controller import (
+    AllDeploymentController,
+    DeploymentController,
+)
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.deployment import (
     AllDeploymentList,
@@ -183,8 +186,8 @@ class DeploymentRouter(
         """
         List All Deployments (Regardless of Catalog)
         """
-        controller = request.state.app_container.all_deployment_controller
-        deployment_list: AllDeploymentList = await controller.list_all_deployments(
+        controller: AllDeploymentController = request.state.app_container.all_deployment_controller
+        deployment_list = await controller.list_all_deployments(
             page=page,
             page_size=page_size,
             sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -196,8 +199,8 @@ class DeploymentRouter(
         """
         Get Deployment Summary
         """
-        controller = request.state.app_container.all_deployment_controller
-        deployment_summary: DeploymentSummary = await controller.get_deployment_summary()
+        controller: AllDeploymentController = request.state.app_container.all_deployment_controller
+        deployment_summary = await controller.get_deployment_summary()
         return deployment_summary
 
     async def update_deployment(
