@@ -205,7 +205,7 @@ tasks:
     cmds:
       - task: test-docs-setup
       - uv run pytest --timeout=240 featurebyte
-      - task: test-docs-teardown
+      - uv run featurebyte stop
 
   test-docs-setup:
     desc: "Setup the test environment for docs"
@@ -213,11 +213,6 @@ tasks:
       - task: docker-build
     cmds:
       - uv run python scripts/test-docs-setup.py
-
-  test-docs-teardown:
-    desc: "Teardown the test environment for docs"
-    cmds:
-      - uv run featurebyte stop
 
   test-merge:
     desc: Runs tests on merge
