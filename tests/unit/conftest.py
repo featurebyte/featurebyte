@@ -925,6 +925,58 @@ def snowflake_query_map_fixture():
                 "auto_resume": True,
             },
         ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"': [
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_float",
+                "data_type": json.dumps({"type": "REAL"}),
+                "comment": "Float column",
+            },
+            {
+                "column_name": "col_char",
+                "data_type": json.dumps({"type": "TEXT", "length": 1}),
+                "comment": "Char column",
+            },
+            {
+                "column_name": "col_text",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": "Text column",
+            },
+            {
+                "column_name": "col_binary",
+                "data_type": json.dumps({"type": "BINARY"}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_boolean",
+                "data_type": json.dumps({"type": "BOOLEAN"}),
+                "comment": None,
+            },
+            {
+                "column_name": "event_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": "Timestamp column",
+            },
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
+            {
+                "column_name": "cust_id",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "__FB_TABLE_ROW_INDEX",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+        ],
     }
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'

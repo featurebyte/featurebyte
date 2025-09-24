@@ -47,6 +47,7 @@ class RequestInputType(StrEnum):
     OBSERVATION_TABLE = "observation_table"
     DATAFRAME = "dataframe"
     UPLOADED_FILE = "uploaded_file"
+    SOURCE_OBSERVATION_TABLE = "source_observation_table"
 
 
 class BaseRequestInput(FeatureByteBaseModel):

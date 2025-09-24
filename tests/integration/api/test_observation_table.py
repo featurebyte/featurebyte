@@ -82,6 +82,16 @@ async def test_observation_table_from_source_table(
         observation_table.most_recent_point_in_time
     ) == _convert_timestamp_for_timezones(str(expected_max))
 
+    # test create observation table with from observation table
+    new_sampled_rows = 50
+    new_observation_table = observation_table.create_observation_table(
+        f"MY_OBSERVATION_TABLE_2_{source_type}", sample_rows=new_sampled_rows
+    )
+    assert new_observation_table.name == f"MY_OBSERVATION_TABLE_2_{source_type}"
+    table_details = new_observation_table.location.table_details
+    check_location_valid(table_details, session)
+    await check_materialized_table_accessible(table_details, session, source_type, new_sampled_rows)
+
 
 @pytest.mark.asyncio
 async def test_observation_table_min_interval_between_entities(

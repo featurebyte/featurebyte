@@ -5,6 +5,7 @@ ObservationTable class
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar, List, Optional, Sequence, Union
 
@@ -25,14 +26,17 @@ from featurebyte.api.templates.entity_doc import (
     PRIMARY_ENTITY_IDS_DOC,
 )
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.utils import validate_datetime_input
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import (
     ObservationInput,
     ObservationTableModel,
+    ObservationTableObservationInput,
     Purpose,
     TargetInput,
 )
 from featurebyte.schema.observation_table import (
+    ObservationTableCreate,
     ObservationTableListRecord,
     ObservationTableUpdate,
     ObservationTableUpload,
@@ -505,4 +509,62 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
                 is_payload_json=False,
                 files={"observation_set": file_object},
             )
+        return ObservationTable.get_by_id(observation_table_doc["_id"])
+
+    def create_observation_table(
+        self,
+        name: str,
+        sample_rows: Optional[int] = None,
+        sample_from_timestamp: Optional[Union[datetime, str]] = None,
+        sample_to_timestamp: Optional[Union[datetime, str]] = None,
+    ) -> ObservationTable:
+        """
+        Creates an ObservationTable from an existing ObservationTable.
+
+        Parameters
+        ----------
+        name: str
+            Observation table name.
+        sample_rows: Optional[int]
+            Optionally sample the source observation table to this number of rows before creating the
+            observation table.
+        sample_from_timestamp: Optional[Union[datetime, str]]
+            Start of date range to sample from.
+        sample_to_timestamp: Optional[Union[datetime, str]]
+            End of date range to sample from.
+
+        Returns
+        -------
+        ObservationTable
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> sampled_observation_table = source_table.create_observation_table(  # doctest: +SKIP
+        ...     name="<observation_table_name>",
+        ...     sample_rows=desired_sample_size,
+        ... )
+        """
+
+        from featurebyte.api.observation_table import ObservationTable
+
+        # Validate timestamp inputs
+        sample_from_timestamp = (
+            validate_datetime_input(sample_from_timestamp) if sample_from_timestamp else None
+        )
+        sample_to_timestamp = (
+            validate_datetime_input(sample_to_timestamp) if sample_to_timestamp else None
+        )
+
+        payload = ObservationTableCreate(
+            name=name,
+            feature_store_id=self.cached_model.location.feature_store_id,
+            request_input=ObservationTableObservationInput(observation_table_id=self.id),
+            sample_rows=sample_rows,
+            sample_from_timestamp=sample_from_timestamp,
+            sample_to_timestamp=sample_to_timestamp,
+        )
+        observation_table_doc = ObservationTable.post_async_task(
+            route="/observation_table", payload=payload.json_dict()
+        )
         return ObservationTable.get_by_id(observation_table_doc["_id"])

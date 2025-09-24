@@ -99,8 +99,25 @@ class UploadedFileInput(FeatureByteBaseModel, NoOpMaterializeMixin):
     file_name: Optional[str] = Field(default=None)
 
 
+class ObservationTableObservationInput(FeatureByteBaseModel):
+    """
+    ObservationTableObservationInput is used to create an ObservationTableModel from an existing ObservationTableModel
+    """
+
+    observation_table_id: PydanticObjectId
+    type: Literal[RequestInputType.SOURCE_OBSERVATION_TABLE] = (
+        RequestInputType.SOURCE_OBSERVATION_TABLE
+    )
+
+
 ObservationInput = Annotated[
-    Union[ViewObservationInput, SourceTableObservationInput, TargetInput, UploadedFileInput],
+    Union[
+        ViewObservationInput,
+        SourceTableObservationInput,
+        TargetInput,
+        UploadedFileInput,
+        ObservationTableObservationInput,
+    ],
     Field(discriminator="type"),
 ]
 

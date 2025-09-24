@@ -267,3 +267,32 @@ def test_create_observation_table_with_use_case(
     assert observation_table.context_id == use_case.context_id
     # check that primary entity IDs are populated from the context
     assert observation_table.primary_entity_ids == [ObjectId("63f94ed6ea1f050131379214")]
+
+
+def test_create_observation_table_from_observation_table(
+    catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+):
+    """Test create observation table from another observation table"""
+    _ = catalog
+    _ = patched_observation_table_service
+
+    target_namespace = TargetNamespace.create(
+        "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.FLOAT
+    )
+    observation_table = snowflake_database_table.create_observation_table(
+        "observation_table_from_source_table",
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "target"},
+        target_column="target",
+        primary_entities=[cust_id_entity.name],
+    )
+    assert observation_table.target_namespace == target_namespace
+    assert observation_table.target is None
+
+    new_observation_table = observation_table.create_observation_table(
+        "new_observation_table",
+    )
+    assert new_observation_table.target_namespace == observation_table.target_namespace
+    assert new_observation_table.target == observation_table.target
+    assert new_observation_table.context_id == observation_table.context_id
+    assert new_observation_table.use_case_ids == observation_table.use_case_ids
+    assert new_observation_table.primary_entity_ids == observation_table.primary_entity_ids
