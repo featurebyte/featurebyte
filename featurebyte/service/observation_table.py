@@ -298,7 +298,7 @@ class ObservationTableService(
                         document_id=context.id,
                         data=ContextUpdate(default_eda_table_id=observation_table.id),
                     )
-            if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+            if observation_table.purpose == Purpose.PREVIEW:
                 if context.default_preview_table_id is None:
                     # context does not have default preview table set, set it to this table
                     await self.context_service.update_document(
@@ -317,7 +317,7 @@ class ObservationTableService(
                             document_id=use_case_id,
                             data=UseCaseUpdate(default_eda_table_id=observation_table.id),
                         )
-        if observation_table.purpose in [Purpose.PREVIEW, Purpose.EDA]:
+        if observation_table.purpose == Purpose.PREVIEW:
             for use_case_id in observation_table.use_case_ids:
                 use_case = await self.use_case_service.get_document(document_id=use_case_id)
                 if use_case.default_preview_table_id is None:
