@@ -504,7 +504,9 @@ jobs:
           name: hive-udf
           path: featurebyte/sql/spark/
       - name: Test documentation
-        run: task test-docs
+        run: |
+          task test-docs-setup
+          uv run pytest --timeout=240 featurebyte
   validate:
     needs:
       - test-unit
