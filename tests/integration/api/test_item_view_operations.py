@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -291,3 +293,31 @@ def test_item_view_features_from_different_filters(item_table):
     df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features["feature_1"].equals(pd.Series([2, 4, np.nan, 5, 1]))
     assert df_historical_features["feature_2"].tolist() == [1, 5, 2, 3, 2]
+
+
+def test_item_view_with_conflict_event_timestamp_column(item_table_with_conflict_event_ts):
+    """Test ItemView creation when there is a conflict with event timestamp column name"""
+    view_event_ts_from_event = item_table_with_conflict_event_ts.get_view()
+    view_event_ts_from_item = item_table_with_conflict_event_ts.get_view(
+        view_mode="manual", event_join_column_names=[]
+    )
+    event_timestamp_column = "ËVENT_TIMESTAMP"
+
+    preview_ts_from_event = view_event_ts_from_event.preview()
+    preview_ts_from_item = view_event_ts_from_item.preview()
+
+    # Check event timestamp column patterns
+    event_ts_from_event = preview_ts_from_event[event_timestamp_column]
+    event_ts_from_item = preview_ts_from_item[event_timestamp_column]
+
+    # Check that timestamps from event table follow the pattern: YYYY|MM|DD|HH:MM:SS
+    event_pattern = re.compile(r"^\d{4}\|\d{2}\|\d{2}\|\d{2}:\d{2}:\d{2}$")
+    assert all(
+        event_pattern.match(str(ts)) for ts in event_ts_from_event
+    ), "Event timestamps should follow YYYY|MM|DD|HH:MM:SS pattern"
+
+    # Check that timestamps from item table follow standard datetime pattern (2020-2023 range)
+    item_pattern = re.compile(r"^202[0-3]-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$")
+    assert all(
+        item_pattern.match(str(ts)) for ts in event_ts_from_item
+    ), "Item timestamps should follow YYYY-MM-DD HH:MM:SS.mmmmmm pattern in 2020-2023 range"
