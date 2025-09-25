@@ -943,8 +943,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_create_with_use_case_201(self, test_api_client_persistent):
-        """Test create with use case specified"""
+    async def test_create_with_use_case_eda_201(self, test_api_client_persistent):
+        """Test create eda obs table with use case specified"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
@@ -965,19 +965,19 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
         assert response_dict["purpose"] == "eda"
 
-        # check that context default eda and preview tables are set
+        # check that context default eda table is set
         response = test_api_client.get("/context/646f6c1c0ed28a5271fb02d5")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] == observation_table_id
-        assert response_dict["default_preview_table_id"] == observation_table_id
+        assert response_dict["default_preview_table_id"] is None
 
-        # check that use case default eda table is not set and preview table is set
+        # check that use case default eda table is not set due to no target
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] is None
-        assert response_dict["default_preview_table_id"] == observation_table_id
+        assert response_dict["default_preview_table_id"] is None
 
         # create target table
         target_table_payload = BaseMaterializedTableTestSuite.load_payload(
@@ -1005,6 +1005,44 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] == observation_table_id
+        assert response_dict["default_preview_table_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_create_with_use_case_preview_201(self, test_api_client_persistent):
+        """Test create preview obs table with use case specified"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = None
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["purpose"] = "preview"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        observation_table_id = response_dict["payload"]["output_document_id"]
+        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+        assert response_dict["purpose"] == "preview"
+
+        # check that context default preview table is set
+        response = test_api_client.get("/context/646f6c1c0ed28a5271fb02d5")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["default_eda_table_id"] is None
+        assert response_dict["default_preview_table_id"] == observation_table_id
+
+        # check that use case default preview table is set
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK, response_dict
+        assert response_dict["default_eda_table_id"] is None
+        assert response_dict["default_preview_table_id"] == observation_table_id
 
     def test_upload_with_use_case_201(self, test_api_client_persistent):
         """
