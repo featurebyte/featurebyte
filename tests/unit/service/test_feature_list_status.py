@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -44,10 +45,12 @@ async def feature_list_namespace_deployed_fixture(
         )
 
     await deploy_service.create_deployment(
-        feature_list_id=feature_list.id,
         deployment_id=ObjectId(),
-        deployment_name="test_deployment",
-        to_enable_deployment=True,
+        payload=CreateDeploymentPayload(
+            name="test_deployment",
+            feature_list_id=feature_list.id,
+            enabled=True,
+        ),
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.DEPLOYED

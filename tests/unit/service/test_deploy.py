@@ -15,6 +15,7 @@ from featurebyte.exception import DocumentError, DocumentNotFoundError, Document
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -46,10 +47,11 @@ async def disabled_deployment_fixture(deploy_service, deployment_service, featur
     """Disabled deployment fixture"""
     deployment_id = ObjectId()
     await deploy_service.create_deployment(
-        feature_list_id=feature_list.id,
         deployment_id=deployment_id,
-        deployment_name=None,
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            feature_list_id=feature_list.id,
+            enabled=False,
+        ),
     )
     deployment = await deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
@@ -73,10 +75,11 @@ async def test_create_enabled_deployment__not_all_features_are_online_enabled(
     deployment_id = ObjectId()
     try:
         await deploy_service.create_deployment(
-            feature_list_id=feature_list.id,
             deployment_id=deployment_id,
-            deployment_name=None,
-            to_enable_deployment=True,
+            payload=CreateDeploymentPayload(
+                feature_list_id=feature_list.id,
+                enabled=True,
+            ),
         )
     except DocumentError:
         # Capture the traceback information
@@ -150,10 +153,11 @@ async def disabled_deployment_with_prod_ready_features(
     """Disabled deployment fixture"""
     deployment_id = ObjectId()
     await deploy_service.create_deployment(
-        feature_list_id=production_ready_feature_list.id,
         deployment_id=deployment_id,
-        deployment_name=None,
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            feature_list_id=production_ready_feature_list.id,
+            enabled=False,
+        ),
     )
     deployment = await deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
@@ -176,10 +180,11 @@ async def test_update_deployment(
 
     deployment_id = ObjectId()
     await deploy_service.create_deployment(
-        feature_list_id=production_ready_feature_list.id,
         deployment_id=deployment_id,
-        deployment_name=None,
-        to_enable_deployment=True,
+        payload=CreateDeploymentPayload(
+            feature_list_id=production_ready_feature_list.id,
+            enabled=True,
+        ),
     )
     deployment = await deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await feature_list_service.get_document(
@@ -317,22 +322,28 @@ async def test_deploy_service__check_asset_status_update(
     # create deployments
     deployment_id1, deployment_id2, deployment_id3 = ObjectId(), ObjectId(), ObjectId()
     await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list1.id,
         deployment_id=deployment_id1,
-        deployment_name="deployment1",
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            name="deployment1",
+            feature_list_id=feature_list1.id,
+            enabled=False,
+        ),
     )
     await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list1.id,
         deployment_id=deployment_id2,
-        deployment_name="deployment2",
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            name="deployment2",
+            feature_list_id=feature_list1.id,
+            enabled=False,
+        ),
     )
     await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list2.id,
         deployment_id=deployment_id3,
-        deployment_name="deployment3",
-        to_enable_deployment=False,
+        payload=CreateDeploymentPayload(
+            name="deployment3",
+            feature_list_id=feature_list2.id,
+            enabled=False,
+        ),
     )
 
     async def check_asset_state(
@@ -469,10 +480,12 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # disable feast integration to simulate old behavior
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
         await app_container.deploy_service.create_deployment(
-            feature_list_id=feature_list1.id,
             deployment_id=deployment_id1,
-            deployment_name="deployment1",
-            to_enable_deployment=True,
+            payload=CreateDeploymentPayload(
+                name="deployment1",
+                feature_list_id=feature_list1.id,
+                enabled=True,
+            ),
         )
 
     # check deployment is enabled & feature list store info
@@ -486,10 +499,12 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # create another deployment using the same feature list when feast integration is enabled
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
         await app_container.deploy_service.create_deployment(
-            feature_list_id=feature_list1.id,
             deployment_id=deployment_id2,
-            deployment_name="deployment2",
-            to_enable_deployment=True,
+            payload=CreateDeploymentPayload(
+                name="deployment2",
+                feature_list_id=feature_list1.id,
+                enabled=True,
+            ),
         )
 
     # check deployment is enabled & feature list store info again
@@ -503,10 +518,12 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # create another deployment using a new feature list when feast integration is enabled
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
         await app_container.deploy_service.create_deployment(
-            feature_list_id=feature_list2.id,
             deployment_id=deployment_id3,
-            deployment_name="deployment3",
-            to_enable_deployment=True,
+            payload=CreateDeploymentPayload(
+                name="deployment3",
+                feature_list_id=feature_list2.id,
+                enabled=True,
+            ),
         )
 
     # check deployment is enabled & feature list store info

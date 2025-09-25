@@ -37,6 +37,7 @@ from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 from featurebyte.service.catalog import CatalogService
 from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
 
@@ -688,10 +689,12 @@ async def deployed_feature_list_fixture(
         mock_offline_store_feature_manager_dependencies,
     )
     await deploy_service.create_deployment(
-        feature_list_id=production_ready_feature_list.id,
         deployment_id=ObjectId(),
-        deployment_name="test-deployment",
-        to_enable_deployment=True,
+        payload=CreateDeploymentPayload(
+            name="test-deployment",
+            feature_list_id=production_ready_feature_list.id,
+            enabled=True,
+        ),
     )
     updated_feature_list = await feature_list_service.get_document(
         document_id=production_ready_feature_list.id

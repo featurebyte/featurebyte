@@ -49,6 +49,7 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
 from featurebyte.schema.use_case import UseCaseCreate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 from featurebyte.worker.util.batch_feature_creator import set_environment_variable
 
 
@@ -857,16 +858,19 @@ async def deploy_feature_list(
         target_namespace_id=ObjectId(),
     )
     use_case_model = await app_container.use_case_service.create_document(data)
+    target_deployment_id = deployment_id or ObjectId()
     await app_container.deploy_service.create_deployment(
-        feature_list_id=feature_list_model.id,
-        deployment_id=deployment_id,
-        deployment_name=(
-            feature_list_model.name
-            if deployment_name_override is None
-            else deployment_name_override
+        deployment_id=target_deployment_id,
+        payload=CreateDeploymentPayload(
+            name=(
+                feature_list_model.name
+                if deployment_name_override is None
+                else deployment_name_override
+            ),
+            feature_list_id=feature_list_model.id,
+            enabled=True,
+            use_case_id=use_case_model.id,
         ),
-        to_enable_deployment=True,
-        use_case_id=use_case_model.id,
     )
     return await app_container.feature_list_service.get_document(feature_list_model.id)
 

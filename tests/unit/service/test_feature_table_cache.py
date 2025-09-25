@@ -21,6 +21,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 from tests.util.helper import assert_equal_with_expected_fixture, assert_sql_equal
 
 
@@ -169,10 +170,12 @@ async def deployed_feature_list_fixture(
     result = await feature_list_service.create_document(data)
 
     await deploy_service.create_deployment(
-        feature_list_id=result.id,
         deployment_id=ObjectId(),
-        deployment_name="my-test-deployment",
-        to_enable_deployment=True,
+        payload=CreateDeploymentPayload(
+            name="my-test-deployment",
+            feature_list_id=result.id,
+            enabled=True,
+        ),
     )
     return await feature_list_service.get_document(document_id=result.id)
 
