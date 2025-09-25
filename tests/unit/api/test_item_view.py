@@ -1222,7 +1222,7 @@ def test_get_view__auto_resolve_column_conflict(
     ]
 
     metadata = view.node.parameters.metadata
-    assert metadata.event_join_column_names == ["cust_id"]
+    assert metadata.event_join_column_names == ["event_timestamp", "cust_id"]
     assert view.columns == [
         "event_id_col",
         "item_id_col",
