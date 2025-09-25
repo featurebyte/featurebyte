@@ -13,6 +13,7 @@ from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -1222,7 +1223,7 @@ def test_get_view__auto_resolve_column_conflict(
     ]
 
     metadata = view.node.parameters.metadata
-    assert metadata.event_join_column_names == ["cust_id"]
+    assert metadata.event_join_column_names == ["event_timestamp", "cust_id"]
     assert view.columns == [
         "event_id_col",
         "item_id_col",
@@ -1251,4 +1252,36 @@ def test_item_view_with_cron_default_feature_job_setting(
         crontab="0 0 * * *",
         reference_timezone="Etc/UTC",
         blind_spot="600s",
+    )
+
+
+def test_item_view_with_conflicting_event_timestamp_column_name(
+    snowflake_event_table_with_timestamp_schema,
+    snowflake_item_table_with_timestamp_schema,
+):
+    """Test ItemView operation structure"""
+    # construct two views with different event timestamp column source
+    view_event_ts_from_event = snowflake_item_table_with_timestamp_schema.get_view()
+    view_event_ts_from_item = snowflake_item_table_with_timestamp_schema.get_view(
+        view_mode="manual", event_join_column_names=[]
+    )
+
+    # get the timestamp column from both views
+    event_ts_col = snowflake_event_table_with_timestamp_schema.event_timestamp_column
+    event_ts_from_event = view_event_ts_from_event[event_ts_col]
+    event_ts_from_item = view_event_ts_from_item[event_ts_col]
+
+    # check that the timestamp column is from EventTable
+    assert event_ts_from_event.dtype_info == DBVarTypeInfo(
+        dtype=snowflake_event_table_with_timestamp_schema[event_ts_col].info.dtype,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=snowflake_event_table_with_timestamp_schema.event_timestamp_schema,
+            timestamp_tuple_schema=None,
+        ),
+    )
+
+    # check that the timestamp column is from ItemTable
+    assert event_ts_from_item.dtype_info == DBVarTypeInfo(
+        dtype=snowflake_item_table_with_timestamp_schema[event_ts_col].info.dtype,
+        metadata=None,
     )

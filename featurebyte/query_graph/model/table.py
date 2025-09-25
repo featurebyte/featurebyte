@@ -280,6 +280,7 @@ class ItemTableData(BaseTableData):
         event_suffix: Optional[str],
         drop_column_names: List[str],
         metadata: ItemViewMetadata,
+        event_timestamp_column: Optional[str] = None,
         to_auto_resolve_column_conflict: bool = False,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
@@ -303,6 +304,8 @@ class ItemTableData(BaseTableData):
             List of columns to drop from the item table
         metadata: ItemViewMetadata
             Metadata to add to the graph node
+        event_timestamp_column: Optional[str]
+            Event timestamp column name
         to_auto_resolve_column_conflict: bool
             Flag to auto resolve column conflicts
 
@@ -314,9 +317,25 @@ class ItemTableData(BaseTableData):
             item_table_columns = set(col.name for col in item_table_node.parameters.columns)
             has_conflict = item_table_columns.intersection(metadata.event_join_column_names)
             if has_conflict:
-                columns_to_join = [
-                    col for col in metadata.event_join_column_names if col not in item_table_columns
-                ]
+                # if there is a conflict
+                if event_timestamp_column is None:
+                    # previous behavior: drop all conflicting columns from event table
+                    columns_to_join = [
+                        col
+                        for col in metadata.event_join_column_names
+                        if col not in item_table_columns
+                    ]
+                else:
+                    # current behavior: always keep conflicting event_timestamp_column from event table
+                    # and drop other conflicting columns from event table
+                    columns_to_join = [
+                        col
+                        for col in metadata.event_join_column_names
+                        if col not in item_table_columns or col == event_timestamp_column
+                    ]
+                    if event_timestamp_column in item_table_columns:
+                        drop_column_names.append(event_timestamp_column)
+
                 metadata.event_join_column_names = columns_to_join
 
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
