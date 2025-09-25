@@ -1685,7 +1685,6 @@ def item_table_with_conflict_event_ts_fixture(
         item_id_column="item_id",
         event_table_name=event_table_with_timestamp_schema.name,
     )
-    tag_entities_for_item_table(item_table)
     return item_table
 
 
