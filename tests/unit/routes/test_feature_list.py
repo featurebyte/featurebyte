@@ -1325,10 +1325,26 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
             mock_session.execute_query.call_args_list[0][0][0]
             == textwrap.dedent(
                 """
-            SELECT
-              *
-            FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
-            LIMIT 50
+                SELECT
+                  "POINT_IN_TIME",
+                  "cust_id"
+                FROM (
+                  SELECT
+                    CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+                    "POINT_IN_TIME",
+                    "cust_id"
+                  FROM (
+                    SELECT
+                      "POINT_IN_TIME",
+                      "cust_id"
+                    FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
+                  )
+                )
+                WHERE
+                  "prob" <= 0.75
+                ORDER BY
+                  "prob"
+                LIMIT 50
             """
             ).strip()
         )

@@ -23,6 +23,7 @@ from featurebyte.query_graph.sql.feature_historical import get_historical_featur
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.query_graph.sql.source_info import SourceInfo
+from featurebyte.routes.common.schema import PREVIEW_SEED
 from featurebyte.schema.feature import FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -142,9 +143,21 @@ class FeaturePreviewService(PreviewService):
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
             )
-            sql_expr = get_source_expr(source=observation_table.location.table_details).limit(
-                FEATURE_PREVIEW_ROW_LIMIT
+            sql_expr = get_source_expr(
+                source=observation_table.location.table_details,
+                column_names=[col_info.name for col_info in observation_table.columns_info],
             )
+
+            # sample the observation table if it exceeds the row limit
+            if observation_table.num_rows > FEATURE_PREVIEW_ROW_LIMIT:
+                sql_expr = db_session.adapter.random_sample(
+                    sql_expr,
+                    desired_row_count=FEATURE_PREVIEW_ROW_LIMIT,
+                    total_row_count=observation_table.num_rows,
+                    seed=PREVIEW_SEED,
+                    sort_by_prob=True,
+                )
+
             sql = sql_to_string(
                 sql_expr,
                 source_type=db_session.source_type,
