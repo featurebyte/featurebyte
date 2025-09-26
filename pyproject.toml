@@ -35,11 +35,12 @@ classifiers = [
 license = { file = "LICENSE" }
 dependencies = [
   "aiofiles",
-  "PyYAML",
   "alive-progress",
   "black",
   "cachetools",
+  "croniter",
   "cryptography",
+  "grapheme",
   "humanize",
   "importlib-metadata",
   "jinja2",
@@ -49,29 +50,30 @@ dependencies = [
   "pandas>2.2",
   "pillow",
   "pyarrow",
-  "pydantic==2.8.2",
+  "pydantic-extra-types",
   "pydantic-settings",
+  "pydantic==2.8.2",
   "pymongo",
   "pyopenssl",
-  "python-on-whales",
   "python-multipart",
+  "python-on-whales",
+  "pyyaml",
   "requests",
   "rich",
   "sqlglot~=25.0", # Breaking change
   "typeguard",
   "typer",
   "typing-extensions",
-  "croniter",
   "websocket-client",
-  "pydantic-extra-types",
 ]
 
 [project.optional-dependencies]
 server = [
+  "aioboto3",
   "asyncache",
   "celery[redis]",
   "celerybeat-mongo",
-  "databricks-sdk==0.24.0",
+  "databricks-sdk==0.67.0",
   "databricks-sql-connector~=4.0.0",
   "fastapi",
   # import changes 'feast.infra.online_stores.contrib'
@@ -80,6 +82,7 @@ server = [
   "featurebyte-freeware",
   "gevent",
   "google-cloud-bigquery",
+  "google-cloud-bigquery-storage",
   "motor",
   "pdfkit",
   "pyhive[hive_pure_sasl]",
@@ -88,9 +91,7 @@ server = [
   "smart-open[azure,gcs]",
   "snowflake-connector-python",
   "thrift-sasl",
-  "uvicorn[standard]",
-  "google-cloud-bigquery-storage",
-  "aioboto3",
+  "uvicorn[standard]"
 ]
 
 [dependency-groups]
@@ -100,11 +101,11 @@ dev = [
   { include-group = "docs" },
 ]
 test = [
-  "tornado", # Maybe remove
   "freezegun",
   "junitparser",
-  "mongomock==4.1.2",
+  "jupyterlab",
   "mongomock-motor",
+  "mongomock==4.1.2",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
@@ -113,12 +114,10 @@ test = [
   "pytest-split",
   "pytest-timeout",
   "pytest-xdist",
-  "jupyterlab",
 ]
 docs = [
   "docstring-parser",
   "mkautodoc",
-  "mkdocs==1.5.3",  # Failed to compile docs
   "mkdocs-awesome-pages-plugin",
   "mkdocs-enumerate-headings-plugin",
   "mkdocs-gen-files",
@@ -130,26 +129,30 @@ docs = [
   "mkdocs-print-site-plugin",
   "mkdocs-section-index",
   "mkdocs-table-reader-plugin",
+  "mkdocs==1.5.3", # Failed to compile docs
 ]
 lint = [
   "bandit",
   "darglint",
-  "mypy==1.0.1",
   "mypy-extensions",
+  "mypy==1.0.1",
   "pip-audit",
+  "ruff",
+  "toml-sort",
   "types-Markdown",
   "types-PyYAML",
   "types-aiofiles",
   "types-backports",
   "types-cachetools",
   "types-chardet",
+  "types-croniter",
   "types-cryptography",
   "types-decorator",
-  "types-pymysql==1.1.0.20250822",  # Linting error: featurebyte/feast/online_store/mysql.py:48:13: error: _C? has no attribute "execute"  [attr-defined]
   "types-paramiko",
   "types-protobuf",
   "types-pyOpenSSL",
   "types-pycurl",
+  "types-pymysql==1.1.0.20250822", # Linting error: featurebyte/feast/online_store/mysql.py:48:13: error: _C? has no attribute "execute"  [attr-defined]
   "types-python-dateutil",
   "types-pytz",
   "types-redis",
@@ -162,9 +165,6 @@ lint = [
   "types-tzlocal",
   "types-ujson",
   "types-urllib3",
-  "toml-sort",
-  "ruff",
-  "types-croniter",
 ]
 
 # Packaging source metadata, this points to the source code repository.
@@ -181,7 +181,6 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
-
 
 [tool.pytest.ini_options]
 addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
@@ -227,7 +226,6 @@ max-line-length = 150
 
 [tool.bandit]
 skips = ["B608"]
-
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false
