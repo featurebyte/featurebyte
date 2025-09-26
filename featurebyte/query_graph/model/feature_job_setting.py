@@ -150,12 +150,12 @@ class FeatureJobSetting(BaseFeatureJobSetting):
         )
 
         # normalize and convert to seconds
-        values["period"] = f'{parse_duration_string(values["period"])}s'
-        values["offset"] = f'{parse_duration_string(values["offset"])}s'
-        values["blind_spot"] = f'{parse_duration_string(values["blind_spot"])}s'
+        values["period"] = f"{parse_duration_string(values['period'])}s"
+        values["offset"] = f"{parse_duration_string(values['offset'])}s"
+        values["blind_spot"] = f"{parse_duration_string(values['blind_spot'])}s"
 
         if exec_buffer:
-            values["execution_buffer"] = f'{parse_duration_string(values["execution_buffer"])}s'
+            values["execution_buffer"] = f"{parse_duration_string(values['execution_buffer'])}s"
         return values
 
     @property
@@ -356,7 +356,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     # instance variables
     crontab: Union[str, Crontab] = Field(description="Crontab schedule for the feature job.")
     timezone: TimeZoneName = Field(
-        default="Etc/UTC",
+        default=TimeZoneName("Etc/UTC"),
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
     reference_timezone: Optional[TimeZoneName] = Field(

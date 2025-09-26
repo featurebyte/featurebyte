@@ -124,9 +124,9 @@ class EntityServingNamesService:
                     document_id=table.tabular_source.feature_store_id
                 )
             else:
-                assert (
-                    feature_store.id == table.tabular_source.feature_store_id
-                ), "Feature List tables must be in the same feature store"
+                assert feature_store.id == table.tabular_source.feature_store_id, (
+                    "Feature List tables must be in the same feature store"
+                )
 
             entity_columns = [
                 column for column in table.columns_info if column.entity_id in entities

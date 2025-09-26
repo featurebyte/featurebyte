@@ -113,7 +113,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     yield
 
     for doc in bad_feature_store_docs:
-        drop_schema_query = f'DROP SCHEMA IF EXISTS {doc["details"]["schema_name"]}'
+        drop_schema_query = f"DROP SCHEMA IF EXISTS {doc['details']['schema_name']}"
         await session.execute_query(drop_schema_query)
 
 

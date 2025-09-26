@@ -61,7 +61,7 @@ class SnapshotsTable(TableApiObject):
     internal_snapshot_datetime_column: StrictStr = Field(alias="snapshot_datetime_column")
     internal_snapshot_datetime_schema: TimestampSchema = Field(alias="snapshot_datetime_schema")
     internal_time_interval: TimeInterval = Field(alias="time_interval")
-    internal_snapshot_id_column: StrictStr = Field(alias="snapshot_id_column", default=None)
+    internal_snapshot_id_column: StrictStr = Field(alias="snapshot_id_column")
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(

@@ -113,9 +113,9 @@ class VersionService:
                     # use the event table source's default feature job setting if table is event table
                     # otherwise, do not create a replacement node for the group by node
                     if table.type in TableDataType.with_default_feature_job_setting():
-                        assert hasattr(
-                            table, "default_feature_job_setting"
-                        ), "Table should have default feature job setting attribute."
+                        assert hasattr(table, "default_feature_job_setting"), (
+                            "Table should have default feature job setting attribute."
+                        )
                         feature_job_setting = table.default_feature_job_setting
                         if not feature_job_setting:
                             raise NoFeatureJobSettingInSourceError(

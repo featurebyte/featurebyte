@@ -76,8 +76,7 @@ class BaseApiTestSuite:
                 {
                     "input": "abcd",
                     "loc": ["query", "page_size"],
-                    "msg": "Input should be a valid integer, unable to parse string as an "
-                    "integer",
+                    "msg": "Input should be a valid integer, unable to parse string as an integer",
                     "type": "int_parsing",
                 }
             ],
@@ -215,7 +214,7 @@ class BaseApiTestSuite:
         """
         task_submission = create_response.json()
         if not create_response.is_success:
-            raise AssertionError(f'Task submission failed: {task_submission["detail"]}')
+            raise AssertionError(f"Task submission failed: {task_submission['detail']}")
         task_id = task_submission["id"]
 
         start_time = datetime.now()
@@ -901,7 +900,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             tabular_source = payload["tabular_source"]
             payload["tabular_source"] = {
                 "feature_store_id": tabular_source["feature_store_id"],

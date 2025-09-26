@@ -858,7 +858,7 @@ class ObservationTableService(
         if columns_with_missing_values:
             raise ValueError(
                 "These columns in the observation table must not contain any missing values: "
-                f'{", ".join(columns_with_missing_values)}'
+                f"{', '.join(columns_with_missing_values)}"
             )
 
         return {

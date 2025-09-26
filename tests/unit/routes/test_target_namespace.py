@@ -54,7 +54,7 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         for i in range(3):
             target_payload = target_payload.copy()
             target_payload["_id"] = str(ObjectId())
-            target_payload["name"] = f'{target_payload["name"]}_{i}'
+            target_payload["name"] = f"{target_payload['name']}_{i}"
             yield target_payload
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):

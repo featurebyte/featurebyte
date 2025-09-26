@@ -186,8 +186,8 @@ class MongoDB(Persistent):
         tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor: AgnosticCursor = cast(
-            AgnosticCursor,
+        cursor: AgnosticCursor[Document] = cast(
+            AgnosticCursor[Document],
             await self._get_iterator(collection_name, query_filter, None, projection, sort_by),
         )
         total = await self._db[collection_name].count_documents(query_filter, session=self._session)

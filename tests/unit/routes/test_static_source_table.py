@@ -62,7 +62,7 @@ class TestStaticSourceTableApi(BaseMaterializedTableTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     @pytest.fixture(autouse=True)

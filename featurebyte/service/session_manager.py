@@ -81,7 +81,7 @@ async def get_new_session(item: str, params: str, timeout: float) -> BaseSession
     """
     tic = time.time()
     item_dict = json.loads(item)
-    logger.debug(f'Create a new session for {item_dict["type"]}')
+    logger.debug(f"Create a new session for {item_dict['type']}")
     params_dict = json.loads(params)
 
     def _create_session() -> BaseSession:

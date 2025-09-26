@@ -63,9 +63,9 @@ class CalendarWindow(FeatureByteBaseModel):
             return self.size
         elif self.unit == TimeIntervalUnit.QUARTER:
             return self.size * 3
-        assert (
-            self.unit == TimeIntervalUnit.YEAR
-        ), "Only month, quarter, and year window can be converted to months"
+        assert self.unit == TimeIntervalUnit.YEAR, (
+            "Only month, quarter, and year window can be converted to months"
+        )
         return self.size * 12
 
     def __hash__(self) -> int:

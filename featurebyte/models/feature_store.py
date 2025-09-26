@@ -188,7 +188,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         Record creation timestamp column name
     """
 
-    status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT.value, frozen=True)
+    status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT.value, frozen=True)  # type: ignore
     record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
     validation: Optional[TableValidation] = Field(default=None)
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
