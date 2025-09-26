@@ -27,7 +27,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     dtype: DBVarType
-    feature_type: FeatureType = Field(default=None)
+    feature_type: FeatureType = Field(default=FeatureType.OTHERS)
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness
     default_feature_id: PydanticObjectId

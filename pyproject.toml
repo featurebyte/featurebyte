@@ -52,7 +52,7 @@ dependencies = [
   "pyarrow",
   "pydantic-extra-types",
   "pydantic-settings",
-  "pydantic==2.8.2",
+  "pydantic~=2.8",
   "pymongo",
   "pyopenssl",
   "python-multipart",
@@ -73,7 +73,7 @@ server = [
   "asyncache",
   "celery[redis]",
   "celerybeat-mongo",
-  "databricks-sdk==0.67.0",
+  "databricks-sdk",
   "databricks-sql-connector~=4.0.0",
   "fastapi",
   # import changes 'feast.infra.online_stores.contrib'

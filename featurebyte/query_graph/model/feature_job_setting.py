@@ -356,7 +356,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     # instance variables
     crontab: Union[str, Crontab] = Field(description="Crontab schedule for the feature job.")
     timezone: TimeZoneName = Field(
-        default="Etc/UTC",
+        default=TimeZoneName("Etc/UTC"),
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
     reference_timezone: Optional[TimeZoneName] = Field(
