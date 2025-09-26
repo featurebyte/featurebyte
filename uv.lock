@@ -1546,7 +1546,6 @@ dependencies = [
   {name = "sqlglot"},
   {name = "typeguard"},
   {name = "typer"},
-  {name = "typing-extensions"},
   {name = "websocket-client"}
 ]
 
@@ -1611,7 +1610,8 @@ dev = [
   {name = "types-typed-ast"},
   {name = "types-tzlocal"},
   {name = "types-ujson"},
-  {name = "types-urllib3"}
+  {name = "types-urllib3"},
+  {name = "typing-extensions"}
 ]
 docs = [
   {name = "docstring-parser"},
@@ -1662,7 +1662,8 @@ lint = [
   {name = "types-typed-ast"},
   {name = "types-tzlocal"},
   {name = "types-ujson"},
-  {name = "types-urllib3"}
+  {name = "types-urllib3"},
+  {name = "typing-extensions"}
 ]
 test = [
   {name = "freezegun"},
@@ -1683,15 +1684,15 @@ test = [
 [package.metadata]
 requires-dist = [
   {name = "aioboto3", marker = "extra == 'server'"},
-  {name = "aiofiles"},
-  {name = "alive-progress"},
+  {name = "aiofiles", specifier = ">=24"},
+  {name = "alive-progress", specifier = ">=3"},
   {name = "asyncache", marker = "extra == 'server'"},
-  {name = "black"},
-  {name = "cachetools"},
+  {name = "black", specifier = ">=24"},
+  {name = "cachetools", specifier = ">=5"},
   {name = "celery", extras = ["redis"], marker = "extra == 'server'"},
   {name = "celerybeat-mongo", marker = "extra == 'server'"},
-  {name = "croniter"},
-  {name = "cryptography"},
+  {name = "croniter", specifier = ">=5"},
+  {name = "cryptography", specifier = ">=45"},
   {name = "databricks-sdk", marker = "extra == 'server'"},
   {name = "databricks-sql-connector", marker = "extra == 'server'", specifier = "~=4.0.0"},
   {name = "fastapi", marker = "extra == 'server'"},
@@ -1700,40 +1701,39 @@ requires-dist = [
   {name = "gevent", marker = "extra == 'server'"},
   {name = "google-cloud-bigquery", marker = "extra == 'server'"},
   {name = "google-cloud-bigquery-storage", marker = "extra == 'server'"},
-  {name = "grapheme"},
-  {name = "humanize"},
-  {name = "importlib-metadata"},
-  {name = "jinja2"},
-  {name = "lazy-object-proxy"},
+  {name = "grapheme", specifier = ">=0.6"},
+  {name = "humanize", specifier = ">=4"},
+  {name = "importlib-metadata", specifier = ">=8"},
+  {name = "jinja2", specifier = ">=3"},
+  {name = "lazy-object-proxy", specifier = ">=1"},
   {name = "motor", marker = "extra == 'server'"},
   {name = "numpy"},
-  {name = "orjson"},
-  {name = "pandas", specifier = ">2.2"},
+  {name = "orjson", specifier = ">=3"},
+  {name = "pandas", specifier = ">=2"},
   {name = "pdfkit", marker = "extra == 'server'"},
-  {name = "pillow"},
-  {name = "pyarrow"},
+  {name = "pillow", specifier = ">=10"},
+  {name = "pyarrow", specifier = ">=20"},
   {name = "pydantic", specifier = "~=2.8"},
-  {name = "pydantic-extra-types"},
-  {name = "pydantic-settings"},
+  {name = "pydantic-extra-types", specifier = ">=2"},
+  {name = "pydantic-settings", specifier = ">=2"},
   {name = "pyhive", extras = ["hive-pure-sasl"], marker = "extra == 'server'"},
-  {name = "pymongo"},
-  {name = "pyopenssl"},
+  {name = "pymongo", specifier = ">=4"},
+  {name = "pyopenssl", specifier = ">=23"},
   {name = "python-multipart"},
   {name = "python-on-whales"},
-  {name = "pyyaml"},
+  {name = "pyyaml", specifier = ">=5"},
   {name = "redis", marker = "extra == 'server'"},
-  {name = "requests"},
+  {name = "requests", specifier = ">=2"},
   {name = "requests-kerberos", marker = "extra == 'server'"},
-  {name = "rich"},
+  {name = "rich", specifier = ">=13"},
   {name = "smart-open", extras = ["azure", "gcs"], marker = "extra == 'server'"},
   {name = "snowflake-connector-python", marker = "extra == 'server'"},
   {name = "sqlglot", specifier = "~=25.0"},
   {name = "thrift-sasl", marker = "extra == 'server'"},
-  {name = "typeguard"},
+  {name = "typeguard", specifier = ">=4"},
   {name = "typer"},
-  {name = "typing-extensions"},
   {name = "uvicorn", extras = ["standard"], marker = "extra == 'server'"},
-  {name = "websocket-client"}
+  {name = "websocket-client", specifier = ">=1"}
 ]
 provides-extras = ["server"]
 
@@ -1798,7 +1798,8 @@ dev = [
   {name = "types-typed-ast"},
   {name = "types-tzlocal"},
   {name = "types-ujson"},
-  {name = "types-urllib3"}
+  {name = "types-urllib3"},
+  {name = "typing-extensions"}
 ]
 docs = [
   {name = "docstring-parser"},
@@ -1849,7 +1850,8 @@ lint = [
   {name = "types-typed-ast"},
   {name = "types-tzlocal"},
   {name = "types-ujson"},
-  {name = "types-urllib3"}
+  {name = "types-urllib3"},
+  {name = "typing-extensions"}
 ]
 test = [
   {name = "freezegun"},
