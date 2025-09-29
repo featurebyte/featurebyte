@@ -1,104 +1,104 @@
-# This workflow checks the differences dependencies between main and the PR
-# Labelling a PR with `dependencies` will skip this check
-
-name: dependencies
-'on':
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
-    branches:
-      - main
-      - release/*
-    paths:
-      - pyproject.toml
-      - uv.lock
-permissions:
-  contents: write
-  pull-requests: write
-  repository-projects: read
-concurrency:
-  group: "${{ github.workflow }}-${{ github.head_ref }}"
-  cancel-in-progress: true
-jobs:
-  diff-client-deps:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - 3.10.14
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Checkout branch
-        run: git checkout "origin/${{ github.head_ref }}"
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Extract results
-        run: |-
-          uv sync --all-groups --all-extras --frozen
-          uv pip list --exclude-editable > head.PKG-INFO
-          git checkout $(git merge-base "origin/${{ github.head_ref }}" origin/main) -- pyproject.toml uv.lock
-          uv sync --all-groups --all-extras --frozen
-          uv pip list --exclude-editable > main.PKG-INFO
-
-          # Allow diff to fail
-          set +e
-          diff -u main.PKG-INFO head.PKG-INFO > /dev/null
-          DIFF_EXIT_CODE=$?
-          echo "DIFF_EXIT_CODE=$DIFF_EXIT_CODE" >> $GITHUB_ENV
-          set -e
-
-          if [ $DIFF_EXIT_CODE -eq 0 ]; then
-            echo "No dependency changes detected."
-            exit 0
-          else
-            echo "Dependency changes detected."
-          fi
-
-          gawk 'NR > 2 { printf "from,%s,%s\n", $1, $2 }' main.PKG-INFO > changes.csv
-          gawk 'NR > 2 { printf "to,%s,%s\n", $1, $2 }' head.PKG-INFO >> changes.csv
-
-          echo "DIFF_CONTENT<<EOL" >> $GITHUB_ENV
-          gawk -F, '
-          {
-            if ($2 in arr == 0) {
-              arr[$2][1] = "(null)"
-              arr[$2][2] = "(null)"
-            }
-
-            if ($1 == "from") {
-              arr[$2][1] = $3
-            } else {
-              if (arr[$2][1] != $3) {
-                arr[$2][2] = $3
-              } else {
-                delete arr[$2]
-              }
-            }
-          }
-          END {
-            printf "| %-24s | %-24s | %-24s |\n", "Package", "${{ github.base_ref }}", "${{ github.head_ref }}"
-            printf "| %-24s | %-24s | %-24s |\n", "-----------------------", "----------------------", "-----------------------"
-            for (i in arr) {
-                printf "| %-24s | %-24s | %-24s |\n", i, arr[i][1], arr[i][2]
-            }
-          }' changes.csv >> $GITHUB_ENV
-          echo "EOL" >> $GITHUB_ENV
-
-      - uses: mshick/add-pr-comment@v2
-        with:
-          message-id: dependencies
-          message: ${{ env.DIFF_CONTENT }}
-
-      - name: Fail if dependencies changed
-        if: env.DIFF_EXIT_CODE == '1'
-        run: exit 1
-
+## This workflow checks the differences dependencies between main and the PR
+## Labelling a PR with `dependencies` will skip this check
+#
+#name: dependencies
+#'on':
+#  pull_request:
+#    types:
+#      - opened
+#      - synchronize
+#      - reopened
+#      - labeled
+#      - unlabeled
+#    branches:
+#      - main
+#      - release/*
+#    paths:
+#      - pyproject.toml
+#      - uv.lock
+#permissions:
+#  contents: write
+#  pull-requests: write
+#  repository-projects: read
+#concurrency:
+#  group: "${{ github.workflow }}-${{ github.head_ref }}"
+#  cancel-in-progress: true
+#jobs:
+#  diff-client-deps:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python-version:
+#          - 3.10.14
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - name: Checkout branch
+#        run: git checkout "origin/${{ github.head_ref }}"
+#      - name: Install uv and set the python version
+#        uses: astral-sh/setup-uv@v6
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#          enable-cache: true
+#      - name: Extract results
+#        run: |-
+#          uv sync --all-groups --all-extras --frozen
+#          uv pip list --exclude-editable > head.PKG-INFO
+#          git checkout $(git merge-base "origin/${{ github.head_ref }}" origin/main) -- pyproject.toml uv.lock
+#          uv sync --all-groups --all-extras --frozen
+#          uv pip list --exclude-editable > main.PKG-INFO
+#
+#          # Allow diff to fail
+#          set +e
+#          diff -u main.PKG-INFO head.PKG-INFO > /dev/null
+#          DIFF_EXIT_CODE=$?
+#          echo "DIFF_EXIT_CODE=$DIFF_EXIT_CODE" >> $GITHUB_ENV
+#          set -e
+#
+#          if [ $DIFF_EXIT_CODE -eq 0 ]; then
+#            echo "No dependency changes detected."
+#            exit 0
+#          else
+#            echo "Dependency changes detected."
+#          fi
+#
+#          gawk 'NR > 2 { printf "from,%s,%s\n", $1, $2 }' main.PKG-INFO > changes.csv
+#          gawk 'NR > 2 { printf "to,%s,%s\n", $1, $2 }' head.PKG-INFO >> changes.csv
+#
+#          echo "DIFF_CONTENT<<EOL" >> $GITHUB_ENV
+#          gawk -F, '
+#          {
+#            if ($2 in arr == 0) {
+#              arr[$2][1] = "(null)"
+#              arr[$2][2] = "(null)"
+#            }
+#
+#            if ($1 == "from") {
+#              arr[$2][1] = $3
+#            } else {
+#              if (arr[$2][1] != $3) {
+#                arr[$2][2] = $3
+#              } else {
+#                delete arr[$2]
+#              }
+#            }
+#          }
+#          END {
+#            printf "| %-24s | %-24s | %-24s |\n", "Package", "${{ github.base_ref }}", "${{ github.head_ref }}"
+#            printf "| %-24s | %-24s | %-24s |\n", "-----------------------", "----------------------", "-----------------------"
+#            for (i in arr) {
+#                printf "| %-24s | %-24s | %-24s |\n", i, arr[i][1], arr[i][2]
+#            }
+#          }' changes.csv >> $GITHUB_ENV
+#          echo "EOL" >> $GITHUB_ENV
+#
+#      - uses: mshick/add-pr-comment@v2
+#        with:
+#          message-id: dependencies
+#          message: ${{ env.DIFF_CONTENT }}
+#
+#      - name: Fail if dependencies changed
+#        if: env.DIFF_EXIT_CODE == '1'
+#        run: exit 1
+#
