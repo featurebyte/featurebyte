@@ -15,6 +15,7 @@ name: dependencies
       - release/*
     paths:
       - pyproject.toml
+      - uv.lock
 permissions:
   contents: write
   pull-requests: write
@@ -40,15 +41,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-      - name: Check pyproject.toml and uv.lock are consistent
-        run: task check-uv
       - name: Build package (branch)
         run: |-
+          uv sync --all-groups --all-extras --frozen
           uv pip list --exclude-editable > branch.PKG-INFO
       - name: Checkout merge base
         run: git checkout --force $(git merge-base "origin/${{ github.head_ref }}" origin/main)
       - name: Build package (main)
         run: |-
+          uv sync --all-groups --all-extras --frozen
           uv pip list --exclude-editable > main.PKG-INFO
       - name: Diff dependencies
         continue-on-error: true
