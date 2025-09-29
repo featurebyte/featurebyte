@@ -191,7 +191,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table.column_cleaning_operations
         [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0),
-        ValueBeyondEndpointImputation(type=less_than, imputed_value=0.0, end_point=0.0)])]
+        ValueBeyondEndpointImputation(type='less_than', imputed_value=0.0, end_point=0.0)])]
 
         Remove cleaning operations and show the column cleaning operations of the event table.
 
@@ -703,7 +703,7 @@ class TableApiObject(
         ...     ]
         ... )
         >>> event_table.column_cleaning_operations
-        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0), ValueBeyondEndpointImputation(type=less_than, imputed_value=0.0, end_point=0.0)])]
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0), ValueBeyondEndpointImputation(type='less_than', imputed_value=0.0, end_point=0.0)])]
 
         Empty list of column cleaning operations after resetting the cleaning operations.
 

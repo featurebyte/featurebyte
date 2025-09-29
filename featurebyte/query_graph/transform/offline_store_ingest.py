@@ -208,9 +208,9 @@ class OfflineStoreIngestQueryGraphTransformer(
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
-                assert (
-                    len(input_node_names) == 1
-                ), "All non-request column agg. nodes expect only 1 input node"
+                assert len(input_node_names) == 1, (
+                    "All non-request column agg. nodes expect only 1 input node"
+                )
                 agg_nodes_info.append(
                     AggregationNodeInfo(
                         node_type=subgraph_agg_node.type,

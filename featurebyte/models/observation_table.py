@@ -158,9 +158,11 @@ class ObservationTableModel(MaterializedTableModel):
     use_case_ids: List[PydanticObjectId] = Field(default_factory=list)
     purpose: Optional[Purpose] = Field(default=None)
     least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
-    entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
+    entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict[str, int])
     min_interval_secs_between_entities: Optional[float] = Field(default=None)
-    primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
+    primary_entity_ids: Optional[List[PydanticObjectId]] = Field(
+        default_factory=list[PydanticObjectId]
+    )
     has_row_index: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     sample_rows: Optional[int] = Field(default=None)

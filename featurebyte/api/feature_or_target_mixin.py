@@ -38,7 +38,8 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
     # pydantic instance variable (internal use)
     internal_catalog_id: PydanticObjectId = Field(
-        default_factory=get_active_catalog_id, alias="catalog_id"
+        default_factory=get_active_catalog_id,
+        alias="catalog_id",  # type: ignore
     )
 
     @property

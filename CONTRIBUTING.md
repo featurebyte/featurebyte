@@ -4,7 +4,7 @@
 
 ### Python
 
-We use `python` >=3.9 with `poetry>=1.8` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
+We use `python` >=3.9 with `uv` to manage the dependencies.
 
 ### Java
 
@@ -20,14 +20,12 @@ We use `task` to manage our build and development scripts and `docker` to manage
 ## Init Development environment
 
 
-### Installing dependencies and pre-commit hook
 
 ```shell
 $ task install
-$ task init
 ```
 
-To activate your `virtualenv` run `poetry shell`.
+To activate your `virtualenv` run.
 
 ### Initializing
 

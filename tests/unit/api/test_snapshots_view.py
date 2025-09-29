@@ -602,7 +602,7 @@ def test_shape(snowflake_snapshots_table, snowflake_query_map):
                     "column_name": "date",
                     "transform": {
                         "original_timestamp_schema": {
-                            "format_string": "YYYY-MM-DD " "HH24:MI:SS",
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
                             "is_utc_time": None,
                             "timezone": "Etc/UTC",
                         },

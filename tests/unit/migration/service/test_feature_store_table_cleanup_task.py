@@ -155,9 +155,9 @@ async def test_schedule_table_cleanup_tasks_preserves_user_context(
     assert len(tasks["data"]) == 1
 
     task = tasks["data"][0]
-    assert task["kwargs"]["user_id"] == str(
-        specific_user_id
-    ), "Migration should preserve feature store owner's user ID"
+    assert task["kwargs"]["user_id"] == str(specific_user_id), (
+        "Migration should preserve feature store owner's user ID"
+    )
 
 
 @pytest.mark.asyncio

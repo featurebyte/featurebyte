@@ -315,7 +315,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
     # pydantic instance variable (internal use)
     internal_catalog_id: PydanticObjectId = Field(
-        default_factory=get_active_catalog_id, alias="catalog_id"
+        default_factory=get_active_catalog_id,
+        alias="catalog_id",  # type: ignore
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
@@ -1245,8 +1246,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> my_feature_list = catalog.get_feature_list(<feature_list_name>)  # doctest: +SKIP
         >>> # Decide the name of the historical feature table
         >>> training_table_name = (  # doctest: +SKIP
-        ...     "2y Features for Customer Purchase next 2w "
-        ...     "up to end 22 with Improved Feature List"
+        ...     "2y Features for Customer Purchase next 2w up to end 22 with Improved Feature List"
         ... )
         >>> # Compute the historical feature table
         >>> training_table = my_feature_list.compute_historical_feature_table(  # doctest: +SKIP

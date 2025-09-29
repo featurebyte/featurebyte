@@ -83,7 +83,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult
     analysis_report: str
-    backtest_summaries: Optional[List[BackTestSummary]] = Field(default_factory=list)
+    backtest_summaries: List[BackTestSummary] = Field(default_factory=list[BackTestSummary])
 
     @classmethod
     def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:

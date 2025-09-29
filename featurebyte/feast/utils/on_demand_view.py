@@ -106,9 +106,9 @@ class OnDemandFeatureViewConstructor:
                 if request_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME.value:
                     has_point_in_time = True
         else:
-            assert (
-                offline_store_info.metadata is not None
-            ), "OfflineStoreInfo does not have metadata"
+            assert offline_store_info.metadata is not None, (
+                "OfflineStoreInfo does not have metadata"
+            )
             assert offline_store_info.metadata.has_ttl, "FeatureModel does not have TTL"
             fv_source = name_to_feast_feature_view[
                 offline_store_info.metadata.offline_store_table_name

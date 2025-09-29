@@ -9,9 +9,9 @@ tasks:
     run: once
     sources:
       - pyproject.toml
-      - poetry.lock
+      - uv.lock
     cmds:
-      - poetry install -n --sync --extras=server
+      - uv sync --all-groups --all-extras
 
   default:
     desc: "Run ALL the linter checks."
@@ -26,7 +26,7 @@ tasks:
     sources:
       - featurebyte/**/*
       - tests/**/*
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
     deps:
       - task: install
@@ -37,12 +37,12 @@ tasks:
   format:toml:
     desc: "Format the toml files"
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
     deps:
       - task: install
     cmds:
-      - poetry run toml-sort --in-place poetry.lock pyproject.toml
+      - uv run toml-sort --in-place uv.lock
 
   format:ruff:
     desc: "Format the toml files"
@@ -52,9 +52,9 @@ tasks:
     deps:
       - task: install
     cmds:
-      - poetry run ruff check --select I --diff || poetry run ruff check --select I --fix
-      - poetry run ruff check --diff || poetry run ruff check --fix
-      - poetry run ruff format --diff || poetry run ruff format
+      - uv run ruff check --select I --diff || uv run ruff check --select I --fix
+      - uv run ruff check --diff || uv run ruff check --fix
+      - uv run ruff format --diff || uv run ruff format
 
   pr:
     desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."
@@ -69,14 +69,13 @@ tasks:
   style:
     desc: "Run the linter[style]"
     sources:
-      - poetry.lock
-      - pyproject.toml
+      - uv.lock
       - featurebyte/**/*
       - tests/**/*
     cmds:
       - task: style-ruff
       - task: style-darglint
-      - poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
+      - uv run toml-sort --check uv.lock
 
   style-ruff:
     desc: "Run the linter[style] with only ruff"
@@ -84,8 +83,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - poetry run ruff check
-      - poetry run ruff format
+      - uv run ruff check
+      - uv run ruff format
 
   style-darglint:
     desc: "Run the linter[style] with only darglint"
@@ -100,58 +99,37 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint --docstring-style numpy --strictness full -v 2
+      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} uv run darglint --docstring-style numpy --strictness full -v 2
 
   type:
     desc: "Run the linter[type]"
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - featurebyte/**/*
       - tests/**/*
     cmds:
       - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
         silent: true
-      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
+      - uv run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
 
   safety:
     desc: "Run the linter[safety]"
-    env:
-      PERMISSIVE_LICENSES: |-
-        Apache License 2.0;
-        Apache License, Version 2.0;
-        Apache Software License;
-        BSD;
-        BSD License;
-        Historical Permission Notice and Disclaimer (HPND);
-        GNU General Public License v2 (GPLv2);
-        ISC License (ISCL);
-        ISC;
-        MIT License;
-        MIT;
-        MPL-2.0;
-        Mozilla Public License 2.0 (MPL 2.0);
-        Public Domain;
-        Python Software Foundation License;
-        The Unlicense (Unlicense)
-      PACKAGES:
-        sh: poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - featurebyte/**/*
     cmds:
-      - poetry run pip-licenses --packages "${PACKAGES}" --allow-only="${PERMISSIVE_LICENSES}"
-      - poetry run pip-audit
+    - uv run pip-audit
 
   bandit:
     desc: "Run the linter[bandit]"
     sources:
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - featurebyte/**/*
     cmds:
-      - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+      - uv run bandit -c pyproject.toml -ll --recursive featurebyte
 
   import-rules:
     desc: Check for import rule violations
