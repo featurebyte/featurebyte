@@ -93,6 +93,7 @@ jobs:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
       - name: Publish to non-prod artifact registry
         run: |-
+          uv build
           uv publish --index featurebyte_np --username="${UV_INDEX_FEATUREBYTE_NP_USERNAME}" --password="${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}"
   test-install:
     runs-on: ${{ matrix.runner }}
