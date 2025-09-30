@@ -5,7 +5,7 @@ TargetNamespace API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import Optional
 
 from fastapi import Request
 
@@ -195,4 +195,4 @@ class TargetNamespaceRouter(
             document_id=target_namespace_id,
             verbose=verbose,
         )
-        return cast(TargetNamespaceInfo, info)
+        return info
