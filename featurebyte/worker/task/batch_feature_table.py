@@ -198,9 +198,5 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         ----------
         payload: BatchFeatureTableTaskPayload
             Task payload
-
-        Returns
-        -------
-        Any
         """
         await self.create_batch_feature_table(payload)
