@@ -2102,8 +2102,7 @@ def test_feature_count_dict_get_value_dtype(
     feature_group_feature_job_setting,
 ):
     """Test feature created from count_dict operations with get_value has FLOAT dtype"""
-    # Create additional entities to match debug_dtype.py structure
-    # item entity for item table (like GROCERYINVOICEITEMGUID)
+    # create entities
     item_entity = Entity(name="item", serving_names=["item_id_col"])
     item_entity.save()
 
@@ -2115,30 +2114,24 @@ def test_feature_count_dict_get_value_dtype(
     invoice_entity = Entity(name="invoice", serving_names=["invoice_id"])
     invoice_entity.save()
 
-    # Set up entity relationships matching debug_dtype.py:
-    # - item_table: item_entity (item_id_col), invoice_entity (event_id_col), product_entity (item_type)
-    # - dimension_table: product_entity (col_text as product type/category key)
-    # - event_table: invoice_entity (col_int as event_id), cust_id_entity (cust_id)
-
+    # label entity columns
     snowflake_item_table.item_id_col.as_entity(item_entity.name)
     snowflake_item_table.event_id_col.as_entity(invoice_entity.name)
     snowflake_item_table.item_type.as_entity(product_entity.name)
-
     snowflake_dimension_table.col_text.as_entity(product_entity.name)
-
     saved_event_table.col_int.as_entity(invoice_entity.name)
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
 
-    # Get views
+    # get views
     item_view = snowflake_item_table.get_view()
     event_view = saved_event_table.get_view()
     dim_view = snowflake_dimension_table.get_view()
 
-    # Join item_view with dim_view on product type (like INVOICEITEMS join GROCERYPRODUCT)
+    # join item_view with dim_view on product type (like INVOICEITEMS join GROCERYPRODUCT)
     item_view = item_view.join(dim_view, on="item_type", rsuffix="_product")
 
-    # Create a groupby with category parameter (similar to ProductGroup in debug_dtype.py)
-    # Group by event_id_col (invoice), category is col_boolean from product dimension (with rsuffix)
+    # create a groupby with category parameter (similar to ProductGroup in debug_dtype.py)
+    # group by event_id_col (invoice), category is col_boolean from product dimension (with rsuffix)
     item_view_by_invoice = item_view.groupby("event_id_col", category="col_boolean_product")
 
     # Aggregate with sum to create a count_dict feature
@@ -2148,13 +2141,13 @@ def test_feature_count_dict_get_value_dtype(
         feature_name="invoice_items_sum_by_product_category",
     )
 
-    # Add feature to event view (like adding to GROCERYINVOICE)
+    # add feature to event view (like adding to GROCERYINVOICE)
     event_view = event_view.add_feature(
         "invoice_items_sum_by_product_category",
         invoice_items_sum_by_category,
     )
 
-    # Create aggregate_over with latest method
+    # create aggregate_over with latest method
     event_view_by_customer = event_view.groupby(["cust_id"])
     customer_latest_invoice_items_sum_by_category = event_view_by_customer.aggregate_over(
         "invoice_items_sum_by_product_category",
@@ -2164,12 +2157,12 @@ def test_feature_count_dict_get_value_dtype(
         feature_job_setting=feature_group_feature_job_setting,
     )["customer_latest_invoice_items_sum_by_category_13w"]
 
-    # Get value from count_dict using cd accessor
+    # get value from count_dict using cd accessor
     feature_with_get_value = customer_latest_invoice_items_sum_by_category.cd.get_value("test_key")
 
-    # Set name and save
+    # set name and save
     feature_with_get_value.name = "customer_latest_invoice_items_sum_by_category_test_key"
     feature_with_get_value.save()
 
-    # Assert the dtype is FLOAT
+    # assert the dtype is FLOAT
     assert feature_with_get_value.dtype == DBVarType.FLOAT
