@@ -98,11 +98,12 @@ jobs:
           echo "EOL" >> $GITHUB_ENV
 
       - uses: mshick/add-pr-comment@v2
+        if: env.DIFF_EXIT_CODE == '1'
         with:
           message-id: dependencies
           message: ${{ env.DIFF_CONTENT }}
 
       - name: Fail if dependencies changed
-        if: env.DIFF_EXIT_CODE == '1'
+        if: env.DIFF_EXIT_CODE == '1' && !contains(github.event.pull_request.labels.*.name, 'dependencies')
         run: exit 1
 
