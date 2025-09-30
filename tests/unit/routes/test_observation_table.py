@@ -3,7 +3,6 @@ Tests for ObservationTable routes
 """
 
 import copy
-import json
 import os
 import tempfile
 import textwrap
@@ -948,6 +947,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
+        # get use case
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        use_case_target_namespace_id = response.json()["target_namespace_id"]
+
         payload = copy.deepcopy(self.payload)
         payload["primary_entity_ids"] = None
         payload["context_id"] = None
@@ -964,6 +968,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
         assert response_dict["purpose"] == "eda"
+        # expect target from use case to be added to observation table
+        assert response_dict["target_namespace_id"] == use_case_target_namespace_id
 
         # check that context default eda table is set
         response = test_api_client.get("/context/646f6c1c0ed28a5271fb02d5")
@@ -971,34 +977,6 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] == observation_table_id
         assert response_dict["default_preview_table_id"] is None
-
-        # check that use case default eda table is not set due to no target
-        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK, response_dict
-        assert response_dict["default_eda_table_id"] is None
-        assert response_dict["default_preview_table_id"] is None
-
-        # create target table
-        target_table_payload = BaseMaterializedTableTestSuite.load_payload(
-            "tests/fixtures/request_payloads/target_table.json"
-        )
-        response = test_api_client.post(
-            "/target_table", data={"payload": json.dumps(target_table_payload)}
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.CREATED, response_dict
-        response = self.wait_for_results(test_api_client, response)
-        response_dict = response.json()
-        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
-
-        observation_table_id = response_dict["payload"]["output_document_id"]
-        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK, response_dict
-        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
-        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
-        assert response_dict["purpose"] == "eda"
 
         # check that use case default eda table is set
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
