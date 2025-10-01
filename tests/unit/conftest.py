@@ -989,6 +989,9 @@ def snowflake_query_map_fixture():
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."snapshots_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."time_series_table"'
     ]
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."another_snapshots_table"'] = query_map[
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."time_series_table"'
+    ]
     return query_map
 
 
@@ -1214,6 +1217,18 @@ def snowflake_database_snapshots_table_fixture(snowflake_data_source):
     )
 
 
+@pytest.fixture(name="another_snowflake_database_snapshots_table")
+def another_snowflake_database_snapshots_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for SnapshotsTable
+    """
+    yield snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="another_snapshots_table",
+    )
+
+
 @pytest.fixture(name="snowflake_feature_store_id")
 def snowflake_feature_store_id_fixture():
     """Snowflake feature store id"""
@@ -1290,6 +1305,12 @@ def snowflake_time_series_table_id_fixture():
 def snowflake_snapshots_table_id_fixture():
     """Snowflake snapshots table ID"""
     return ObjectId("6893ffbc6782e0c8fce7d072")
+
+
+@pytest.fixture(name="another_snowflake_snapshots_table_id")
+def another_snowflake_snapshots_table_id_fixture():
+    """Snowflake snapshots table ID"""
+    return ObjectId("68dd5a928c583807224804dc")
 
 
 @pytest.fixture(name="cust_id_entity_id")
@@ -1665,6 +1686,32 @@ def snowflake_snapshots_table_fixture(
     )
     assert snapshots_table.frame.node.parameters.id == snapshots_table.id
     assert snapshots_table.id == snowflake_snapshots_table_id
+    yield snapshots_table
+
+
+@pytest.fixture(name="another_snowflake_snapshots_table")
+def another_snowflake_snapshots_table_fixture(
+    another_snowflake_database_snapshots_table,
+    another_snowflake_snapshots_table_id,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """SnapshotsTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    snapshots_table = another_snowflake_database_snapshots_table.create_snapshots_table(
+        name="sf_snapshots_table_2",
+        snapshot_id_column="col_int",
+        snapshot_datetime_column="date",
+        snapshot_datetime_schema=TimestampSchema(timezone="Etc/UTC", format_string="YYYY-MM-DD"),
+        time_interval=TimeInterval(value=1, unit="DAY"),
+        record_creation_timestamp_column="created_at",
+        description="test snapshots table",
+        _id=another_snowflake_snapshots_table_id,
+        datetime_partition_column="date",
+        datetime_partition_schema=TimestampSchema(timezone="Etc/UTC", format_string="YYYY-MM-DD"),
+    )
+    assert snapshots_table.frame.node.parameters.id == snapshots_table.id
+    assert snapshots_table.id == another_snowflake_snapshots_table_id
     yield snapshots_table
 
 
