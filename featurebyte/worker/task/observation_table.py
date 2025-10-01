@@ -270,8 +270,10 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     # drop temporary table
                     await db_session.drop_table(
                         table_name=temp_location.table_details.table_name,
-                        schema_name=temp_location.table_details.schema_name or db_session.schema_name,
-                        database_name=temp_location.table_details.database_name or db_session.database_name,
+                        schema_name=temp_location.table_details.schema_name
+                        or db_session.schema_name,
+                        database_name=temp_location.table_details.database_name
+                        or db_session.database_name,
                         if_exists=True,
                     )
         else:
