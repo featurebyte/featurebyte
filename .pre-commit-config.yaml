@@ -1,0 +1,26 @@
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: format
+        name: Formatting Code
+        pass_filenames: false
+        entry: bash -c "task lint:format; git add . -u"
+        types: [ ]
+        language: system
+      - id: changelog
+        pass_filenames: false
+        name: Check changelog
+        always_run: true
+        entry: bash -c "task changelog-pr"
+        types: [ ]
+        language: system
+        verbose: true

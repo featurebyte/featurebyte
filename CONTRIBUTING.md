@@ -27,11 +27,6 @@ $ task install
 
 To activate your `virtualenv` run.
 
-### Initializing
-
-Run `task init` to install precommit hooks and
-validate that you have all the required dependencies to develop.
-
 ### Linting
 
 Linting tools are configured for this project, Command `task lint` applies all lints.
@@ -41,7 +36,7 @@ Linting tools are configured for this project, Command `task lint` applies all l
 We use `pytest` to run tests. To run tests use `task test` command.
 
 * Command `task test` will run all tests
-* Command `test unit` will run unit tests
+* Command `test test-unit` will run unit tests
 
 **NOTE: You will be unable to run snowflake or databricks tests because you do not have a connection to the databases.**
 
