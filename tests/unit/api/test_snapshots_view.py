@@ -553,9 +553,36 @@ def test_shape(snowflake_snapshots_table, snowflake_query_map):
         ),
         (
             "snowflake_snapshots_view",
-            "snowflake_snapshots_view",
-            NotImplementedError("Joining a SnapshotsView to SnapshotsView is not supported"),
+            "another_snowflake_snapshots_view",
             None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_timezone_name": "Etc/UTC",
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": {
+                            "crontab": {
+                                "minute": 0,
+                                "hour": 1,
+                                "day_of_month": "*",
+                                "month_of_year": "*",
+                                "day_of_week": "*",
+                            },
+                            "timezone": "Etc/UTC",
+                            "reference_timezone": "Etc/UTC",
+                            "blind_spot": None,
+                        },
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
         ),
         # Other views as left with SnapshotsView as right
         (

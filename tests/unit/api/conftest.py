@@ -523,6 +523,21 @@ def snowflake_snapshots_view_fixture(
     yield snapshots_view
 
 
+@pytest.fixture(name="another_snowflake_snapshots_view")
+def another_snowflake_snapshots_view_fixture(
+    another_snowflake_snapshots_table, config, arbitrary_default_cron_feature_job_setting
+):
+    """
+    SnapshotsView fixture
+    """
+    _ = config
+    another_snowflake_snapshots_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_cron_feature_job_setting
+    )
+    snapshots_view = another_snowflake_snapshots_table.get_view()
+    yield snapshots_view
+
+
 @pytest.fixture(name="feature_job_logs", scope="session")
 def feature_job_logs_fixture():
     """
