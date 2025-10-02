@@ -335,6 +335,7 @@ class ItemTableData(BaseTableData):
                     ]
                     if event_timestamp_column in item_table_columns:
                         drop_column_names.append(event_timestamp_column)
+                        metadata.drop_column_names.append(event_timestamp_column)
 
                 metadata.event_join_column_names = columns_to_join
 
