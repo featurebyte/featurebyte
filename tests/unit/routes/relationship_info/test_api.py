@@ -48,7 +48,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             payload["related_entity_id"] = entity_ids[i * 2 + 1]
             payload["relation_table_id"] = "6337f9651050ee7d5980660d"
             payload["updated_by"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     def setup_creation_route(self, api_client):

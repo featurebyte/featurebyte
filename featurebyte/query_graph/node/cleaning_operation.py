@@ -487,7 +487,7 @@ class ValueBeyondEndpointImputation(BaseImputationCleaningOperation):
     Create an imputation rule to ignore value higher than 1M.
 
     >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=1e6, imputed_value=None)
-    ValueBeyondEndpointImputation(type=less_than, imputed_value=None, end_point=1000000.0)
+    ValueBeyondEndpointImputation(type='less_than', imputed_value=None, end_point=1000000.0)
     """
 
     # class variables

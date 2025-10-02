@@ -19,6 +19,7 @@ from featurebyte.models.offline_store_feature_table import (
 )
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
+from featurebyte.schema.worker.task.deployment_create_update import CreateDeploymentPayload
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature_ids,
@@ -86,10 +87,11 @@ async def deployed_feature_list_fixture(
         ),
     ):
         await app_container.deploy_service.create_deployment(
-            feature_list_id=production_ready_feature_list.id,
             deployment_id=deployment_id,
-            deployment_name=None,
-            to_enable_deployment=True,
+            payload=CreateDeploymentPayload(
+                feature_list_id=production_ready_feature_list.id,
+                enabled=True,
+            ),
         )
 
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)

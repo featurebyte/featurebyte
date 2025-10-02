@@ -2108,3 +2108,78 @@ def test_feature_generated_from_empty_event_join_column_names(
         """
     ).strip()
     assert expected_item_view in feat.definition
+
+
+def test_feature_count_dict_get_value_dtype(
+    snowflake_item_table,
+    saved_event_table,
+    snowflake_dimension_table,
+    cust_id_entity,
+    transaction_entity,
+    feature_group_feature_job_setting,
+):
+    """Test feature created from count_dict operations with get_value has FLOAT dtype"""
+    # create entities
+    item_entity = Entity(name="item", serving_names=["item_id_col"])
+    item_entity.save()
+
+    # product entity for dimension table (like GROCERYPRODUCTGUID)
+    product_entity = Entity(name="product", serving_names=["item_type"])
+    product_entity.save()
+
+    # invoice entity (like GROCERYINVOICEGUID)
+    invoice_entity = Entity(name="invoice", serving_names=["invoice_id"])
+    invoice_entity.save()
+
+    # label entity columns
+    snowflake_item_table.item_id_col.as_entity(item_entity.name)
+    snowflake_item_table.event_id_col.as_entity(invoice_entity.name)
+    snowflake_item_table.item_type.as_entity(product_entity.name)
+    snowflake_dimension_table.col_text.as_entity(product_entity.name)
+    saved_event_table.col_int.as_entity(invoice_entity.name)
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # get views
+    item_view = snowflake_item_table.get_view()
+    event_view = saved_event_table.get_view()
+    dim_view = snowflake_dimension_table.get_view()
+
+    # join item_view with dim_view on product type (like INVOICEITEMS join GROCERYPRODUCT)
+    item_view = item_view.join(dim_view, on="item_type", rsuffix="_product")
+
+    # create a groupby with category parameter (similar to ProductGroup in debug_dtype.py)
+    # group by event_id_col (invoice), category is col_boolean from product dimension (with rsuffix)
+    item_view_by_invoice = item_view.groupby("event_id_col", category="col_boolean_product")
+
+    # Aggregate with sum to create a count_dict feature
+    invoice_items_sum_by_category = item_view_by_invoice.aggregate(
+        "item_amount",
+        method="sum",
+        feature_name="invoice_items_sum_by_product_category",
+    )
+
+    # add feature to event view (like adding to GROCERYINVOICE)
+    event_view = event_view.add_feature(
+        "invoice_items_sum_by_product_category",
+        invoice_items_sum_by_category,
+    )
+
+    # create aggregate_over with latest method
+    event_view_by_customer = event_view.groupby(["cust_id"])
+    customer_latest_invoice_items_sum_by_category = event_view_by_customer.aggregate_over(
+        "invoice_items_sum_by_product_category",
+        method="latest",
+        feature_names=["customer_latest_invoice_items_sum_by_category_13w"],
+        windows=["13w"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["customer_latest_invoice_items_sum_by_category_13w"]
+
+    # get value from count_dict using cd accessor
+    feature_with_get_value = customer_latest_invoice_items_sum_by_category.cd.get_value("test_key")
+
+    # set name and save
+    feature_with_get_value.name = "customer_latest_invoice_items_sum_by_category_test_key"
+    feature_with_get_value.save()
+
+    # assert the dtype is FLOAT
+    assert feature_with_get_value.dtype == DBVarType.FLOAT

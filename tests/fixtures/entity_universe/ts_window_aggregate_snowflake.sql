@@ -21,8 +21,8 @@ FROM (
       AND "date" <= TO_CHAR(DATEADD(MONTH, 1, __fb_current_feature_timestamp), 'YYYY-MM-DD HH24:MI:SS')
     )
     AND (
-      TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') >= DATEADD(MONTH, -3, DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp")))
-      AND TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') < DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp"))
+      TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') >= DATEADD(MONTH, -3, DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp")))
+      AND TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') < DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp"))
     )
 )
 WHERE

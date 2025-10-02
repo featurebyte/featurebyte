@@ -523,7 +523,17 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
         parent_column = agg_column.column
         if parent_column is None:
             parent_column = inputs[0].columns[0]
-        return agg_func.derive_output_dtype_info(parent_column.dtype_info, category=None)
+            dtype_info = parent_column.dtype_info
+        else:
+            dtype_info = parent_column.dtype_info
+
+        # FIXME: this is a temporary fix for issue where parent_column has OBJECT dtype
+        # This happens when the aggregation is performed on a dictionary column & the output is still a dictionary
+        # A proper fix would be to propagate the actual dtype of the dictionary feature
+        if parent_column.dtype == DBVarType.OBJECT:
+            dtype_info = DBVarTypeInfo(dtype=DBVarType.FLOAT)
+
+        return agg_func.derive_output_dtype_info(dtype_info, category=None)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         param = other_operands[0] if other_operands else self.get_key_value()

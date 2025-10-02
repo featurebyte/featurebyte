@@ -2,10 +2,18 @@
 Integration tests for SnapshotsView
 """
 
+import numpy as np
 import pandas as pd
+import pytest
 from bson import ObjectId
 
-from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
+from featurebyte import (
+    CalendarWindow,
+    CronFeatureJobSetting,
+    FeatureList,
+    TimeInterval,
+    TimestampSchema,
+)
 from tests.util.deployment import deploy_and_get_online_features
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
@@ -75,6 +83,90 @@ def make_unique(name):
     Make name unique by appending ObjectId
     """
     return f"{name}_{str(ObjectId())}"
+
+
+@pytest.mark.asyncio
+async def test_snapshots_view_join_snapshots_view_small(
+    session,
+    data_source,
+    source_type,
+    timestamp_format_string,
+    timestamp_format_string_with_time,
+):
+    """
+    Self-contained test that joins two small SnapshotsViews
+    """
+    df_left = pd.DataFrame({
+        "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
+        "snapshot_id": ["A", "A", "B"],
+        "left_value": [10.0, 20.0, 30.0],
+    })
+    df_right = pd.DataFrame({
+        "snapshot_ts": ["2022|04|10|00:00:00", "2022|04|12|00:00:00"],
+        "snapshot_id": ["A", "B"],
+        "right_value": [1.0, 2.0],
+    })
+
+    table_prefix = make_unique(f"{source_type}_SNAPSHOTS_JOIN_SMALL").upper()
+    left_table_name = f"{table_prefix}_LEFT"
+    right_table_name = f"{table_prefix}_RIGHT"
+
+    await session.register_table(left_table_name, df_left)
+    await session.register_table(right_table_name, df_right)
+
+    left_timestamp_schema = TimestampSchema(format_string=timestamp_format_string)
+    right_timestamp_schema = TimestampSchema(format_string=timestamp_format_string_with_time)
+    time_interval = TimeInterval(unit="DAY", value=1)
+
+    left_source_table = data_source.get_source_table(
+        table_name=left_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    left_snapshots_table = left_source_table.create_snapshots_table(
+        name=f"{table_prefix}_LEFT_TABLE",
+        snapshot_datetime_column="snapshot_ts",
+        snapshot_datetime_schema=left_timestamp_schema,
+        time_interval=time_interval,
+        snapshot_id_column="snapshot_id",
+    )
+
+    right_source_table = data_source.get_source_table(
+        table_name=right_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    right_snapshots_table = right_source_table.create_snapshots_table(
+        name=f"{table_prefix}_RIGHT_TABLE",
+        snapshot_datetime_column="snapshot_ts",
+        snapshot_datetime_schema=right_timestamp_schema,
+        time_interval=time_interval,
+        snapshot_id_column="snapshot_id",
+    )
+
+    left_view = left_snapshots_table.get_view()
+    right_view = right_snapshots_table.get_view()
+    joined_view = left_view.join(right_view, rsuffix="_right")
+
+    df_preview = joined_view.preview(limit=100)
+    df_preview = df_preview.sort_values(by=["snapshot_ts", "snapshot_id"]).reset_index(drop=True)
+
+    expected = pd.DataFrame({
+        "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
+        "snapshot_id": ["A", "A", "B"],
+        "left_value": [10.0, 20.0, 30.0],
+        "snapshot_ts_right": ["2022|04|10|00:00:00", None, "2022|04|12|00:00:00"],
+        "right_value_right": [1.0, None, 2.0],
+    })
+    assert set(df_preview.columns) == set(expected.columns)
+    expected = expected[df_preview.columns]
+
+    df_preview["snapshot_ts_right"] = df_preview["snapshot_ts_right"].replace({np.nan: None})
+    fb_assert_frame_equal(
+        df_preview,
+        expected,
+        sort_by_columns=["snapshot_ts", "snapshot_id"],
+    )
 
 
 def test_aggregate_over(client, snapshots_table):

@@ -332,7 +332,7 @@ async def test_get_credential_user_access(credential, persistent):
     with pytest.raises(RecordRetrievalException) as exc:
         Credential.get_by_id(credential.id)
     assert (
-        f'Credential (id: "{credential.id}") not found. ' "Please save the Credential object first."
+        f'Credential (id: "{credential.id}") not found. Please save the Credential object first.'
     ) in str(exc.value)
 
     credentials = Credential.list()

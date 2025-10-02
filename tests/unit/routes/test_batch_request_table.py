@@ -60,7 +60,7 @@ class TestBatchRequestTableApi(BaseMaterializedTableTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             yield payload
 
     def test_info_200(self, test_api_client_persistent, create_success_response):

@@ -50,7 +50,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
     create_unprocessable_payload_expected_detail_pairs = [
         (
             {**payload, "_id": object_id, "name": "random_name", "feature_ids": [object_id]},
-            f'Feature (id: "{object_id}") not found. ' "Please save the Feature object first.",
+            f'Feature (id: "{object_id}") not found. Please save the Feature object first.',
         ),
         (
             payload_multi,
@@ -163,7 +163,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
 
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["name"] = f"{self.payload['name']}_{i}"
             payload["feature_ids"] = [new_version_id]
             yield payload
 
@@ -278,14 +278,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         # create another feature_store, event_table & feature with different feature_store
         feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         feature_store["_id"] = str(ObjectId())
-        feature_store["name"] = f'new_{feature_store["name"]}'
+        feature_store["name"] = f"new_{feature_store['name']}"
         feature_store["details"] = {
             key: f"{value}_1" for key, value in feature_store["details"].items()
         }
 
         event_table = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         event_table["_id"] = str(ObjectId())
-        event_table["name"] = f'new_{event_table["name"]}'
+        event_table["name"] = f"new_{event_table['name']}"
         tabular_source = {
             "feature_store_id": feature_store["_id"],
             "table_details": event_table["tabular_source"]["table_details"],
@@ -1325,10 +1325,26 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
             mock_session.execute_query.call_args_list[0][0][0]
             == textwrap.dedent(
                 """
-            SELECT
-              *
-            FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
-            LIMIT 50
+                SELECT
+                  "POINT_IN_TIME",
+                  "cust_id"
+                FROM (
+                  SELECT
+                    CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+                    "POINT_IN_TIME",
+                    "cust_id"
+                  FROM (
+                    SELECT
+                      "POINT_IN_TIME",
+                      "cust_id"
+                    FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
+                  )
+                )
+                WHERE
+                  "prob" <= 0.75
+                ORDER BY
+                  "prob"
+                LIMIT 50
             """
             ).strip()
         )

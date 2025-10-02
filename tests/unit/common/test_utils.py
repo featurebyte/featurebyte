@@ -102,7 +102,7 @@ def test_get_version():
     Test get_version
     """
     data = toml.load("pyproject.toml")
-    assert get_version() == data["tool"]["poetry"]["version"]
+    assert get_version() == data["project"]["version"]
 
 
 def create_batch_feature_items_and_graph(features):

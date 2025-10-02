@@ -67,7 +67,9 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
             return f"Compute and append batch features to table {payload.output_table_info.name}"
         return f'Save batch feature table "{payload.name}"'
 
-    async def execute(self, payload: BatchFeatureTableTaskPayload) -> Any:
+    async def create_batch_feature_table(
+        self, payload: BatchFeatureTableTaskPayload, create_document: bool = True
+    ) -> BatchFeatureTableModel:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -174,9 +176,11 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                         "Creating a new BatchFeatureTable",
                         extra=location.table_details.model_dump(),
                     )
-                    await self.batch_feature_table_service.create_document(
-                        batch_feature_table_model
-                    )
+                    if create_document:
+                        await self.batch_feature_table_service.create_document(
+                            batch_feature_table_model
+                        )
+                return batch_feature_table_model
         finally:
             if payload.batch_request_table_id is None:
                 # clean up temporary batch request table
@@ -185,3 +189,14 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     schema_name=batch_request_table_model.location.table_details.schema_name,  # type: ignore
                     database_name=batch_request_table_model.location.table_details.database_name,  # type: ignore
                 )
+
+    async def execute(self, payload: BatchFeatureTableTaskPayload) -> Any:
+        """
+        Execute the batch feature table creation task
+
+        Parameters
+        ----------
+        payload: BatchFeatureTableTaskPayload
+            Task payload
+        """
+        await self.create_batch_feature_table(payload)

@@ -1337,7 +1337,7 @@ async def test_feature_table_without_entity(
         "description": None,
         "entity_universe": {
             "query_template": {
-                "formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"',
+                "formatted_expression": 'SELECT\n  1 AS "dummy_entity"',
                 "source_type": "snowflake",
             }
         },

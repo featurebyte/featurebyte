@@ -312,12 +312,12 @@ def test_item_view_with_conflict_event_timestamp_column(item_table_with_conflict
 
     # Check that timestamps from event table follow the pattern: YYYY|MM|DD|HH:MM:SS
     event_pattern = re.compile(r"^\d{4}\|\d{2}\|\d{2}\|\d{2}:\d{2}:\d{2}$")
-    assert all(
-        event_pattern.match(str(ts)) for ts in event_ts_from_event
-    ), "Event timestamps should follow YYYY|MM|DD|HH:MM:SS pattern"
+    assert all(event_pattern.match(str(ts)) for ts in event_ts_from_event), (
+        "Event timestamps should follow YYYY|MM|DD|HH:MM:SS pattern"
+    )
 
     # Check that timestamps from item table follow standard datetime pattern (2020-2023 range)
     item_pattern = re.compile(r"^202[0-3]-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$")
-    assert all(
-        item_pattern.match(str(ts)) for ts in event_ts_from_item
-    ), "Item timestamps should follow YYYY-MM-DD HH:MM:SS.mmmmmm pattern in 2020-2023 range"
+    assert all(item_pattern.match(str(ts)) for ts in event_ts_from_item), (
+        "Item timestamps should follow YYYY-MM-DD HH:MM:SS.mmmmmm pattern in 2020-2023 range"
+    )

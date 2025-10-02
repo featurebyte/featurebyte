@@ -89,20 +89,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -150,20 +141,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -222,17 +204,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -300,20 +276,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -404,20 +371,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -472,20 +430,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -540,20 +489,11 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -564,7 +504,9 @@ jobs:
           name: hive-udf
           path: featurebyte/sql/spark/
       - name: Test documentation
-        run: task test-docs
+        run: |
+          task test-docs-setup
+          uv run pytest --timeout=240 featurebyte
   validate:
     needs:
       - test-unit
@@ -587,22 +529,14 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
+          enable-cache: true
+      - name: Install packages needed for build
         run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-      - name: Install dependencies
-        run: poetry install -n --sync
+          task install
       - name: Download integration test results (databricks-unity)
         uses: actions/download-artifact@v4
         with:

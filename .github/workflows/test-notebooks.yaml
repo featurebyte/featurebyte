@@ -13,6 +13,8 @@ name: test-notebooks
   push:
     branches:
       - main
+permissions:
+  contents: read
 concurrency:
   group: "${{ github.workflow }}-${{ github.head_ref }}"
   cancel-in-progress: true
@@ -30,27 +32,15 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -64,7 +54,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(uv version --short)"
       - name: Run notebook tests
         run: task test-deep-dive-notebooks
     timeout-minutes: 30
@@ -77,27 +67,15 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -111,7 +89,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(uv version --short)"
       - name: Run notebook tests
         run: task test-quick-start-notebooks
     timeout-minutes: 45
@@ -124,27 +102,15 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-          path: .venv
-          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      - name: Install Poetry + Configure
-        run: |-
-          pip install poetry==2.1.2
-          poetry config virtualenvs.in-project true
-          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+          enable-cache: true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
@@ -158,7 +124,7 @@ jobs:
       - name: Build docker image
         run: task docker-build
       - name: Retag docker image
-        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
+        run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(uv version --short)"
       - name: Run notebook tests
         run: task test-playground-notebooks
     timeout-minutes: 45

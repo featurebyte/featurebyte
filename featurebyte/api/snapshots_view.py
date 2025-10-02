@@ -228,6 +228,9 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         elif isinstance(left_view, TimeSeriesView):
             transform.original_timestamp_schema = left_view.reference_datetime_schema
             column_name = left_view.reference_datetime_column
+        elif isinstance(left_view, SnapshotsView):
+            transform.original_timestamp_schema = left_view.snapshot_datetime_schema
+            column_name = left_view.snapshot_datetime_column
         else:
             raise NotImplementedError(
                 f"Joining a SnapshotsView to {type(left_view).__name__} is not supported"
