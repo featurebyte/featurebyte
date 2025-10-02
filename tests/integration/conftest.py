@@ -742,6 +742,26 @@ def items_dataframe_fixture(transaction_data_upper_case):
     return df_items
 
 
+@pytest.fixture(name="items_dataframe_with_conflict_event_ts", scope="session")
+def items_dataframe_with_conflict_event_ts_fixture(items_dataframe):
+    """
+    DataFrame fixture with item based table corresponding to the transaction table, with event
+    timestamp that conflicts with the transaction table event timestamp
+    """
+    event_timestamp_column = "ËVENT_TIMESTAMP"
+    data = items_dataframe.copy()
+
+    # Add random event timestamps
+    rng = np.random.RandomState(42)
+    start_date = pd.Timestamp("2020-01-01")
+    end_date = pd.Timestamp("2023-12-31")
+    random_timestamps = pd.to_datetime(
+        rng.randint(start_date.value, end_date.value, size=len(data))
+    )
+    data[event_timestamp_column] = random_timestamps
+    return data
+
+
 @pytest.fixture(name="item_ids", scope="session")
 def item_ids_fixture(items_dataframe):
     """
@@ -1011,6 +1031,7 @@ async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
     transaction_data_with_timestamp_schema,
     items_dataframe,
+    items_dataframe_with_conflict_event_ts,
     dimension_dataframe,
     dimension_data_table_name,
     scd_dataframe,
@@ -1080,6 +1101,9 @@ async def datasets_registration_helper_fixture(
 
     # Item table
     helper.add_table("ITEM_DATA_TABLE", items_dataframe)
+    helper.add_table(
+        "ITEM_DATA_TABLE_WITH_CONFLICT_EVENT_TIMESTAMP", items_dataframe_with_conflict_event_ts
+    )
 
     # Dimension table
     helper.add_table(dimension_data_table_name, dimension_dataframe)
@@ -1622,6 +1646,46 @@ def event_table_with_timestamp_schema_fixture(
     event_table["PRODUCT_ACTION"].as_entity(product_action_entity.name)
     event_table["CUST_ID"].as_entity(customer_entity.name)
     return event_table
+
+
+@pytest.fixture(name="item_table_with_conflict_event_ts_col_name", scope="session")
+def item_table_with_conflict_event_table_ts_col_name_fixture(source_type):
+    """
+    Fixture for the ItemTable name
+    """
+    return f"{source_type}_item_table_with_conflict_event_ts"
+
+
+@pytest.fixture(name="item_table_with_conflict_event_ts", scope="session")
+def item_table_with_conflict_event_ts_fixture(
+    session,
+    data_source,
+    event_table_with_timestamp_schema,
+    item_table_with_conflict_event_ts_col_name,
+    order_entity,
+    item_entity,
+    item_type_entity,
+    catalog,
+):
+    """
+    Fixture for an ItemTable in integration tests
+    """
+    _ = catalog
+    _ = order_entity
+    _ = item_entity
+    _ = item_type_entity
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="ITEM_DATA_TABLE_WITH_CONFLICT_EVENT_TIMESTAMP",
+    )
+    item_table = database_table.create_item_table(
+        name=item_table_with_conflict_event_ts_col_name,
+        event_id_column="order_id",
+        item_id_column="item_id",
+        event_table_name=event_table_with_timestamp_schema.name,
+    )
+    return item_table
 
 
 @pytest.fixture(name="item_table_name", scope="session")

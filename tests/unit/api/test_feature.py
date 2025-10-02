@@ -2076,12 +2076,14 @@ def test_update_feature_type(
     assert feature.feature_type == "numeric"
 
 
-def test_feature_generated_from_item_view(snowflake_item_table, saved_event_table, cust_id_entity):
+def test_feature_generated_from_empty_event_join_column_names(
+    snowflake_item_table, saved_event_table, cust_id_entity
+):
     """Test feature generated from item view with empty event_join_column_names"""
     # construct an item view with empty event_join_column_names
     saved_event_table.cust_id.as_entity(None)
     snowflake_item_table.event_id_col.as_entity(cust_id_entity.name)
-    item_view = snowflake_item_table.get_view()
+    item_view = snowflake_item_table.get_view(view_mode="manual", event_join_column_names=[])
     assert item_view.node.parameters.metadata.event_join_column_names == []
 
     # create feature from item view & save it should not raise error
@@ -2091,6 +2093,21 @@ def test_feature_generated_from_item_view(snowflake_item_table, saved_event_tabl
         feature_name="order_size",
     )
     feat.save()
+
+    expected_item_view = textwrap.dedent(
+        """
+        item_view = item_table.get_view(
+            event_suffix=None,
+            view_mode="manual",
+            drop_column_names=[],
+            column_cleaning_operations=[],
+            event_drop_column_names=[],
+            event_column_cleaning_operations=[],
+            event_join_column_names=[],
+        )
+        """
+    ).strip()
+    assert expected_item_view in feat.definition
 
 
 def test_feature_count_dict_get_value_dtype(

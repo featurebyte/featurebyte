@@ -305,6 +305,7 @@ class ItemTable(TableApiObject):
                 event_join_column_names=event_join_column_names,
                 event_table_id=event_table.id,
             ),
+            event_timestamp_column=event_view.timestamp_column,
             to_auto_resolve_column_conflict=to_auto_resolve_column_conflict,
         )
         timestamp_column = apply_column_name_modifiers(
