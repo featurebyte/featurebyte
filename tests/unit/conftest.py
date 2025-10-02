@@ -2137,12 +2137,13 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "data_type": json.dumps({"type": "TIMESTAMP_NTZ", "scale": 0}),
                     "comment": None,
                 },
-                {
+            ]
+            if query.endswith('"sf_table_with_target"'):
+                res.append({
                     "column_name": "target",
                     "data_type": json.dumps({"type": "float", "scale": 0}),
                     "comment": None,
-                },
-            ]
+                })
         elif "is_row_index_valid" in query:
             return pd.DataFrame({"is_row_index_valid": [True]})
         elif "COUNT(*)" in query:

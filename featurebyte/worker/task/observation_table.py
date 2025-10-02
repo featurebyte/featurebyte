@@ -8,10 +8,12 @@ import copy
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
+from bson import ObjectId
 from dateutil import tz
 
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.observation_table import (
     ObservationInput,
     ObservationTableModel,
@@ -19,6 +21,7 @@ from featurebyte.models.observation_table import (
     SourceTableObservationInput,
     TargetInput,
 )
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
@@ -123,6 +126,128 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             table_with_missing_data = missing_data_table_details
         return table_with_missing_data
 
+    async def materialize_request_input_with_target(
+        self,
+        feature_store: FeatureStoreModel,
+        db_session: BaseSession,
+        payload: ObservationTableTaskPayload,
+        request_input: ObservationInput,
+        location: TabularSource,
+        target_id: ObjectId,
+        context_id: Optional[ObjectId],
+        use_case_ids: list[ObjectId],
+        sample_rows: Optional[int],
+        sample_from_timestamp: Optional[datetime],
+        sample_to_timestamp: Optional[datetime],
+        columns_to_exclude_missing_values: list[str],
+        missing_data_table_details: Optional[TableDetails],
+    ) -> tuple[ObjectId, bool]:
+        """
+        Materialize the requested input with target column computed
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature store model object
+        db_session: BaseSession
+            Database session
+        payload: ObservationTableTaskPayload
+            Observation table task payload
+        request_input: ObservationInput
+            Observation table task payload
+        location: TabularSource
+            Location to create observation table
+        target_id: ObjectId
+            Id of target to compute for the observation table
+        context_id: ObjectId
+            Id of context to tag the observation table
+        use_case_ids: list[ObjectId]
+            Id of use cases to tag the observation table
+        sample_rows: Optional[int]
+            The number of rows to sample. If None, no sampling is performed
+        sample_from_timestamp: Optional[datetime]
+            The timestamp to sample from
+        sample_to_timestamp: Optional[datetime]
+            The timestamp to sample to
+        columns_to_exclude_missing_values: Optional[List[str]
+            The columns to exclude missing values from
+        missing_data_table_details: Optional[TableDetails]
+            Missing data table details
+
+        Returns
+        -------
+        tuple[ObjectId, bool]
+            Target namespace id and whether the observation table is created as a view instead of a table
+        """
+
+        target = await self.target_service.get_document(document_id=target_id)
+        target_namespace_id = target.target_namespace_id
+        graph = target.graph
+        node_names = [target.node_name]
+
+        # ObservationTableObservationInput does not support materialize
+        assert not isinstance(request_input, ObservationTableObservationInput)
+
+        temp_location = copy.deepcopy(location)
+        temp_location.table_details.table_name = f"__TEMP_{location.table_details.table_name}"
+        async with self.drop_table_on_error(
+            db_session=db_session,
+            list_of_table_details=[temp_location.table_details],
+            payload=payload,
+        ):
+            # compute observation table without target column first
+            await request_input.materialize(
+                session=db_session,
+                destination=temp_location.table_details,
+                sample_rows=sample_rows,
+                sample_from_timestamp=sample_from_timestamp,
+                sample_to_timestamp=sample_to_timestamp,
+                columns_to_exclude_missing_values=columns_to_exclude_missing_values,
+            )
+            try:
+                additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session,
+                    temp_location.table_details,
+                    feature_store=feature_store,
+                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    primary_entity_ids=payload.primary_entity_ids,
+                    target_namespace_id=target_namespace_id,
+                )
+
+                # compute observation table with target column
+                observation_set = ObservationTableModel(
+                    user_id=payload.user_id,
+                    name=payload.name,
+                    location=temp_location,
+                    context_id=context_id,
+                    use_case_ids=use_case_ids,
+                    request_input=payload.request_input,
+                    purpose=payload.purpose,
+                    primary_entity_ids=payload.primary_entity_ids or [],
+                    **additional_metadata,
+                )
+
+                result = await self.target_computer.compute(
+                    observation_set=observation_set,
+                    compute_request=ComputeTargetRequest(
+                        feature_store_id=payload.feature_store_id,
+                        graph=graph,
+                        node_names=node_names,
+                        target_id=target_id,
+                    ),
+                    output_table_details=location.table_details,
+                )
+                return target_namespace_id, result.is_output_view
+            finally:
+                # drop temporary table
+                await db_session.drop_table(
+                    table_name=temp_location.table_details.table_name,
+                    schema_name=temp_location.table_details.schema_name or db_session.schema_name,
+                    database_name=temp_location.table_details.database_name
+                    or db_session.database_name,
+                    if_exists=True,
+                )
+
     async def create_observation_table(
         self,
         payload: ObservationTableTaskPayload,
@@ -201,81 +326,30 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
 
         # if use case is specified and observation table does not contain target,
         # try to compute the target column
-        to_compute_target_id = None
+        target_id_to_compute = None
         target_namespace_id = payload.target_namespace_id
         if target_namespace_id is None and use_case_ids:
             # check if use case has target definition
             use_case = await self.use_case_service.get_document(document_id=use_case_ids[0])
             if use_case.target_id is not None:
-                to_compute_target_id = use_case.target_id
+                target_id_to_compute = use_case.target_id
 
-        if to_compute_target_id is not None:
-            target = await self.target_service.get_document(document_id=to_compute_target_id)
-            target_namespace_id = target.target_namespace_id
-            graph = target.graph
-            node_names = [target.node_name]
-
-            temp_location = copy.deepcopy(location)
-            temp_location.table_details.table_name = f"temp_{location.table_details.table_name}"
-            async with self.drop_table_on_error(
+        if target_id_to_compute is not None:
+            target_namespace_id, is_view = await self.materialize_request_input_with_target(
+                feature_store=feature_store,
                 db_session=db_session,
-                list_of_table_details=[temp_location.table_details],
                 payload=payload,
-            ):
-                # compute observation table without target column first
-                await request_input.materialize(
-                    session=db_session,
-                    destination=temp_location.table_details,
-                    sample_rows=payload.sample_rows,
-                    sample_from_timestamp=payload.sample_from_timestamp,
-                    sample_to_timestamp=sample_to_timestamp,
-                    columns_to_exclude_missing_values=columns_to_exclude_missing_values,
-                    missing_data_table_details=missing_data_table_details,
-                )
-                try:
-                    additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
-                        db_session,
-                        temp_location.table_details,
-                        feature_store=feature_store,
-                        skip_entity_validation_checks=payload.skip_entity_validation_checks,
-                        primary_entity_ids=payload.primary_entity_ids,
-                        target_namespace_id=target_namespace_id,
-                    )
-
-                    # compute observation table with target column
-                    observation_set = ObservationTableModel(
-                        user_id=payload.user_id,
-                        name=payload.name,
-                        location=temp_location,
-                        context_id=context_id,
-                        use_case_ids=use_case_ids,
-                        request_input=payload.request_input,
-                        purpose=payload.purpose,
-                        primary_entity_ids=payload.primary_entity_ids or [],
-                        **additional_metadata,
-                    )
-
-                    result = await self.target_computer.compute(
-                        observation_set=observation_set,
-                        compute_request=ComputeTargetRequest(
-                            feature_store_id=payload.feature_store_id,
-                            graph=graph,
-                            node_names=node_names,
-                            target_id=to_compute_target_id,
-                        ),
-                        output_table_details=location.table_details,
-                    )
-                    is_view = result.is_output_view
-                finally:
-                    # drop temporary table
-                    await db_session.drop_table(
-                        table_name=temp_location.table_details.table_name,
-                        schema_name=temp_location.table_details.schema_name
-                        or db_session.schema_name,
-                        database_name=temp_location.table_details.database_name
-                        or db_session.database_name,
-                        if_exists=True,
-                    )
+                request_input=request_input,
+                location=location,
+                target_id=target_id_to_compute,
+                context_id=context_id,
+                use_case_ids=use_case_ids,
+                sample_rows=payload.sample_rows,
+                sample_from_timestamp=payload.sample_from_timestamp,
+                sample_to_timestamp=sample_to_timestamp,
+                columns_to_exclude_missing_values=columns_to_exclude_missing_values,
+                missing_data_table_details=missing_data_table_details,
+            )
         else:
             await request_input.materialize(
                 session=db_session,
