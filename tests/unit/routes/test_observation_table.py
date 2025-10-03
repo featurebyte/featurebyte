@@ -13,9 +13,9 @@ import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 class TestObservationTableApi(BaseMaterializedTableTestSuite):
@@ -941,12 +941,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    @patch("featurebyte.session.base.BaseSession.create_table_as")
     async def test_create_with_use_case_201(
         self,
-        mock_create_table_as,
+        mocked_get_session,
         snowflake_execute_query_for_materialized_table,
         test_api_client_persistent,
+        update_fixtures,
     ):
         """Test create eda obs table with use case specified"""
         test_api_client, _ = test_api_client_persistent
@@ -990,118 +990,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["default_eda_table_id"] == observation_table_id
         assert response_dict["default_preview_table_id"] is None
 
-        # check that temp obs table is created
-        temp_obs_table_creation_call = mock_create_table_as.call_args_list[0]
-        assert temp_obs_table_creation_call.kwargs["table_details"] == TableDetails(
-            database_name="sf_database",
-            schema_name="sf_schema",
-            table_name="__TEMP_OBSERVATION_TABLE_000000000000000000000000",
-        )
-        assert (
-            temp_obs_table_creation_call.kwargs["select_expr"].sql(pretty=True)
-            == textwrap.dedent("""
-            SELECT
-              "cust_id",
-              "POINT_IN_TIME"
-            FROM (
-              SELECT
-                "cust_id" AS "cust_id",
-                "POINT_IN_TIME" AS "POINT_IN_TIME"
-              FROM (
-                SELECT
-                  *
-                FROM "sf_database"."sf_schema"."sf_table"
-              )
-            )
-            WHERE
-                "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
-                  "POINT_IN_TIME" IS NOT NULL AND
-                  "cust_id" IS NOT NULL
-        """).strip()
-        )
-
-        # check that target computation is executed
-        request_table_name = (
-            mock_create_table_as.call_args_list[1].kwargs["table_details"].table_name
-        )
-        assert (
-            snowflake_execute_query_for_materialized_table.call_args_list[-5].kwargs["query"]
-            == textwrap.dedent(
-                f"""
-        CREATE TABLE "__TEMP_000000000000000000000000_0" AS
-        WITH "REQUEST_TABLE_POINT_IN_TIME_cust_id" AS (
-          SELECT DISTINCT
-            "POINT_IN_TIME",
-            "cust_id"
-          FROM {request_table_name}
-        ), _FB_AGGREGATED AS (
-          SELECT
-            REQ."__FB_TABLE_ROW_INDEX",
-            REQ."POINT_IN_TIME",
-            REQ."cust_id",
-            "T0"."_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1" AS "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1"
-          FROM {request_table_name} AS REQ
-          LEFT JOIN (
-            SELECT
-              REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-              REQ."cust_id" AS "cust_id",
-              SUM(SOURCE_TABLE."col_float") AS "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1"
-            FROM "REQUEST_TABLE_POINT_IN_TIME_cust_id" AS REQ
-            INNER JOIN (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "col_char" AS "col_char",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "event_timestamp" AS "event_timestamp",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."sf_table"
-            ) AS SOURCE_TABLE
-              ON (
-                DATE_PART(EPOCH_SECOND, SOURCE_TABLE."event_timestamp") > DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME")
-                AND DATE_PART(EPOCH_SECOND, SOURCE_TABLE."event_timestamp") <= DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 86400
-              )
-              AND REQ."cust_id" = SOURCE_TABLE."cust_id"
-            GROUP BY
-              REQ."POINT_IN_TIME",
-              REQ."cust_id"
-          ) AS T0
-            ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."cust_id" = T0."cust_id"
-        )
-        SELECT
-          AGG."__FB_TABLE_ROW_INDEX",
-          AGG."POINT_IN_TIME",
-          AGG."cust_id",
-          CAST(CASE
-            WHEN (
-              "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1" IS NULL
-            )
-            THEN 0.0
-            ELSE "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1"
-          END AS DOUBLE) AS "float_target"
-        FROM _FB_AGGREGATED AS AGG
-        """
-            ).strip()
-        )
-
-        # check that final observation table is created
-        assert (
-            snowflake_execute_query_for_materialized_table.call_args_list[-4].kwargs["query"]
-            == textwrap.dedent(
-                f"""
-        CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000" AS
-        SELECT
-          REQ."POINT_IN_TIME",
-          REQ."cust_id",
-          T0."float_target"
-        FROM "{request_table_name}" AS REQ
-        LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
-          ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX"
-        """
-            ).strip()
-        )
+        mocked_get_session.execute_query = snowflake_execute_query_for_materialized_table
+        queries = extract_session_executed_queries(mocked_get_session, func="execute_query")
+        fixture_filename = "tests/fixtures/expected_observation_table_with_use_case.sql"
+        assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
     @pytest.mark.asyncio
     async def test_create_with_use_case_preview_201(self, test_api_client_persistent):
