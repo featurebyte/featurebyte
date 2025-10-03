@@ -99,7 +99,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -151,7 +151,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -218,7 +218,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -286,7 +286,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -440,7 +440,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -499,7 +499,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hive-udf
           path: featurebyte/sql/spark/
@@ -538,12 +538,12 @@ jobs:
         run: |-
           task install
       - name: Download integration test results (databricks-unity)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: python-${{ matrix.python-version }}-pytest.xml.*
           merge-multiple: true
       - name: Download integration coverage results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: python-${{ matrix.python-version }}-.coverage.*
           merge-multiple: true
@@ -593,7 +593,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
       - name: Download test durations
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: python-${{ matrix.python-version }}-.test_durations.*
           merge-multiple: true
