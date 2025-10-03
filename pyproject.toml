@@ -98,6 +98,7 @@ dev = [
   { include-group = "lint" },
   { include-group = "test" },
   { include-group = "docs" },
+  "pre-commit",
 ]
 test = [
   "freezegun",
