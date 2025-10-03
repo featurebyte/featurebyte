@@ -429,7 +429,7 @@ class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
     def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
-            "snapshot_id_column": self.id_column,
+            "series_id_column": self.id_column,
             "snapshot_datetime_column": self.snapshot_datetime_column,
             "snapshot_datetime_schema": derive_sdk_code_from_timestamp_schema(
                 timestamp_schema=self.snapshot_datetime_schema

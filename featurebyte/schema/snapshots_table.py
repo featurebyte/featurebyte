@@ -24,7 +24,7 @@ class SnapshotsTableCreate(TableCreate):
     """
 
     type: Literal[TableDataType.SNAPSHOTS_TABLE] = TableDataType.SNAPSHOTS_TABLE
-    snapshot_id_column: StrictStr
+    series_id_column: StrictStr
     snapshot_datetime_column: StrictStr
     snapshot_datetime_schema: TimestampSchema
     time_interval: TimeInterval
@@ -33,7 +33,7 @@ class SnapshotsTableCreate(TableCreate):
     # pydantic validators
     _special_columns_validator = field_validator(
         "record_creation_timestamp_column",
-        "snapshot_id_column",
+        "series_id_column",
         "snapshot_datetime_column",
         "datetime_partition_column",
         mode="after",

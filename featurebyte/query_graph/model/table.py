@@ -735,15 +735,15 @@ class SnapshotsTableData(BaseTableData):
 
     type: Literal[TableDataType.SNAPSHOTS_TABLE] = TableDataType.SNAPSHOTS_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    snapshot_id_column: StrictStr
+    series_id_column: StrictStr
     snapshot_datetime_column: StrictStr
     snapshot_datetime_schema: TimestampSchema
     time_interval: TimeInterval
 
     @property
     def primary_key_columns(self) -> List[str]:
-        if self.snapshot_id_column:
-            return [self.snapshot_id_column]
+        if self.series_id_column:
+            return [self.series_id_column]
         return []
 
     @field_validator("time_interval")
@@ -759,7 +759,7 @@ class SnapshotsTableData(BaseTableData):
             name="temp",
             parameters={
                 "id": self.id,
-                "id_column": self.snapshot_id_column,
+                "id_column": self.series_id_column,
                 "feature_store_details": {"type": feature_store_details.type},
                 "snapshot_datetime_column": self.snapshot_datetime_column,
                 "snapshot_datetime_schema": self.snapshot_datetime_schema,
