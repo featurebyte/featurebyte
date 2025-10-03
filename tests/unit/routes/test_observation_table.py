@@ -941,8 +941,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
+    @patch("featurebyte.session.base.BaseSession.generate_session_unique_id")
     async def test_create_with_use_case_201(
         self,
+        mock_generate_session_unique_id,
         mocked_get_session,
         snowflake_execute_query_for_materialized_table,
         test_api_client_persistent,
@@ -951,6 +953,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         """Test create eda obs table with use case specified"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
+        mock_generate_session_unique_id.return_value = "68DFBD342ECAABD7D21D4759"
 
         # get use case
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
