@@ -32,7 +32,7 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of time series table columns
-    snapshot_id_column: Optional[str]
+    series_id_column: Optional[str]
         Snapshot ID column name
     snapshot_datetime_column: str
         Snapshot datetime column name
@@ -61,7 +61,7 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
                 ("snapshot_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("snapshot_datetime_schema", {DBVarType.VARCHAR}),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("snapshot_id_column", DBVarType.supported_id_types()),
+                ("series_id_column", DBVarType.supported_id_types()),
             ],
             column_to_timestamp_schema_pairs=[
                 ColumnToTimestampSchema("snapshot_datetime_column", "snapshot_datetime_schema"),
@@ -113,13 +113,13 @@ class SnapshotsTableModel(SnapshotsTableData, TableModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.snapshot_id_column]
+        return [self.series_id_column]
 
     @property
     def special_columns(self) -> List[str]:
         cols = [
             self.snapshot_datetime_column,
-            self.snapshot_id_column,
+            self.series_id_column,
             self.record_creation_timestamp_column,
         ]
         return [col for col in cols if col]

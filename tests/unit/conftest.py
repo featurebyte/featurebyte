@@ -1670,7 +1670,7 @@ def snowflake_snapshots_table_fixture(
     _ = catalog, mock_detect_and_update_column_dtypes
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="sf_snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
@@ -1700,7 +1700,7 @@ def another_snowflake_snapshots_table_fixture(
     _ = catalog, mock_detect_and_update_column_dtypes
     snapshots_table = another_snowflake_database_snapshots_table.create_snapshots_table(
         name="sf_snapshots_table_2",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(timezone="Etc/UTC", format_string="YYYY-MM-DD"),
         time_interval=TimeInterval(value=1, unit="DAY"),

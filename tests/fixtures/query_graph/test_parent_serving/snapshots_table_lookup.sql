@@ -23,7 +23,7 @@ FROM (
           "city" AS "city",
           "district" AS "district",
           "snapshot_date" AS "snapshot_date",
-          "snapshot_id" AS "snapshot_id"
+          "series_id" AS "series_id"
         FROM "sf_database"."sf_schema"."snapshots_table"
       )
     )

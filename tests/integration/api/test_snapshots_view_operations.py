@@ -26,8 +26,8 @@ def test_snapshots_view(snapshots_table):
     Test that SnapshotsView can be created and queried correctly
     """
     view = snapshots_table.get_view()
-    view = view[view["snapshot_id_col"] == "S0"]
-    view = view[["snapshot_datetime_col", "snapshot_id_col", "value_col"]]
+    view = view[view["series_id_col"] == "S0"]
+    view = view[["snapshot_datetime_col", "series_id_col", "value_col"]]
     view["hour"] = view["snapshot_datetime_col"].dt.hour
     df_preview = view.preview(limit=10000)
     df_preview.sort_values("snapshot_datetime_col", inplace=True)
@@ -45,7 +45,7 @@ def test_snapshots_view(snapshots_table):
             "2001|01|09",
             "2001|01|10",
         ],
-        "snapshot_id_col": ["S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0"],
+        "series_id_col": ["S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0"],
         "value_col": [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09],
         "hour": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
@@ -98,12 +98,12 @@ async def test_snapshots_view_join_snapshots_view_small(
     """
     df_left = pd.DataFrame({
         "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
-        "snapshot_id": ["A", "A", "B"],
+        "series_id": ["A", "A", "B"],
         "left_value": [10.0, 20.0, 30.0],
     })
     df_right = pd.DataFrame({
         "snapshot_ts": ["2022|04|10|00:00:00", "2022|04|12|00:00:00"],
-        "snapshot_id": ["A", "B"],
+        "series_id": ["A", "B"],
         "right_value": [1.0, 2.0],
     })
 
@@ -128,7 +128,7 @@ async def test_snapshots_view_join_snapshots_view_small(
         snapshot_datetime_column="snapshot_ts",
         snapshot_datetime_schema=left_timestamp_schema,
         time_interval=time_interval,
-        snapshot_id_column="snapshot_id",
+        series_id_column="series_id",
     )
 
     right_source_table = data_source.get_source_table(
@@ -141,7 +141,7 @@ async def test_snapshots_view_join_snapshots_view_small(
         snapshot_datetime_column="snapshot_ts",
         snapshot_datetime_schema=right_timestamp_schema,
         time_interval=time_interval,
-        snapshot_id_column="snapshot_id",
+        series_id_column="series_id",
     )
 
     left_view = left_snapshots_table.get_view()
@@ -149,11 +149,11 @@ async def test_snapshots_view_join_snapshots_view_small(
     joined_view = left_view.join(right_view, rsuffix="_right")
 
     df_preview = joined_view.preview(limit=100)
-    df_preview = df_preview.sort_values(by=["snapshot_ts", "snapshot_id"]).reset_index(drop=True)
+    df_preview = df_preview.sort_values(by=["snapshot_ts", "series_id"]).reset_index(drop=True)
 
     expected = pd.DataFrame({
         "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
-        "snapshot_id": ["A", "A", "B"],
+        "series_id": ["A", "A", "B"],
         "left_value": [10.0, 20.0, 30.0],
         "snapshot_ts_right": ["2022|04|10|00:00:00", None, "2022|04|12|00:00:00"],
         "right_value_right": [1.0, None, 2.0],
@@ -165,7 +165,7 @@ async def test_snapshots_view_join_snapshots_view_small(
     fb_assert_frame_equal(
         df_preview,
         expected,
-        sort_by_columns=["snapshot_ts", "snapshot_id"],
+        sort_by_columns=["snapshot_ts", "series_id"],
     )
 
 
@@ -175,7 +175,7 @@ def test_aggregate_over(client, snapshots_table):
     """
     view = snapshots_table.get_view()
     feature_name = make_unique("value_col_sum_7d")
-    feature = view.groupby("snapshot_id_col").aggregate_over(
+    feature = view.groupby("series_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
         windows=[CalendarWindow(unit="DAY", size=7)],
