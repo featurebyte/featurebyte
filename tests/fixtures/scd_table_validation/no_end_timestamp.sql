@@ -1,6 +1,6 @@
 SELECT
-  "effective_date",
   "cust_id",
+  "effective_date",
   COUNT(*) AS "COUNT_PER_NATURAL_KEY"
 FROM (
   SELECT
@@ -11,8 +11,8 @@ FROM (
     "cust_id" IS NOT NULL
 )
 GROUP BY
-  "effective_date",
-  "cust_id"
+  "cust_id",
+  "effective_date"
 HAVING
   "COUNT_PER_NATURAL_KEY" > 1
 LIMIT 10;

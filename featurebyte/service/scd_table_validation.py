@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.materialisation import get_source_expr
+from featurebyte.query_graph.sql.validation_helper import get_duplicate_rows_per_keys
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableServiceUpdate
 from featurebyte.service.base_table_validation import BaseTableValidationService
 from featurebyte.session.base import BaseSession
@@ -121,32 +122,16 @@ class SCDTableValidationService(
         natural_key_column: str,
         num_records: int = 10,
     ) -> str:
-        required_columns = [natural_key_column, effective_timestamp_column]
-        scd_expr = cls._exclude_null_values(
-            get_source_expr(source=table_details, column_names=required_columns), natural_key_column
+        source_expr = get_source_expr(
+            source=table_details,
+            column_names=[natural_key_column, effective_timestamp_column],
         )
-        query_expr = (
-            select(
-                quoted_identifier(effective_timestamp_column),
-                quoted_identifier(natural_key_column),
-                expressions.alias_(
-                    expressions.Count(this=expressions.Star()),
-                    alias=COUNT_PER_NATURAL_KEY,
-                    quoted=True,
-                ),
-            )
-            .from_(scd_expr.subquery())
-            .group_by(
-                quoted_identifier(effective_timestamp_column),
-                quoted_identifier(natural_key_column),
-            )
-            .having(
-                expressions.GT(
-                    this=quoted_identifier(COUNT_PER_NATURAL_KEY),
-                    expression=make_literal_value(1),
-                )
-            )
-            .limit(num_records)
+        query_expr = get_duplicate_rows_per_keys(
+            source_expr=source_expr,
+            key_columns=[natural_key_column, effective_timestamp_column],
+            exclude_null_column=natural_key_column,
+            count_output_column_name=COUNT_PER_NATURAL_KEY,
+            num_records_to_retrieve=num_records,
         )
         return sql_to_string(
             query_expr,
