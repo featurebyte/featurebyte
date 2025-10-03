@@ -122,10 +122,14 @@ class SCDTableValidationService(
         natural_key_column: str,
         num_records: int = 10,
     ) -> str:
+        source_expr = get_source_expr(
+            source=table_details,
+            column_names=[natural_key_column, effective_timestamp_column],
+        )
         query_expr = get_duplicate_rows_per_keys(
+            source_expr=source_expr,
             key_columns=[natural_key_column, effective_timestamp_column],
             exclude_null_column=natural_key_column,
-            table_details=table_details,
             count_output_column_name=COUNT_PER_NATURAL_KEY,
             num_records_to_retrieve=num_records,
         )

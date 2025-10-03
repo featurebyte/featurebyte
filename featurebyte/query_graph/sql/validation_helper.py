@@ -1,10 +1,12 @@
+"""
+Helpers for generating SQL queries for table validation.
+"""
+
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.query_graph.sql.materialisation import get_source_expr
 
 
 def _exclude_null_values(source_expr: Select, column: str) -> Select:
@@ -17,15 +19,13 @@ def _exclude_null_values(source_expr: Select, column: str) -> Select:
 
 
 def get_duplicate_rows_per_keys(
+    source_expr: Select,
     key_columns: list[str],
     exclude_null_column: str,
-    table_details: TableDetails,
     count_output_column_name: str,
     num_records_to_retrieve: int,
 ) -> Select:
-    scd_expr = _exclude_null_values(
-        get_source_expr(source=table_details, column_names=key_columns), exclude_null_column
-    )
+    source_expr = _exclude_null_values(source_expr, exclude_null_column)
     query_expr = (
         select(
             *[quoted_identifier(col) for col in key_columns],
@@ -35,7 +35,7 @@ def get_duplicate_rows_per_keys(
                 quoted=True,
             ),
         )
-        .from_(scd_expr.subquery())
+        .from_(source_expr.subquery())
         .group_by(*[quoted_identifier(col) for col in key_columns])
         .having(
             expressions.GT(
