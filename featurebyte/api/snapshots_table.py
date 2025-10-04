@@ -61,7 +61,7 @@ class SnapshotsTable(TableApiObject):
     internal_snapshot_datetime_column: StrictStr = Field(alias="snapshot_datetime_column")
     internal_snapshot_datetime_schema: TimestampSchema = Field(alias="snapshot_datetime_schema")
     internal_time_interval: TimeInterval = Field(alias="time_interval")
-    internal_snapshot_id_column: StrictStr = Field(alias="snapshot_id_column")
+    internal_series_id_column: StrictStr = Field(alias="series_id_column")
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -73,7 +73,7 @@ class SnapshotsTable(TableApiObject):
                     DBVarType.supported_timestamp_types(),
                 ),
                 ("internal_snapshot_datetime_column", DBVarType.supported_ts_datetime_types()),
-                ("internal_snapshot_id_column", DBVarType.supported_id_types()),
+                ("internal_series_id_column", DBVarType.supported_id_types()),
             ],
         )
     )
@@ -176,7 +176,7 @@ class SnapshotsTable(TableApiObject):
             columns_info=columns_info,
             node_name=inserted_graph_node.name,
             default_feature_job_setting=self.default_feature_job_setting,
-            snapshot_id_column=self.snapshot_id_column,
+            series_id_column=self.series_id_column,
         )
 
     @property
@@ -205,7 +205,7 @@ class SnapshotsTable(TableApiObject):
         return self.snapshot_datetime_column
 
     @property
-    def snapshot_id_column(self) -> str:
+    def series_id_column(self) -> str:
         """
         Snapshot ID column name of the SnapshotsTable
 
@@ -214,9 +214,9 @@ class SnapshotsTable(TableApiObject):
         str
         """
         try:
-            return self.cached_model.snapshot_id_column
+            return self.cached_model.series_id_column
         except RecordRetrievalException:
-            return self.internal_snapshot_id_column
+            return self.internal_series_id_column
 
     @property
     def snapshot_datetime_column(self) -> str:

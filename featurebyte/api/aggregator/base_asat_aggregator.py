@@ -55,7 +55,7 @@ class BaseAsAtAggregator(BaseAggregator):
             forbidden_key_name = "Natural key column"
         else:
             assert isinstance(self.view, SnapshotsView)
-            forbidden_key = self.view.snapshot_id_column
+            forbidden_key = self.view.series_id_column
             forbidden_key_name = "Snapshot ID column"
 
         for key in self.keys:

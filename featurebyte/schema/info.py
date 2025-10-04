@@ -252,7 +252,7 @@ class SnapshotsTableInfo(TableInfo):
     SnapshotsTable info schema
     """
 
-    snapshot_id_column: str
+    series_id_column: str
     snapshot_datetime_column: str
     snapshot_datetime_schema: TimestampSchema
     time_interval: TimeInterval

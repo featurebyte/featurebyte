@@ -99,7 +99,7 @@ async def tables_fixture(
         "district": "tokyo_metropolitan",
     })
     df_snapshots = pd.concat([df_paris, df_tokyo], ignore_index=True)
-    df_snapshots["snapshot_id"] = range(1, len(df_snapshots) + 1)
+    df_snapshots["series_id"] = range(1, len(df_snapshots) + 1)
 
     # SCD table (district -> state)
     df_scd_2 = pd.DataFrame({
@@ -163,7 +163,7 @@ async def tables_fixture(
     )
     snapshots_table = snapshots_source_table.create_snapshots_table(
         name=f"{table_prefix}_snapshots_table",
-        snapshot_id_column="city",
+        series_id_column="city",
         snapshot_datetime_column="snapshot_date",
         snapshot_datetime_schema=TimestampSchema(format_string=timestamp_format_string_with_time),
         time_interval=TimeInterval(unit="DAY", value=1),

@@ -902,7 +902,7 @@ def snapshots_dataframe_fixture(time_series_dataframe):
     df = time_series_dataframe.copy()
     df = df.rename(
         columns={
-            "series_id_col": "snapshot_id_col",
+            "series_id_col": "series_id_col",
             "reference_datetime_col": "snapshot_datetime_col",
         }
     )
@@ -2105,7 +2105,7 @@ def snapshots_table_fixture(
         snapshot_datetime_column="snapshot_datetime_col",
         snapshot_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
-        snapshot_id_column="snapshot_id_col",
+        series_id_column="series_id_col",
         datetime_partition_column="snapshot_datetime_col",
         datetime_partition_schema=TimestampSchema(format_string=timestamp_format_string),
     )
@@ -2116,7 +2116,7 @@ def snapshots_table_fixture(
             blind_spot="3d",
         )
     )
-    snapshots_table["snapshot_id_col"].as_entity(series_entity.name)
+    snapshots_table["series_id_col"].as_entity(series_entity.name)
     snapshots_table["user_id_col"].as_entity(user_entity.name)
     return snapshots_table
 

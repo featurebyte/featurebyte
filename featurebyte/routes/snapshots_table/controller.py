@@ -38,7 +38,7 @@ class SnapshotsTableController(
     document_update_schema_class = SnapshotsTableServiceUpdate
     semantic_tag_rules = {
         **BaseTableDocumentController.semantic_tag_rules,
-        "snapshot_id_column": SemanticType.SNAPSHOT_ID,
+        "series_id_column": SemanticType.SERIES_ID,
         "snapshot_datetime_column": SemanticType.SNAPSHOT_DATE_TIME,
     }
 
@@ -95,7 +95,7 @@ class SnapshotsTableController(
         )
         return SnapshotsTableInfo(
             **table_dict,
-            snapshot_id_column=snapshots_table.snapshot_id_column,
+            series_id_column=snapshots_table.series_id_column,
             snapshot_datetime_column=snapshots_table.snapshot_datetime_column,
             snapshot_datetime_schema=snapshots_table.snapshot_datetime_schema,
             time_interval=snapshots_table.time_interval,
