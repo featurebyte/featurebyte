@@ -3,7 +3,6 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
-    REQ."target",
     CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_database"."sf_schema"."BATCH_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS (
@@ -26,7 +25,6 @@ WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
-    REQ."target",
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
   FROM ONLINE_REQUEST_TABLE AS REQ
@@ -69,6 +67,5 @@ WITH ONLINE_REQUEST_TABLE AS (
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."cust_id",
-  AGG."target",
   CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d"
 FROM _FB_AGGREGATED AS AGG

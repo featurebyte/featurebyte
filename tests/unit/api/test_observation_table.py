@@ -244,7 +244,9 @@ def test_create_observation_table_with_context(
     assert observation_table.primary_entity_ids == [ObjectId("63f94ed6ea1f050131379214")]
 
 
+@patch("featurebyte.session.session_helper.validate_output_row_index")
 def test_create_observation_table_with_use_case(
+    mock_validate_output_row_index,
     snowflake_database_table,
     patched_observation_table_service,
     snowflake_execute_query_for_observation_table,
@@ -252,6 +254,7 @@ def test_create_observation_table_with_use_case(
     use_case,
 ):
     """Test create observation table with use case"""
+    _ = mock_validate_output_row_index
     _ = catalog
     _ = patched_observation_table_service
     observation_table = snowflake_database_table.create_observation_table(

@@ -3,7 +3,6 @@ Tests for ObservationTable routes
 """
 
 import copy
-import json
 import os
 import tempfile
 import textwrap
@@ -16,6 +15,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 class TestObservationTableApi(BaseMaterializedTableTestSuite):
@@ -95,13 +95,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         expected_non_missing_expr = textwrap.dedent("""
         SELECT
           "cust_id",
-          "POINT_IN_TIME",
-          "target"
+          "POINT_IN_TIME"
         FROM (
           SELECT
             "cust_id" AS "cust_id",
-            "POINT_IN_TIME" AS "POINT_IN_TIME",
-            "target" AS "target"
+            "POINT_IN_TIME" AS "POINT_IN_TIME"
           FROM (
             SELECT
               *
@@ -121,13 +119,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         expected_missing_expr = textwrap.dedent("""
         SELECT
           "cust_id",
-          "POINT_IN_TIME",
-          "target"
+          "POINT_IN_TIME"
         FROM (
           SELECT
             "cust_id" AS "cust_id",
-            "POINT_IN_TIME" AS "POINT_IN_TIME",
-            "target" AS "target"
+            "POINT_IN_TIME" AS "POINT_IN_TIME"
           FROM (
             SELECT
               *
@@ -762,6 +758,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         payload = copy.deepcopy(self.payload)
         payload["target_column"] = "target"
+        payload["request_input"]["source"]["table_details"]["table_name"] = "sf_table_with_target"
         response = self.post(test_api_client, payload)
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
@@ -864,6 +861,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["target_column"] = "target"
         payload["primary_entity_ids"] = None
         payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["request_input"]["source"]["table_details"]["table_name"] = "sf_table_with_target"
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
@@ -943,10 +941,24 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_create_with_use_case_eda_201(self, test_api_client_persistent):
+    @patch("featurebyte.session.base.BaseSession.generate_session_unique_id")
+    async def test_create_with_use_case_201(
+        self,
+        mock_generate_session_unique_id,
+        mocked_get_session,
+        snowflake_execute_query_for_materialized_table,
+        test_api_client_persistent,
+        update_fixtures,
+    ):
         """Test create eda obs table with use case specified"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
+        mock_generate_session_unique_id.return_value = "68DFBD342ECAABD7D21D4759"
+
+        # get use case
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        use_case_target_namespace_id = response.json()["target_namespace_id"]
 
         payload = copy.deepcopy(self.payload)
         payload["primary_entity_ids"] = None
@@ -964,6 +976,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
         assert response_dict["purpose"] == "eda"
+        # expect target from use case to be added to observation table
+        assert response_dict["target_namespace_id"] == use_case_target_namespace_id
 
         # check that context default eda table is set
         response = test_api_client.get("/context/646f6c1c0ed28a5271fb02d5")
@@ -972,40 +986,17 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["default_eda_table_id"] == observation_table_id
         assert response_dict["default_preview_table_id"] is None
 
-        # check that use case default eda table is not set due to no target
-        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK, response_dict
-        assert response_dict["default_eda_table_id"] is None
-        assert response_dict["default_preview_table_id"] is None
-
-        # create target table
-        target_table_payload = BaseMaterializedTableTestSuite.load_payload(
-            "tests/fixtures/request_payloads/target_table.json"
-        )
-        response = test_api_client.post(
-            "/target_table", data={"payload": json.dumps(target_table_payload)}
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.CREATED, response_dict
-        response = self.wait_for_results(test_api_client, response)
-        response_dict = response.json()
-        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
-
-        observation_table_id = response_dict["payload"]["output_document_id"]
-        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK, response_dict
-        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
-        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
-        assert response_dict["purpose"] == "eda"
-
         # check that use case default eda table is set
         response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["default_eda_table_id"] == observation_table_id
         assert response_dict["default_preview_table_id"] is None
+
+        mocked_get_session.execute_query = snowflake_execute_query_for_materialized_table
+        queries = extract_session_executed_queries(mocked_get_session, func="execute_query")
+        fixture_filename = "tests/fixtures/expected_observation_table_with_use_case.sql"
+        assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
     @pytest.mark.asyncio
     async def test_create_with_use_case_preview_201(self, test_api_client_persistent):
