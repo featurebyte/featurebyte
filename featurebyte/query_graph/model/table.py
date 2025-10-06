@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 from typing_extensions import Annotated, Literal
 
 from featurebyte.common.join_utils import (
@@ -739,6 +739,15 @@ class SnapshotsTableData(BaseTableData):
     snapshot_datetime_column: StrictStr
     snapshot_datetime_schema: TimestampSchema
     time_interval: TimeInterval
+
+    @model_validator(mode="before")
+    @classmethod
+    def convert_snapshot_id_to_series_id(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            # Handle the old field name for backward compatibility
+            if "snapshot_id_column" in values and "series_id_column" not in values:
+                values["series_id_column"] = values.pop("snapshot_id_column")
+        return values
 
     @property
     def primary_key_columns(self) -> List[str]:

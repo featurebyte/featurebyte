@@ -62,10 +62,10 @@ class SnapshotsTableValidationService(
         invalid_rows_expr = get_duplicate_rows_per_keys(
             source_expr=source_expr,
             key_columns=[
-                table_model.snapshot_id_column,
+                table_model.series_id_column,
                 table_model.snapshot_datetime_column,
             ],
-            exclude_null_column=table_model.snapshot_id_column,
+            exclude_null_column=table_model.series_id_column,
             count_output_column_name=DUPLICATE_COUNT_RESULT_NAME,
             num_records_to_retrieve=num_records,
         )

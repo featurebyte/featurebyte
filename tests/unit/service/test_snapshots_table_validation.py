@@ -59,7 +59,7 @@ def table_create_payload_fixture(feature_store):
                 dtype=DBVarType.INT,
             ),
         ],
-        snapshot_id_column="cust_id",
+        series_id_column="cust_id",
         snapshot_datetime_column="snapshot_date",
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         snapshot_datetime_schema=TimestampSchema(format_string="%Y-%m-%d"),
