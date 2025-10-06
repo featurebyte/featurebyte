@@ -83,8 +83,8 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
         snapshot_date_time = await app_container.semantic_service.get_or_create_document(
             "snapshot_date_time"
         )
-        snapshot_id = await app_container.semantic_service.get_or_create_document("snapshot_id")
-        return snapshot_date_time.id, snapshot_id.id, record_creation_timestamp.id
+        series_id = await app_container.semantic_service.get_or_create_document("series_id")
+        return snapshot_date_time.id, series_id.id, record_creation_timestamp.id
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
@@ -99,7 +99,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
         """Fixture for a SnapshotsTable dict"""
         (
             snapshot_date_time_semantic_id,
-            snapshot_id_semantic_id,
+            series_id_semantic_id,
             record_creation_timestamp_id,
         ) = snapshot_datetime_id_semantic_ids
         cols_info = []
@@ -108,7 +108,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
             if col["name"] == "date":
                 col["semantic_id"] = snapshot_date_time_semantic_id
             elif col["name"] == "series_id":
-                col["semantic_id"] = snapshot_id_semantic_id
+                col["semantic_id"] = series_id_semantic_id
             elif col["name"] == "created_at":
                 col["semantic_id"] = record_creation_timestamp_id
             cols_info.append(col)
@@ -117,7 +117,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": cols_info,
-            "snapshot_id_column": "series_id",
+            "series_id_column": "series_id",
             "snapshot_datetime_column": "date",
             "snapshot_datetime_schema": {
                 "format_string": "YYYY-MM-DD HH24:MI:SS",
@@ -389,7 +389,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
             },
             "entities": [],
             "column_count": 10,
-            "snapshot_id_column": "col_int",
+            "series_id_column": "col_int",
             "snapshot_datetime_column": "date",
             "snapshot_datetime_schema": {
                 "format_string": "YYYY-MM-DD HH24:MI:SS",
@@ -406,7 +406,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
         assert response_dict["columns_info"] is None
         assert set(response_dict["semantics"]) == {
             "record_creation_timestamp",
-            "snapshot_id",
+            "series_id",
             "snapshot_date_time",
         }
 
@@ -422,7 +422,7 @@ class TestSnapshotsTableApi(BaseTableApiTestSuite):
                 "name": "col_int",
                 "dtype": "INT",
                 "entity": None,
-                "semantic": "snapshot_id",
+                "semantic": "series_id",
                 "critical_data_info": None,
                 "description": None,
             },

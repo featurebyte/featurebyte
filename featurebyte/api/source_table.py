@@ -915,7 +915,7 @@ class SourceTable(AbstractTableData):
         snapshot_datetime_column: str,
         snapshot_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
-        snapshot_id_column: Optional[str],
+        series_id_column: Optional[str],
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         datetime_partition_column: Optional[str] = None,
@@ -944,7 +944,7 @@ class SourceTable(AbstractTableData):
         time_interval: TimeInterval
             Specifies the frequency of snapshots. Note that only intervals defined with a single
             time unit (e.g., 1 day, 1 week) are supported.
-        snapshot_id_column: Optional[str]
+        series_id_column: Optional[str]
             Represents the entity being snapshotted. Must be unique within each snapshot datetime.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
@@ -977,7 +977,7 @@ class SourceTable(AbstractTableData):
         ...     snapshot_datetime_column="Date",
         ...     snapshot_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
         ...     time_interval=TimeInterval(value=1, unit="DAY"),
-        ...     snapshot_id_column="StoreGuid",
+        ...     series_id_column="StoreGuid",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
 
@@ -1000,7 +1000,7 @@ class SourceTable(AbstractTableData):
             datetime_partition_column=datetime_partition_column,
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
-            snapshot_id_column=snapshot_id_column,
+            series_id_column=series_id_column,
             description=description,
             _id=_id,
         )
@@ -1314,7 +1314,7 @@ class SourceTable(AbstractTableData):
         snapshot_datetime_column: str,
         snapshot_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
-        snapshot_id_column: Optional[str],
+        series_id_column: Optional[str],
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         datetime_partition_column: Optional[str] = None,
@@ -1336,7 +1336,7 @@ class SourceTable(AbstractTableData):
         time_interval: TimeInterval
             Specifies the frequency of snapshots. Note that only intervals defined with a single
             time unit (e.g., 1 day, 1 week) are supported.
-        snapshot_id_column: Optional[str]
+        series_id_column: Optional[str]
             Represents the entity being snapshotted. Must be unique within each snapshot datetime.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
@@ -1367,7 +1367,7 @@ class SourceTable(AbstractTableData):
             datetime_partition_column=datetime_partition_column,
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
-            snapshot_id_column=snapshot_id_column,
+            series_id_column=series_id_column,
             record_creation_timestamp_column=record_creation_timestamp_column,
             description=description,
             _id=_id,

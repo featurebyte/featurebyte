@@ -170,7 +170,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "partition_metadata": None,
             },
         ],
-        "snapshot_id_column": "col_int",
+        "series_id_column": "col_int",
         "snapshot_datetime_column": "date",
         "snapshot_datetime_schema": ts_schema,
         "datetime_partition_column": "date",
@@ -197,7 +197,7 @@ def test_create_snapshots_table(snowflake_database_snapshots_table, snapshots_ta
 
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="sf_snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -235,7 +235,7 @@ def test_create_snapshots_table(snowflake_database_snapshots_table, snapshots_ta
     with pytest.raises(TypeCheckError) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
             name=123,
-            snapshot_id_column="col_int",
+            series_id_column="col_int",
             snapshot_datetime_column=234,
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -256,7 +256,7 @@ def test_create_snapshots_table__duplicated_record(
     with pytest.raises(DuplicatedRecordException) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
             name="sf_snapshots_table",
-            snapshot_id_column="col_int",
+            series_id_column="col_int",
             snapshot_datetime_column="date",
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -278,7 +278,7 @@ def test_create_snapshots_table__retrieval_exception(snowflake_database_snapshot
         with patch("featurebyte.api.base_table.Configurations"):
             snowflake_database_snapshots_table.create_snapshots_table(
                 name="sf_snapshots_table",
-                snapshot_id_column="col_int",
+                series_id_column="col_int",
                 snapshot_datetime_column="date",
                 snapshot_datetime_schema=TimestampSchema(
                     format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -399,7 +399,7 @@ def test_info__snapshots_table_without_record_creation_date(
 
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="sf_snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -455,7 +455,7 @@ def test_info(saved_snapshots_table, cust_id_entity):
             "name": "col_int",
             "dtype": "INT",
             "entity": None,
-            "semantic": "snapshot_id",
+            "semantic": "series_id",
             "critical_data_info": {
                 "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
             },
@@ -559,7 +559,7 @@ def test_snapshots_table__record_creation_exception(
         with patch("featurebyte.api.savable_api_object.Configurations"):
             snowflake_database_snapshots_table.create_snapshots_table(
                 name="sf_snapshots_table",
-                snapshot_id_column="col_int",
+                series_id_column="col_int",
                 snapshot_datetime_column="date",
                 snapshot_datetime_schema=TimestampSchema(
                     format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -671,7 +671,7 @@ def test_update_record_creation_timestamp_column__unsaved_object(
 
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
@@ -989,7 +989,7 @@ def test_default_feature_job_setting_history(saved_snapshots_table):
         "is_deleted",
         "managed_view_id",
         "validation",
-        "snapshot_id_column",
+        "series_id_column",
         "snapshot_datetime_column",
         "snapshot_datetime_schema.is_utc_time",
         "snapshot_datetime_schema.format_string",
@@ -1017,7 +1017,7 @@ def test_snapshots_table__entity_relation_auto_tagging(
     customer.save()
 
     # add entities to snapshots table
-    assert saved_snapshots_table.snapshot_id_column == "col_int"
+    assert saved_snapshots_table.series_id_column == "col_int"
     saved_snapshots_table.col_int.as_entity("transaction")
     saved_snapshots_table.store_id.as_entity("customer")
 
@@ -1042,7 +1042,7 @@ def test_accessing_snapshots_table_attributes(snowflake_snapshots_table):
     assert snowflake_snapshots_table.record_creation_timestamp_column == "created_at"
     assert snowflake_snapshots_table.default_feature_job_setting is None
     assert snowflake_snapshots_table.snapshot_datetime_column == "date"
-    assert snowflake_snapshots_table.snapshot_id_column == "col_int"
+    assert snowflake_snapshots_table.series_id_column == "col_int"
     assert snowflake_snapshots_table.timestamp_column == "date"
 
 
@@ -1053,7 +1053,7 @@ def test_accessing_saved_snapshots_table_attributes(saved_snapshots_table):
     assert saved_snapshots_table.record_creation_timestamp_column == "created_at"
     assert saved_snapshots_table.default_feature_job_setting is None
     assert saved_snapshots_table.snapshot_datetime_column == "date"
-    assert saved_snapshots_table.snapshot_id_column == "col_int"
+    assert saved_snapshots_table.series_id_column == "col_int"
     assert saved_snapshots_table.timestamp_column == "date"
 
     # check synchronization
@@ -1086,7 +1086,7 @@ def test_timezone__valid(snowflake_database_snapshots_table, catalog):
 
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="sf_snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
@@ -1124,7 +1124,7 @@ def test_timezone__invalid(snowflake_database_snapshots_table, catalog):
     with pytest.raises(ValidationError) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
             name="sf_snapshots_table",
-            snapshot_id_column="col_int",
+            series_id_column="col_int",
             snapshot_datetime_column="date",
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS", timezone="Space/Time"
@@ -1136,7 +1136,7 @@ def test_timezone__invalid(snowflake_database_snapshots_table, catalog):
     with pytest.raises(RecordCreationException) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
             name="sf_snapshots_table",
-            snapshot_id_column="col_int",
+            series_id_column="col_int",
             snapshot_datetime_column="date",
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
@@ -1158,7 +1158,7 @@ def test_timezone_offset__timezone_column_not_supported(
     with pytest.raises(RecordCreationException) as exc:
         snowflake_database_snapshots_table.create_snapshots_table(
             name="sf_snapshots_table",
-            snapshot_id_column="col_int",
+            series_id_column="col_int",
             snapshot_datetime_column="date",
             snapshot_datetime_schema=TimestampSchema(
                 format_string="YYYY-MM-DD HH24:MI:SS",
@@ -1285,7 +1285,7 @@ def test_validate_blind_spot_time_interval(
     # Create snapshots table with specified time interval
     snapshots_table = snowflake_database_snapshots_table.create_snapshots_table(
         name="test_snapshots_table",
-        snapshot_id_column="col_int",
+        series_id_column="col_int",
         snapshot_datetime_column="date",
         snapshot_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"

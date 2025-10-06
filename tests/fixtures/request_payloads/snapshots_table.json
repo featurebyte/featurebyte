@@ -98,13 +98,13 @@
     "managed_view_id": null,
     "name": "sf_snapshots_table",
     "record_creation_timestamp_column": "created_at",
+    "series_id_column": "col_int",
     "snapshot_datetime_column": "date",
     "snapshot_datetime_schema": {
         "format_string": "YYYY-MM-DD HH24:MI:SS",
         "is_utc_time": null,
         "timezone": "Etc/UTC"
     },
-    "snapshot_id_column": "col_int",
     "tabular_source": {
         "feature_store_id": "646f6c190ed28a5271fb02a1",
         "table_details": {

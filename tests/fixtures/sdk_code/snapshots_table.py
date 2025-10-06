@@ -43,7 +43,7 @@ snapshots_table = SnapshotsTable(
         ColumnInfo(name="another_timestamp_col", dtype="TIMESTAMP_TZ"),
     ],
     record_creation_timestamp_column=None,
-    snapshot_id_column="col_int",
+    series_id_column="col_int",
     snapshot_datetime_column="date",
     snapshot_datetime_schema=TimestampSchema(
         format_string="YYYY-MM-DD HH24:MI:SS",

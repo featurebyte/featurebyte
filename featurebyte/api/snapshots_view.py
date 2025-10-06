@@ -64,7 +64,7 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         "using the Default Feature Job Setting simplifies the process of setting "
         "up the Feature Job Setting for each feature.",
     )
-    snapshot_id_column: str = Field(
+    series_id_column: str = Field(
         frozen=True,
         description="Represents the entity being snapshotted. Must be unique within each snapshot datetime",
     )
@@ -177,12 +177,12 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         params = super()._getitem_frame_params
         params.update({
             "default_feature_job_setting": self.default_feature_job_setting,
-            "snapshot_id_column": self.snapshot_id_column,
+            "series_id_column": self.series_id_column,
         })
         return params
 
     def _get_join_column(self) -> str:
-        return self.snapshot_id_column
+        return self.series_id_column
 
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
         """
