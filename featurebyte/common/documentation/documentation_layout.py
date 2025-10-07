@@ -121,6 +121,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, CLASS_METHODS, "SCDTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "ItemTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "TimeSeriesTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "SnapshotsTable.get_by_id"]),
         DocLayoutItem([
             TABLE,
             SET_FEATURE_JOB,
@@ -138,6 +139,11 @@ def _get_table_layout() -> List[DocLayoutItem]:
             TABLE,
             SET_FEATURE_JOB,
             "TimeSeriesTable.update_default_feature_job_setting",
+        ]),
+        DocLayoutItem([
+            TABLE,
+            SET_FEATURE_JOB,
+            "SnapshotsTable.update_default_feature_job_setting",
         ]),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
@@ -157,6 +163,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, GET_VIEW, "SCDTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "ItemTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "TimeSeriesTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "SnapshotsTable.get_view"]),
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             doc_path_override="api.base_table.TableApiObject.column_cleaning_operations.md",
@@ -221,6 +228,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
         DocLayoutItem([TABLE, TYPE, "SCDTable"]),
         DocLayoutItem([TABLE, TYPE, "TimeSeriesTable"]),
+        DocLayoutItem([TABLE, TYPE, "SnapshotsTable"]),
         DocLayoutItem(
             [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
@@ -570,6 +578,10 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "TimeSeriesView.reference_datetime_column"]),
         DocLayoutItem([VIEW, INFO, "TimeSeriesView.reference_datetime_schema"]),
         DocLayoutItem([VIEW, INFO, "TimeSeriesView.time_interval"]),
+        DocLayoutItem([VIEW, INFO, "SnapshotsView.series_id_column"]),
+        DocLayoutItem([VIEW, INFO, "SnapshotsView.snapshot_datetime_column"]),
+        DocLayoutItem([VIEW, INFO, "SnapshotsView.snapshot_datetime_schema"]),
+        DocLayoutItem([VIEW, INFO, "SnapshotsView.time_interval"]),
         DocLayoutItem([VIEW, INFO, "View.columns"]),
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.column_cleaning_operations"]),
@@ -585,6 +597,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, TYPE, "ItemView"]),
         DocLayoutItem([VIEW, TYPE, "SCDView"]),
         DocLayoutItem([VIEW, TYPE, "TimeSeriesView"]),
+        DocLayoutItem([VIEW, TYPE, "SnapshotsView"]),
     ]
 
 
