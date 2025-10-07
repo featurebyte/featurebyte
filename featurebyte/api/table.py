@@ -13,6 +13,7 @@ from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.snapshots_table import SnapshotsTable
 from featurebyte.api.time_series_table import TimeSeriesTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -50,6 +51,7 @@ class Table(TableListMixin):
         TableDataType.SCD_TABLE: SCDTable,
         TableDataType.DIMENSION_TABLE: DimensionTable,
         TableDataType.TIME_SERIES_TABLE: TimeSeriesTable,
+        TableDataType.SNAPSHOTS_TABLE: SnapshotsTable,
     }
 
     @classmethod
