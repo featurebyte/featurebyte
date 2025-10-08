@@ -931,6 +931,7 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_scd_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_observation_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_batch_request_table"]),
+        DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_snapshots_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_time_series_table"]),
         *_get_sample_mixin_layout(SOURCE_TABLE),
     ]
