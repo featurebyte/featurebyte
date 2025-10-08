@@ -65,9 +65,9 @@ class FeatureStoreCacheModel(FeatureByteBaseDocumentModel):
         unique_constraints = []
 
         # Remove created_at index if it already exists to avoid duplication error
-        indexes = list(
+        indexes = list( # type: ignore
             filter(
-                lambda x: "created_at" not in x.document["key"],
+                lambda x: "created_at" not in x.document["key"],  # type: ignore
                 FeatureByteBaseDocumentModel.Settings.indexes,
             )
         ) + [
