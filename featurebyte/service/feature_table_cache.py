@@ -262,6 +262,11 @@ class FeatureTableCacheService:
         for table_name, feature_name in cached_definition_hash_mapping.values():
             required_cache_tables.add(table_name)
 
+        # Include observation table if no cache tables are found
+        # This may happen when materializing target column only from the observation table
+        if not required_cache_tables:
+            required_cache_tables.add(observation_table.location.table_details.table_name)
+
         # Join necessary feature cache tables based on the definition hashes
         select_expr = expressions.select()
         non_feature_columns = [InternalName.TABLE_ROW_INDEX] + additional_columns
