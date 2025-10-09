@@ -941,3 +941,35 @@ async def test_get_feature_query(
         "tests/fixtures/feature_table_cache/feature_query_sampled.sql",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_get_feature_query__empty_hashes(
+    feature_table_cache_service,
+    mock_snowflake_session,
+    observation_table,
+    update_fixtures,
+):
+    """
+    Test query for accessing feature table cache when no cached features are found.
+    This happens when materializing target column only from the observation table.
+    In this case, the query should use the observation table directly.
+    """
+    # Call get_feature_query with empty hashes list
+    feature_query = await feature_table_cache_service.get_feature_query(
+        db_session=mock_snowflake_session,
+        observation_table=observation_table,
+        hashes=[],
+        output_column_names=[],
+        additional_columns=["cust_id", "POINT_IN_TIME"],
+    )
+
+    # Convert query to SQL string
+    feature_query_sql = feature_query.sql(pretty=True)
+
+    # Verify against expected fixture
+    assert_equal_with_expected_fixture(
+        feature_query_sql,
+        "tests/fixtures/feature_table_cache/feature_query_empty_hashes.sql",
+        update_fixtures,
+    )
