@@ -120,3 +120,10 @@ async def test_catalog_update_online_store(
     assert res.status_code == 200
     feat_dict = res.json()["features"][0]
     assert feat_dict == {"üser id": 5, "Simple User Status Feature": "STÀTUS_CODE_37"}
+
+    # Trigger update online store again (should not error even if there are no new rows in offline
+    # feature tables). Unset and set again to trigger the update.
+    catalog.update_online_store(None)
+    with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        catalog.update_online_store(online_store.name)

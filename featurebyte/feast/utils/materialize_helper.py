@@ -84,7 +84,9 @@ async def materialize_partial(
     start_date = utils.make_tzaware(start_date)
     end_date = utils.make_tzaware(end_date)
 
-    assert start_date < end_date
+    if start_date >= end_date:
+        # Can happen if there are no new data to materialize to online store
+        return
 
     provider = feature_store._get_provider()
 
