@@ -19,19 +19,19 @@ WITH "SNAPSHOTS_REQUEST_TABLE_DISTINCT_POINT_IN_TIME_1ce40a759ab7017d" AS (
 SELECT
   POINT_IN_TIME,
   cust_id,
-  "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+  "T0"."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_3_input_1" AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_3_input_1"
 FROM REQUEST_TABLE
 LEFT JOIN (
   SELECT
     DISTINCT_POINT_IN_TIME."POINT_IN_TIME",
     DISTINCT_POINT_IN_TIME."serving_cust_id",
-    AGGREGATED."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+    AGGREGATED."_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_3_input_1"
   FROM "SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_1ce40a759ab7017d" AS DISTINCT_POINT_IN_TIME
   LEFT JOIN (
     SELECT
       REQ."__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME" AS "__FB_SNAPSHOTS_ADJUSTED_POINT_IN_TIME",
       REQ."serving_cust_id" AS "serving_cust_id",
-      SUM(SNAPSHOTS."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_input_1"
+      SUM(SNAPSHOTS."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_None_3_input_1"
     FROM "SNAPSHOTS_REQUEST_TABLE_DISTINCT_ADJUSTED_POINT_IN_TIME_1ce40a759ab7017d" AS REQ
     INNER JOIN (
       SELECT

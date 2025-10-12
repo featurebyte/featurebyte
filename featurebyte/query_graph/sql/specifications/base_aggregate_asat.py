@@ -43,9 +43,13 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         return self.get_agg_result_name_from_groupby_parameters(self.parameters, *args)
 
     def _get_additional_agg_result_name_params(self) -> list[Any]:
-        args = []
-        if self.parameters is not None and self.parameters.offset is not None:
-            args.append(self.parameters.offset)
+        args: list[Any] = []
+        if self.parameters is not None:
+            snapshots_parameters = self.parameters.snapshots_parameters
+            if self.parameters.offset is not None:
+                args.append(self.parameters.offset)
+            elif snapshots_parameters is not None and snapshots_parameters.offset_size is not None:
+                args.append(snapshots_parameters.offset_size)
         return args
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
