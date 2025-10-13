@@ -119,6 +119,10 @@ def get_request_table_job_datetime_column_name(feature_job_setting: CronFeatureJ
     ----------
     feature_job_setting: CronFeatureJobSetting
         Cron feature job setting
+
+    Returns
+    -------
+    str
     """
     return f"{InternalName.CRON_JOB_SCHEDULE_DATETIME}_{feature_job_setting.get_cron_expression_with_timezone()}"
 
