@@ -53,8 +53,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.cron import (
     JobScheduleTableSet,
-    get_request_table_joined_job_schedule_expr,
-    get_request_table_with_job_schedule_name,
+    get_request_table_join_all_job_schedules_expr,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -745,6 +744,28 @@ class FeatureExecutionPlan:
         if exclude_columns is None:
             exclude_columns = set()
 
+        if self.job_schedule_table_set is not None and self.job_schedule_table_set.tables:
+            assert request_table_columns is not None
+            request_table_with_job_datetimes, job_datetime_columns = (
+                get_request_table_join_all_job_schedules_expr(
+                    request_table_name=request_table_name,
+                    request_table_columns=request_table_columns,
+                    job_schedule_table_set=self.job_schedule_table_set,
+                    adapter=self.adapter,
+                )
+            )
+            request_table_name = "JOINED_JOB_SCHEDULES_" + request_table_name
+            common_tables.append(
+                CommonTable(
+                    name=request_table_name,
+                    expr=request_table_with_job_datetimes,
+                    quoted=False,
+                    should_materialize=True,
+                )
+            )
+            request_table_columns = request_table_columns + job_datetime_columns
+            exclude_columns.update(job_datetime_columns)
+
         overall_entity_lookup_steps = self.get_overall_entity_lookup_steps()
         if overall_entity_lookup_steps:
             assert request_table_columns is not None
@@ -762,26 +783,6 @@ class FeatureExecutionPlan:
             )
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
-
-        if self.job_schedule_table_set is not None and self.job_schedule_table_set.tables:
-            assert request_table_columns is not None
-            for job_schedule_table in self.job_schedule_table_set.tables:
-                request_table_with_schedule_name = get_request_table_with_job_schedule_name(
-                    request_table_name, job_schedule_table.cron_feature_job_setting
-                )
-                request_table_with_schedule_expr = get_request_table_joined_job_schedule_expr(
-                    request_table_name,
-                    request_table_columns,
-                    job_schedule_table.table_name,
-                    self.adapter,
-                )
-                common_tables.append(
-                    CommonTable(
-                        name=request_table_with_schedule_name,
-                        expr=request_table_with_schedule_expr,
-                        should_materialize=True,
-                    )
-                )
 
         for aggregator in self.iter_aggregators():
             common_tables.extend(aggregator.get_common_table_expressions(request_table_name))

@@ -12,6 +12,7 @@ from pandas import Timestamp
 from featurebyte import CronFeatureJobSetting, Crontab
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.cron import (
     JobScheduleTable,
     JobScheduleTableSet,
@@ -134,9 +135,10 @@ async def test_register_request_table_with_job_schedule(
 
     # Register a request table joined with schedule table
     joined_expr = get_request_table_joined_job_schedule_expr(
-        request_table_name="request_table",
+        request_table_expr=quoted_identifier("request_table"),
         request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
         job_schedule_table_name=job_schedule_table_name,
+        job_datetime_output_column_name=InternalName.CRON_JOB_SCHEDULE_DATETIME,
         adapter=session.adapter,
     )
     await session.create_table_as(

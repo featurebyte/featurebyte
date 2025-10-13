@@ -35,7 +35,9 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.cron import get_request_table_with_job_schedule_name
+from featurebyte.query_graph.sql.cron import (
+    get_request_table_job_datetime_column_name,
+)
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
@@ -229,34 +231,43 @@ class TimeSeriesRequestTablePlan:
         )
 
         # Select distinct point in time values and entities
-        request_table_name = get_request_table_with_job_schedule_name(
-            request_table_name=request_table_name,
-            feature_job_setting=aggregation_spec.parameters.feature_job_setting,
-        )
-        request_column_names = [
-            SpecialColumnName.POINT_IN_TIME,
-            *aggregation_spec.serving_names,
-            InternalName.CRON_JOB_SCHEDULE_DATETIME,
+        request_columns = [
+            alias_(
+                quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                alias=SpecialColumnName.POINT_IN_TIME,
+                quoted=True,
+            ),
+            *[
+                alias_(quoted_identifier(col), alias=col, quoted=True)
+                for col in aggregation_spec.serving_names
+            ],
+            alias_(
+                quoted_identifier(
+                    get_request_table_job_datetime_column_name(
+                        aggregation_spec.parameters.feature_job_setting
+                    )
+                ),
+                alias=InternalName.CRON_JOB_SCHEDULE_DATETIME,
+                quoted=True,
+            ),
         ]
         point_in_time_distinct_expr = (
-            select(*[quoted_identifier(col) for col in request_column_names])
-            .distinct()
-            .from_(quoted_identifier(request_table_name))
+            select(*request_columns).distinct().from_(quoted_identifier(request_table_name))
         )
 
         # Select distinct feature job times and entities
-        column_names_without_point_in_time = [
-            col for col in request_column_names if col != SpecialColumnName.POINT_IN_TIME
+        columns_without_point_in_time = [
+            col for col in request_columns if col.output_name != SpecialColumnName.POINT_IN_TIME
         ]
         scheduled_job_time_distinct_expr = (
-            select(
-                *[quoted_identifier(col) for col in column_names_without_point_in_time],
-            )
+            select(*[column for column in columns_without_point_in_time])
             .distinct()
             .from_(quoted_identifier(request_table_name))
         )
         scheduled_job_time_distinct_expr = (
-            select(*[quoted_identifier(col) for col in column_names_without_point_in_time]).select(
+            select(*[
+                quoted_identifier(column.output_name) for column in columns_without_point_in_time
+            ]).select(
                 alias_(range_start_expr, InternalName.WINDOW_START_EPOCH, quoted=True),
                 alias_(range_end_expr, InternalName.WINDOW_END_EPOCH, quoted=True),
             )

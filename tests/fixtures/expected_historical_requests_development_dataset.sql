@@ -1,9 +1,9 @@
 CREATE TABLE "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_point_in_time" AS
 SELECT DISTINCT
-  "POINT_IN_TIME",
-  "cust_id",
-  "__FB_CRON_JOB_SCHEDULE_DATETIME"
-FROM "REQUEST_TABLE_0 8 1 * *_Etc/UTC_None";
+  "POINT_IN_TIME" AS "POINT_IN_TIME",
+  "cust_id" AS "cust_id",
+  "__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None" AS "__FB_CRON_JOB_SCHEDULE_DATETIME"
+FROM "REQUEST_TABLE";
 
 CREATE TABLE "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS
 SELECT
@@ -21,9 +21,9 @@ SELECT
   ) + DATE_PART(month, DATE_TRUNC('month', DATEADD(MONTH, -1, "__FB_CRON_JOB_SCHEDULE_DATETIME"))) - 1 AS "__FB_WINDOW_END_EPOCH"
 FROM (
   SELECT DISTINCT
-    "cust_id",
-    "__FB_CRON_JOB_SCHEDULE_DATETIME"
-  FROM "REQUEST_TABLE_0 8 1 * *_Etc/UTC_None"
+    "cust_id" AS "cust_id",
+    "__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None" AS "__FB_CRON_JOB_SCHEDULE_DATETIME"
+  FROM "REQUEST_TABLE"
 );
 
 CREATE TABLE "__TEMP_0" AS
