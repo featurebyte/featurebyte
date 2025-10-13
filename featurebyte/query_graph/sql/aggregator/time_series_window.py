@@ -244,7 +244,7 @@ class TimeSeriesRequestTablePlan:
             alias_(
                 quoted_identifier(
                     get_request_table_job_datetime_column_name(
-                        aggregation_spec.parameters.feature_job_setting
+                        aggregation_spec.parameters.feature_job_setting, self.adapter.source_type
                     )
                 ),
                 alias=InternalName.CRON_JOB_SCHEDULE_DATETIME,

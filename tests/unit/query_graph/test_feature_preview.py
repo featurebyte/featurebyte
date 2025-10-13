@@ -625,7 +625,7 @@ def test_get_feature_preview_sql__time_series_window_aggregate(
         "CUSTOMER_ID": "C1",
     }
     cron_feature_job_settings = get_unique_cron_feature_job_settings(
-        global_graph, [time_series_window_aggregate_feature_node]
+        global_graph, [time_series_window_aggregate_feature_node], SourceType.SNOWFLAKE
     )
     job_schedule_table_set = JobScheduleTableSet(
         tables=[

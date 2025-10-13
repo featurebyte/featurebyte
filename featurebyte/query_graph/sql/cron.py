@@ -2,13 +2,14 @@
 Helpers for SQL generation related to cron feature jobs
 """
 
+import hashlib
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from pandas import DataFrame
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -94,7 +95,7 @@ def get_all_cron_feature_job_settings(
 
 
 def get_unique_cron_feature_job_settings(
-    graph: QueryGraphModel, nodes: list[Node]
+    graph: QueryGraphModel, nodes: list[Node], source_type: SourceType
 ) -> list[CronFeatureJobSetting]:
     """
     Get the unique cron feature job settings from the time series window aggregate nodes
@@ -105,6 +106,8 @@ def get_unique_cron_feature_job_settings(
         Query graph
     nodes: list[Node]
         List of nodes
+    source_type: SourceType
+        Source type to handle database-specific column name constraints
 
     Returns
     -------
@@ -112,13 +115,15 @@ def get_unique_cron_feature_job_settings(
     """
     cron_feature_job_settings = {}
     for cron_feature_job_setting in get_all_cron_feature_job_settings(graph, nodes):
-        key = get_request_table_job_datetime_column_name(cron_feature_job_setting)
+        key = get_request_table_job_datetime_column_name(cron_feature_job_setting, source_type)
         if key not in cron_feature_job_settings:
             cron_feature_job_settings[key] = cron_feature_job_setting
     return list(cron_feature_job_settings.values())
 
 
-def get_request_table_job_datetime_column_name(feature_job_setting: CronFeatureJobSetting) -> str:
+def get_request_table_job_datetime_column_name(
+    feature_job_setting: CronFeatureJobSetting, source_type: SourceType
+) -> str:
     """
     Get the name of the job datetime column for the cron job schedule when joined to the request
     table based on point in time.
@@ -127,12 +132,22 @@ def get_request_table_job_datetime_column_name(feature_job_setting: CronFeatureJ
     ----------
     feature_job_setting: CronFeatureJobSetting
         Cron feature job setting
+    source_type: SourceType
+        Source type to handle database-specific column name constraints
 
     Returns
     -------
     str
     """
-    return f"{InternalName.CRON_JOB_SCHEDULE_DATETIME}_{feature_job_setting.get_cron_expression_with_timezone()}"
+    base_column_name = f"{InternalName.CRON_JOB_SCHEDULE_DATETIME}_{feature_job_setting.get_cron_expression_with_timezone()}"
+
+    # BigQuery doesn't allow special characters like * in column names
+    if source_type == SourceType.BIGQUERY:
+        # Use hash to create a valid column name while maintaining uniqueness
+        column_hash = hashlib.md5(base_column_name.encode()).hexdigest()[:8]
+        return f"{InternalName.CRON_JOB_SCHEDULE_DATETIME}_{column_hash}"
+
+    return base_column_name
 
 
 def get_request_table_joined_job_schedule_expr(
@@ -223,7 +238,7 @@ def get_request_table_join_all_job_schedules_expr(
     current_request_table_columns = request_table_columns[:]
     for job_schedule_table in job_schedule_table_set.tables:
         job_datetime_output_column_name = get_request_table_job_datetime_column_name(
-            job_schedule_table.cron_feature_job_setting
+            job_schedule_table.cron_feature_job_setting, adapter.source_type
         )
         current_request_table_expr = get_request_table_joined_job_schedule_expr(
             request_table_expr=current_request_table_expr,

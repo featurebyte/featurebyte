@@ -304,7 +304,9 @@ async def get_historical_features(
     await observation_set.register_as_request_table(session, request_table_name, add_row_index=True)
 
     # Register job schedule tables if necessary
-    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
+        graph, nodes, session.source_type
+    )
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
         request_table_name=request_table_name,
@@ -581,7 +583,9 @@ async def get_target(
     )
 
     # Register job schedule tables if necessary
-    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
+        graph, nodes, session.source_type
+    )
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
         request_table_name=request_table_name,

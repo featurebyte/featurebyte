@@ -627,7 +627,9 @@ async def get_online_features(
         request_timestamp = datetime.utcnow()
 
     # Register job schedule tables if necessary
-    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
+        graph, nodes, session.source_type
+    )
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
         request_timestamp=request_timestamp,

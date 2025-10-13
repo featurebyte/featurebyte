@@ -158,7 +158,7 @@ class SnapshotsRequestTablePlan:
             datetime_expr_to_adjust = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
         else:
             job_datetime_column_name = get_request_table_job_datetime_column_name(
-                snapshots_parameters.feature_job_setting
+                snapshots_parameters.feature_job_setting, self.adapter.source_type
             )
             datetime_expr_to_adjust = quoted_identifier(job_datetime_column_name)
         adjusted_point_in_time_expr = apply_snapshot_adjustment(
