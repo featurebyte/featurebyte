@@ -13,7 +13,11 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import TimeSeriesWindowAggregateNode
+from featurebyte.query_graph.node.generic import (
+    AggregateAsAtNode,
+    LookupNode,
+    TimeSeriesWindowAggregateNode,
+)
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
@@ -39,7 +43,49 @@ class JobScheduleTableSet:
     tables: list[JobScheduleTable]
 
 
-def get_cron_feature_job_settings(
+def get_all_cron_feature_job_settings(
+    graph: QueryGraphModel, nodes: list[Node]
+) -> list[CronFeatureJobSetting]:
+    """
+    Get the unique cron feature job settings from the time series window aggregate nodes
+
+    Parameters
+    ----------
+    graph: QueryGraphModel
+        Query graph
+    nodes: list[Node]
+        List of nodes
+
+    Returns
+    -------
+    list[CronFeatureJobSetting]
+    """
+    result = []
+    for node in nodes:
+        for time_series_agg_node in graph.iterate_nodes(
+            node, NodeType.TIME_SERIES_WINDOW_AGGREGATE
+        ):
+            assert isinstance(time_series_agg_node, TimeSeriesWindowAggregateNode)
+            result.append(time_series_agg_node.parameters.feature_job_setting)
+
+        for lookup_node in graph.iterate_nodes(node, NodeType.LOOKUP):
+            assert isinstance(lookup_node, LookupNode)
+            snapshots_parameters = lookup_node.parameters.snapshots_parameters
+            if snapshots_parameters is not None:
+                if snapshots_parameters.feature_job_setting is not None:
+                    result.append(snapshots_parameters.feature_job_setting)
+
+        for aggregate_asat_node in graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT):
+            assert isinstance(aggregate_asat_node, AggregateAsAtNode)
+            snapshots_parameters = aggregate_asat_node.parameters.snapshots_parameters
+            if snapshots_parameters is not None:
+                if snapshots_parameters.feature_job_setting is not None:
+                    result.append(snapshots_parameters.feature_job_setting)
+
+    return result
+
+
+def get_unique_cron_feature_job_settings(
     graph: QueryGraphModel, nodes: list[Node]
 ) -> list[CronFeatureJobSetting]:
     """
@@ -57,15 +103,10 @@ def get_cron_feature_job_settings(
     list[CronFeatureJobSetting]
     """
     cron_feature_job_settings = {}
-    for node in nodes:
-        for time_series_agg_node in graph.iterate_nodes(
-            node, NodeType.TIME_SERIES_WINDOW_AGGREGATE
-        ):
-            assert isinstance(time_series_agg_node, TimeSeriesWindowAggregateNode)
-            cron_feature_job_setting = time_series_agg_node.parameters.feature_job_setting.copy()
-            key = get_request_table_job_datetime_column_name(cron_feature_job_setting)
-            if key not in cron_feature_job_settings:
-                cron_feature_job_settings[key] = cron_feature_job_setting
+    for cron_feature_job_setting in get_all_cron_feature_job_settings(graph, nodes):
+        key = get_request_table_job_datetime_column_name(cron_feature_job_setting)
+        if key not in cron_feature_job_settings:
+            cron_feature_job_settings[key] = cron_feature_job_setting
     return list(cron_feature_job_settings.values())
 
 

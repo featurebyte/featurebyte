@@ -10,7 +10,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import InternalName, TimeIntervalUnit
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -220,24 +220,28 @@ def apply_snapshot_adjustment(
     Expression
         Adjusted datetime expression
     """
+
+    def _subtract_window(expr: Expression, window: CalendarWindow) -> Expression:
+        if window.is_fixed_size():
+            return adapter.subtract_seconds(expr, window.to_seconds())
+        return adapter.subtract_months(expr, window.to_months())
+
     adjusted_datetime_expr = adapter.timestamp_truncate(
         datetime_expr,
         time_interval.unit,
     )
 
+    # Adjust by one time interval to avoid using the current incomplete interval
+    time_interval_window = CalendarWindow(
+        unit=time_interval.unit,
+        size=time_interval.value,
+    )
+    adjusted_datetime_expr = _subtract_window(adjusted_datetime_expr, time_interval_window)
+
     if feature_job_setting is not None:
         blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
         if blind_spot_window is not None:
-            if blind_spot_window.is_fixed_size():
-                adjusted_datetime_expr = adapter.subtract_seconds(
-                    adjusted_datetime_expr,
-                    blind_spot_window.to_seconds(),
-                )
-            else:
-                adjusted_datetime_expr = adapter.subtract_months(
-                    adjusted_datetime_expr,
-                    blind_spot_window.to_months(),
-                )
+            adjusted_datetime_expr = _subtract_window(adjusted_datetime_expr, blind_spot_window)
 
     if offset_size is not None:
         if offset_direction == OffsetDirection.FORWARD:
@@ -246,16 +250,7 @@ def apply_snapshot_adjustment(
             unit=time_interval.unit,
             size=offset_size,
         )
-        if time_interval.unit in TimeIntervalUnit.fixed_size_units():
-            adjusted_datetime_expr = adapter.subtract_seconds(
-                adjusted_datetime_expr,
-                offset_window.to_seconds(),
-            )
-        else:
-            adjusted_datetime_expr = adapter.subtract_months(
-                adjusted_datetime_expr,
-                offset_window.to_months(),
-            )
+        adjusted_datetime_expr = _subtract_window(adjusted_datetime_expr, offset_window)
 
     if format_string is not None:
         adjusted_datetime_expr = adapter.format_timestamp(

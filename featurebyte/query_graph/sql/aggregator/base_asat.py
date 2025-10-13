@@ -323,7 +323,7 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
             distinct_key=InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME.value,
             serving_names=spec.serving_names,
             aggregated_column_names=aggregated_column_names,
-            distinct_by_point_in_time_table_name=snapshots_req.distinct_adjusted_point_in_time_table,
+            distinct_by_point_in_time_table_name=snapshots_req.distinct_point_in_time_table,
         )
 
         return LeftJoinableSubquery(

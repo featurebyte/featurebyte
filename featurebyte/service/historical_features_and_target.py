@@ -35,7 +35,10 @@ from featurebyte.query_graph.sql.common import (
     DevelopmentDatasets,
     PartitionColumnFilters,
 )
-from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTableSet,
+    get_unique_cron_feature_job_settings,
+)
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     PROGRESS_MESSAGE_COMPUTING_TARGET,
@@ -301,7 +304,7 @@ async def get_historical_features(
     await observation_set.register_as_request_table(session, request_table_name, add_row_index=True)
 
     # Register job schedule tables if necessary
-    cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
         request_table_name=request_table_name,

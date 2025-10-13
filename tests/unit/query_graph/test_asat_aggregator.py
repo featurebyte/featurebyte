@@ -9,6 +9,7 @@ from sqlglot.expressions import select
 
 from featurebyte import TimeInterval
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.node.generic import AggregateAsAtParameters, SnapshotsLookupParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
@@ -264,6 +265,21 @@ def aggregation_spec_with_snapshots_parameters_and_offset(
     """
     agg_spec = aggregation_spec_with_snapshots_parameters
     agg_spec.parameters.snapshots_parameters.offset_size = 3
+    return agg_spec
+
+
+@pytest.fixture
+def aggregation_spec_with_snapshots_parameters_and_feature_job_setting(
+    aggregation_spec_with_snapshots_parameters,
+):
+    """
+    AggregateAsAtSpec for snapshots table with offset
+    """
+    agg_spec = aggregation_spec_with_snapshots_parameters
+    agg_spec.parameters.snapshots_parameters.feature_job_setting = CronFeatureJobSetting(
+        crontab="0 8 * * *",
+        timezone="Asia/Singapore",
+    )
     return agg_spec
 
 
@@ -766,6 +782,7 @@ def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset
     [
         "snapshots",
         "snapshots_with_offset",
+        "snapshots_with_feature_job_setting",
     ],
 )
 def test_snapshots_aggregate_asat(request, test_case_name, update_fixtures, source_info):
@@ -775,6 +792,7 @@ def test_snapshots_aggregate_asat(request, test_case_name, update_fixtures, sour
     test_case_mapping = {
         "snapshots": "aggregation_spec_with_snapshots_parameters",
         "snapshots_with_offset": "aggregation_spec_with_snapshots_parameters_and_offset",
+        "snapshots_with_feature_job_setting": "aggregation_spec_with_snapshots_parameters_and_feature_job_setting",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)

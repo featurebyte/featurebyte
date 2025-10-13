@@ -38,7 +38,10 @@ from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
 )
-from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTableSet,
+    get_unique_cron_feature_job_settings,
+)
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.entity import (
     DUMMY_ENTITY_COLUMN_NAME,
@@ -624,7 +627,7 @@ async def get_online_features(
         request_timestamp = datetime.utcnow()
 
     # Register job schedule tables if necessary
-    cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
     job_schedule_table_set = await cron_helper.register_job_schedule_tables(
         session=session,
         request_timestamp=request_timestamp,

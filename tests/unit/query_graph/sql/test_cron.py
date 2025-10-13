@@ -4,16 +4,16 @@ Tests for featurebyte/query_graph/sql/cron.py
 
 from featurebyte import CronFeatureJobSetting, Crontab
 from featurebyte.query_graph.sql.cron import (
-    get_cron_feature_job_settings,
     get_request_table_job_datetime_column_name,
+    get_unique_cron_feature_job_settings,
 )
 
 
 def test_get_cron_feature_job_settings(global_graph, time_series_window_aggregate_feature_node):
     """
-    Test get_cron_feature_job_settings
+    Test get_unique_cron_feature_job_settings
     """
-    cron_feature_job_settings = get_cron_feature_job_settings(
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
         global_graph,
         [time_series_window_aggregate_feature_node, time_series_window_aggregate_feature_node],
     )
@@ -54,9 +54,9 @@ def test_get_cron_feature_job_settings__blind_spot_handling(
     time_series_window_aggregate_with_blind_spot_feature_node,
 ):
     """
-    Test get_cron_feature_job_settings
+    Test get_unique_cron_feature_job_settings
     """
-    cron_feature_job_settings = get_cron_feature_job_settings(
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
         global_graph,
         [
             time_series_window_aggregate_feature_node,

@@ -18,7 +18,10 @@ from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
-from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTableSet,
+    get_unique_cron_feature_job_settings,
+)
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.materialisation import get_source_expr
@@ -222,7 +225,7 @@ class FeaturePreviewService(PreviewService):
         -------
         JobScheduleTableSet
         """
-        cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+        cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
         point_in_time_values = pd.to_datetime([
             row[SpecialColumnName.POINT_IN_TIME] for row in point_in_time_and_serving_name_list
         ])
