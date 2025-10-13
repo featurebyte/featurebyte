@@ -155,8 +155,8 @@ async def test_snapshots_view_join_snapshots_view_small(
         "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
         "series_id": ["A", "A", "B"],
         "left_value": [10.0, 20.0, 30.0],
-        "snapshot_ts_right": ["2022|04|10|00:00:00", None, "2022|04|12|00:00:00"],
-        "right_value_right": [1.0, None, 2.0],
+        "snapshot_ts_right": [None, "2022|04|10|00:00:00", None],
+        "right_value_right": [None, 1.0, None],
     })
     assert set(df_preview.columns) == set(expected.columns)
     expected = expected[df_preview.columns]
