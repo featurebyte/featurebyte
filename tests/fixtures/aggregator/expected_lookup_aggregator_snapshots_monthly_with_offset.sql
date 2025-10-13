@@ -25,5 +25,13 @@ LEFT JOIN (
     "snapshot_date",
     "CUSTOMER_ID"
 ) AS T0
-  ON DATE_ADD(DATE_TRUNC('month', REQ."POINT_IN_TIME"), -1, 'MONTH') = T0."snapshot_date"
+  ON DATE_ADD(
+    DATE_ADD(
+      DATE_TRUNC('month', REQ."__FB_CRON_JOB_SCHEDULE_DATETIME_10 * * * *_Etc/UTC_None"),
+      -1,
+      'MONTH'
+    ),
+    -1,
+    'MONTH'
+  ) = T0."snapshot_date"
   AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"

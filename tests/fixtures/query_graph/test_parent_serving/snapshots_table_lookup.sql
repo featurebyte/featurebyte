@@ -31,6 +31,9 @@ FROM (
       "snapshot_date",
       "CITY"
   ) AS T0
-    ON TO_CHAR(DATE_TRUNC('day', REQ."POINT_IN_TIME"), 'YYYY-MM-DD HH24:MI:SS') = T0."snapshot_date"
+    ON TO_CHAR(
+      DATE_ADD(DATE_TRUNC('day', REQ."POINT_IN_TIME"), -86400, 'SECOND'),
+      'YYYY-MM-DD HH24:MI:SS'
+    ) = T0."snapshot_date"
     AND REQ."CITY" = T0."CITY"
 ) AS REQ

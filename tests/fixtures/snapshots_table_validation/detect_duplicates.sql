@@ -8,7 +8,11 @@ FROM (
   FROM "my_db"."my_schema"."my_table"
   WHERE
     "snapshot_date" = TO_CHAR(
-      DATEADD(SECOND, 0, DATE_TRUNC('day', DATEADD(SECOND, -604800, SYSDATE()))),
+      DATEADD(
+        SECOND,
+        0,
+        DATEADD(SECOND, -86400, DATE_TRUNC('day', DATEADD(SECOND, -604800, SYSDATE())))
+      ),
       '%Y-%m-%d'
     )
     AND "cust_id" IS NOT NULL

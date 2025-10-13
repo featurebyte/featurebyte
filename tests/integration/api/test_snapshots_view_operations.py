@@ -220,7 +220,7 @@ def test_lookup_features(client, snapshots_table):
     ])
     feature_list = FeatureList([lookup_feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected[feature_name] = [0.06, 0.11]
+    expected[feature_name] = [0.05, 0.10]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
     online_features = deploy_and_get_online_features(
         client,
