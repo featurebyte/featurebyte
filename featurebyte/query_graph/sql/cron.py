@@ -4,7 +4,7 @@ Helpers for SQL generation related to cron feature jobs
 
 import hashlib
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, cast
 
 from pandas import DataFrame
 from sqlglot import expressions
@@ -15,9 +15,9 @@ from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSett
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
-    AggregateAsAtNode,
-    LookupNode,
-    LookupTargetNode,
+    AggregateAsAtParameters,
+    LookupParameters,
+    LookupTargetParameters,
     TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -63,32 +63,33 @@ def get_all_cron_feature_job_settings(
     list[CronFeatureJobSetting]
     """
     result = []
+
     for node in nodes:
+        # Handle time series aggregate nodes
         for time_series_agg_node in graph.iterate_nodes(
             node, NodeType.TIME_SERIES_WINDOW_AGGREGATE
         ):
             assert isinstance(time_series_agg_node, TimeSeriesWindowAggregateNode)
             result.append(time_series_agg_node.parameters.feature_job_setting)
 
-        for lookup_node in graph.iterate_nodes(node, NodeType.LOOKUP):
-            assert isinstance(lookup_node, LookupNode)
-            snapshots_parameters = lookup_node.parameters.snapshots_parameters
-            if snapshots_parameters is not None:
-                if snapshots_parameters.feature_job_setting is not None:
-                    result.append(snapshots_parameters.feature_job_setting)
+        # Handle nodes with snapshots_parameters
+        node_types_with_snapshots_parameters = [
+            NodeType.LOOKUP,
+            NodeType.LOOKUP_TARGET,
+            NodeType.AGGREGATE_AS_AT,
+        ]
 
-        for aggregate_asat_node in graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT):
-            assert isinstance(aggregate_asat_node, AggregateAsAtNode)
-            snapshots_parameters = aggregate_asat_node.parameters.snapshots_parameters
-            if snapshots_parameters is not None:
-                if snapshots_parameters.feature_job_setting is not None:
-                    result.append(snapshots_parameters.feature_job_setting)
-
-        for lookup_target_node in graph.iterate_nodes(node, NodeType.LOOKUP_TARGET):
-            assert isinstance(lookup_target_node, LookupTargetNode)
-            snapshots_parameters = lookup_target_node.parameters.snapshots_parameters
-            if snapshots_parameters is not None:
-                if snapshots_parameters.feature_job_setting is not None:
+        for node_type in node_types_with_snapshots_parameters:
+            for snapshot_node in graph.iterate_nodes(node, node_type):
+                parameters = cast(
+                    Union[LookupParameters, LookupTargetParameters, AggregateAsAtParameters],
+                    snapshot_node.parameters,
+                )
+                snapshots_parameters = parameters.snapshots_parameters
+                if (
+                    snapshots_parameters is not None
+                    and snapshots_parameters.feature_job_setting is not None
+                ):
                     result.append(snapshots_parameters.feature_job_setting)
 
     return result
