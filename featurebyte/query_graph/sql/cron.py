@@ -144,7 +144,7 @@ def get_request_table_job_datetime_column_name(
     # BigQuery doesn't allow special characters like * in column names
     if source_type == SourceType.BIGQUERY:
         # Use hash to create a valid column name while maintaining uniqueness
-        column_hash = hashlib.md5(base_column_name.encode()).hexdigest()[:8]
+        column_hash = hashlib.md5(base_column_name.encode(), usedforsecurity=False).hexdigest()[:8]
         return f"{InternalName.CRON_JOB_SCHEDULE_DATETIME}_{column_hash}"
 
     return base_column_name
