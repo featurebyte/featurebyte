@@ -16,6 +16,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     LookupNode,
+    LookupTargetNode,
     TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -78,6 +79,13 @@ def get_all_cron_feature_job_settings(
         for aggregate_asat_node in graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT):
             assert isinstance(aggregate_asat_node, AggregateAsAtNode)
             snapshots_parameters = aggregate_asat_node.parameters.snapshots_parameters
+            if snapshots_parameters is not None:
+                if snapshots_parameters.feature_job_setting is not None:
+                    result.append(snapshots_parameters.feature_job_setting)
+
+        for lookup_target_node in graph.iterate_nodes(node, NodeType.LOOKUP_TARGET):
+            assert isinstance(lookup_target_node, LookupTargetNode)
+            snapshots_parameters = lookup_target_node.parameters.snapshots_parameters
             if snapshots_parameters is not None:
                 if snapshots_parameters.feature_job_setting is not None:
                     result.append(snapshots_parameters.feature_job_setting)

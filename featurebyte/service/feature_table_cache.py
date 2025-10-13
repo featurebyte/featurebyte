@@ -433,6 +433,7 @@ class FeatureTableCacheService:
             return await get_target(
                 session=db_session,
                 redis=self.redis,
+                cron_helper=self.cron_helper,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,

@@ -72,8 +72,8 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     expected = {
         "reference_datetime_col": ["2001|04|08", "2001|04|09", "2001|04|10"],
         "series_id_col": ["S0", "S0", "S0"],
-        "snapshot_datetime_col_from_snapshots": ["2001|04|05", "2001|04|06", "2001|04|07"],
-        "value_col_from_snapshots": [0.9400000000000001, 0.9500000000000001, 0.96],
+        "snapshot_datetime_col_from_snapshots": ["2001|04|04", "2001|04|05", "2001|04|06"],
+        "value_col_from_snapshots": [0.93, 0.9400000000000001, 0.9500000000000001],
     }
     assert actual == expected
 
@@ -252,7 +252,7 @@ def test_lookup_target(snapshots_table):
     ])
 
     expected = preview_params.copy()
-    expected["snapshot_lookup_target"] = [0.12, 0.17]
+    expected["snapshot_lookup_target"] = [0.11, 0.16]
 
     df_targets = lookup_target.compute_targets(preview_params)
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])

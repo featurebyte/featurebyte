@@ -514,6 +514,7 @@ async def cleanup_features_temp_tables(
 async def get_target(
     session: BaseSession,
     redis: Redis[Any],
+    cron_helper: CronHelper,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -532,6 +533,8 @@ async def get_target(
         Session to use to make queries
     redis: Redis[Any]
         Redis connection
+    cron_helper: CronHelper
+        Cron helper for simulating feature job schedules
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -577,6 +580,14 @@ async def get_target(
         add_row_index=True,
     )
 
+    # Register job schedule tables if necessary
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes)
+    job_schedule_table_set = await cron_helper.register_job_schedule_tables(
+        session=session,
+        request_table_name=request_table_name,
+        cron_feature_job_settings=cron_feature_job_settings,
+    )
+
     # Generate SQL code that computes the targets
     try:
         historical_feature_query_set = get_historical_features_query_set(
@@ -589,6 +600,7 @@ async def get_target(
             output_feature_names=get_feature_names(graph, nodes),
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
+            job_schedule_table_set=job_schedule_table_set,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
         )

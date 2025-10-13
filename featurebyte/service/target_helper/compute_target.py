@@ -8,6 +8,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.target import ComputeTargetRequest
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
@@ -34,9 +35,11 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
     def __init__(
         self,
         feature_table_cache_service: FeatureTableCacheService,
+        cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
     ):
         self.feature_table_cache_service = feature_table_cache_service
+        self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
 
     async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
@@ -72,6 +75,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             features_computation_result = await get_target(
                 session=executor_params.session,
                 redis=self.feature_table_cache_service.tile_cache_service.tile_manager_service.redis,
+                cron_helper=self.cron_helper,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 observation_set=executor_params.observation_set,
