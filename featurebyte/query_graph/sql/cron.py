@@ -243,7 +243,7 @@ def get_request_table_join_all_job_schedules_expr(
         )
         current_request_table_expr = get_request_table_joined_job_schedule_expr(
             request_table_expr=current_request_table_expr,
-            request_table_columns=request_table_columns,
+            request_table_columns=current_request_table_columns,
             job_schedule_table_name=job_schedule_table.table_name,
             job_datetime_output_column_name=job_datetime_output_column_name,
             adapter=adapter,
