@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import TargetNamespace
+from featurebyte import Context, TargetNamespace, UseCase
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
@@ -30,6 +30,46 @@ def new_user_id_entity_fixture():
     entity = Entity(name="normal user id", serving_names=["User ID"])
     entity.save()
     return entity
+
+
+@pytest.fixture(name="user_use_case")
+def user_use_case_fixture(event_view, user_entity):
+    """
+    Fixture for a user use case
+    """
+    target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="avg_24h_target",
+        fill_value=None,
+    )
+    target.save()
+    context = Context.create(name="user_context", primary_entity=[user_entity.name])
+    use_case = UseCase.create(
+        name="user_use_case", target_name=target.name, context_name=context.name
+    )
+    return use_case
+
+
+@pytest.fixture(name="customer_use_case")
+def customer_use_case_fixture(event_view, customer_entity):
+    """
+    Fixture for a customer use case
+    """
+    target = event_view.groupby("CUST_ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="avg_24h_target",
+        fill_value=None,
+    )
+    target.save()
+    context = Context.create(name="customer_context", primary_entity=[customer_entity.name])
+    use_case = UseCase.create(
+        name="customer_use_case", target_name=target.name, context_name=context.name
+    )
+    return use_case
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -170,7 +210,7 @@ async def test_observation_table_min_interval_between_entities(
 
 @pytest.mark.asyncio
 async def test_observation_table_from_view(
-    event_table, scd_table, session, source_type, user_entity
+    event_table, scd_table, session, source_type, user_entity, user_use_case
 ):
     """
     Test creating an observation table from a view
@@ -185,15 +225,17 @@ async def test_observation_table_from_view(
         sample_rows=sample_rows,
         columns=[view.timestamp_column, "ÜSER ID"],
         columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
+        use_case_name=user_use_case.name,
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     table_details = observation_table.location.table_details
     check_location_valid(table_details, session)
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
+    # expect target column to be automatically included
     check_materialized_table_preview_methods(
         observation_table,
-        expected_columns=["POINT_IN_TIME", "üser id"],
+        expected_columns=["POINT_IN_TIME", "üser id", "avg_24h_target"],
     )
 
     # check missing data table is None
@@ -340,3 +382,53 @@ async def test_observation_table_sample_time_range(
     df_describe = observation_table.describe()
     assert pd.to_datetime(df_describe.loc["min", "POINT_IN_TIME"]) >= pd.Timestamp("2001-02-01")
     assert pd.to_datetime(df_describe.loc["max", "POINT_IN_TIME"]) <= pd.Timestamp("2001-06-30")
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_observation_table_upload_no_target(
+    feature_store, catalog, customer_entity, session, source_type, customer_use_case
+):
+    _ = catalog, customer_entity
+
+    # Upload observation table
+    file_name = "observation_table_no_target.csv"
+    file_path = os.path.join(os.path.dirname(__file__), "fixtures", file_name)
+    df = pd.read_csv(file_path)
+
+    number_of_rows = df.shape[0]
+    observation_table = ObservationTable.upload(
+        file_path=file_path,
+        name="uploaded_observation_table",
+        use_case_name=customer_use_case.name,
+    )
+
+    # no missing data
+    table_with_missing_data = observation_table.cached_model.table_with_missing_data
+    assert table_with_missing_data is None
+
+    # Assert response
+    assert observation_table.name == "uploaded_observation_table"
+    assert observation_table.request_input == UploadedFileInput(
+        type=RequestInputType.UPLOADED_FILE,
+        file_name=file_name,
+    )
+
+    # expect target column to be automatically included
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id", "avg_24h_target"}
+    actual_columns = {column.name for column in observation_table.columns_info}
+    assert expected_columns == actual_columns
+
+    # Assert materialized table
+    await check_materialized_table_accessible(
+        observation_table.location.table_details, session, source_type, number_of_rows
+    )
+    check_materialized_table_preview_methods(
+        observation_table,
+        [SpecialColumnName.POINT_IN_TIME, "cust_id", "avg_24h_target"],
+        number_of_rows,
+    )
+
+    # delete the observation table
+    customer_use_case.remove_observation_table(observation_table.name)
+    observation_table.delete()

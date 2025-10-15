@@ -25,6 +25,27 @@ WHERE
       "POINT_IN_TIME" IS NOT NULL AND
       "cust_id" IS NOT NULL;
 
+CREATE TABLE "sf_database"."sf_schema"."missing_data_OBSERVATION_TABLE_000000000000000000000000" AS
+SELECT
+  "cust_id",
+  "POINT_IN_TIME"
+FROM (
+  SELECT
+    "cust_id" AS "cust_id",
+    "POINT_IN_TIME" AS "POINT_IN_TIME"
+  FROM (
+    SELECT
+      *
+    FROM "sf_database"."sf_schema"."sf_table"
+  )
+)
+WHERE
+    "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+    (
+        "POINT_IN_TIME" IS NULL OR
+        "cust_id" IS NULL
+    );
+
 CREATE TABLE "REQUEST_TABLE_68DFBD342ECAABD7D21D4759" AS
 SELECT
   *,
