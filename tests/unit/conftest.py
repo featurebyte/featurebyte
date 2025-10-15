@@ -2051,9 +2051,11 @@ def patched_observation_table_service_fixture(freeze_time_observation_table_task
 
     with patch(
         "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
-        Mock(side_effect=mocked_get_additional_metadata),
-    ):
-        yield
+    ) as mock_validate_materialized_table_and_get_metadata:
+        mock_validate_materialized_table_and_get_metadata.side_effect = (
+            mocked_get_additional_metadata
+        )
+        yield mock_validate_materialized_table_and_get_metadata
 
 
 @pytest.fixture(name="patched_observation_table_service_for_preview")

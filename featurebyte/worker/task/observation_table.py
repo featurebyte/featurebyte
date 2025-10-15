@@ -140,7 +140,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         sample_from_timestamp: Optional[datetime],
         sample_to_timestamp: Optional[datetime],
         columns_to_exclude_missing_values: list[str],
-        missing_data_table_details: Optional[TableDetails],
     ) -> tuple[ObjectId, bool]:
         """
         Materialize the requested input with target column computed
@@ -171,8 +170,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             The timestamp to sample to
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
-        missing_data_table_details: Optional[TableDetails]
-            Missing data table details
 
         Returns
         -------
@@ -211,7 +208,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     feature_store=feature_store,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
                     primary_entity_ids=payload.primary_entity_ids,
-                    target_namespace_id=target_namespace_id,
                 )
 
                 # compute observation table with target column
@@ -348,7 +344,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 sample_from_timestamp=payload.sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
-                missing_data_table_details=missing_data_table_details,
             )
         else:
             await request_input.materialize(
