@@ -289,7 +289,7 @@ class Deployment(DeletableApiObject):
             Not applicable when batch_request_table is a BatchRequestTable.
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
-            current time is used.
+            current time is used. The value is assumed to be in UTC and must not contain timezone information.
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for computing the batch feature table. If False,
             tiles will be computed on demand.
@@ -376,7 +376,7 @@ class Deployment(DeletableApiObject):
             Not applicable when batch_request_table is a BatchRequestTable.
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
-            current time is used.
+            current time is used. The value is assumed to be in UTC and must not contain timezone information.
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for computing the batch feature table. If False,
             tiles will be computed on demand.
