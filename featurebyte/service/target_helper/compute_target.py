@@ -4,6 +4,7 @@ Get targets module
 
 from __future__ import annotations
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
@@ -13,6 +14,7 @@ from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.historical_features_and_target import get_target
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
@@ -37,10 +39,12 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         feature_table_cache_service: FeatureTableCacheService,
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
+        observation_table_service: ObservationTableService,
     ):
         self.feature_table_cache_service = feature_table_cache_service
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
+        self.observation_table_service = observation_table_service
 
     async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
         """
@@ -55,9 +59,20 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         -------
         ExecutionResult
         """
+        # check if observation table is temporary (not persisted to mongo)
+        is_temp_observation_table = False
+        if isinstance(executor_params.observation_set, ObservationTableModel):
+            try:
+                await self.observation_table_service.get_document(
+                    document_id=executor_params.observation_set.id
+                )
+            except DocumentNotFoundError:
+                is_temp_observation_table = True
+
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
+            and not is_temp_observation_table
         ):
             (
                 is_output_view,

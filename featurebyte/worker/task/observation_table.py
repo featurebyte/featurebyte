@@ -140,6 +140,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         sample_from_timestamp: Optional[datetime],
         sample_to_timestamp: Optional[datetime],
         columns_to_exclude_missing_values: list[str],
+        missing_data_table_details: TableDetails,
+        has_row_index: bool,
     ) -> tuple[ObjectId, bool]:
         """
         Materialize the requested input with target column computed
@@ -170,6 +172,10 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             The timestamp to sample to
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
+        missing_data_table_details: TableDetails
+            Table details of the table with missing data
+        has_row_index: bool
+            Whether the observation table has row index column
 
         Returns
         -------
@@ -189,7 +195,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         temp_location.table_details.table_name = f"__TEMP_{location.table_details.table_name}"
         async with self.drop_table_on_error(
             db_session=db_session,
-            list_of_table_details=[temp_location.table_details],
+            list_of_table_details=[temp_location.table_details, missing_data_table_details],
             payload=payload,
         ):
             # compute observation table without target column first
@@ -200,6 +206,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 sample_from_timestamp=sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
+                missing_data_table_details=missing_data_table_details,
             )
             try:
                 additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
@@ -220,6 +227,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     request_input=payload.request_input,
                     purpose=payload.purpose,
                     primary_entity_ids=payload.primary_entity_ids or [],
+                    has_row_index=has_row_index,
                     **additional_metadata,
                 )
 
@@ -344,6 +352,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 sample_from_timestamp=payload.sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
+                missing_data_table_details=missing_data_table_details,
+                has_row_index=not payload.to_add_row_index,
             )
         else:
             await request_input.materialize(
