@@ -41,7 +41,7 @@ def user_use_case_fixture(event_view, user_entity):
         method="avg",
         value_column="ÀMOUNT",
         window="24h",
-        target_name="avg_24h_target",
+        target_name="user_avg_24h_target",
         fill_value=None,
     )
     target.save()
@@ -61,7 +61,7 @@ def customer_use_case_fixture(event_view, customer_entity):
         method="avg",
         value_column="ÀMOUNT",
         window="24h",
-        target_name="avg_24h_target",
+        target_name="cust_avg_24h_target",
         fill_value=None,
     )
     target.save()
@@ -235,7 +235,7 @@ async def test_observation_table_from_view(
     # expect target column to be automatically included
     check_materialized_table_preview_methods(
         observation_table,
-        expected_columns=["POINT_IN_TIME", "üser id", "avg_24h_target"],
+        expected_columns=["POINT_IN_TIME", "üser id", "user_avg_24h_target"],
     )
 
     # check missing data table is None
@@ -415,7 +415,7 @@ async def test_observation_table_upload_no_target(
     )
 
     # expect target column to be automatically included
-    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id", "avg_24h_target"}
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id", "cust_avg_24h_target"}
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
 
@@ -425,7 +425,7 @@ async def test_observation_table_upload_no_target(
     )
     check_materialized_table_preview_methods(
         observation_table,
-        [SpecialColumnName.POINT_IN_TIME, "cust_id", "avg_24h_target"],
+        [SpecialColumnName.POINT_IN_TIME, "cust_id", "cust_avg_24h_target"],
         number_of_rows,
     )
 
