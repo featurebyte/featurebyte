@@ -30,7 +30,11 @@ WITH REQUEST_TABLE AS (
       "snapshot_date",
       "CUSTOMER_ID"
   ) AS T0
-    ON DATE_TRUNC('day', REQ."POINT_IN_TIME") = T0."snapshot_date"
+    ON DATEADD(
+      SECOND,
+      -86400,
+      DATE_TRUNC('day', REQ."__FB_CRON_JOB_SCHEDULE_DATETIME_10 * * * *_Etc/UTC_None")
+    ) = T0."snapshot_date"
     AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 )
 SELECT

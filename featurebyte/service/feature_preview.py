@@ -18,7 +18,10 @@ from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
-from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTableSet,
+    get_unique_cron_feature_job_settings,
+)
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.materialisation import get_source_expr
@@ -204,6 +207,7 @@ class FeaturePreviewService(PreviewService):
         point_in_time_and_serving_name_list: list[Dict[str, Any]],
         graph: QueryGraphModel,
         nodes: list[Node],
+        source_type: SourceType,
     ) -> JobScheduleTableSet:
         """
         Get cron job schedule table set
@@ -217,12 +221,14 @@ class FeaturePreviewService(PreviewService):
             Query graph model
         nodes: list[Node]
             List of query graph node
+        source_type: SourceType
+            Source type to handle database-specific column name constraints
 
         Returns
         -------
         JobScheduleTableSet
         """
-        cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+        cron_feature_job_settings = get_unique_cron_feature_job_settings(graph, nodes, source_type)
         point_in_time_values = pd.to_datetime([
             row[SpecialColumnName.POINT_IN_TIME] for row in point_in_time_and_serving_name_list
         ])
@@ -284,7 +290,7 @@ class FeaturePreviewService(PreviewService):
             )
         )
         job_schedule_table_set = self._get_cron_job_schedule_table_set(
-            point_in_time_and_serving_name_list, graph, [feature_node]
+            point_in_time_and_serving_name_list, graph, [feature_node], session.source_type
         )
         column_statistics_info = await self.column_statistics_service.get_column_statistics_info()
         preview_sql = get_feature_or_target_preview_sql(
@@ -415,6 +421,9 @@ class FeaturePreviewService(PreviewService):
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id
             )
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+            )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph_nodes=(feature_cluster.graph, feature_cluster.nodes),
                 feature_list_model=feature_list_model,
@@ -425,12 +434,10 @@ class FeaturePreviewService(PreviewService):
                 point_in_time_and_serving_name_list,
                 feature_cluster.graph,
                 feature_cluster.nodes,
+                db_session.source_type,
             )
             column_statistics_info = (
                 await self.column_statistics_service.get_column_statistics_info()
-            )
-            db_session = await self.session_manager_service.get_feature_store_session(
-                feature_store=feature_store,
             )
             preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",

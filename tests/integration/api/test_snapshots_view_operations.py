@@ -72,8 +72,8 @@ def test_snapshots_view_join_time_series_view(snapshots_table, time_series_table
     expected = {
         "reference_datetime_col": ["2001|04|08", "2001|04|09", "2001|04|10"],
         "series_id_col": ["S0", "S0", "S0"],
-        "snapshot_datetime_col_from_snapshots": ["2001|04|05", "2001|04|06", "2001|04|07"],
-        "value_col_from_snapshots": [0.9400000000000001, 0.9500000000000001, 0.96],
+        "snapshot_datetime_col_from_snapshots": ["2001|04|04", "2001|04|05", "2001|04|06"],
+        "value_col_from_snapshots": [0.93, 0.9400000000000001, 0.9500000000000001],
     }
     assert actual == expected
 
@@ -155,8 +155,8 @@ async def test_snapshots_view_join_snapshots_view_small(
         "snapshot_ts": ["2022|04|10", "2022|04|11", "2022|04|12"],
         "series_id": ["A", "A", "B"],
         "left_value": [10.0, 20.0, 30.0],
-        "snapshot_ts_right": ["2022|04|10|00:00:00", None, "2022|04|12|00:00:00"],
-        "right_value_right": [1.0, None, 2.0],
+        "snapshot_ts_right": [None, "2022|04|10|00:00:00", None],
+        "right_value_right": [None, 1.0, None],
     })
     assert set(df_preview.columns) == set(expected.columns)
     expected = expected[df_preview.columns]
@@ -220,7 +220,7 @@ def test_lookup_features(client, snapshots_table):
     ])
     feature_list = FeatureList([lookup_feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected[feature_name] = [0.06, 0.11]
+    expected[feature_name] = [0.05, 0.10]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
     online_features = deploy_and_get_online_features(
         client,
@@ -252,7 +252,7 @@ def test_lookup_target(snapshots_table):
     ])
 
     expected = preview_params.copy()
-    expected["snapshot_lookup_target"] = [0.12, 0.17]
+    expected["snapshot_lookup_target"] = [0.11, 0.16]
 
     df_targets = lookup_target.compute_targets(preview_params)
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
@@ -278,7 +278,7 @@ def test_aggregate_as_at_feature(client, snapshots_table):
     ])
     feature_list = FeatureList([agg_feature], str(ObjectId()))
     expected = preview_params.copy()
-    expected[feature_name] = [9.06, 5.11]
+    expected[feature_name] = [2.05, 8.10]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
     online_features = deploy_and_get_online_features(
         client,

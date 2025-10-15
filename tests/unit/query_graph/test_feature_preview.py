@@ -10,7 +10,7 @@ from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.cron import (
     JobScheduleTable,
     JobScheduleTableSet,
-    get_cron_feature_job_settings,
+    get_unique_cron_feature_job_settings,
 )
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -624,8 +624,8 @@ def test_get_feature_preview_sql__time_series_window_aggregate(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    cron_feature_job_settings = get_cron_feature_job_settings(
-        global_graph, [time_series_window_aggregate_feature_node]
+    cron_feature_job_settings = get_unique_cron_feature_job_settings(
+        global_graph, [time_series_window_aggregate_feature_node], SourceType.SNOWFLAKE
     )
     job_schedule_table_set = JobScheduleTableSet(
         tables=[

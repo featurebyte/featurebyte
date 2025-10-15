@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.generic import SnapshotsLookupParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.cron import get_request_table_job_datetime_column_name
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 
 
@@ -152,8 +153,16 @@ class SnapshotsRequestTablePlan:
 
         # Distinct point-in-time table: Map distinct POINT_IN_TIME values to snapshot adjusted
         # POINT_IN_TIME values
+        if snapshots_parameters.feature_job_setting is None:
+            job_datetime_column_name = None
+            datetime_expr_to_adjust = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+        else:
+            job_datetime_column_name = get_request_table_job_datetime_column_name(
+                snapshots_parameters.feature_job_setting, self.adapter.source_type
+            )
+            datetime_expr_to_adjust = quoted_identifier(job_datetime_column_name)
         adjusted_point_in_time_expr = apply_snapshot_adjustment(
-            datetime_expr=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+            datetime_expr=datetime_expr_to_adjust,
             time_interval=snapshots_parameters.time_interval,
             feature_job_setting=snapshots_parameters.feature_job_setting,
             format_string=snapshots_parameters.snapshot_timestamp_format_string,
@@ -171,6 +180,11 @@ class SnapshotsRequestTablePlan:
         ).from_(
             expressions.select(
                 quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                *(
+                    [quoted_identifier(job_datetime_column_name)]
+                    if job_datetime_column_name
+                    else []
+                ),
                 *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
             )
             .distinct()
@@ -182,9 +196,8 @@ class SnapshotsRequestTablePlan:
         # with source tables
         distinct_adjusted_point_in_time_expr = (
             expressions.select(
-                quoted_identifier(SpecialColumnName.POINT_IN_TIME),
-                *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
                 quoted_identifier(InternalName.SNAPSHOTS_ADJUSTED_POINT_IN_TIME),
+                *[quoted_identifier(serving_name) for serving_name in entry.serving_names],
             )
             .distinct()
             .from_(expressions.Table(this=quoted_identifier(entry.distinct_point_in_time_table)))

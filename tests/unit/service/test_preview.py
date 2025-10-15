@@ -538,9 +538,11 @@ async def test_preview_featurelist__non_time_based_feature_no_error_without_time
     await feature_preview_service.preview_featurelist(feature_list_preview)
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_preview_featurelist__missing_entity(
-    feature_preview_service, production_ready_feature_list
+    feature_preview_service,
+    production_ready_feature_list,
 ):
     """
     Test preview featurelist but without providing the required entity

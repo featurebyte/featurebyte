@@ -25,6 +25,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.cron import get_request_table_job_datetime_column_name
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection
 from featurebyte.query_graph.sql.scd_helper import Table
@@ -202,10 +203,19 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                     feature_job_setting = None
                 else:
                     feature_job_setting = snapshots_parameters.feature_job_setting
-                adjusted_point_in_time_expr = apply_snapshot_adjustment(
-                    datetime_expr=get_qualified_column_identifier(
+                if snapshots_parameters.feature_job_setting is None:
+                    datetime_expr_to_adjust = get_qualified_column_identifier(
                         SpecialColumnName.POINT_IN_TIME, "REQ"
-                    ),
+                    )
+                else:
+                    job_datetime_column_name = get_request_table_job_datetime_column_name(
+                        snapshots_parameters.feature_job_setting, self.adapter.source_type
+                    )
+                    datetime_expr_to_adjust = get_qualified_column_identifier(
+                        job_datetime_column_name, "REQ"
+                    )
+                adjusted_point_in_time_expr = apply_snapshot_adjustment(
+                    datetime_expr=datetime_expr_to_adjust,
                     time_interval=snapshots_parameters.time_interval,
                     feature_job_setting=feature_job_setting,
                     format_string=snapshots_parameters.snapshot_timestamp_format_string,

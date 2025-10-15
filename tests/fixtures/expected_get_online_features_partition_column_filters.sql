@@ -1,4 +1,4 @@
-CREATE TABLE "__temp_feature_query_000000000000000000000000_online_request_table_0_8_1_any_any_etc_utc_none" AS
+CREATE TABLE "__temp_feature_query_000000000000000000000000_joined_job_schedules_online_request_table" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
@@ -10,7 +10,7 @@ SELECT
   L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
   L."cust_id" AS "cust_id",
   L."POINT_IN_TIME" AS "POINT_IN_TIME",
-  R."__FB_CRON_JOB_SCHEDULE_DATETIME" AS "__FB_CRON_JOB_SCHEDULE_DATETIME"
+  R."__FB_CRON_JOB_SCHEDULE_DATETIME" AS "__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None"
 FROM (
   SELECT
     "__FB_LAST_TS",
@@ -32,7 +32,13 @@ FROM (
         "__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
         "cust_id" AS "cust_id",
         "POINT_IN_TIME" AS "POINT_IN_TIME"
-      FROM "ONLINE_REQUEST_TABLE"
+      FROM (
+        SELECT
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME"
+        FROM "ONLINE_REQUEST_TABLE"
+      )
       UNION ALL
       SELECT
         CAST(CONVERT_TIMEZONE('UTC', "__FB_CRON_JOB_SCHEDULE_DATETIME_UTC") AS TIMESTAMP) AS "__FB_TS_COL",
@@ -59,10 +65,10 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
 )
 SELECT DISTINCT
-  "POINT_IN_TIME",
-  "cust_id",
-  "__FB_CRON_JOB_SCHEDULE_DATETIME"
-FROM "__temp_feature_query_000000000000000000000000_online_request_table_0_8_1_any_any_etc_utc_none";
+  "POINT_IN_TIME" AS "POINT_IN_TIME",
+  "cust_id" AS "cust_id",
+  "__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None" AS "__FB_CRON_JOB_SCHEDULE_DATETIME"
+FROM "__temp_feature_query_000000000000000000000000_joined_job_schedules_online_request_table";
 
 CREATE TABLE "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS
 WITH ONLINE_REQUEST_TABLE AS (
@@ -87,9 +93,9 @@ SELECT
   ) + DATE_PART(month, DATE_TRUNC('month', DATEADD(MONTH, -1, "__FB_CRON_JOB_SCHEDULE_DATETIME"))) - 1 AS "__FB_WINDOW_END_EPOCH"
 FROM (
   SELECT DISTINCT
-    "cust_id",
-    "__FB_CRON_JOB_SCHEDULE_DATETIME"
-  FROM "__temp_feature_query_000000000000000000000000_online_request_table_0_8_1_any_any_etc_utc_none"
+    "cust_id" AS "cust_id",
+    "__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None" AS "__FB_CRON_JOB_SCHEDULE_DATETIME"
+  FROM "__temp_feature_query_000000000000000000000000_joined_job_schedules_online_request_table"
 );
 
 CREATE TABLE "__TEMP_000000000000000000000000_0" AS
@@ -144,8 +150,9 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
     REQ."POINT_IN_TIME",
+    REQ."__FB_CRON_JOB_SCHEDULE_DATETIME_0 8 1 * *_Etc/UTC_None",
     "T0"."_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1" AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_0 8 1 * *_Etc/UTC_None_project_1"
-  FROM ONLINE_REQUEST_TABLE AS REQ
+  FROM "__temp_feature_query_000000000000000000000000_joined_job_schedules_online_request_table" AS REQ
   LEFT JOIN (
     SELECT
       DISTINCT_POINT_IN_TIME."POINT_IN_TIME",

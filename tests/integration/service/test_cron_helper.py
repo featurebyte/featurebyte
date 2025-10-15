@@ -43,9 +43,10 @@ async def register_request_table_with_job_schedule(
             cron_feature_job_setting=cron_feature_job_setting,
         )
         joined_expr = get_request_table_joined_job_schedule_expr(
-            request_table_name=request_table_name,
+            request_table_expr=expressions.select("*").from_(quoted_identifier(request_table_name)),
             request_table_columns=request_table_columns,
             job_schedule_table_name=job_schedule_table_name,
+            job_datetime_output_column_name=InternalName.CRON_JOB_SCHEDULE_DATETIME,
             adapter=session.adapter,
         )
         await session.create_table_as(
