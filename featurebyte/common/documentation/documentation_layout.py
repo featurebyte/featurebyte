@@ -796,6 +796,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, INFO, "Catalog.updated_at"]),
         DocLayoutItem([CATALOG, LINEAGE, "Catalog.id"]),
         DocLayoutItem([CATALOG, MANAGE, "Catalog.update_name"]),
+        DocLayoutItem([CATALOG, MANAGE, "Catalog.update_online_store"]),
     ]
 
 

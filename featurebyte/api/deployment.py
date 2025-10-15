@@ -429,7 +429,7 @@ class Deployment(DeletableApiObject):
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
         Retrieves either Python or shell script template for serving online features from a deployed featurelist,
-        defaulted to python.
+        defaulted to python. Available only if the catalog has online store configured and the deployment is enabled.
 
         Parameters
         ----------
