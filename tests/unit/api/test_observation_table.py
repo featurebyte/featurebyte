@@ -271,6 +271,20 @@ def test_create_observation_table_with_use_case(
     # check that primary entity IDs are populated from the context
     assert observation_table.primary_entity_ids == [ObjectId("63f94ed6ea1f050131379214")]
 
+    mock_validate_materialized_table_and_get_metadata = patched_observation_table_service
+    call_args_list = mock_validate_materialized_table_and_get_metadata.call_args_list
+    assert len(call_args_list) == 2
+
+    # ensure first call to validate_materialized_table_and_get_metadata does not include target_namespace_id
+    first_call_kwargs = call_args_list[0].kwargs
+    assert call_args_list[0][0][1].table_name == "__TEMP_OBSERVATION_TABLE_000000000000000000000000"
+    assert "target_namespace_id" not in first_call_kwargs
+
+    # ensure second call to validate_materialized_table_and_get_metadata includes target_namespace_id
+    second_call_kwargs = call_args_list[1].kwargs
+    assert call_args_list[1][0][1].table_name == "OBSERVATION_TABLE_000000000000000000000000"
+    assert "target_namespace_id" in second_call_kwargs
+
 
 def test_create_observation_table_from_observation_table(
     catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
