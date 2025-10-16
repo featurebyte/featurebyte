@@ -391,9 +391,26 @@ class EventTable(TableApiObject):
         ...     new_feature_job_setting
         ... )  # doctest: +SKIP
 
+        Configure a cron-based feature job setting to run 10 seconds after every hour based on the UTC timezone with no blind spot.
+
+        >>> from featurebyte import CronFeatureJobSetting
+        >>> cron_feature_job_setting = CronFeatureJobSetting(  # doctest: +SKIP
+        ...     crontab="10 * * * *",
+        ...     timezone="Etc/UTC",
+        ... )
+
+        Update default feature job setting to the new feature job setting.
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.update_default_feature_job_setting(
+        ...     cron_feature_job_setting
+        ... )  # doctest: +SKIP
+
         See Also
         --------
         - [FeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.FeatureJobSetting/):
+            Class for specifying the scheduling of feature jobs.
+        - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
             Class for specifying the scheduling of feature jobs.
         """
         self.update(

@@ -289,7 +289,7 @@ class Deployment(DeletableApiObject):
             Not applicable when batch_request_table is a BatchRequestTable.
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
-            current time is used.
+            current time is used. The value is assumed to be in UTC and must not contain timezone information.
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for computing the batch feature table. If False,
             tiles will be computed on demand.
@@ -376,7 +376,7 @@ class Deployment(DeletableApiObject):
             Not applicable when batch_request_table is a BatchRequestTable.
         point_in_time: Optional[str | datetime]
             Optional point in time to use for computing the batch feature table. If None, the
-            current time is used.
+            current time is used. The value is assumed to be in UTC and must not contain timezone information.
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for computing the batch feature table. If False,
             tiles will be computed on demand.
@@ -429,7 +429,7 @@ class Deployment(DeletableApiObject):
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
         """
         Retrieves either Python or shell script template for serving online features from a deployed featurelist,
-        defaulted to python.
+        defaulted to python. Available only if the catalog has online store configured and the deployment is enabled.
 
         Parameters
         ----------

@@ -144,7 +144,7 @@ def _format_example(example: DocstringExample) -> str:
     content = []
     snippet = None
     if example.snippet:
-        snippet = re.sub(r" +# doctest: .*", "", example.snippet)
+        snippet = example.snippet
 
     if example.description:
         # docstring_parser parses lines without >>> prefix as description.
@@ -157,6 +157,7 @@ def _format_example(example: DocstringExample) -> str:
         content.append("\n\n".join(parts))
 
     if snippet:
+        snippet = re.sub(r"\s*#\s*doctest:.*", "", snippet)
         content.insert(0, f"\n```pycon\n{snippet}\n```")
 
     return "\n".join(content)
