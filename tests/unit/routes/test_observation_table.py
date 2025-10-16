@@ -615,21 +615,21 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict["positive_label"] == "true"
 
-        # check update non-valid positive label
+        # test updating positive label again (immutability check)
         response = test_api_client.patch(
             f"/target_namespace/{target_namespace_id}",
             json={
                 "positive_label": {
                     "observation_table_id": observation_table_id,
-                    "value": "invalid_label",
+                    "value": "false",
                 }
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
-            'Value "invalid_label" is not a valid candidate for observation '
-            "table (ID: 646f6c1c0ed28a5271fb02d7). Valid candidates are: ['true', 'false']."
+            "Positive label is immutable and cannot be updated once set. "
+            "Current positive label value: true."
         )
 
         # create another observation table without target column
@@ -652,6 +652,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
         # try to update target namespace classification metadata with non associated observation table
+        # Since positive_label is already set, this should fail with immutability error
         response = test_api_client.patch(
             f"/target_namespace/{target_namespace_id}",
             json={
@@ -664,8 +665,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
-            "Please run target namespace classification metadata update task to extract positive label "
-            "candidates before setting the positive label."
+            "Positive label is immutable and cannot be updated once set. "
+            "Current positive label value: true."
         )
 
     @pytest.mark.asyncio
