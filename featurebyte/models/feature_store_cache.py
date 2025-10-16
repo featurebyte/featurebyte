@@ -63,7 +63,14 @@ class FeatureStoreCacheModel(FeatureByteBaseDocumentModel):
 
         collection_name = "feature_store_cache"
         unique_constraints = []
-        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+
+        # Remove created_at index if it already exists to avoid duplication error
+        indexes = list( # type: ignore
+            filter(
+                lambda x: "created_at" not in x.document["key"],  # type: ignore
+                FeatureByteBaseDocumentModel.Settings.indexes,
+            )
+        ) + [
             pymongo.operations.IndexModel("feature_store_id"),
             pymongo.operations.IndexModel("database_name"),
             pymongo.operations.IndexModel("schema_name"),
