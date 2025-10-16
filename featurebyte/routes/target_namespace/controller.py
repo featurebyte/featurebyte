@@ -166,6 +166,129 @@ class TargetNamespaceController(
             updated_at=target_namespace.updated_at,
         )
 
+    def _validate_positive_label_target_type(self, target_namespace: TargetNamespaceModel) -> None:
+        """
+        Validate that positive label can only be set for classification type target namespace.
+
+        Parameters
+        ----------
+        target_namespace: TargetNamespaceModel
+            Target namespace model
+
+        Raises
+        ------
+        DocumentUpdateError
+            If target namespace is not of classification type
+        """
+        if target_namespace.target_type != TargetType.CLASSIFICATION:
+            raise DocumentUpdateError(
+                f"Positive label can only be set for target namespace of type "
+                f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
+            )
+
+    def _validate_positive_label_immutability(self, target_namespace: TargetNamespaceModel) -> None:
+        """
+        Validate that positive label is immutable once set.
+
+        Parameters
+        ----------
+        target_namespace: TargetNamespaceModel
+            Target namespace model
+
+        Raises
+        ------
+        DocumentUpdateError
+            If positive label is already set
+        """
+        if target_namespace.positive_label is not None:
+            raise DocumentUpdateError(
+                "Positive label is immutable and cannot be updated once set. "
+                f"Current positive label value: {target_namespace.positive_label}."
+            )
+
+    def _validate_positive_label_candidate(
+        self,
+        target_namespace: TargetNamespaceModel,
+        data: TargetNamespaceUpdate,
+    ) -> Any:
+        """
+        Validate and extract positive label value from candidates.
+
+        Parameters
+        ----------
+        target_namespace: TargetNamespaceModel
+            Target namespace model
+        data: TargetNamespaceUpdate
+            Update payload containing positive label information
+
+        Returns
+        -------
+        Any
+            Validated positive label value (str, float, or bool)
+
+        Raises
+        ------
+        DocumentUpdateError
+            If no matching candidate found or value is not in valid candidates
+        """
+        assert data.positive_label is not None
+
+        matched_candidate = None
+        for candidate in target_namespace.positive_label_candidates:
+            if candidate.observation_table_id == data.positive_label.observation_table_id:
+                matched_candidate = candidate
+                break
+
+        if matched_candidate is None:
+            raise DocumentUpdateError(
+                "Please run target namespace classification metadata update task "
+                "to extract positive label candidates before setting the positive label."
+            )
+
+        if data.positive_label.value not in matched_candidate.positive_label_candidates:
+            raise DocumentUpdateError(
+                f'Value "{data.positive_label.value}" is not a valid candidate for '
+                f"observation table (ID: {matched_candidate.observation_table_id}). "
+                f"Valid candidates are: {matched_candidate.positive_label_candidates}."
+            )
+
+        return data.positive_label.value
+
+    async def _validate_and_process_positive_label(
+        self,
+        target_namespace: TargetNamespaceModel,
+        data: TargetNamespaceUpdate,
+    ) -> Any:
+        """
+        Validate and process positive label update.
+
+        This method orchestrates the validation logic for positive label updates.
+        Override this method to customize the overall validation flow.
+
+        Parameters
+        ----------
+        target_namespace: TargetNamespaceModel
+            Target namespace model
+        data: TargetNamespaceUpdate
+            Update payload
+
+        Returns
+        -------
+        Any
+            Validated positive label value (str, float, or bool) or None if not provided
+        """
+        if data.positive_label is None:
+            return None
+
+        # Validate target type
+        self._validate_positive_label_target_type(target_namespace)
+
+        # Validate immutability
+        self._validate_positive_label_immutability(target_namespace)
+
+        # Validate and extract positive label from candidates
+        return self._validate_positive_label_candidate(target_namespace, data)
+
     async def update_target_namespace(
         self, target_namespace_id: ObjectId, data: TargetNamespaceUpdate
     ) -> TargetNamespaceModel:
@@ -199,32 +322,8 @@ class TargetNamespaceController(
 
         validate_target_type(target_type=target_namespace.target_type, dtype=target_namespace.dtype)
 
-        positive_label = None
-        if data.positive_label:
-            if target_namespace.target_type != TargetType.CLASSIFICATION:
-                raise DocumentUpdateError(
-                    f"Positive label can only be set for target namespace of type "
-                    f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
-                )
-
-            matched_candidate = None
-            for candidate in target_namespace.positive_label_candidates:
-                if candidate.observation_table_id == data.positive_label.observation_table_id:
-                    matched_candidate = candidate
-
-            if matched_candidate is None:
-                raise DocumentUpdateError(
-                    "Please run target namespace classification metadata update task "
-                    "to extract positive label candidates before setting the positive label."
-                )
-            elif data.positive_label.value not in matched_candidate.positive_label_candidates:
-                raise DocumentUpdateError(
-                    f'Value "{data.positive_label.value}" is not a valid candidate for '
-                    f"observation table (ID: {matched_candidate.observation_table_id}). "
-                    f"Valid candidates are: {matched_candidate.positive_label_candidates}."
-                )
-            else:
-                positive_label = data.positive_label.value
+        # Validate and process positive label
+        positive_label = await self._validate_and_process_positive_label(target_namespace, data)
 
         data = TargetNamespaceServiceUpdate(**{
             **data.model_dump(by_alias=True, exclude={"positive_label": True}),
