@@ -516,6 +516,15 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
         # This assumes that dictionary features are never post-processed.
         assert isinstance(agg_column, AggregationColumn)
         method = agg_column.method
+        if method is None:
+            # when aggregation column is a request column, method is None
+            assert agg_column.dtype_info.metadata is not None
+            assert agg_column.dtype_info.metadata.object_dtype is not None
+            dtype_info = DBVarTypeInfo(
+                dtype=agg_column.dtype_info.metadata.object_dtype.value_dtype
+            )
+            return dtype_info
+
         assert method is not None
         agg_func = construct_agg_func(method)
         # derive the output_dtype_info using aggregation's parent column without passing category parameter

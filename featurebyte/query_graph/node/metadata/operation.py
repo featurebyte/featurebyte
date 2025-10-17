@@ -27,7 +27,12 @@ from typing_extensions import Annotated
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.dtype import (
+    DBVarTypeInfo,
+    DBVarTypeMetadata,
+    ObjectDtypeMetadata,
+)
+from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.typing import OffsetType
 
 
@@ -685,6 +690,68 @@ class OperationStructure:
             if column.name == column_name:
                 return column.dtype_info.metadata
         return None
+
+    def extract_object_dtype_metadata(self, aggregation_name: str) -> ObjectDtypeMetadata:
+        """
+        Extract object dtype metadata for the given aggregation name
+
+        Parameters
+        ----------
+        aggregation_name: str
+            Aggregation name
+
+        Returns
+        -------
+        ObjectDtypeMetadata
+            Object dtype metadata
+
+        Raises
+        ------
+        ValueError
+            If the aggregation is not found or not of object dtype
+        """
+        # some validations
+        aggregation: Optional[AggregationColumn] = None
+        for aggregation in self.aggregations:
+            if aggregation.name == aggregation_name:
+                if aggregation.dtype_info.dtype != DBVarType.OBJECT:
+                    raise ValueError(
+                        f"Aggregation {aggregation_name} is not of object dtype, found {aggregation.dtype_info.dtype}"
+                    )
+
+                if aggregation.category is None:
+                    # currently, the only way to have object dtype is through category aggregation
+                    raise ValueError(
+                        f"Aggregation {aggregation_name} does not have category information"
+                    )
+                break
+
+        if aggregation is None:
+            raise ValueError(f"Aggregation {aggregation_name} not found")
+
+        # extract key dtype & value dtype
+        key_dtype: Optional[DBVarType] = None
+        for column in self.columns:
+            if column.name == aggregation.category:
+                key_dtype = column.dtype_info.dtype
+
+        if not key_dtype:
+            raise ValueError(
+                f"Cannot find the dtype of the category column {aggregation.category} for aggregation {aggregation_name}"
+            )
+
+        assert aggregation.method is not None, "Aggregation method should not be None"
+        agg_func = construct_agg_func(aggregation.method)
+        if aggregation.column:
+            value_dtype = agg_func.derive_output_dtype_info(
+                input_dtype_info=aggregation.column.dtype_info
+            ).dtype
+        else:
+            # when the method is COUNT, COUNT_DISTINCT or NA_COUNT, the input column can be None
+            # the output dtype is always INT
+            value_dtype = DBVarType.INT
+
+        return ObjectDtypeMetadata(key_dtype=key_dtype, value_dtype=value_dtype)
 
 
 class OperationStructureInfo:

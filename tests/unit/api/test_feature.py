@@ -27,7 +27,7 @@ from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -52,6 +52,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableCleaningOperation,
 )
 from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
+from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
@@ -2183,3 +2184,45 @@ def test_feature_count_dict_get_value_dtype(
 
     # assert the dtype is FLOAT
     assert feature_with_get_value.dtype == DBVarType.FLOAT
+
+
+def test_get_value_with_null_filling_extractor(
+    snowflake_event_table_with_entity, arbitrary_default_feature_job_setting
+):
+    """Test get_value work with NullFillingValueExtractor"""
+    event_view = snowflake_event_table_with_entity.get_view()
+    event_view_by_customer = event_view.groupby(["cust_id"], category="col_text")
+    feat = event_view_by_customer.aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+        feature_names=["sum_by_cust_id"],
+    )["sum_by_cust_id"]
+    feat1 = feat.cd.get_value(key="test_key")
+    feat1.name = "sum_by_cust_id_test_key"
+    feat1.save()
+    feat = event_view_by_customer.aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["30m"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+        feature_names=["count_by_cust_id"],
+    )["count_by_cust_id"]
+    feat2 = feat.cd.get_value(key="test_key")
+    feat2.name = "count_by_cust_id_test_key"
+    feat2.save()
+
+    fill_value1 = (
+        NullFillingValueExtractor(graph=feat1.cached_model.graph)
+        .extract(node=feat1.cached_model.node, source_type=SourceType.SNOWFLAKE)
+        .fill_value
+    )
+    assert fill_value1 is None
+
+    fill_value2 = (
+        NullFillingValueExtractor(graph=feat2.cached_model.graph)
+        .extract(node=feat2.cached_model.node, source_type=SourceType.SNOWFLAKE)
+        .fill_value
+    )
+    assert fill_value2 is None
