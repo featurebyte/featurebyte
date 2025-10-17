@@ -1409,6 +1409,7 @@ async def test_simulated_materialize__ttl_feature_table(
         f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}",
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+        f"Get Value 7d_{version}",
         f"Number of Distinct Product Action 48h_{version}",
         f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
         f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
