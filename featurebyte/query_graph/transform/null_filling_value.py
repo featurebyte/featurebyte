@@ -12,7 +12,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import AggregationColumn, OperationStructure
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
@@ -94,11 +94,20 @@ class NullFillingValueExtractor(
         if node.name in global_state.aggregation_node_names:
             # for aggregation node, we replace it with a request column node
             op_struct = global_state.operation_structure_map[node.name]
+            agg_col = op_struct.aggregations[0]
+            dtype_info = agg_col.dtype_info
+            if isinstance(agg_col, AggregationColumn) and agg_col.category:
+                dtype_info = dtype_info.add_object_dtype_metadata(
+                    object_dtype_metadata=op_struct.extract_object_dtype_metadata(
+                        aggregation_name=agg_col.name
+                    )
+                )
+
             node_to_insert = RequestColumnNode(
                 name="",
                 parameters=RequestColumnNode.RequestColumnNodeParameters(
                     column_name="agg_col",
-                    dtype_info=op_struct.aggregations[0].dtype_info,
+                    dtype_info=dtype_info,
                 ),
                 output_type=NodeOutputType.SERIES,
             )

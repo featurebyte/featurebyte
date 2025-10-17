@@ -15,6 +15,15 @@ from featurebyte.query_graph.model.timestamp_schema import (
 )
 
 
+class ObjectDtypeMetadata(FeatureByteBaseModel):
+    """
+    Metadata for object dtype
+    """
+
+    key_dtype: DBVarType
+    value_dtype: DBVarType
+
+
 class DBVarTypeMetadata(FeatureByteBaseModel):
     """
     Metadata for DBVarType
@@ -22,6 +31,9 @@ class DBVarTypeMetadata(FeatureByteBaseModel):
 
     timestamp_schema: Optional[TimestampSchema] = None
     timestamp_tuple_schema: Optional[TimestampTupleSchema] = None
+    # this field is only used internally and should not be serialized
+    # TODO: consider to remove exclude=True when we add support for tagging object dtype in the API
+    object_dtype: Optional[ObjectDtypeMetadata] = Field(default=None, exclude=True)
 
 
 class DBVarTypeInfo(FeatureByteBaseModel):
@@ -97,6 +109,32 @@ class DBVarTypeInfo(FeatureByteBaseModel):
                 )
 
         return self
+
+    def add_object_dtype_metadata(
+        self, object_dtype_metadata: ObjectDtypeMetadata
+    ) -> "DBVarTypeInfo":
+        """
+        Add object dtype metadata to the DBVarTypeInfo
+
+        Parameters
+        ----------
+        object_dtype_metadata: ObjectDtypeMetadata
+            Object dtype metadata to add
+
+        Returns
+        -------
+        DBVarTypeInfo
+        """
+        return DBVarTypeInfo(
+            dtype=self.dtype,
+            metadata=DBVarTypeMetadata(
+                timestamp_schema=self.metadata.timestamp_schema if self.metadata else None,
+                timestamp_tuple_schema=self.metadata.timestamp_tuple_schema
+                if self.metadata
+                else None,
+                object_dtype=object_dtype_metadata,
+            ),
+        )
 
 
 class PartitionMetadata(FeatureByteBaseModel):
