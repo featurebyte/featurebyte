@@ -712,18 +712,23 @@ class OperationStructure:
         """
         # some validations
         aggregation: Optional[AggregationColumn] = None
-        for aggregation in self.aggregations:
-            if aggregation.name == aggregation_name:
-                if aggregation.dtype_info.dtype != DBVarType.OBJECT:
+        for agg in self.aggregations:
+            if agg.name == aggregation_name:
+                # currently, the only way to have object dtype is through category aggregation
+                if agg.dtype_info.dtype != DBVarType.OBJECT:
                     raise ValueError(
-                        f"Aggregation {aggregation_name} is not of object dtype, found {aggregation.dtype_info.dtype}"
+                        f"Aggregation {aggregation_name} is not of object dtype, found {agg.dtype_info.dtype}"
                     )
 
-                if aggregation.category is None:
-                    # currently, the only way to have object dtype is through category aggregation
+                if not isinstance(agg, AggregationColumn):
+                    raise ValueError(f"Aggregation {aggregation_name} is not an AggregationColumn")
+
+                if agg.category is None:
                     raise ValueError(
                         f"Aggregation {aggregation_name} does not have category information"
                     )
+
+                aggregation = agg
                 break
 
         if aggregation is None:

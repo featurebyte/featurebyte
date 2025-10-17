@@ -243,7 +243,11 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
     feature_15 = dict_feature.cd.get_relative_frequency(key_feature)
     feature_15.name = "Relative Frequency 7d"
 
-    feature_16 = (
+    # Add get value feature
+    feature_16 = dict_feature.cd.get_value(key="1")
+    feature_16.name = "Get Value 7d"
+
+    feature_17 = (
         event_view[event_view["ÀMOUNT"].notnull()]
         .groupby("ÜSER ID")
         .aggregate_over(
@@ -253,7 +257,8 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
             feature_names=["Latest Amount by User"],
         )["Latest Amount by User"]
     )
-    feature_17 = (
+
+    feature_18 = (
         event_view[event_view["ÀMOUNT"].notnull()]
         .groupby("ÜSER ID")
         .aggregate_over(
@@ -264,7 +269,7 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
             feature_names=["Latest Amount by User Offset 1d"],
         )["Latest Amount by User Offset 1d"]
     )
-    feature_18 = event_view.groupby("ÜSER ID").aggregate_over(
+    feature_19 = event_view.groupby("ÜSER ID").aggregate_over(
         "PRODUCT_ACTION",
         method="count_distinct",
         windows=["48h"],
@@ -293,6 +298,7 @@ def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
             feature_16,
             feature_17,
             feature_18,
+            feature_19,
         ]
         if feature is not None
     ]
@@ -934,6 +940,7 @@ async def test_feast_registry(
         f"Latest Amount by User_{version}": [91.31999969482422],
         f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
         f"Number of Distinct Product Action 48h_{version}": [5],
+        f"Get Value 7d_{version}": [8],
         "order_id": ["T3850"],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
@@ -976,6 +983,7 @@ async def test_feast_registry(
         f"Latest Amount by User_{version}": [91.31999969482422],
         f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
         f"Number of Distinct Product Action 48h_{version}": [None],
+        f"Get Value 7d_{version}": [None],
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop(f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}")
@@ -1082,6 +1090,7 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "user_status": "STÀTUS_CODE_37",
         "üser id": 5,
         "Number of Distinct Product Action 48h": 5,
+        "Get Value 7d": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
@@ -1131,6 +1140,7 @@ def expected_features_order_id_T3850(source_type):
         "order_id": "T3850",
         "Relative Frequency 7d": 0.6086956262588501,
         "Number of Distinct Product Action 48h": 5,
+        "Get Value 7d": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
