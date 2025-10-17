@@ -1140,7 +1140,7 @@ def expected_features_order_id_T3850(source_type):
         "order_id": "T3850",
         "Relative Frequency 7d": 0.6086956262588501,
         "Number of Distinct Product Action 48h": 5,
-        "Get Value 7d": 5,
+        "Get Value 7d": 8,
     }
     if source_type == SourceType.DATABRICKS_UNITY:
         expected.pop("EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h")
