@@ -7,10 +7,15 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.logging import get_logger
-from featurebyte.models.batch_request_table import BatchRequestTableModel
+from featurebyte.models.batch_request_table import (
+    BatchRequestTableModel,
+    ManagedViewBatchRequestInput,
+    SourceTableBatchRequestInput,
+)
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -33,11 +38,13 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         batch_request_table_service: BatchRequestTableService,
+        managed_view_service: ManagedViewService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.batch_request_table_service = batch_request_table_service
+        self.managed_view_service = managed_view_service
 
     async def get_task_description(self, payload: BatchRequestTableTaskPayload) -> str:
         return f'Save batch request table "{payload.name}"'
@@ -70,7 +77,18 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
             payload.feature_store_id,
             session=db_session,
         )
-        await payload.request_input.materialize(
+
+        request_input = payload.request_input
+        if isinstance(payload.request_input, ManagedViewBatchRequestInput):
+            managed_view = await self.managed_view_service.get_document(
+                document_id=payload.request_input.managed_view_id
+            )
+            request_input = SourceTableBatchRequestInput(
+                source=managed_view.tabular_source,
+                **payload.request_input.model_dump(by_alias=True, exclude={"type"}),
+            )
+
+        await request_input.materialize(
             session=db_session,
             destination=location.table_details,
             sample_rows=None,

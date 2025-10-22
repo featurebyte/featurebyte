@@ -807,3 +807,29 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
                 == "alt_warehouse"
                 for call_args in mocked_get_session_for_batch_feature_table.call_args_list
             ])
+
+    def test_create_success_from_managed_view(self, test_api_client_persistent):
+        """Test create batch feature table using managed view success"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.load_payload("tests/fixtures/request_payloads/managed_view.json")
+        response = test_api_client.post("/managed_view", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        managed_view_id = response_dict["_id"]
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/batch_feature_table_with_managed_view_request_input.json"
+        )
+        id_before = payload["_id"]
+        response = self.post(test_api_client, payload)
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        assert response_dict["_id"] == id_before
+        assert response_dict["name"] == "batch_feature_table_with_managed_view_request_input"

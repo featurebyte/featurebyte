@@ -18,6 +18,7 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import (
+    ManagedViewRequestInput,
     RequestInputType,
     SourceTableRequestInput,
     ViewRequestInput,
@@ -37,6 +38,12 @@ class ViewObservationInput(ViewRequestInput):
 class SourceTableObservationInput(SourceTableRequestInput):
     """
     SourceTableObservationInput is a SourceTableRequestInput that is used to create an ObservationTableModel
+    """
+
+
+class ManagedViewObservationInput(ManagedViewRequestInput):
+    """
+    ManagedViewObservationInput is a ManagedViewRequestInput that is used to create an ObservationTableModel
     """
 
 
@@ -117,6 +124,7 @@ ObservationInput = Annotated[
         TargetInput,
         UploadedFileInput,
         ObservationTableObservationInput,
+        ManagedViewObservationInput,
     ],
     Field(discriminator="type"),
 ]

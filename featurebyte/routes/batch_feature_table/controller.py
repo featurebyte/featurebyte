@@ -11,6 +11,10 @@ from bson import ObjectId
 
 from featurebyte.exception import FeatureTableRequestInputNotFoundError
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.models.batch_request_table import (
+    ManagedViewBatchRequestInput,
+    SourceTableBatchRequestInput,
+)
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.batch_feature_table import (
@@ -30,6 +34,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.managed_view import ManagedViewService
 
 
 class BatchFeatureTableController(
@@ -56,6 +61,7 @@ class BatchFeatureTableController(
         batch_request_table_service: BatchRequestTableService,
         deployment_service: DeploymentService,
         entity_validation_service: EntityValidationService,
+        managed_view_service: ManagedViewService,
         task_controller: TaskController,
     ):
         super().__init__(
@@ -70,6 +76,7 @@ class BatchFeatureTableController(
         self.batch_request_table_service = batch_request_table_service
         self.deployment_service = deployment_service
         self.entity_validation_service = entity_validation_service
+        self.managed_view_service = managed_view_service
         self.task_controller = task_controller
 
     async def create_batch_feature_table(
@@ -115,6 +122,16 @@ class BatchFeatureTableController(
             }
         else:
             assert data.request_input is not None
+            request_input = data.request_input
+            if isinstance(data.request_input, ManagedViewBatchRequestInput):
+                managed_view = await self.managed_view_service.get_document(
+                    document_id=data.request_input.managed_view_id
+                )
+                request_input = SourceTableBatchRequestInput(
+                    source=managed_view.tabular_source,
+                    **data.request_input.model_dump(by_alias=True, exclude={"type"}),
+                )
+
             db_session = await self.feature_store_warehouse_service.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
                 compute_option_value_override=deployment.compute_option_value,
@@ -122,7 +139,7 @@ class BatchFeatureTableController(
             (
                 _,
                 input_columns_and_dtypes,
-            ) = await data.request_input.get_output_columns_and_dtypes(db_session)
+            ) = await request_input.get_output_columns_and_dtypes(db_session)
 
         if deployment.serving_entity_ids:
             # Validate the entity of the batch request table matches the deployment's serving entity
