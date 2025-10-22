@@ -25,10 +25,13 @@ from featurebyte.schema.managed_view import (
     ManagedViewTableInfo,
     ManagedViewUpdate,
 )
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.table import TableService
 
 logger = get_logger(__name__)
@@ -49,11 +52,17 @@ class ManagedViewController(
         table_service: TableService,
         feature_store_service: FeatureStoreService,
         catalog_service: CatalogService,
+        observation_table_service: ObservationTableService,
+        batch_request_table_service: BatchRequestTableService,
+        batch_feature_table_service: BatchFeatureTableService,
     ):
         super().__init__(managed_view_service)
         self.table_service = table_service
         self.feature_store_service = feature_store_service
         self.catalog_service = catalog_service
+        self.observation_table_service = observation_table_service
+        self.batch_request_table_service = batch_request_table_service
+        self.batch_feature_table_service = batch_feature_table_service
 
         # retrieve active catalog id and feature store id
         assert managed_view_service.catalog_id is not None
@@ -161,7 +170,19 @@ class ManagedViewController(
             (
                 self.table_service,
                 {"managed_view_id": document.id},
-            )
+            ),
+            (
+                self.observation_table_service,
+                {"request_input.managed_view_id": document.id},
+            ),
+            (
+                self.batch_request_table_service,
+                {"request_input.managed_view_id": document.id},
+            ),
+            (
+                self.batch_feature_table_service,
+                {"request_input.managed_view_id": document.id},
+            ),
         ]
 
     async def update_managed_view(
