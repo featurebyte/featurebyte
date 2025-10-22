@@ -109,6 +109,7 @@ from featurebyte.query_graph.node.schema import (
     SnowflakeDetails,
     SparkDetails,
 )
+from featurebyte.query_graph.sql.adapter.base import SamplingRatePerTargetValue
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
@@ -566,6 +567,7 @@ __all__ = [
     "TimeInterval",
     "TimeZoneColumn",
     "CalendarWindow",
+    "SamplingRatePerTargetValue",
     # services
     "start",
     "stop",

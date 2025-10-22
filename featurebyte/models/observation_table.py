@@ -24,6 +24,7 @@ from featurebyte.models.request_input import (
     ViewRequestInput,
 )
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter.base import DownSamplingInfo, SamplingRatePerTargetValue
 from featurebyte.session.base import BaseSession
 
 
@@ -59,6 +60,7 @@ class NoOpMaterializeMixin:
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        downsampling_info: Optional[DownSamplingInfo] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
@@ -80,6 +82,8 @@ class NoOpMaterializeMixin:
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        downsampling_info: Optional[DownSamplingInfo]
+            Downsampling information
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
         missing_data_table_details: Optional[TableDetails]
@@ -111,10 +115,25 @@ class ObservationTableObservationInput(FeatureByteBaseModel):
     ObservationTableObservationInput is used to create an ObservationTableModel from an existing ObservationTableModel
     """
 
-    observation_table_id: PydanticObjectId
     type: Literal[RequestInputType.SOURCE_OBSERVATION_TABLE] = (
         RequestInputType.SOURCE_OBSERVATION_TABLE
     )
+    observation_table_id: PydanticObjectId
+    sampling_rate_per_target_value: Optional[List[SamplingRatePerTargetValue]] = None
+
+    @field_validator("sampling_rate_per_target_value")
+    @classmethod
+    def _validate_sampling_rates(
+        cls, values: Optional[List[SamplingRatePerTargetValue]]
+    ) -> Optional[List[SamplingRatePerTargetValue]]:
+        # ensure target values are unique
+        target_values = set()
+        if values is not None:
+            for sampling in values:
+                if sampling.target_value in target_values:
+                    raise ValueError(f"Duplicate target value found: {sampling.target_value}")
+                target_values.add(sampling.target_value)
+        return values
 
 
 ObservationInput = Annotated[
@@ -172,11 +191,13 @@ class ObservationTableModel(MaterializedTableModel):
         default_factory=list[PydanticObjectId]
     )
     has_row_index: Optional[bool] = Field(default=False)
+    has_row_weights: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     sample_rows: Optional[int] = Field(default=None)
     sample_from_timestamp: Optional[datetime] = Field(default=None)
     sample_to_timestamp: Optional[datetime] = Field(default=None)
     table_with_missing_data: Optional[TableDetails] = Field(default=None)
+    sampling_rate_per_target_value: Optional[List[SamplingRatePerTargetValue]] = None
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()

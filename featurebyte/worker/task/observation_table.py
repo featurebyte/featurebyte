@@ -24,6 +24,7 @@ from featurebyte.models.observation_table import (
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter.base import DownSamplingInfo
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,
@@ -323,10 +324,13 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             request_input.columns = [
                 column_name
                 for column_name in column_names_and_dtypes.keys()
-                if column_name != InternalName.TABLE_ROW_INDEX
+                if column_name not in [InternalName.TABLE_ROW_INDEX]
             ]
             context_id = source_observation_table.context_id
             use_case_ids = source_observation_table.use_case_ids
+            sampling_rate_per_target_value = payload.request_input.sampling_rate_per_target_value
+            # sample rate column will be inherited from source observation table
+            output_table_has_row_weights = source_observation_table.has_row_weights
         else:
             if isinstance(payload.request_input, ManagedViewObservationInput):
                 # for managed view input, materialize using source table request input
@@ -341,6 +345,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 request_input = payload.request_input
             context_id = payload.context_id
             use_case_ids = [payload.use_case_id] if payload.use_case_id else []
+            sampling_rate_per_target_value = None
+            output_table_has_row_weights = False
 
         # if use case is specified and observation table does not contain target,
         # try to compute the target column
@@ -370,12 +376,27 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 has_row_index=not payload.to_add_row_index,
             )
         else:
+            # apply downsampling if target is available and sampling rates are provided
+            if target_namespace_id is not None and sampling_rate_per_target_value:
+                target_namespace = await self.target_namespace_service.get_document(
+                    document_id=target_namespace_id,
+                )
+                downsampling_info = DownSamplingInfo(
+                    target_column=target_namespace.name,
+                    sampling_rate_per_target_value=sampling_rate_per_target_value,
+                )
+                # sample rate column will be added / updated in the output table
+                output_table_has_row_weights = True
+            else:
+                downsampling_info = None
+
             await request_input.materialize(
                 session=db_session,
                 destination=location.table_details,
                 sample_rows=payload.sample_rows,
                 sample_from_timestamp=payload.sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,
+                downsampling_info=downsampling_info,
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
                 missing_data_table_details=missing_data_table_details,
             )
@@ -435,6 +456,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "purpose": payload.purpose,
                 "primary_entity_ids": primary_entity_ids,
                 "has_row_index": True,
+                "has_row_weights": output_table_has_row_weights,
                 "target_namespace_id": target_namespace_id,
                 "sample_rows": payload.sample_rows,
                 "sample_from_timestamp": payload.sample_from_timestamp,

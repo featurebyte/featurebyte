@@ -1,5 +1,6 @@
 SELECT
   T0."__FB_TABLE_ROW_INDEX",
+  T0."__FB_TABLE_ROW_WEIGHT",
   T0."cust_id",
   T0."col_hash_1" AS "featureA",
   T1."col_hash_4" AS "featureB",

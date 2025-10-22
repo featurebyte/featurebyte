@@ -108,6 +108,7 @@ async def observation_table_fixture(event_table, user, observation_table_service
         most_recent_point_in_time="2023-01-15T10:00:00",
         user_id=user.id,
         has_row_index=True,
+        has_row_weights=True,
     )
     return await observation_table_service.create_document(observation_table)
 
@@ -310,6 +311,7 @@ async def test_create_feature_table_cache(
         CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache_name}" AS
         SELECT
           "__FB_TABLE_ROW_INDEX",
+          "__FB_TABLE_ROW_WEIGHT",
           "cust_id",
           "POINT_IN_TIME"
         FROM "fb_database"."fb_schema"."fb_materialized_table"
@@ -360,6 +362,7 @@ async def test_update_feature_table_cache(
         CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache_name}" AS
         SELECT
           "__FB_TABLE_ROW_INDEX",
+          "__FB_TABLE_ROW_WEIGHT",
           "cust_id",
           "POINT_IN_TIME"
         FROM "fb_database"."fb_schema"."fb_materialized_table"
@@ -604,6 +607,7 @@ async def test_create_view_from_cache__create_cache(
         CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache_name}" AS
         SELECT
           "__FB_TABLE_ROW_INDEX",
+          "__FB_TABLE_ROW_WEIGHT",
           "cust_id",
           "POINT_IN_TIME"
         FROM "fb_database"."fb_schema"."fb_materialized_table"
@@ -629,6 +633,7 @@ async def test_create_view_from_cache__create_cache(
         'CREATE TABLE "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  T0."__FB_TABLE_ROW_INDEX",\n'
+        '  T0."__FB_TABLE_ROW_WEIGHT",\n'
         '  T0."cust_id",\n'
         '  T0."POINT_IN_TIME",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
@@ -723,6 +728,7 @@ async def test_create_view_from_cache__update_cache(
         'CREATE TABLE "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  T0."__FB_TABLE_ROW_INDEX",\n'
+        '  T0."__FB_TABLE_ROW_WEIGHT",\n'
         '  T0."cust_id",\n'
         '  T0."POINT_IN_TIME",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
@@ -826,6 +832,7 @@ async def test_read_from_cache(
     assert sqls[0] == (
         "SELECT\n"
         '  T0."__FB_TABLE_ROW_INDEX",\n'
+        '  T0."__FB_TABLE_ROW_WEIGHT",\n'
         '  T0."cust_id",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  T0."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'

@@ -35,6 +35,7 @@ from featurebyte.models.observation_table import (
     Purpose,
     TargetInput,
 )
+from featurebyte.query_graph.sql.adapter.base import SamplingRatePerTargetValue
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
@@ -517,6 +518,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         sample_rows: Optional[int] = None,
         sample_from_timestamp: Optional[Union[datetime, str]] = None,
         sample_to_timestamp: Optional[Union[datetime, str]] = None,
+        sampling_rate_per_target_value: Optional[List[SamplingRatePerTargetValue]] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from an existing ObservationTable.
@@ -532,6 +534,8 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Start of date range to sample from.
         sample_to_timestamp: Optional[Union[datetime, str]]
             End of date range to sample from.
+        sampling_rate_per_target_value: Optional[List[SamplingRatePerTargetValue]]
+            List of sampling rates per target value to apply when creating the observation table.
 
         Returns
         -------
@@ -559,7 +563,10 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.cached_model.location.feature_store_id,
-            request_input=ObservationTableObservationInput(observation_table_id=self.id),
+            request_input=ObservationTableObservationInput(
+                observation_table_id=self.id,
+                sampling_rate_per_target_value=sampling_rate_per_target_value,
+            ),
             sample_rows=sample_rows,
             sample_from_timestamp=sample_from_timestamp,
             sample_to_timestamp=sample_to_timestamp,

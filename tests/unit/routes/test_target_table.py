@@ -153,6 +153,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "sample_from_timestamp": None,
             "sample_rows": None,
             "sample_to_timestamp": None,
+            "sampling_rate_per_target_value": None,
             "table_with_missing_data": None,
             "is_valid": True,
         }
