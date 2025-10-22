@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.3.0 (2025-10-22)
+
+### 💡 Enhancements
+
++ `service` Add models, services and routes for SnapshotsTable
++ `service` Make positive label immutable once set for target namespace.
+  + Positive labels for classification target namespaces cannot be changed after being set
+  + Refactored target namespace controller to make positive label validation logic extensible
++ `service` Allow context and use case to be specified during observation table creation.
++ `service` Support creating an observation table from another with sampling options.
+
+### 🐛 Bug Fixes
+
++ `service` Fix NullFillingValueExtractor to properly handle object dtype metadata for aggregation operations with categories.
+  Fixed issue where `get_value` operations on dictionary features with categorical groupby were not preserving object dtype metadata
++ `service` When the event table's entity columns & event timestamp share the exact same name as item table columns, the item view generated from the item table causes error when saving feature that uses the item view.
++ `service` Fix issue when serving parent features with tiles in batch feature requests
++ `service` Fix dtype derivation for count_dict.get_value when the parent aggregation yields an OBJECT dictionary column by normalizing to FLOAT to prevent incorrect dtype propagation.
+
 ## v3.2.0 (2025-08-04)
 
 ### 💡 Enhancements

@@ -14,7 +14,7 @@ module-root = ""
 [project]
 authors = [{name = "FeatureByte", email = "it-admin@featurebyte.com"}]
 name = "featurebyte"
-version = "3.2.0"
+version = "3.3.0"
 description = "Python Library for FeatureOps"
 readme = "README.md"
 requires-python = ">=3.10"
