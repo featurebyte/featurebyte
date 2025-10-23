@@ -1110,3 +1110,41 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["use_case_ids"] == source_observation_table["use_case_ids"]
         assert response_dict["purpose"] == "preview"
         assert response_dict["columns_info"] == source_observation_table["columns_info"]
+
+    @pytest.mark.asyncio
+    async def test_create_from_managed_view(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create with an observation table"""
+        test_api_client, _ = test_api_client_persistent
+
+        payload = self.load_payload("tests/fixtures/request_payloads/managed_view.json")
+        response = test_api_client.post("/managed_view", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        managed_view_id = response_dict["_id"]
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_managed_view.json"
+        )
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+
+        assert response_dict["request_input"] == {
+            "managed_view_id": managed_view_id,
+            "type": "managed_view",
+            "columns": None,
+            "columns_rename_mapping": None,
+        }
+        assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
+        assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
+        assert response_dict["purpose"] == "other"

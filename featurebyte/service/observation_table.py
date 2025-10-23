@@ -35,9 +35,11 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObject
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import (
+    ManagedViewObservationInput,
     ObservationTableModel,
     ObservationTableObservationInput,
     Purpose,
+    SourceTableObservationInput,
     TargetInput,
 )
 from featurebyte.models.request_input import BaseRequestInput
@@ -71,6 +73,7 @@ from featurebyte.schema.worker.task.observation_table_upload import (
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
@@ -264,6 +267,7 @@ class ObservationTableService(
         redis: Redis[Any],
         target_namespace_service: TargetNamespaceService,
         target_service: TargetService,
+        managed_view_service: ManagedViewService,
     ):
         super().__init__(
             user,
@@ -283,6 +287,7 @@ class ObservationTableService(
         self.use_case_service = use_case_service
         self.target_namespace_service = target_namespace_service
         self.target_service = target_service
+        self.managed_view_service = managed_view_service
 
     @property
     def class_name(self) -> str:
@@ -499,14 +504,23 @@ class ObservationTableService(
             # no need to perform entity validation checks since we are copying from existing observation table
             data.skip_entity_validation_checks = True
         elif isinstance(data.request_input, BaseRequestInput):
+            request_input = data.request_input
+            if isinstance(data.request_input, ManagedViewObservationInput):
+                # for managed view, convert to source table request input for column validation
+                managed_view = await self.managed_view_service.get_document(
+                    document_id=data.request_input.managed_view_id
+                )
+                request_input = SourceTableObservationInput(
+                    source=managed_view.tabular_source,
+                    **data.request_input.model_dump(by_alias=True, exclude={"type"}),
+                )
+
             feature_store = await self.feature_store_service.get_document(
                 document_id=data.feature_store_id
             )
             db_session = await self.session_manager_service.get_feature_store_session(feature_store)
             # validate columns
-            column_names_and_dtypes = await data.request_input.get_column_names_and_dtypes(
-                db_session
-            )
+            column_names_and_dtypes = await request_input.get_column_names_and_dtypes(db_session)
             available_columns = list(column_names_and_dtypes.keys())
             columns_rename_mapping = data.request_input.columns_rename_mapping
             if columns_rename_mapping:

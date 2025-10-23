@@ -12,7 +12,11 @@ from typing_extensions import Annotated
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
-from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
+from featurebyte.models.request_input import (
+    ManagedViewRequestInput,
+    SourceTableRequestInput,
+    ViewRequestInput,
+)
 
 
 class ViewBatchRequestInput(ViewRequestInput):
@@ -27,8 +31,15 @@ class SourceTableBatchRequestInput(SourceTableRequestInput):
     """
 
 
+class ManagedViewBatchRequestInput(ManagedViewRequestInput):
+    """
+    ManagedViewBatchRequestInput is a ManagedViewRequestInput that is used to create a BatchRequestTable
+    """
+
+
 BatchRequestInput = Annotated[
-    Union[ViewBatchRequestInput, SourceTableBatchRequestInput], Field(discriminator="type")
+    Union[ViewBatchRequestInput, SourceTableBatchRequestInput, ManagedViewBatchRequestInput],
+    Field(discriminator="type"),
 ]
 
 

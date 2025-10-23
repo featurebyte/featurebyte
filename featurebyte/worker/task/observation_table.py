@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.observation_table import (
+    ManagedViewObservationInput,
     ObservationInput,
     ObservationTableModel,
     ObservationTableObservationInput,
@@ -32,6 +33,7 @@ from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target import TargetService
@@ -59,6 +61,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
+        managed_view_service: ManagedViewService,
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         use_case_service: UseCaseService,
@@ -69,6 +72,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
+        self.managed_view_service = managed_view_service
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.use_case_service = use_case_service
@@ -324,7 +328,17 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             context_id = source_observation_table.context_id
             use_case_ids = source_observation_table.use_case_ids
         else:
-            request_input = payload.request_input
+            if isinstance(payload.request_input, ManagedViewObservationInput):
+                # for managed view input, materialize using source table request input
+                managed_view = await self.managed_view_service.get_document(
+                    document_id=payload.request_input.managed_view_id
+                )
+                request_input = SourceTableObservationInput(
+                    source=managed_view.tabular_source,
+                    **payload.request_input.model_dump(by_alias=True, exclude={"type"}),
+                )
+            else:
+                request_input = payload.request_input
             context_id = payload.context_id
             use_case_ids = [payload.use_case_id] if payload.use_case_id else []
 

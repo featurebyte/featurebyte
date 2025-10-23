@@ -16,7 +16,7 @@ from sqlglot.expressions import Select
 
 from featurebyte.enum import DBVarType, SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
@@ -48,6 +48,7 @@ class RequestInputType(StrEnum):
     DATAFRAME = "dataframe"
     UPLOADED_FILE = "uploaded_file"
     SOURCE_OBSERVATION_TABLE = "source_observation_table"
+    MANAGED_VIEW = "managed_view"
 
 
 class BaseRequestInput(FeatureByteBaseModel):
@@ -396,3 +397,21 @@ class SourceTableRequestInput(BaseRequestInput):
             schema_name=self.source.table_details.schema_name,
         )
         return {key: value.dtype for key, value in table_schema.items()}
+
+
+class ManagedViewRequestInput(BaseRequestInput):
+    """
+    ManagedViewRequestInput is the input for creating a materialized request table from a managed view
+
+    type: Literal[RequestInputType.MANAGED_VIEW]
+        The type of the input. Must be MANAGED_VIEW for this class
+    """
+
+    managed_view_id: PydanticObjectId
+    type: Literal[RequestInputType.MANAGED_VIEW] = RequestInputType.MANAGED_VIEW
+
+    def get_query_expr(self, source_info: SourceInfo) -> Select:
+        raise NotImplementedError
+
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
+        raise NotImplementedError

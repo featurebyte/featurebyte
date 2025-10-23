@@ -10,9 +10,13 @@ from bson import ObjectId
 
 from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
-from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
+from featurebyte.models.batch_request_table import (
+    ManagedViewBatchRequestInput,
+    SourceTableBatchRequestInput,
+)
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.observation_table import (
+    ManagedViewObservationInput,
     ObservationTableObservationInput,
     SourceTableObservationInput,
 )
@@ -291,7 +295,25 @@ def test_save_payload_fixtures(
         columns_info=[ColumnInfo(name="col1", dtype=DBVarType.FLOAT)],
         description="This is a managed view",
     )
-
+    observation_table_from_managed_view = ObservationTableCreate(
+        _id="68ccea50820076b52bbcceb5",
+        name="observation_table_from_managed_view",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=ManagedViewObservationInput(
+            managed_view_id=managed_view.id,
+        ),
+        primary_entity_ids=[cust_id_entity.id],
+        purpose="other",
+    )
+    batch_feature_table_with_managed_view_request_input = BatchFeatureTableCreate(
+        _id="646f6c1c0ed28a5271fb12de",
+        name="batch_feature_table_with_managed_view_request_input",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=ManagedViewBatchRequestInput(
+            managed_view_id=managed_view.id,
+        ),
+        deployment_id=deployment.id,
+    )
     development_dataset = DevelopmentDatasetCreate(
         _id="646f6c190ed28a5271fb02ea",
         name="My Development Dataset",
@@ -361,11 +383,16 @@ def test_save_payload_fixtures(
         (relationship_info, "relationship_info"),
         (observation_table, "observation_table"),
         (observation_table_from_obs_table, "observation_table_from_obs_table"),
+        (observation_table_from_managed_view, "observation_table_from_managed_view"),
         (historical_feature_table, "historical_feature_table"),
         (target_table, "target_table"),
         (batch_request_table, "batch_request_table"),
         (batch_feature_table, "batch_feature_table"),
         (batch_feature_table_with_request_input, "batch_feature_table_with_request_input"),
+        (
+            batch_feature_table_with_managed_view_request_input,
+            "batch_feature_table_with_managed_view_request_input",
+        ),
         (static_source_table, "static_source_table"),
         (catalog, "catalog"),
         (credential, "credential"),
