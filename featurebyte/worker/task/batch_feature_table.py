@@ -154,6 +154,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     columns_info=columns_info,
                     num_rows=num_rows,
                     parent_batch_feature_table_name=payload.parent_batch_feature_table_name,
+                    point_in_time=payload.point_in_time,
                 )
 
                 if payload.output_table_info is not None:

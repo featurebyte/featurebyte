@@ -4,6 +4,7 @@ BatchFeatureTable related model(s)
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Optional
 
 import pymongo
@@ -27,6 +28,7 @@ class BatchFeatureTableModel(MaterializedTableModel):
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
     parent_batch_feature_table_name: Optional[str] = Field(default=None)
+    point_in_time: Optional[datetime] = Field(default=None)
 
     class Settings(MaterializedTableModel.Settings):
         """

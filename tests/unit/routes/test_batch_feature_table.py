@@ -223,6 +223,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/batch_feature_table_with_request_input.json"
         )
+        payload["point_in_time"] = "2025-06-19T03:00:00"
         id_before = payload["_id"]
         response = self.post(test_api_client, payload)
 
@@ -234,6 +235,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response_dict["_id"] == id_before
         assert response_dict["name"] == "batch_feature_table_with_request_input"
+        assert response_dict["point_in_time"] == "2025-06-19T03:00:00"
 
     def test_create_fails_multiple_request_inputs(self, test_api_client_persistent):
         """Test create fails with multiple request inputs"""
