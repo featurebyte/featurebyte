@@ -123,13 +123,14 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
 
     async def _run_materialize(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> None:
         session = None
-        total_count = (await self.offline_store_feature_table_service.list_documents_as_dict())[
-            "total"
-        ]
-        current_table_index = 0
+        feature_table_models = []
         async for (
             feature_table_model
-        ) in self.offline_store_feature_table_service.list_documents_iterator({}):
+        ) in self.offline_store_feature_table_service.list_source_feature_tables():
+            feature_table_models.append(feature_table_model)
+        total_count = len(feature_table_models)
+        current_table_index = 0
+        for feature_table_model in feature_table_models:
             logger.info(
                 "Updating online store for offline feature store table",
                 extra={
@@ -148,16 +149,8 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
                 session = await self.feature_materialize_service._get_session(feature_table_model)
 
             if feature_table_model.deployment_ids:
-                service = self.feast_feature_store_service
-                feast_feature_store = (
-                    await service.get_feast_feature_store_for_feature_materialization(
-                        feature_table_model=feature_table_model,
-                        online_store_id=payload.online_store_id,
-                    )
+                await self.feature_materialize_service.update_online_store(
+                    online_store_id=payload.online_store_id,
+                    feature_table_model=feature_table_model,
+                    session=session,
                 )
-                if feast_feature_store:
-                    await self.feature_materialize_service.update_online_store(
-                        feature_store=feast_feature_store,
-                        feature_table_model=feature_table_model,
-                        session=session,
-                    )
