@@ -33,16 +33,23 @@ def cron_helper_fixture(app_container):
     return app_container.cron_helper
 
 
-def test_get_cron_schedule(cron_helper):
+@pytest.mark.parametrize("point_in_time_has_tz", [False, True])
+def test_get_cron_schedule(cron_helper, point_in_time_has_tz):
     """
     Test get_cron_schedule
     """
     feature_job_setting = CronFeatureJobSetting(
         crontab="0 10 * * 1",
     )
+    if point_in_time_has_tz:
+        min_point_in_time = datetime(2024, 1, 15, 10, 0, 0, tzinfo=pytz.utc)
+        max_point_in_time = datetime(2024, 2, 15, 10, 0, 0, tzinfo=pytz.utc)
+    else:
+        min_point_in_time = datetime(2024, 1, 15, 10, 0, 0)
+        max_point_in_time = datetime(2024, 2, 15, 10, 0, 0)
     datetimes = cron_helper.get_cron_job_schedule(
-        min_point_in_time=datetime(2024, 1, 15, 10, 0, 0),
-        max_point_in_time=datetime(2024, 2, 15, 10, 0, 0),
+        min_point_in_time=min_point_in_time,
+        max_point_in_time=max_point_in_time,
         cron_feature_job_setting=feature_job_setting,
     )
     tzinfo = pytz.timezone("Etc/UTC")

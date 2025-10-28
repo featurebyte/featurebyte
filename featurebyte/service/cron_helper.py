@@ -167,8 +167,16 @@ class CronHelper:
         -------
         list[datetime]
         """
-        start = pytz.utc.localize(min_point_in_time)
-        end = pytz.utc.localize(max_point_in_time)
+        if min_point_in_time.tzinfo is None:
+            start = pytz.utc.localize(min_point_in_time)
+        else:
+            start = min_point_in_time
+
+        if max_point_in_time.tzinfo is None:
+            end = pytz.utc.localize(max_point_in_time)
+        else:
+            end = max_point_in_time
+
         tz = pytz.timezone(cron_feature_job_setting.timezone)
         start_local = start.astimezone(tz)
         end_local = end.astimezone(tz)
