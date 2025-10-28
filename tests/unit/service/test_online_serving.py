@@ -409,3 +409,29 @@ async def test_get_online_features_without_deployed_tile_tables(
         "tests/fixtures/expected_get_online_features_without_deployed_tile_tables.sql",
         update_fixture=update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_get_online_features_from_feature_list_point_in_time_tz(
+    online_serving_service,
+    deployed_feature_list,
+    entity_serving_names,
+    mock_session_for_online_serving,
+    update_fixtures,
+):
+    """
+    Test getting online features request with point in time with timezone
+    """
+    await online_serving_service.get_online_features_from_feature_list(
+        feature_list=deployed_feature_list,
+        request_data=entity_serving_names,
+        output_table_details=TableDetails(
+            database_name="output_db_name",
+            schema_name="output_schema_name",
+            table_name="output_table_name",
+        ),
+        point_in_time=pd.to_datetime("2023-10-01 12:00:00+08:00").to_pydatetime(),
+    )
+
+    queries = extract_session_executed_queries(mock_session_for_online_serving)
+    assert "CAST('2023-10-01 04:00:00' AS TIMESTAMP) AS POINT_IN_TIME" in queries
