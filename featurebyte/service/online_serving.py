@@ -8,7 +8,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 from unittest.mock import patch
 
@@ -187,6 +187,10 @@ class OnlineServingService:
                 feature_store=feature_store,
             )
         )
+
+        if point_in_time is not None and point_in_time.tzinfo is not None:
+            # If timezone aware, convert to UTC and remove timezone info
+            point_in_time = point_in_time.astimezone(timezone.utc).replace(tzinfo=None)
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
