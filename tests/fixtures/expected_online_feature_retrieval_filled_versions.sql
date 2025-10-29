@@ -157,7 +157,8 @@ SELECT
   REQ."CUSTOMER_ID",
   REQ."order_id",
   T0."a_48h_average",
-  T0."order_size"
+  T0."order_size",
+  CAST('2023-10-01 12:00:00' AS TIMESTAMP) AS "POINT_IN_TIME"
 FROM "MY_REQUEST_TABLE" AS REQ
 LEFT JOIN "__TEMP_0" AS T0
   ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX"

@@ -128,6 +128,7 @@ class OnlineServingService:
         point_in_time: Optional[datetime] = None,
         use_deployed_tile_tables: bool = True,
         deployment: Optional[DeploymentModel] = None,
+        include_point_in_time: bool = True,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -148,6 +149,8 @@ class OnlineServingService:
             Whether to use deployed tile tables for online serving
         deployment: Optional[DeploymentModel]
             Deployment for which the online features are requested
+        include_point_in_time: bool
+            Whether to include point in time column in the output
 
         Returns
         -------
@@ -218,6 +221,7 @@ class OnlineServingService:
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
             use_deployed_tile_tables=use_deployed_tile_tables,
+            include_point_in_time=include_point_in_time,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(
