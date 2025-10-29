@@ -971,7 +971,7 @@ async def test_update_online_store__never_materialized_before(
     offline_store_feature_table.last_materialized_at = offline_last_materialized_at
     offline_store_feature_table.online_stores_last_materialized_at = []
     await feature_materialize_service.update_online_store(
-        feature_store=feast_feature_store,
+        online_store_id=feast_feature_store.online_store_id,
         feature_table_model=offline_store_feature_table,
         session=mock_snowflake_session,
     )
@@ -1033,7 +1033,7 @@ async def test_update_online_store__materialized_before(
         )
     ]
     await feature_materialize_service.update_online_store(
-        feature_store=feast_feature_store,
+        online_store_id=feast_feature_store.online_store_id,
         feature_table_model=offline_store_feature_table,
         session=mock_snowflake_session,
     )

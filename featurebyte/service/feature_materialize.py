@@ -416,6 +416,7 @@ class FeatureMaterializeService:
                 column_names=column_names,
                 column_dtypes=column_dtypes,
                 use_last_materialized_timestamp=use_last_materialized_timestamp,
+                empty_universe=empty_universe,
             ):
                 materialized_features_set.add_lookup_materialized_features(
                     lookup_feature_table, lookup_materialized_features
@@ -458,6 +459,7 @@ class FeatureMaterializeService:
         column_names: List[str],
         column_dtypes: List[DBVarType],
         use_last_materialized_timestamp: bool,
+        empty_universe: bool,
     ) -> List[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
         precomputed_lookup_feature_tables = await self._get_precomputed_lookup_feature_tables(
             feature_table_model
@@ -476,6 +478,7 @@ class FeatureMaterializeService:
                     use_last_materialized_timestamp and not feature_table_model.has_ttl
                 ),
                 lookup_feature_table=lookup_feature_table,
+                empty_universe=empty_universe,
             )
             result.append((lookup_feature_table, lookup_materialized_features))
         return result
@@ -491,6 +494,7 @@ class FeatureMaterializeService:
         use_last_materialized_timestamp: bool,
         source_feature_table_serving_names: List[str],
         lookup_feature_table: OfflineStoreFeatureTableModel,
+        empty_universe: bool = False,
     ) -> MaterializedFeatures:
         # Construct a lookup universe table with both the child and parent entities to be joined
         # with the source feature table
@@ -500,17 +504,20 @@ class FeatureMaterializeService:
             schema_name=session.schema_name,
             table_name=f"TEMP_LOOKUP_UNIVERSE_TABLE_{unique_id}".upper(),
         )
+        entity_universe_expr = lookup_feature_table.entity_universe.get_entity_universe_expr(
+            current_feature_timestamp=feature_timestamp,
+            last_materialized_timestamp=(
+                lookup_feature_table.last_materialized_at
+                if use_last_materialized_timestamp
+                else None
+            ),
+        )
+        if empty_universe:
+            entity_universe_expr = entity_universe_expr.limit(0)
         create_entity_universe_table_query = sql_to_string(
             adapter.create_table_as(
                 table_details=lookup_universe_table_details,
-                select_expr=lookup_feature_table.entity_universe.get_entity_universe_expr(
-                    current_feature_timestamp=feature_timestamp,
-                    last_materialized_timestamp=(
-                        lookup_feature_table.last_materialized_at
-                        if use_last_materialized_timestamp
-                        else None
-                    ),
-                ),
+                select_expr=entity_universe_expr,
             ),
             source_type=session.source_type,
         )
@@ -1094,7 +1101,7 @@ class FeatureMaterializeService:
 
     async def update_online_store(
         self,
-        feature_store: FeastFeatureStore,
+        online_store_id: Optional[ObjectId],
         feature_table_model: OfflineStoreFeatureTableModel,
         session: BaseSession,
     ) -> None:
@@ -1104,23 +1111,40 @@ class FeatureMaterializeService:
 
         Parameters
         ----------
-        feature_store: FeastFeatureStore
-            Feast feature store
+        online_store_id: Optional[ObjectId]
+            Online store id
         feature_table_model: OfflineStoreFeatureTableModel
             Offline store feature table model
         session: BaseSession
             Data warehouse session object
         """
-        if feature_table_model.last_materialized_at is None:
-            # Skip if offline table is not computed yet as nothing to materialize
-            return
-        assert feature_store.online_store_id is not None
         end_date = pd.Timestamp(
             await self._get_last_feature_timestamp(session, feature_table_model.name)
         ).to_pydatetime()
+
+        # Main feature table
         tables = [feature_table_model]
+
+        # Precomputed lookup feature tables that are expanded from the main feature table
         tables.extend(await self._get_precomputed_lookup_feature_tables(feature_table_model))
+
         for current_feature_table in tables:
+            if current_feature_table.last_materialized_at is None:
+                # Skip if offline table is not computed yet as nothing to materialize
+                continue
+
+            # Need to get a fresh feature store object since each is made specific to an offline
+            # feature table and an online store
+            feature_store = await self.feast_feature_store_service.get_feast_feature_store_for_feature_materialization(
+                feature_table_model=current_feature_table,
+                online_store_id=online_store_id,
+            )
+
+            if feature_store is None or feature_store.online_store_id is None:
+                # feature_store.online_store_id shouldn't be None here, but just in case
+                return
+
+            assert feature_store.online_store_id is not None
             start_date = current_feature_table.get_online_store_last_materialized_at(
                 feature_store.online_store_id
             )
