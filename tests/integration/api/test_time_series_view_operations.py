@@ -368,7 +368,13 @@ def test_batch_features_from_deployment(
         point_in_time="2025-01-01 10:00:00Z",
     )
     df_batch_feature_table = batch_feature_table.to_pandas()
-    df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_35y": 49.5}])
+    df_expected = pd.DataFrame([
+        {
+            "series_id": "S0",
+            "value_col_sum_35y": 49.5,
+            "POINT_IN_TIME": pd.Timestamp("2025-01-01 10:00:00"),
+        }
+    ])
     fb_assert_frame_equal(df_batch_feature_table, df_expected)
 
 

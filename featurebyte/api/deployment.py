@@ -268,6 +268,7 @@ class Deployment(DeletableApiObject):
         columns_rename_mapping: Optional[dict[str, str]] = None,
         point_in_time: Optional[str | datetime] = None,
         use_deployed_tile_tables: bool = False,
+        include_point_in_time: bool = True,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features
@@ -293,6 +294,8 @@ class Deployment(DeletableApiObject):
         use_deployed_tile_tables: bool
             Whether to use deployed tile tables for computing the batch feature table. If False,
             tiles will be computed on demand.
+        include_point_in_time: bool
+            Whether to include point in time column in the batch feature table.
 
         Returns
         -------
@@ -330,6 +333,7 @@ class Deployment(DeletableApiObject):
             deployment_id=self.id,
             point_in_time=point_in_time,
             use_deployed_tile_tables=use_deployed_tile_tables,
+            include_point_in_time=include_point_in_time,
         )
         batch_feature_table_doc = self.post_async_task(
             route="/batch_feature_table", payload=payload.json_dict()

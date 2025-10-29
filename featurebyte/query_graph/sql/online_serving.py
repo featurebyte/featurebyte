@@ -345,6 +345,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
+        include_point_in_time: bool = True,
     ):
         self.graph = graph
         self.nodes = nodes
@@ -360,6 +361,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         self.on_demand_tile_tables = on_demand_tile_tables
         self.column_statistics_info = column_statistics_info
         self.partition_column_filters = partition_column_filters
+        self.include_point_in_time = include_point_in_time
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -406,12 +408,21 @@ class OnlineFeatureQuerySet(FeatureQuerySet):
         """
         assert isinstance(self.feature_query_generator, OnlineFeatureQueryGenerator)
         output_expr = super().construct_join_feature_sets_query()
-        return add_concatenated_serving_names(
+        output_expr = add_concatenated_serving_names(
             output_expr,
             self.feature_query_generator.concatenate_serving_names,
             self.feature_query_generator.source_info.source_type,
             serving_names_table_alias="REQ",
         )
+        if self.feature_query_generator.include_point_in_time:
+            output_expr = output_expr.select(
+                expressions.alias_(
+                    self.feature_query_generator.current_timestamp_expr,
+                    alias=SpecialColumnName.POINT_IN_TIME,
+                    quoted=True,
+                )
+            )
+        return output_expr
 
 
 def get_online_features_query_set(
@@ -433,6 +444,7 @@ def get_online_features_query_set(
     on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     partition_column_filters: Optional[PartitionColumnFilters] = None,
+    include_point_in_time: bool = True,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -476,6 +488,8 @@ def get_online_features_query_set(
         Column statistics information
     partition_column_filters: Optional[PartitionColumnFilters]
         Partition column filters to apply to source tables
+    include_point_in_time: bool
+        Whether to include point in time column in the output
 
     Returns
     -------
@@ -497,6 +511,7 @@ def get_online_features_query_set(
         on_demand_tile_tables=on_demand_tile_tables,
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
+        include_point_in_time=include_point_in_time,
     )
     feature_query_set = OnlineFeatureQuerySet(
         feature_query_generator=feature_query_generator,
@@ -539,6 +554,7 @@ async def get_online_features(
     request_timestamp: Optional[datetime] = None,
     concatenate_serving_names: Optional[list[str]] = None,
     use_deployed_tile_tables: bool = True,
+    include_point_in_time: bool = True,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -581,6 +597,8 @@ async def get_online_features(
     use_deployed_tile_tables: bool
         Whether to use deployed tile tables when computing features. If False, temporary tile tables
         will be generated and used.
+    include_point_in_time: bool
+        Whether to include point in time column in the output
 
     Returns
     -------
@@ -695,6 +713,7 @@ async def get_online_features(
             on_demand_tile_tables=on_demand_tile_tables,
             column_statistics_info=column_statistics_info,
             partition_column_filters=partition_column_filters,
+            include_point_in_time=include_point_in_time,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 

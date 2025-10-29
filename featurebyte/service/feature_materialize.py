@@ -377,6 +377,7 @@ class FeatureMaterializeService:
                 request_timestamp=feature_timestamp,
                 parent_serving_preparation=parent_serving_preparation,
                 concatenate_serving_names=feature_table_model.serving_names,
+                include_point_in_time=False,
             )
 
             column_names = []

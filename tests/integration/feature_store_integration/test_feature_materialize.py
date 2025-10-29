@@ -1194,6 +1194,8 @@ async def test_batch_features(
     df_batch_features = batch_feature_table.to_pandas()
     feat_dict = df_batch_features.iloc[0].to_dict()
     process_output_features_helper(feat_dict, source_type)
+    point_in_time = feat_dict.pop("POINT_IN_TIME")
+    assert point_in_time == pd.Timestamp("2001-01-02 12:00")
     assert_dict_approx_equal(feat_dict, expected_features_order_id_T3850)
 
 
