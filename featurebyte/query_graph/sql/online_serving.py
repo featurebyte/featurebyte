@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Dict, List, Optional, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -14,6 +14,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.common.env_util import is_feature_query_debug_enabled
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
@@ -53,6 +54,10 @@ from featurebyte.query_graph.sql.feature_compute import (
     FeatureExecutionPlanner,
     FeatureQuery,
     FeatureQueryPlan,
+)
+from featurebyte.query_graph.sql.feature_historical import (
+    PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
 )
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
@@ -555,6 +560,7 @@ async def get_online_features(
     concatenate_serving_names: Optional[list[str]] = None,
     use_deployed_tile_tables: bool = True,
     include_point_in_time: bool = True,
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -599,6 +605,8 @@ async def get_online_features(
         will be generated and used.
     include_point_in_time: bool
         Whether to include point in time column in the output
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+        Optional progress callback function
 
     Returns
     -------
@@ -673,6 +681,15 @@ async def get_online_features(
         ).on_demand_tile_tables
     else:
         request_timestamp_expr = get_current_timestamp_expr(request_timestamp)
+        tile_cache_progress_callback = (
+            get_ranged_progress_callback(
+                progress_callback,
+                0,
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+            )
+            if progress_callback
+            else None
+        )
         tile_compute_result = await compute_tiles_on_demand(
             session=session,
             tile_cache_service=tile_cache_service,
@@ -687,9 +704,14 @@ async def get_online_features(
             partition_column_filters=partition_column_filters,
             parent_serving_preparation=parent_serving_preparation,
             request_timestamp_expr=request_timestamp_expr,
-            progress_callback=None,
+            progress_callback=tile_cache_progress_callback,
         )
         on_demand_tile_tables = tile_compute_result.on_demand_tile_tables
+
+    if progress_callback:
+        await progress_callback(
+            TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
+        )
 
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
@@ -723,6 +745,15 @@ async def get_online_features(
             query_set,
             batch_request_table_id=(
                 request_data.id if isinstance(request_data, BatchRequestTableModel) else None
+            ),
+            progress_callback=(
+                get_ranged_progress_callback(
+                    progress_callback,
+                    TILE_COMPUTE_PROGRESS_MAX_PERCENT,
+                    100,
+                )
+                if progress_callback
+                else None
             ),
         )
         df_features = feature_query_set_result.dataframe
