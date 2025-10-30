@@ -9,7 +9,7 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
@@ -129,6 +129,7 @@ class OnlineServingService:
         use_deployed_tile_tables: bool = True,
         deployment: Optional[DeploymentModel] = None,
         include_point_in_time: bool = True,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -151,6 +152,8 @@ class OnlineServingService:
             Deployment for which the online features are requested
         include_point_in_time: bool
             Whether to include point in time column in the output
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+            Progress callback to report progress
 
         Returns
         -------
@@ -222,6 +225,7 @@ class OnlineServingService:
             online_store_table_version_service=self.online_store_table_version_service,
             use_deployed_tile_tables=use_deployed_tile_tables,
             include_point_in_time=include_point_in_time,
+            progress_callback=progress_callback,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(

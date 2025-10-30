@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.deployment import DeploymentModel
@@ -25,6 +26,12 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
+
+FEATURE_COMPUTATION_PROGRESS_MAX = 95
+STATS_COMPUTATION_PROGRESS = 97
+WRITE_EXTERNAL_FEATURE_TABLE_PROGRESS = 98
+
 
 logger = get_logger(__name__)
 
@@ -49,6 +56,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         online_serving_service: OnlineServingService,
         entity_validation_service: EntityValidationService,
         batch_request_table_task: BatchRequestTableTask,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -61,6 +69,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         self.entity_validation_service = entity_validation_service
         self.batch_request_table_task = batch_request_table_task
         self.batch_external_feature_table_service = batch_external_feature_table_service
+        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: BatchFeatureTableTaskPayload) -> str:
         if payload.output_table_info is not None:
@@ -123,6 +132,9 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     )
                 )
 
+            compute_progress_callback = get_ranged_progress_callback(
+                self.task_progress_updater.update_progress, 0, FEATURE_COMPUTATION_PROGRESS_MAX
+            )
             async with self.drop_table_on_error(
                 db_session=db_session,
                 list_of_table_details=[location.table_details],
@@ -137,6 +149,11 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     use_deployed_tile_tables=payload.use_deployed_tile_tables,
                     deployment=deployment,
                     include_point_in_time=payload.include_point_in_time,
+                    progress_callback=compute_progress_callback,
+                )
+
+                await self.task_progress_updater.update_progress(
+                    percent=STATS_COMPUTATION_PROGRESS, message="Computing table statistics"
                 )
                 (
                     columns_info,
@@ -160,6 +177,10 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
 
                 if payload.output_table_info is not None:
                     # Append feature values from temporary batch request table to output table
+                    await self.task_progress_updater.update_progress(
+                        percent=WRITE_EXTERNAL_FEATURE_TABLE_PROGRESS,
+                        message="Writing batch features to output table",
+                    )
                     await self.batch_external_feature_table_service.write_batch_features_to_table(
                         db_session=db_session,
                         batch_feature_table=batch_feature_table_model,
@@ -182,6 +203,9 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                         await self.batch_feature_table_service.create_document(
                             batch_feature_table_model
                         )
+                await self.task_progress_updater.update_progress(
+                    percent=100, message="Batch feature table creation completed"
+                )
                 return batch_feature_table_model
         finally:
             if payload.batch_request_table_id is None:
