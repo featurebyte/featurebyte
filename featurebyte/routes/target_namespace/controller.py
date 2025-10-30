@@ -206,7 +206,7 @@ class TargetNamespaceController(
                 f"Current positive label value: {target_namespace.positive_label}."
             )
 
-    def _validate_positive_label_candidate(
+    async def _validate_positive_label_candidate(
         self,
         target_namespace: TargetNamespaceModel,
         data: TargetNamespaceUpdate,
@@ -287,7 +287,8 @@ class TargetNamespaceController(
         self._validate_positive_label_immutability(target_namespace)
 
         # Validate and extract positive label from candidates
-        return self._validate_positive_label_candidate(target_namespace, data)
+        pos_label = await self._validate_positive_label_candidate(target_namespace, data)
+        return pos_label
 
     async def update_target_namespace(
         self, target_namespace_id: ObjectId, data: TargetNamespaceUpdate
