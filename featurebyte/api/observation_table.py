@@ -35,7 +35,7 @@ from featurebyte.models.observation_table import (
     Purpose,
     TargetInput,
 )
-from featurebyte.query_graph.sql.adapter.base import SamplingRatePerTargetValue
+from featurebyte.models.request_input import SamplingRatePerTargetValue
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
@@ -534,7 +534,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Start of date range to sample from.
         sample_to_timestamp: Optional[Union[datetime, str]]
             End of date range to sample from.
-        sampling_rate_per_target_value: Optional[List[SamplingRatePerTargetValue]]
+        sampling_rate_per_target_value: Optional[List[featurebyte.SamplingRatePerTargetValue]]
             List of sampling rates per target value to apply when creating the observation table.
 
         Returns

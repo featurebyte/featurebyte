@@ -22,9 +22,9 @@ from featurebyte.models.observation_table import (
     SourceTableObservationInput,
     TargetInput,
 )
+from featurebyte.models.request_input import DownSamplingInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter.base import DownSamplingInfo
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,

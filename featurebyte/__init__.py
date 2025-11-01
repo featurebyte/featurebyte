@@ -83,6 +83,7 @@ from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
+from featurebyte.models.request_input import SamplingRatePerTargetValue
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -109,7 +110,6 @@ from featurebyte.query_graph.node.schema import (
     SnowflakeDetails,
     SparkDetails,
 )
-from featurebyte.query_graph.sql.adapter.base import SamplingRatePerTargetValue
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()

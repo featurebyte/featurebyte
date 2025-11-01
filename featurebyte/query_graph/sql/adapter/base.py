@@ -7,18 +7,15 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from numpy import format_float_positional
-from pydantic import Field
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
-from typing_extensions import ClassVar, Literal
+from typing_extensions import Literal
 
-from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, InternalName, TimeIntervalUnit
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -48,25 +45,6 @@ class VectorAggColumn:
 
     aggr_expr: Select
     result_name: str
-
-
-class SamplingRatePerTargetValue(FeatureByteBaseModel):
-    """Information on sampling rate per target_value. If value is None, sampling is applied to the full data"""
-
-    # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.SamplingRatePerTargetValue"
-    )
-
-    target_value: Union[str, int, bool]
-    rate: float = Field(gt=0, le=1)
-
-
-class DownSamplingInfo(FeatureByteBaseModel):
-    """Information on downsampling"""
-
-    target_column: str
-    sampling_rate_per_target_value: List[SamplingRatePerTargetValue] = Field(min_length=1)
 
 
 class BaseAdapter(ABC):
@@ -727,129 +705,6 @@ class BaseAdapter(ABC):
         )
         if sort_by_prob:
             output = output.order_by(quoted_identifier("prob"))
-        return output
-
-    @classmethod
-    def downsample(
-        cls,
-        select_expr: Select,
-        downsampling_info: DownSamplingInfo,
-        seed: int,
-    ) -> Select:
-        """
-        Construct query to downsample a table based on the downsampling information
-
-        Parameters
-        ----------
-        select_expr: Select
-            Table to sample from
-        downsampling_info: DownSamplingInfo
-            Downsampling information
-        seed: int
-            Random seed
-
-        Returns
-        -------
-        Select
-        """
-        # no downsampling needed
-        if all(
-            sampling.rate >= 1.0 for sampling in downsampling_info.sampling_rate_per_target_value
-        ):
-            return select_expr
-
-        original_cols = [
-            quoted_identifier(col_expr.alias or col_expr.name)
-            for col_expr in select_expr.expressions
-        ]
-        prob_expr = alias_(
-            cls.get_uniform_distribution_expr(seed),
-            alias="prob",
-            quoted=True,
-        )
-        sampled_expr_with_prob = select(prob_expr, *original_cols).from_(select_expr.subquery())
-
-        # column to indicate the sampling rate applied to each row
-        sampling_column_exists = False
-        for col_expr in select_expr.expressions:
-            if col_expr.name == InternalName.TABLE_ROW_WEIGHT:
-                sampling_column_exists = True
-
-        sample_rate_expr = expressions.Case(
-            ifs=[
-                expressions.If(
-                    this=expressions.EQ(
-                        this=quoted_identifier(downsampling_info.target_column),
-                        expression=make_literal_value(sampling.target_value),
-                    ),
-                    true=expressions.Cast(
-                        this=(
-                            expressions.Mul(
-                                this=quoted_identifier(InternalName.TABLE_ROW_WEIGHT),
-                                expression=make_literal_value(1 / sampling.rate),
-                            )
-                            if sampling_column_exists
-                            else make_literal_value(1 / sampling.rate)
-                        ),
-                        to=expressions.DataType.build("FLOAT"),
-                    ),
-                )
-                for sampling in downsampling_info.sampling_rate_per_target_value
-            ],
-            default=(
-                quoted_identifier(InternalName.TABLE_ROW_WEIGHT)
-                if sampling_column_exists
-                else make_literal_value(1)
-            ),
-        )
-
-        if sampling_column_exists:
-            final_output_cols = [
-                col for col in original_cols if col.name != InternalName.TABLE_ROW_WEIGHT
-            ]
-        else:
-            final_output_cols = original_cols
-        output_col_expr = final_output_cols + [
-            expressions.alias_(sample_rate_expr, alias=InternalName.TABLE_ROW_WEIGHT, quoted=True)
-        ]
-
-        output = (
-            select(*output_col_expr)
-            .from_(sampled_expr_with_prob.subquery())
-            .where(
-                expressions.or_(
-                    *(
-                        # conditions for specified target values and rates
-                        [
-                            expressions.and_(
-                                expressions.EQ(
-                                    this=quoted_identifier(downsampling_info.target_column),
-                                    expression=make_literal_value(sampling.target_value),
-                                ),
-                                expressions.LTE(
-                                    this=quoted_identifier("prob"),
-                                    expression=make_literal_value(sampling.rate),
-                                ),
-                            )
-                            for sampling in downsampling_info.sampling_rate_per_target_value
-                        ]
-                        +
-                        # condition for unspecified target values (apply full rate)
-                        [
-                            expressions.not_(
-                                expressions.In(
-                                    this=quoted_identifier(downsampling_info.target_column),
-                                    expressions=[
-                                        make_literal_value(sampling.target_value)
-                                        for sampling in downsampling_info.sampling_rate_per_target_value
-                                    ],
-                                )
-                            ),
-                        ]
-                    )
-                )
-            )
-        )
         return output
 
     @classmethod

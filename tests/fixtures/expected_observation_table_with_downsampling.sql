@@ -148,7 +148,7 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
-  CASE WHEN "float_target" = '1' THEN CAST(2.0 AS FLOAT) ELSE 1 END AS "__FB_TABLE_ROW_WEIGHT"
+  CASE WHEN "float_target" = '1' THEN CAST(2.0 AS FLOAT) ELSE 1.0 END AS "__FB_TABLE_ROW_WEIGHT"
 FROM (
   SELECT
     CAST(BITAND(RANDOM(0), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
@@ -180,7 +180,10 @@ FROM (
 WHERE
   (
     "float_target" = '1' AND "prob" <= 0.5
-  ) OR NOT "float_target" IN ('1');
+  )
+  OR (
+    NOT "float_target" IN ('1') AND "prob" <= 1.0
+  );
 
 CREATE TABLE "sf_database"."sf_schema"."missing_data_OBSERVATION_TABLE_000000000000000000000001" AS
 SELECT
@@ -269,7 +272,10 @@ FROM (
 WHERE
   (
     "float_target" = '1' AND "prob" <= 0.3
-  ) OR NOT "float_target" IN ('1');
+  )
+  OR (
+    NOT "float_target" IN ('1') AND "prob" <= 1.0
+  );
 
 CREATE TABLE "sf_database"."sf_schema"."missing_data_OBSERVATION_TABLE_000000000000000000000002" AS
 SELECT

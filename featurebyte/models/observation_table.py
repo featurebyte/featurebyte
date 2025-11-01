@@ -18,13 +18,14 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import (
+    DownSamplingInfo,
     ManagedViewRequestInput,
     RequestInputType,
+    SamplingRatePerTargetValue,
     SourceTableRequestInput,
     ViewRequestInput,
 )
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter.base import DownSamplingInfo, SamplingRatePerTargetValue
 from featurebyte.session.base import BaseSession
 
 
