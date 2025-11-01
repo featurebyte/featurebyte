@@ -1100,6 +1100,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         assert response_dict["request_input"] == {
             "observation_table_id": source_observation_table["_id"],
+            "sampling_rate_per_target_value": None,
             "type": "source_observation_table",
         }
         assert (
@@ -1148,3 +1149,229 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["context_id"] == "646f6c1c0ed28a5271fb02d5"
         assert response_dict["use_case_ids"] == ["64dc9461ad86dba795606745"]
         assert response_dict["purpose"] == "other"
+
+    @pytest.mark.asyncio
+    async def test_create_with_downsampling_no_target_422(
+        self, test_api_client_persistent, create_success_response, update_fixtures
+    ):
+        """Test create with an observation table and downsampling without target column"""
+        test_api_client, _ = test_api_client_persistent
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["request_input"]["sampling_rate_per_target_value"] = [
+            {"target_value": "1", "rate": 0.5},
+        ]
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_dict = response.json()
+        assert response_dict["detail"] == (
+            "Downsampling by target value requires the source observation table to have a target column."
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "rate,type,msg,cond,threshold",
+        [
+            (-0.5, "greater_than", "Input should be greater than 0", "gt", 0),
+            (0, "greater_than", "Input should be greater than 0", "gt", 0),
+            (1.01, "less_than_equal", "Input should be less than or equal to 1", "le", 1),
+        ],
+    )
+    async def test_create_with_downsampling_invalid_rate_422(
+        self, test_api_client_persistent, create_success_response, rate, type, msg, cond, threshold
+    ):
+        """Test create with an observation table and invalid downsampling rate"""
+        test_api_client, _ = test_api_client_persistent
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["request_input"]["sampling_rate_per_target_value"] = [
+            {"target_value": "1", "rate": rate},
+        ]
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_dict = response.json()
+        assert response_dict["detail"] == [
+            {
+                "type": type,
+                "loc": [
+                    "body",
+                    "request_input",
+                    "source_observation_table",
+                    "sampling_rate_per_target_value",
+                    0,
+                    "rate",
+                ],
+                "msg": msg,
+                "input": rate,
+                "ctx": {cond: threshold},
+            }
+        ]
+
+    @pytest.mark.asyncio
+    async def test_create_with_downsampling_duplicate_target_values_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create with an observation table and multiple downsampling rate for same target value"""
+        test_api_client, _ = test_api_client_persistent
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["request_input"]["sampling_rate_per_target_value"] = [
+            {"target_value": "1", "rate": 0.5},
+            {"target_value": "1", "rate": 0.1},
+        ]
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_dict = response.json()
+        assert response_dict["detail"] == [
+            {
+                "type": "value_error",
+                "loc": [
+                    "body",
+                    "request_input",
+                    "source_observation_table",
+                    "sampling_rate_per_target_value",
+                ],
+                "msg": "Value error, Duplicate target value found: 1",
+                "input": [{"target_value": "1", "rate": 0.5}, {"target_value": "1", "rate": 0.1}],
+                "ctx": {"error": {}},
+            }
+        ]
+
+    @pytest.mark.asyncio
+    @patch("featurebyte.session.base.BaseSession.generate_session_unique_id")
+    async def test_create_with_downsampling_201(
+        self,
+        mock_generate_session_unique_id,
+        mocked_get_session,
+        snowflake_execute_query_for_materialized_table,
+        test_api_client_persistent,
+        update_fixtures,
+    ):
+        """Test create with an observation table and downsampling"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        mock_generate_session_unique_id.return_value = "68DFBD342ECAABD7D21D4759"
+
+        # get use case
+        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        use_case_target_namespace_id = response.json()["target_namespace_id"]
+
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        payload["context_id"] = None
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["purpose"] = "eda"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        task_response = self.wait_for_results(test_api_client, response)
+        task_response_dict = task_response.json()
+        assert task_response_dict["status"] == "SUCCESS", task_response_dict["traceback"]
+
+        observation_table_id = response_dict["payload"]["output_document_id"]
+        response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
+        assert response.status_code == HTTPStatus.OK, response_dict
+        source_observation_table_id = response.json()["_id"]
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["request_input"]["sampling_rate_per_target_value"] = [
+            {"target_value": "1", "rate": 0.5},
+        ]
+
+        # expect failure due to target type not set
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert (
+            response_dict["detail"]
+            == "Downsampling by target value is only supported for classification targets."
+        )
+
+        # update target type
+        response = test_api_client.patch(
+            f"/target_namespace/{use_case_target_namespace_id}",
+            json={"target_type": "classification"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+
+        assert response_dict["request_input"] == {
+            "observation_table_id": source_observation_table_id,
+            "sampling_rate_per_target_value": payload["request_input"][
+                "sampling_rate_per_target_value"
+            ],
+            "type": "source_observation_table",
+        }
+        assert response_dict["has_row_weights"] is True
+
+        # downsample from an already downsampled observation table
+        new_source_observation_table_id = response_dict["_id"]
+        payload["_id"] = str(ObjectId())
+        payload["name"] = "Double downsampled observation table"
+        payload["request_input"]["observation_table_id"] = new_source_observation_table_id
+        payload["request_input"]["sampling_rate_per_target_value"] = [
+            {"target_value": "1", "rate": 0.3},
+        ]
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        assert response_dict["request_input"] == {
+            "observation_table_id": new_source_observation_table_id,
+            "sampling_rate_per_target_value": payload["request_input"][
+                "sampling_rate_per_target_value"
+            ],
+            "type": "source_observation_table",
+        }
+        assert response_dict["has_row_weights"] is True
+
+        # sample from an already downsampled observation table without further downsampling
+        payload["_id"] = str(ObjectId())
+        payload["name"] = "Sampled from downsampled observation table"
+        payload["request_input"]["observation_table_id"] = new_source_observation_table_id
+        payload["request_input"]["sampling_rate_per_target_value"] = None
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        assert response_dict["request_input"] == {
+            "observation_table_id": new_source_observation_table_id,
+            "sampling_rate_per_target_value": None,
+            "type": "source_observation_table",
+        }
+        # ensure that has_row_weights is still True
+        assert response_dict["has_row_weights"] is True
+
+        mocked_get_session.execute_query = snowflake_execute_query_for_materialized_table
+        queries = extract_session_executed_queries(mocked_get_session, func="execute_query")
+        fixture_filename = "tests/fixtures/expected_observation_table_with_downsampling.sql"
+        assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)

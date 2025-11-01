@@ -495,6 +495,12 @@ class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidSamplingError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies an invalid sampling configuration
+    """
+
+
 class ObservationTableTargetDefinitionExistsError(BaseUnprocessableEntityError):
     """
     Raise when observation table specifies a target name that already has a definition

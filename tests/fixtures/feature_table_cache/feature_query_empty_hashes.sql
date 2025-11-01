@@ -1,5 +1,6 @@
 SELECT
   T0."__FB_TABLE_ROW_INDEX",
+  T0."__FB_TABLE_ROW_WEIGHT",
   T0."cust_id",
   T0."POINT_IN_TIME"
 FROM "fb_materialized_table" AS T0

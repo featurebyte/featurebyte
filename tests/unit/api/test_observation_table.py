@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from featurebyte import TargetNamespace
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import RecordCreationException
 from featurebyte.models.observation_table import Purpose
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
@@ -296,6 +296,7 @@ def test_create_observation_table_from_observation_table(
     target_namespace = TargetNamespace.create(
         "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.FLOAT
     )
+    target_namespace.update_target_type(TargetType.CLASSIFICATION)
     observation_table = snowflake_database_table.create_observation_table(
         "observation_table_from_source_table",
         columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "target"},

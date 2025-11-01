@@ -167,8 +167,13 @@ class FeaturePreviewService(PreviewService):
             )
             observation_set_dataframe = await db_session.execute_query(sql)
             assert observation_set_dataframe is not None
+            columns_to_drop = []
             if InternalName.TABLE_ROW_INDEX in observation_set_dataframe:
-                observation_set_dataframe.drop(InternalName.TABLE_ROW_INDEX, axis=1, inplace=True)
+                columns_to_drop.append(InternalName.TABLE_ROW_INDEX)
+            if InternalName.TABLE_ROW_WEIGHT in observation_set_dataframe:
+                columns_to_drop.append(InternalName.TABLE_ROW_WEIGHT)
+            if columns_to_drop:
+                observation_set_dataframe.drop(columns_to_drop, axis=1, inplace=True)
             point_in_time_and_serving_name_list = observation_set_dataframe.to_dict(
                 orient="records"
             )

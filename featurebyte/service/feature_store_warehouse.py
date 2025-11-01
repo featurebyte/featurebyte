@@ -378,7 +378,7 @@ class FeatureStoreWarehouseService:
         table_schema = {  # type: ignore[assignment]
             col_name: v
             for (col_name, v) in table_schema.items()
-            if col_name != InternalName.TABLE_ROW_INDEX
+            if col_name not in [InternalName.TABLE_ROW_INDEX, InternalName.TABLE_ROW_WEIGHT]
         }
         return list(table_schema.values())
 
@@ -447,7 +447,7 @@ class FeatureStoreWarehouseService:
         columns = [
             col_name
             for col_name in columns_specs.keys()
-            if col_name != InternalName.TABLE_ROW_INDEX
+            if col_name not in [InternalName.TABLE_ROW_INDEX, InternalName.TABLE_ROW_WEIGHT]
         ]
         return (
             (result["row_count"].iloc[0], len(columns)),
@@ -531,9 +531,16 @@ class FeatureStoreWarehouseService:
         )
         result = await db_session.execute_query(sql)
 
-        # drop row index column if present
-        if result is not None and InternalName.TABLE_ROW_INDEX in result.columns:
-            result.drop(columns=[InternalName.TABLE_ROW_INDEX], inplace=True)
+        columns_to_drop = []
+        if result is not None:
+            # drop row index column if present
+            if InternalName.TABLE_ROW_INDEX in result.columns:
+                columns_to_drop.append(InternalName.TABLE_ROW_INDEX)
+            # drop sampling rate column if present
+            if InternalName.TABLE_ROW_WEIGHT in result.columns:
+                columns_to_drop.append(InternalName.TABLE_ROW_WEIGHT)
+            if columns_to_drop:
+                result.drop(columns=columns_to_drop, inplace=True)
 
         # convert to json
         type_conversions = {}

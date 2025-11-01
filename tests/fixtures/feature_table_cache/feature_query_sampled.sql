@@ -1,5 +1,6 @@
 SELECT
   T0."__FB_TABLE_ROW_INDEX",
+  T0."__FB_TABLE_ROW_WEIGHT",
   T0."cust_id",
   T0."col_hash_1" AS "featureA",
   T1."col_hash_4" AS "featureB",
@@ -8,17 +9,20 @@ SELECT
 FROM (
   SELECT
     "__FB_TABLE_ROW_INDEX",
+    "__FB_TABLE_ROW_WEIGHT",
     "cust_id",
     "col_hash_1"
   FROM (
     SELECT
       CAST(BITAND(RANDOM(42), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
       "__FB_TABLE_ROW_INDEX",
+      "__FB_TABLE_ROW_WEIGHT",
       "cust_id",
       "col_hash_1"
     FROM (
       SELECT
         "__FB_TABLE_ROW_INDEX",
+        "__FB_TABLE_ROW_WEIGHT",
         "cust_id",
         "col_hash_1"
       FROM "FEATURE_TABLE_CACHE_000000000000000000000000"

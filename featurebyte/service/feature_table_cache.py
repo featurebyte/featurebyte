@@ -269,7 +269,10 @@ class FeatureTableCacheService:
 
         # Join necessary feature cache tables based on the definition hashes
         select_expr = expressions.select()
-        non_feature_columns = [InternalName.TABLE_ROW_INDEX] + additional_columns
+        internal_feature_columns = [InternalName.TABLE_ROW_INDEX]
+        if observation_table.has_row_weights:
+            internal_feature_columns.append(InternalName.TABLE_ROW_WEIGHT)
+        non_feature_columns = internal_feature_columns + additional_columns
 
         table_name_to_alias = {}
         for i, table_name in enumerate(sorted(required_cache_tables)):
@@ -543,6 +546,9 @@ class FeatureTableCacheService:
         if not feature_table_cache_exists:
             # If cache table doesn't exist yet, create one by cloning from the observation table
             request_column_names = [col.name for col in observation_table.columns_info]
+            internal_column_names = [InternalName.TABLE_ROW_INDEX.value]
+            if observation_table.has_row_weights:
+                internal_column_names.append(InternalName.TABLE_ROW_WEIGHT)
             await db_session.create_table_as(
                 table_details=TableDetails(
                     database_name=db_session.database_name,
@@ -551,7 +557,7 @@ class FeatureTableCacheService:
                 ),
                 select_expr=get_source_expr(
                     observation_table.location.table_details,
-                    column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
+                    column_names=internal_column_names + request_column_names,
                 ),
                 exists=True,
                 retry=True,
