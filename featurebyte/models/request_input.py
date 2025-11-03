@@ -10,7 +10,7 @@ from functools import cached_property
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from dateutil import tz
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, field_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select
 from typing_extensions import ClassVar
@@ -53,23 +53,46 @@ class RequestInputType(StrEnum):
     MANAGED_VIEW = "managed_view"
 
 
-class SamplingRatePerTargetValue(FeatureByteBaseModel):
-    """Information on sampling rate per target_value. If value is None, sampling is applied to the full data"""
+class TargetValueSamplingRate(FeatureByteBaseModel):
+    """Sampling rate for a specific target_value"""
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.SamplingRatePerTargetValue"
+        proxy_class="featurebyte.TargetValueSamplingRate"
     )
 
-    target_value: Optional[Union[str, int, bool]]
+    target_value: Union[str, int, bool]
     rate: float = Field(gt=0, le=1)
 
 
 class DownSamplingInfo(FeatureByteBaseModel):
     """Information on downsampling"""
 
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DownSamplingInfo")
+
+    sampling_rate_per_target_value: List[TargetValueSamplingRate] = Field(min_length=1)
+    default_sampling_rate: float = Field(gt=0, le=1, default=1)
+
+    @field_validator("sampling_rate_per_target_value")
+    @classmethod
+    def _validate_sampling_rates(
+        cls, values: Optional[List[TargetValueSamplingRate]]
+    ) -> Optional[List[TargetValueSamplingRate]]:
+        # ensure target values are unique
+        target_values = set()
+        if values is not None:
+            for sampling in values:
+                if sampling.target_value in target_values:
+                    raise ValueError(f"Duplicate target value found: {sampling.target_value}")
+                target_values.add(sampling.target_value)
+        return values
+
+
+class DownSamplingInfoWithTargetColumn(DownSamplingInfo):
+    """Information on downsampling with target column"""
+
     target_column: str
-    sampling_rate_per_target_value: List[SamplingRatePerTargetValue] = Field(min_length=1)
 
 
 class BaseRequestInput(FeatureByteBaseModel):
@@ -198,7 +221,7 @@ class BaseRequestInput(FeatureByteBaseModel):
     def get_downsample_sql(
         adapter: BaseAdapter,
         select_expr: Select,
-        downsampling_info: DownSamplingInfo,
+        downsampling_info: DownSamplingInfoWithTargetColumn,
         seed: int,
     ) -> Select:
         """
@@ -210,7 +233,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             SQL adapter
         select_expr: Select
             Table to sample from
-        downsampling_info: DownSamplingInfo
+        downsampling_info: DownSamplingInfoWithTargetColumn
             Downsampling information
         seed: int
             Random seed
@@ -219,14 +242,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         -------
         Select
         """
-        downsampling_needed = False
-        default_sampling_rate = 1.0
+        downsampling_needed = downsampling_info.default_sampling_rate < 1.0
         for sampling_rate in downsampling_info.sampling_rate_per_target_value:
             if sampling_rate.rate < 1.0:
                 downsampling_needed = True
-            # custom default sampling rate
-            if sampling_rate.target_value is None:
-                default_sampling_rate = sampling_rate.rate
 
         # no downsampling needed
         if not downsampling_needed:
@@ -275,7 +294,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             default=(
                 quoted_identifier(InternalName.TABLE_ROW_WEIGHT)
                 if sampling_column_exists
-                else make_literal_value(default_sampling_rate)
+                else make_literal_value(downsampling_info.default_sampling_rate)
             ),
         )
 
@@ -324,7 +343,9 @@ class BaseRequestInput(FeatureByteBaseModel):
                                 ),
                                 expressions.LTE(
                                     this=quoted_identifier("prob"),
-                                    expression=make_literal_value(default_sampling_rate),
+                                    expression=make_literal_value(
+                                        downsampling_info.default_sampling_rate
+                                    ),
                                 ),
                             )
                         ]
@@ -341,7 +362,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
-        downsampling_info: Optional[DownSamplingInfo] = None,
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
@@ -360,7 +381,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
-        downsampling_info: Optional[DownSamplingInfo]
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn]
             The downsampling information
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from

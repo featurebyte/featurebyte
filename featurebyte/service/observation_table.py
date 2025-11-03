@@ -513,10 +513,7 @@ class ObservationTableService(
             data.skip_entity_validation_checks = True
 
             # ensure target namespace is available if sampling rate per target value is provided
-            if (
-                target_namespace_id is None
-                and data.request_input.sampling_rate_per_target_value is not None
-            ):
+            if target_namespace_id is None and data.request_input.downsampling_info is not None:
                 raise ObservationTableInvalidSamplingError(
                     "Downsampling by target value requires the source observation table to have a target column."
                 )

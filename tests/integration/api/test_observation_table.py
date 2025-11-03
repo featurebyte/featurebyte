@@ -8,13 +8,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import Context, SamplingRatePerTargetValue, TargetNamespace, UseCase
+from featurebyte import Context, TargetNamespace, TargetValueSamplingRate, UseCase
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.observation_table import UploadedFileInput
-from featurebyte.models.request_input import RequestInputType
+from featurebyte.models.request_input import DownSamplingInfo, RequestInputType
 from tests.integration.api.materialized_table.utils import (
     check_location_valid,
     check_materialized_table_accessible,
@@ -490,10 +490,12 @@ async def test_observation_table_downsampling(
     # create downsampled observation table
     observation_table = source_observation_table.create_observation_table(
         name=f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}_DOWNSAMPLED",
-        sampling_rate_per_target_value=[
-            # downsample positive class to 50%
-            SamplingRatePerTargetValue(target_value=True, rate=0.5),
-        ],
+        downsampling_info=DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                # downsample positive class to 50%
+                TargetValueSamplingRate(target_value=True, rate=0.5),
+            ],
+        ),
     )
     df_describe = observation_table.describe()
     assert df_describe.loc["top", "user_active_24h_target"] == "true"
@@ -516,10 +518,12 @@ async def test_observation_table_downsampling(
     # create double downsampled observation table
     observation_table = observation_table.create_observation_table(
         name=f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}_DOWNSAMPLED_TWICE",
-        sampling_rate_per_target_value=[
-            # downsample positive class to 30%
-            SamplingRatePerTargetValue(target_value=True, rate=0.5),
-        ],
+        downsampling_info=DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                # downsample positive class to 30%
+                TargetValueSamplingRate(target_value=True, rate=0.5),
+            ],
+        ),
     )
     df_describe = observation_table.describe()
     assert df_describe.loc["top", "user_active_24h_target"] == "true"

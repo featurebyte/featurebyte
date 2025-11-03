@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import DownSamplingInfo
 from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
@@ -1100,7 +1101,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         assert response_dict["request_input"] == {
             "observation_table_id": source_observation_table["_id"],
-            "sampling_rate_per_target_value": None,
+            "downsampling_info": None,
             "type": "source_observation_table",
         }
         assert (
@@ -1159,9 +1160,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
-        payload["request_input"]["sampling_rate_per_target_value"] = [
-            {"target_value": "1", "rate": 0.5},
-        ]
+        payload["request_input"]["downsampling_info"] = DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                {"target_value": "1", "rate": 0.5},
+            ]
+        ).model_dump(by_alias=False)
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         response_dict = response.json()
@@ -1186,9 +1189,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
-        payload["request_input"]["sampling_rate_per_target_value"] = [
-            {"target_value": "1", "rate": rate},
-        ]
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": rate},
+            ]
+        }
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         response_dict = response.json()
@@ -1199,6 +1204,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                     "body",
                     "request_input",
                     "source_observation_table",
+                    "downsampling_info",
                     "sampling_rate_per_target_value",
                     0,
                     "rate",
@@ -1218,10 +1224,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
-        payload["request_input"]["sampling_rate_per_target_value"] = [
-            {"target_value": "1", "rate": 0.5},
-            {"target_value": "1", "rate": 0.1},
-        ]
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": 0.5},
+                {"target_value": "1", "rate": 0.1},
+            ],
+        }
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         response_dict = response.json()
@@ -1232,6 +1240,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                     "body",
                     "request_input",
                     "source_observation_table",
+                    "downsampling_info",
                     "sampling_rate_per_target_value",
                 ],
                 "msg": "Value error, Duplicate target value found: 1",
@@ -1281,9 +1290,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
         payload["use_case_id"] = "64dc9461ad86dba795606745"
-        payload["request_input"]["sampling_rate_per_target_value"] = [
-            {"target_value": "1", "rate": 0.5},
-        ]
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": 0.5},
+            ],
+            "default_sampling_rate": 1.0,
+        }
 
         # expect failure due to target type not set
         response = self.post(test_api_client, payload)
@@ -1314,9 +1326,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         assert response_dict["request_input"] == {
             "observation_table_id": source_observation_table_id,
-            "sampling_rate_per_target_value": payload["request_input"][
-                "sampling_rate_per_target_value"
-            ],
+            "downsampling_info": payload["request_input"]["downsampling_info"],
             "type": "source_observation_table",
         }
         assert response_dict["has_row_weights"] is True
@@ -1326,9 +1336,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["_id"] = str(ObjectId())
         payload["name"] = "Double downsampled observation table"
         payload["request_input"]["observation_table_id"] = new_source_observation_table_id
-        payload["request_input"]["sampling_rate_per_target_value"] = [
-            {"target_value": "1", "rate": 0.3},
-        ]
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": 0.3},
+            ],
+            "default_sampling_rate": 1.0,
+        }
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
@@ -1341,9 +1354,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response_dict["request_input"] == {
             "observation_table_id": new_source_observation_table_id,
-            "sampling_rate_per_target_value": payload["request_input"][
-                "sampling_rate_per_target_value"
-            ],
+            "downsampling_info": payload["request_input"]["downsampling_info"],
             "type": "source_observation_table",
         }
         assert response_dict["has_row_weights"] is True
@@ -1352,7 +1363,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["_id"] = str(ObjectId())
         payload["name"] = "Sampled from downsampled observation table"
         payload["request_input"]["observation_table_id"] = new_source_observation_table_id
-        payload["request_input"]["sampling_rate_per_target_value"] = None
+        payload["request_input"]["downsampling_info"] = None
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
@@ -1365,7 +1376,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response_dict["request_input"] == {
             "observation_table_id": new_source_observation_table_id,
-            "sampling_rate_per_target_value": None,
+            "downsampling_info": None,
             "type": "source_observation_table",
         }
         # ensure that has_row_weights is still True

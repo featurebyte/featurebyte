@@ -83,7 +83,7 @@ from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
-from featurebyte.models.request_input import SamplingRatePerTargetValue
+from featurebyte.models.request_input import DownSamplingInfo, TargetValueSamplingRate
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -567,7 +567,8 @@ __all__ = [
     "TimeInterval",
     "TimeZoneColumn",
     "CalendarWindow",
-    "SamplingRatePerTargetValue",
+    "TargetValueSamplingRate",
+    "DownSamplingInfo",
     # services
     "start",
     "stop",
