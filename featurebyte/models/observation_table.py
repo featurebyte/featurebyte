@@ -18,6 +18,8 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import (
+    DownSamplingInfo,
+    DownSamplingInfoWithTargetColumn,
     ManagedViewRequestInput,
     RequestInputType,
     SourceTableRequestInput,
@@ -59,6 +61,7 @@ class NoOpMaterializeMixin:
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
@@ -80,6 +83,8 @@ class NoOpMaterializeMixin:
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn]
+            Downsampling information
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
         missing_data_table_details: Optional[TableDetails]
@@ -111,10 +116,11 @@ class ObservationTableObservationInput(FeatureByteBaseModel):
     ObservationTableObservationInput is used to create an ObservationTableModel from an existing ObservationTableModel
     """
 
-    observation_table_id: PydanticObjectId
     type: Literal[RequestInputType.SOURCE_OBSERVATION_TABLE] = (
         RequestInputType.SOURCE_OBSERVATION_TABLE
     )
+    observation_table_id: PydanticObjectId
+    downsampling_info: Optional[DownSamplingInfo] = None
 
 
 ObservationInput = Annotated[
@@ -172,11 +178,13 @@ class ObservationTableModel(MaterializedTableModel):
         default_factory=list[PydanticObjectId]
     )
     has_row_index: Optional[bool] = Field(default=False)
+    has_row_weights: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     sample_rows: Optional[int] = Field(default=None)
     sample_from_timestamp: Optional[datetime] = Field(default=None)
     sample_to_timestamp: Optional[datetime] = Field(default=None)
     table_with_missing_data: Optional[TableDetails] = Field(default=None)
+    downsampling_info: Optional[DownSamplingInfo] = None
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()

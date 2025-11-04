@@ -7,20 +7,22 @@ from __future__ import annotations
 from abc import abstractmethod
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Dict, List, Literal, Optional, Tuple, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from dateutil import tz
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, field_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select
+from typing_extensions import ClassVar
 
-from featurebyte.enum import DBVarType, SpecialColumnName, StrEnum
+from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_non_missing_and_missing_condition_pair,
@@ -49,6 +51,48 @@ class RequestInputType(StrEnum):
     UPLOADED_FILE = "uploaded_file"
     SOURCE_OBSERVATION_TABLE = "source_observation_table"
     MANAGED_VIEW = "managed_view"
+
+
+class TargetValueSamplingRate(FeatureByteBaseModel):
+    """Sampling rate for a specific target_value"""
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.TargetValueSamplingRate"
+    )
+
+    target_value: Union[str, int, bool]
+    rate: float = Field(gt=0, le=1)
+
+
+class DownSamplingInfo(FeatureByteBaseModel):
+    """Information on downsampling"""
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.DownSamplingInfo")
+
+    sampling_rate_per_target_value: List[TargetValueSamplingRate] = Field(min_length=1)
+    default_sampling_rate: float = Field(gt=0, le=1, default=1)
+
+    @field_validator("sampling_rate_per_target_value")
+    @classmethod
+    def _validate_sampling_rates(
+        cls, values: Optional[List[TargetValueSamplingRate]]
+    ) -> Optional[List[TargetValueSamplingRate]]:
+        # ensure target values are unique
+        target_values = set()
+        if values is not None:
+            for sampling in values:
+                if sampling.target_value in target_values:
+                    raise ValueError(f"Duplicate target value found: {sampling.target_value}")
+                target_values.add(sampling.target_value)
+        return values
+
+
+class DownSamplingInfoWithTargetColumn(DownSamplingInfo):
+    """Information on downsampling with target column"""
+
+    target_column: str
 
 
 class BaseRequestInput(FeatureByteBaseModel):
@@ -130,7 +174,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         return min(100.0, 100.0 * desired_row_count / total_row_count * 1.4)
 
     async def get_output_columns_and_dtypes(
-        self, session: BaseSession
+        self, session: BaseSession, additional_columns: Optional[List[str]] = None
     ) -> Tuple[List[str], Dict[str, DBVarType]]:
         """
         Get the output columns and dtypes based on the input columns and rename mapping
@@ -139,6 +183,8 @@ class BaseRequestInput(FeatureByteBaseModel):
         ----------
         session: BaseSession
             The session to use to get the column names
+        additional_columns: Optional[List[str]]
+            Additional columns to include in the output
 
         Returns
         -------
@@ -148,6 +194,18 @@ class BaseRequestInput(FeatureByteBaseModel):
         available_columns = list(column_names_and_dtypes.keys())
         self._validate_columns_and_rename_mapping(available_columns)
         input_columns = self.columns or available_columns
+
+        # If the input has a sampling column, ensure it is included
+        if InternalName.TABLE_ROW_WEIGHT in available_columns:
+            if InternalName.TABLE_ROW_WEIGHT not in input_columns:
+                input_columns.append(InternalName.TABLE_ROW_WEIGHT)
+
+        # Add any additional columns if provided
+        if additional_columns:
+            for col in additional_columns:
+                if col not in input_columns:
+                    input_columns.append(col)
+
         if self.columns_rename_mapping is not None:
             output_column_names_and_dtypes = {
                 self.columns_rename_mapping.get(col, col): column_names_and_dtypes[col]
@@ -159,6 +217,144 @@ class BaseRequestInput(FeatureByteBaseModel):
             }
         return input_columns, output_column_names_and_dtypes
 
+    @staticmethod
+    def get_downsample_sql(
+        adapter: BaseAdapter,
+        select_expr: Select,
+        downsampling_info: DownSamplingInfoWithTargetColumn,
+        seed: int,
+    ) -> Select:
+        """
+        Construct query to downsample a table based on the downsampling information
+
+        Parameters
+        ----------
+        adapter: BaseAdapter
+            SQL adapter
+        select_expr: Select
+            Table to sample from
+        downsampling_info: DownSamplingInfoWithTargetColumn
+            Downsampling information
+        seed: int
+            Random seed
+
+        Returns
+        -------
+        Select
+        """
+        downsampling_needed = downsampling_info.default_sampling_rate < 1.0
+        for sampling_rate in downsampling_info.sampling_rate_per_target_value:
+            if sampling_rate.rate < 1.0:
+                downsampling_needed = True
+
+        # no downsampling needed
+        if not downsampling_needed:
+            return select_expr
+
+        original_cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for col_expr in select_expr.expressions
+        ]
+        prob_expr = expressions.alias_(
+            adapter.get_uniform_distribution_expr(seed),
+            alias="prob",
+            quoted=True,
+        )
+        sampled_expr_with_prob = expressions.select(prob_expr, *original_cols).from_(
+            select_expr.subquery()
+        )
+
+        # column to indicate the sampling rate applied to each row
+        sampling_column_exists = False
+        for col_expr in select_expr.expressions:
+            if col_expr.name == InternalName.TABLE_ROW_WEIGHT:
+                sampling_column_exists = True
+
+        sample_rate_expr = expressions.Case(
+            ifs=[
+                expressions.If(
+                    this=expressions.EQ(
+                        this=quoted_identifier(downsampling_info.target_column),
+                        expression=make_literal_value(sampling.target_value),
+                    ),
+                    true=expressions.Cast(
+                        this=(
+                            expressions.Mul(
+                                this=quoted_identifier(InternalName.TABLE_ROW_WEIGHT),
+                                expression=make_literal_value(1 / sampling.rate),
+                            )
+                            if sampling_column_exists
+                            else make_literal_value(1 / sampling.rate)
+                        ),
+                        to=expressions.DataType.build("FLOAT"),
+                    ),
+                )
+                for sampling in downsampling_info.sampling_rate_per_target_value
+            ],
+            default=(
+                quoted_identifier(InternalName.TABLE_ROW_WEIGHT)
+                if sampling_column_exists
+                else make_literal_value(downsampling_info.default_sampling_rate)
+            ),
+        )
+
+        if sampling_column_exists:
+            final_output_cols = [
+                col for col in original_cols if col.name != InternalName.TABLE_ROW_WEIGHT
+            ]
+        else:
+            final_output_cols = original_cols
+        output_col_expr = final_output_cols + [
+            expressions.alias_(sample_rate_expr, alias=InternalName.TABLE_ROW_WEIGHT, quoted=True)
+        ]
+
+        output = (
+            expressions.select(*output_col_expr)
+            .from_(sampled_expr_with_prob.subquery())
+            .where(
+                expressions.or_(
+                    *(
+                        # conditions for specified target values and rates
+                        [
+                            expressions.and_(
+                                expressions.EQ(
+                                    this=quoted_identifier(downsampling_info.target_column),
+                                    expression=make_literal_value(sampling.target_value),
+                                ),
+                                expressions.LTE(
+                                    this=quoted_identifier("prob"),
+                                    expression=make_literal_value(sampling.rate),
+                                ),
+                            )
+                            for sampling in downsampling_info.sampling_rate_per_target_value
+                        ]
+                        +
+                        # condition for unspecified target values (apply default sampling rate)
+                        [
+                            expressions.and_(
+                                expressions.not_(
+                                    expressions.In(
+                                        this=quoted_identifier(downsampling_info.target_column),
+                                        expressions=[
+                                            make_literal_value(sampling.target_value)
+                                            for sampling in downsampling_info.sampling_rate_per_target_value
+                                        ],
+                                    )
+                                ),
+                                expressions.LTE(
+                                    this=quoted_identifier("prob"),
+                                    expression=make_literal_value(
+                                        downsampling_info.default_sampling_rate
+                                    ),
+                                ),
+                            )
+                        ]
+                    )
+                )
+            )
+        )
+        return output
+
     async def materialize(
         self,
         session: BaseSession,
@@ -166,6 +362,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
@@ -184,6 +381,8 @@ class BaseRequestInput(FeatureByteBaseModel):
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        downsampling_info: Optional[DownSamplingInfoWithTargetColumn]
+            The downsampling information
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
         missing_data_table_details: Optional[TableDetails]
@@ -194,7 +393,8 @@ class BaseRequestInput(FeatureByteBaseModel):
 
         # Derive output column names and dtypes
         input_columns, output_column_names_and_dtypes = await self.get_output_columns_and_dtypes(
-            session=session
+            session=session,
+            additional_columns=[downsampling_info.target_column] if downsampling_info else None,
         )
         output_columns = list(output_column_names_and_dtypes.keys())
 
@@ -304,6 +504,15 @@ class BaseRequestInput(FeatureByteBaseModel):
                         total_row_count=num_rows,
                         seed=0,
                     )
+
+        # apply downsampling if applicable, only to the main query
+        if downsampling_info:
+            main_query_expr = self.get_downsample_sql(
+                adapter,
+                main_query_expr,
+                downsampling_info=downsampling_info,
+                seed=0,
+            )
 
         # Materialize the destination table
         await session.create_table_as(table_details=destination, select_expr=main_query_expr)

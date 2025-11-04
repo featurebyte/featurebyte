@@ -2193,6 +2193,23 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "data_type": json.dumps({"type": "float", "scale": 0}),
                     "comment": None,
                 })
+            elif query.endswith('"OBSERVATION_TABLE_000000000000000000000000"'):
+                res.append({
+                    "column_name": "float_target",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                })
+            elif query.endswith('"OBSERVATION_TABLE_000000000000000000000001"'):
+                res.append({
+                    "column_name": "float_target",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                })
+                res.append({
+                    "column_name": "__FB_TABLE_ROW_WEIGHT",
+                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "comment": None,
+                })
         elif "is_row_index_valid" in query:
             return pd.DataFrame({"is_row_index_valid": [True]})
         elif "COUNT(*)" in query:

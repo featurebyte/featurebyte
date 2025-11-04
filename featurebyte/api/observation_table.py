@@ -35,6 +35,7 @@ from featurebyte.models.observation_table import (
     Purpose,
     TargetInput,
 )
+from featurebyte.models.request_input import DownSamplingInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
@@ -517,6 +518,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         sample_rows: Optional[int] = None,
         sample_from_timestamp: Optional[Union[datetime, str]] = None,
         sample_to_timestamp: Optional[Union[datetime, str]] = None,
+        downsampling_info: Optional[DownSamplingInfo] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from an existing ObservationTable.
@@ -532,6 +534,8 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Start of date range to sample from.
         sample_to_timestamp: Optional[Union[datetime, str]]
             End of date range to sample from.
+        downsampling_info: Optional[DownSamplingInfo]
+            Downsampling information to apply when creating the observation table. If provided,
 
         Returns
         -------
@@ -543,6 +547,20 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         >>> sampled_observation_table = source_table.create_observation_table(  # doctest: +SKIP
         ...     name="<observation_table_name>",
         ...     sample_rows=desired_sample_size,
+        ... )
+
+
+        Create negative downsampled observation table
+
+        >>> neg_downsampled_observation_table = (
+        ...     source_table.create_observation_table(  # doctest: +SKIP
+        ...         name="<observation_table_name>",
+        ...         downsampling_info=DownSamplingInfo(
+        ...             sampling_rate_per_target_value=[
+        ...                 TargetValueSamplingRate(target_value=0, rate=0.5)
+        ...             ],
+        ...         ),
+        ...     )
         ... )
         """
 
@@ -559,7 +577,10 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.cached_model.location.feature_store_id,
-            request_input=ObservationTableObservationInput(observation_table_id=self.id),
+            request_input=ObservationTableObservationInput(
+                observation_table_id=self.id,
+                downsampling_info=downsampling_info,
+            ),
             sample_rows=sample_rows,
             sample_from_timestamp=sample_from_timestamp,
             sample_to_timestamp=sample_to_timestamp,

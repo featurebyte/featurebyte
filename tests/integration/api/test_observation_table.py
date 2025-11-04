@@ -8,13 +8,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import Context, TargetNamespace, UseCase
+from featurebyte import Context, TargetNamespace, TargetValueSamplingRate, UseCase
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.observation_table import UploadedFileInput
-from featurebyte.models.request_input import RequestInputType
+from featurebyte.models.request_input import DownSamplingInfo, RequestInputType
 from tests.integration.api.materialized_table.utils import (
     check_location_valid,
     check_materialized_table_accessible,
@@ -68,6 +68,29 @@ def customer_use_case_fixture(event_view, customer_entity):
     context = Context.create(name="customer_context", primary_entity=[customer_entity.name])
     use_case = UseCase.create(
         name="customer_use_case", target_name=target.name, context_name=context.name
+    )
+    return use_case
+
+
+@pytest.fixture(name="user_classification_use_case")
+def user_classification_use_case_fixture(event_view, user_entity):
+    """
+    Fixture for a user classification use case
+    """
+    target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method="avg",
+        value_column="ÀMOUNT",
+        window="24h",
+        target_name="user_avg_24h_target",
+        fill_value=0,
+    )
+    target = target > 0
+    target.name = "user_active_24h_target"
+    target.save()
+    target.update_target_type(TargetType.CLASSIFICATION)
+    context = Context.create(name="user_classification_context", primary_entity=[user_entity.name])
+    use_case = UseCase.create(
+        name="user_classification_use_case", target_name=target.name, context_name=context.name
     )
     return use_case
 
@@ -432,3 +455,91 @@ async def test_observation_table_upload_no_target(
     # delete the observation table
     customer_use_case.remove_observation_table(observation_table.name)
     observation_table.delete()
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_observation_table_downsampling(
+    event_table, scd_table, session, source_type, user_entity, user_classification_use_case
+):
+    _ = user_entity
+    view = event_table.get_view()
+    scd_view = scd_table.get_view()
+    view = view.join(scd_view, on="ÜSER ID")
+    sample_rows = 123
+    source_observation_table = view.create_observation_table(
+        f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}",
+        sample_rows=sample_rows,
+        columns=[view.timestamp_column, "ÜSER ID"],
+        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
+        use_case_name=user_classification_use_case.name,
+    )
+    assert (
+        source_observation_table.name == f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}"
+    )
+    table_details = source_observation_table.location.table_details
+    check_location_valid(table_details, session)
+    await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
+
+    df_describe = source_observation_table.describe()
+    assert df_describe.loc["top", "user_active_24h_target"] == "true"
+    pos_obs_count = df_describe.loc["freq", "user_active_24h_target"]
+    assert source_observation_table.shape()[0] == 123
+    neg_obs_count = 123 - pos_obs_count
+
+    # create downsampled observation table
+    observation_table = source_observation_table.create_observation_table(
+        name=f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}_DOWNSAMPLED",
+        downsampling_info=DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                # downsample positive class to 50%
+                TargetValueSamplingRate(target_value=True, rate=0.5),
+            ],
+        ),
+    )
+    df_describe = observation_table.describe()
+    assert df_describe.loc["top", "user_active_24h_target"] == "true"
+    pos_obs_count_after_downsampling = df_describe.loc["freq", "user_active_24h_target"]
+    assert pos_obs_count_after_downsampling < pos_obs_count * 0.65  # allow some randomness
+    assert pos_obs_count_after_downsampling > pos_obs_count * 0.35  # allow some randomness
+    number_of_rows = observation_table.shape()[0]
+    assert number_of_rows == pos_obs_count_after_downsampling + neg_obs_count
+    check_materialized_table_preview_methods(
+        observation_table,
+        [SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"],
+        number_of_rows,
+    )
+    table_details = observation_table.location.table_details
+    sampling_rates = await session.execute_query(
+        f'SELECT DISTINCT __FB_TABLE_ROW_WEIGHT FROM "{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
+    )
+    assert set(sampling_rates["__FB_TABLE_ROW_WEIGHT"].tolist()) == {2.0, 1.0}
+
+    # create double downsampled observation table
+    observation_table = observation_table.create_observation_table(
+        name=f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}_DOWNSAMPLED_TWICE",
+        downsampling_info=DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                # downsample positive class to 30%
+                TargetValueSamplingRate(target_value=True, rate=0.5),
+            ],
+        ),
+    )
+    df_describe = observation_table.describe()
+    assert df_describe.loc["top", "user_active_24h_target"] == "true"
+    pos_obs_count = pos_obs_count_after_downsampling
+    pos_obs_count_after_downsampling = df_describe.loc["freq", "user_active_24h_target"]
+    assert pos_obs_count_after_downsampling < pos_obs_count * 0.65  # allow some randomness
+    assert pos_obs_count_after_downsampling > pos_obs_count * 0.35  # allow some randomness
+    number_of_rows = observation_table.shape()[0]
+    assert number_of_rows == pos_obs_count_after_downsampling + neg_obs_count
+    check_materialized_table_preview_methods(
+        observation_table,
+        [SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"],
+        number_of_rows,
+    )
+    table_details = observation_table.location.table_details
+    sampling_rates = await session.execute_query(
+        f'SELECT DISTINCT __FB_TABLE_ROW_WEIGHT FROM "{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
+    )
+    assert set(sampling_rates["__FB_TABLE_ROW_WEIGHT"].tolist()) == {4.0, 1.0}

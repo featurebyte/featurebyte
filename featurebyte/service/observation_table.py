@@ -14,6 +14,7 @@ from redis import Redis
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
+from featurebyte import TargetType
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import (
@@ -25,6 +26,7 @@ from featurebyte.enum import (
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
+    ObservationTableInvalidSamplingError,
     ObservationTableInvalidTargetNameError,
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
@@ -480,6 +482,12 @@ class ObservationTableService(
         to_add_row_index: bool
             Whether to add row index to the observation table
 
+        Raises
+        ------
+        ObservationTableInvalidSamplingError
+            If the sampling rate per target value is provided but the target namespace is not available
+            or target is not of classification type.
+
         Returns
         -------
         ObservationTableTaskPayload
@@ -503,6 +511,23 @@ class ObservationTableService(
             data.use_case_id = None
             # no need to perform entity validation checks since we are copying from existing observation table
             data.skip_entity_validation_checks = True
+
+            # ensure target namespace is available if sampling rate per target value is provided
+            if target_namespace_id is None and data.request_input.downsampling_info is not None:
+                raise ObservationTableInvalidSamplingError(
+                    "Downsampling by target value requires the source observation table to have a target column."
+                )
+
+            # ensure target is of classification type
+            if target_namespace_id is not None:
+                target_namespace = await self.target_namespace_service.get_document(
+                    document_id=target_namespace_id
+                )
+                if target_namespace.target_type not in TargetType.classification_types():
+                    raise ObservationTableInvalidSamplingError(
+                        "Downsampling by target value is only supported for classification targets."
+                    )
+
         elif isinstance(data.request_input, BaseRequestInput):
             request_input = data.request_input
             if isinstance(data.request_input, ManagedViewObservationInput):

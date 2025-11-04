@@ -131,6 +131,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "description": None,
             "entity_column_name_to_count": {},
             "has_row_index": True,
+            "has_row_weights": False,
             "is_view": False,
             "least_recent_point_in_time": None,
             "location": json_dict["location"],
@@ -153,6 +154,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "sample_from_timestamp": None,
             "sample_rows": None,
             "sample_to_timestamp": None,
+            "downsampling_info": None,
             "table_with_missing_data": None,
             "is_valid": True,
         }
