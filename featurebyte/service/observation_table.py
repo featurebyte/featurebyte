@@ -512,21 +512,25 @@ class ObservationTableService(
             # no need to perform entity validation checks since we are copying from existing observation table
             data.skip_entity_validation_checks = True
 
-            # ensure target namespace is available if sampling rate per target value is provided
-            if target_namespace_id is None and data.request_input.downsampling_info is not None:
-                raise ObservationTableInvalidSamplingError(
-                    "Downsampling by target value requires the source observation table to have a target column."
-                )
-
-            # ensure target is of classification type
-            if target_namespace_id is not None:
-                target_namespace = await self.target_namespace_service.get_document(
-                    document_id=target_namespace_id
-                )
-                if target_namespace.target_type not in TargetType.classification_types():
+            if (
+                data.request_input.downsampling_info is not None
+                and data.request_input.downsampling_info.sampling_rate_per_target_value
+            ):
+                # ensure target namespace is available if sampling rate per target value is provided
+                if target_namespace_id is None:
                     raise ObservationTableInvalidSamplingError(
-                        "Downsampling by target value is only supported for classification targets."
+                        "Downsampling by target value requires the source observation table to have a target column."
                     )
+
+                # ensure target is of classification type
+                if target_namespace_id is not None:
+                    target_namespace = await self.target_namespace_service.get_document(
+                        document_id=target_namespace_id
+                    )
+                    if target_namespace.target_type not in TargetType.classification_types():
+                        raise ObservationTableInvalidSamplingError(
+                            "Downsampling by target value is only supported for classification targets."
+                        )
 
         elif isinstance(data.request_input, BaseRequestInput):
             request_input = data.request_input
