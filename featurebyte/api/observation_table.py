@@ -544,9 +544,11 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         Examples
         --------
         >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
-        >>> sampled_observation_table = observation_table.create_observation_table(  # doctest: +SKIP
-        ...     name="<observation_table_name>",
-        ...     sample_rows=desired_sample_size,
+        >>> sampled_observation_table = (
+        ...     observation_table.create_observation_table(  # doctest: +SKIP
+        ...         name="<observation_table_name>",
+        ...         sample_rows=desired_sample_size,
+        ...     )
         ... )
 
 
