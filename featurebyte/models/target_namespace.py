@@ -12,6 +12,8 @@ from featurebyte.enum import DBVarType, TargetType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
 
+PositiveLabelType = Union[str, int, bool]
+
 
 class PositiveLabelCandidatesItem(FeatureByteBaseModel):
     """
@@ -58,7 +60,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
 
     # positive label candidates for the target namespace
     positive_label_candidates: List[PositiveLabelCandidatesItem] = Field(default_factory=list)
-    positive_label: Optional[Union[str, int, bool]] = Field(default=None)
+    positive_label: Optional[PositiveLabelType] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("target_ids", "entity_ids")(construct_sort_validator())

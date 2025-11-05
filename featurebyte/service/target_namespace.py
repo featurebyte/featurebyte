@@ -9,6 +9,7 @@ from typing import List, Union
 from sqlglot import expressions
 
 from featurebyte.enum import TargetType
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.target_namespace import PositiveLabelCandidatesItem, TargetNamespaceModel
@@ -111,8 +112,14 @@ class TargetNamespaceService(
             Newly created observation table with target values
         db_session: BaseSession
             Database session to execute queries
+
+        Raises
+        ------
+        DocumentUpdateError
+            If the positive label is not found in the target values
         """
         target_namespace = await self.get_document(document_id=target_namespace_id)
+        assert isinstance(target_namespace, TargetNamespaceModel)
         if target_namespace.target_type == TargetType.CLASSIFICATION:
             assert target_namespace.name is not None, "Target namespace name should not be None"
             unique_targets = await self._get_unique_target_values(
@@ -120,6 +127,16 @@ class TargetNamespaceService(
                 target_name=target_namespace.name,
                 db_session=db_session,
             )
+
+            if (
+                target_namespace.positive_label
+                and target_namespace.positive_label not in unique_targets
+            ):
+                raise DocumentUpdateError(
+                    f"Positive label {target_namespace.positive_label} not found in target values "
+                    f"{unique_targets}. Please either update the positive label of the target "
+                    "or ensure the positive label exists in the observation table."
+                )
 
             positive_label_candidate = PositiveLabelCandidatesItem(
                 observation_table_id=observation_table.id,

@@ -186,7 +186,9 @@ class TargetNamespaceController(
                 f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
             )
 
-    def _validate_positive_label_immutability(self, target_namespace: TargetNamespaceModel) -> None:
+    async def _validate_positive_label_immutability(
+        self, target_namespace: TargetNamespaceModel
+    ) -> None:
         """
         Validate that positive label is immutable once set.
 
@@ -200,6 +202,15 @@ class TargetNamespaceController(
         DocumentUpdateError
             If positive label is already set
         """
+        # check whether positive label has been used in any observation table
+        related_obs_table_res = await self.observation_table_service.list_documents_as_dict(
+            query_filter={"target_namespace_id": target_namespace.id}
+        )
+        if related_obs_table_res["total"] == 0:
+            # no observation table is associated with this target namespace yet,
+            # positive label can still be updated
+            return
+
         if target_namespace.positive_label is not None:
             raise DocumentUpdateError(
                 "Positive label is immutable and cannot be updated once set. "
@@ -233,24 +244,27 @@ class TargetNamespaceController(
         """
         assert data.positive_label is not None
 
-        matched_candidate = None
-        for candidate in target_namespace.positive_label_candidates:
-            if candidate.observation_table_id == data.positive_label.observation_table_id:
-                matched_candidate = candidate
-                break
+        if data.positive_label.observation_table_id:
+            # validate against specific observation table candidates
 
-        if matched_candidate is None:
-            raise DocumentUpdateError(
-                "Please run target namespace classification metadata update task "
-                "to extract positive label candidates before setting the positive label."
-            )
+            matched_candidate = None
+            for candidate in target_namespace.positive_label_candidates:
+                if candidate.observation_table_id == data.positive_label.observation_table_id:
+                    matched_candidate = candidate
+                    break
 
-        if data.positive_label.value not in matched_candidate.positive_label_candidates:
-            raise DocumentUpdateError(
-                f'Value "{data.positive_label.value}" is not a valid candidate for '
-                f"observation table (ID: {matched_candidate.observation_table_id}). "
-                f"Valid candidates are: {matched_candidate.positive_label_candidates}."
-            )
+            if matched_candidate is None:
+                raise DocumentUpdateError(
+                    "Please run target namespace classification metadata update task "
+                    "to extract positive label candidates before setting the positive label."
+                )
+
+            if data.positive_label.value not in matched_candidate.positive_label_candidates:
+                raise DocumentUpdateError(
+                    f'Value "{data.positive_label.value}" is not a valid candidate for '
+                    f"observation table (ID: {matched_candidate.observation_table_id}). "
+                    f"Valid candidates are: {matched_candidate.positive_label_candidates}."
+                )
 
         return data.positive_label.value
 
@@ -284,7 +298,7 @@ class TargetNamespaceController(
         self._validate_positive_label_target_type(target_namespace)
 
         # Validate immutability
-        self._validate_positive_label_immutability(target_namespace)
+        await self._validate_positive_label_immutability(target_namespace)
 
         # Validate and extract positive label from candidates
         pos_label = await self._validate_positive_label_candidate(target_namespace, data)
