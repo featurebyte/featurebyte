@@ -124,3 +124,82 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         assert (
             response.json()["detail"] == "TargetNamespace is referenced by UseCase: test_use_case "
         )
+
+    def test_create_target_namespace_with_positive_label(self, test_api_client_persistent):
+        """Test create target namespace with positive label"""
+        test_api_client, _ = test_api_client_persistent
+        payload = {
+            **self.payload,
+            "target_type": "classification",
+            "dtype": "VARCHAR",
+            "positive_label": "positive",
+        }
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["target_type"] == "classification"
+        assert response.json()["positive_label"] == "positive"
+
+    def test_create_target_namespace_with_positive_label_invalid_target_type(
+        self, test_api_client_persistent
+    ):
+        """Test create target namespace with positive label but invalid target type"""
+        test_api_client, _ = test_api_client_persistent
+        payload = {
+            **self.payload,
+            "target_type": "regression",
+            "dtype": "INT",  # Use INT so target type validation passes
+            "positive_label": 1,
+        }
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        # Error is returned as a list of validation errors
+        detail = response.json()["detail"]
+        assert isinstance(detail, list)
+        assert any(
+            "Positive label can only be set for classification target type" in error.get("msg", "")
+            for error in detail
+        )
+
+    def test_update_positive_label_multiple_times_without_observation_tables(
+        self, test_api_client_persistent
+    ):
+        """Test update positive label multiple times when no observation tables exist"""
+        test_api_client, _ = test_api_client_persistent
+
+        # Create classification target namespace with positive label
+        payload = {
+            **self.payload,
+            "target_type": "classification",
+            "dtype": "VARCHAR",
+            "positive_label": "positive",
+        }
+        response = test_api_client.post("/target_namespace", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        target_namespace_id = response.json()["_id"]
+        assert response.json()["positive_label"] == "positive"
+
+        # Update positive label to a different value (should succeed as no obs tables exist)
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={"positive_label": {"value": "negative", "observation_table_id": None}},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["positive_label"] == "negative"
+
+    def test_update_positive_label_invalid_target_type(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update positive label for non-classification target namespace"""
+        test_api_client, _ = test_api_client_persistent
+        target_namespace_id = create_success_response.json()["_id"]
+
+        # Try to set positive label for regression target (should fail)
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={"positive_label": {"value": "positive", "observation_table_id": None}},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            "Positive label can only be set for target namespace of type"
+            in response.json()["detail"]
+        )

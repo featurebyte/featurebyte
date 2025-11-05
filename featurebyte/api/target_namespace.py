@@ -19,7 +19,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.models.target_namespace import PositiveLabelType, TargetNamespaceModel
 from featurebyte.schema.target_namespace import TargetNamespaceUpdate
 
 
@@ -49,6 +49,9 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     internal_window: Optional[str] = Field(alias="window", default=None)
     internal_dtype: DBVarType = Field(alias="dtype")
     internal_target_type: Optional[TargetType] = Field(alias="target_type", default=None)
+    internal_positive_label: Optional[PositiveLabelType] = Field(
+        alias="positive_label", default=None
+    )
 
     @classmethod
     def create(
@@ -58,6 +61,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         dtype: DBVarType,
         window: Optional[str] = None,
         target_type: Optional[TargetType] = None,
+        positive_label: Optional[PositiveLabelType] = None,
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -74,6 +78,10 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             Window of the TargetNamespace
         target_type: Optional[TargetType]
             Type of the Target used to indicate the modeling type of the target
+        positive_label: Optional[PositiveLabelType]
+            Positive label value for classification targets. Only applicable when target_type is
+            CLASSIFICATION. The value type must match the dtype (str for VARCHAR/CHAR, int for INT,
+            bool for BOOL).
 
         Returns
         -------
@@ -89,10 +97,23 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         ...     primary_entity=["customer"],
         ...     target_type=fb.TargetType.REGRESSION,
         ... )
+        >>> classification_target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="conversion_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.VARCHAR,
+        ...     primary_entity=["customer"],
+        ...     target_type=fb.TargetType.CLASSIFICATION,
+        ...     positive_label="converted",
+        ... )
         """
         entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
         target_namespace = TargetNamespace(
-            name=name, entity_ids=entity_ids, dtype=dtype, window=window, target_type=target_type
+            name=name,
+            entity_ids=entity_ids,
+            dtype=dtype,
+            window=window,
+            target_type=target_type,
+            positive_label=positive_label,
         )
         target_namespace.save()
         return target_namespace
@@ -138,6 +159,20 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             return self.cached_model.target_type
         except RecordRetrievalException:
             return self.internal_target_type
+
+    @property
+    def positive_label(self) -> Optional[PositiveLabelType]:
+        """
+        Positive label value for classification targets
+
+        Returns
+        -------
+        Optional[PositiveLabelType]
+        """
+        try:
+            return self.cached_model.positive_label
+        except RecordRetrievalException:
+            return self.internal_positive_label
 
     @property
     def target_ids(self) -> List[PydanticObjectId]:
