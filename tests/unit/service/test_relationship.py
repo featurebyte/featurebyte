@@ -176,6 +176,106 @@ async def test_add_relationship__duplicated_relationship(
 
 
 @pytest.mark.asyncio
+async def test_add_relationship__indirect_multiple_paths(
+    family_relationship_service, object_a, object_b, object_c
+):
+    """Test add_relationship
+
+    This scenario creates multiple paths from object A to object C indirectly without triggering
+    validation errors during entity tagging
+
+    Initial:
+
+    A -> B
+     \
+      -> C
+
+    Tag: B -> C
+
+    After:
+
+    A -> B ->
+     \       \
+      ------> C
+    """
+    await family_relationship_service.add_relationship(
+        child_id=object_a.id, parent=Parent(id=object_b.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_a.id, parent=Parent(id=object_c.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_b.id, parent=Parent(id=object_c.id)
+    )
+
+
+@pytest.mark.asyncio
+async def test_add_relationship__direct_multiple_paths(
+    family_relationship_service, object_a, object_b, object_c
+):
+    """Test add_relationship
+
+    This scenario creates multiple paths from object A to object C directly and triggers validation
+    errors during entity tagging
+
+    Initial:
+
+    A -> B -> C
+
+    Tag: A -> C
+    """
+    await family_relationship_service.add_relationship(
+        child_id=object_a.id, parent=Parent(id=object_b.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_b.id, parent=Parent(id=object_c.id)
+    )
+    with pytest.raises(DocumentUpdateError) as exc:
+        await family_relationship_service.add_relationship(
+            child_id=object_a.id, parent=Parent(id=object_c.id)
+        )
+    expected = 'Object "object_c" is already an ancestor of object "object_a".'
+    assert expected in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_add_relationship__direct_multiple_paths_4_entities(
+    family_relationship_service, object_a, object_b, object_c, object_d
+):
+    """Test add_relationship
+
+    This scenario creates multiple paths from object A to object C directly and triggers validation
+    errors during entity tagging
+
+    Initial:
+
+    A -> B -> D
+     \
+      -> C
+
+    Tag: C -> D
+
+    After:
+
+    A -> B -> D
+     \       /
+      -> C ->
+    """
+    await family_relationship_service.add_relationship(
+        child_id=object_a.id, parent=Parent(id=object_b.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_b.id, parent=Parent(id=object_d.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_a.id, parent=Parent(id=object_c.id)
+    )
+    await family_relationship_service.add_relationship(
+        child_id=object_c.id, parent=Parent(id=object_d.id)
+    )
+
+
+@pytest.mark.asyncio
 async def test_add_relationship__case_1(
     family_document_service, family_relationship_service, object_a, object_b, object_c
 ):
