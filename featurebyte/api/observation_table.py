@@ -544,7 +544,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         Examples
         --------
         >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
-        >>> sampled_observation_table = source_table.create_observation_table(  # doctest: +SKIP
+        >>> sampled_observation_table = observation_table.create_observation_table(  # doctest: +SKIP
         ...     name="<observation_table_name>",
         ...     sample_rows=desired_sample_size,
         ... )
@@ -553,7 +553,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         Create negative downsampled observation table
 
         >>> neg_downsampled_observation_table = (
-        ...     source_table.create_observation_table(  # doctest: +SKIP
+        ...     observation_table.create_observation_table(  # doctest: +SKIP
         ...         name="<observation_table_name>",
         ...         downsampling_info=DownSamplingInfo(
         ...             sampling_rate_per_target_value=[
