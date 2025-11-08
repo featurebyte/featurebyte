@@ -244,8 +244,8 @@ async def test_add_relationship__direct_multiple_paths_4_entities(
 ):
     """Test add_relationship
 
-    This scenario creates multiple paths from object A to object C directly and triggers validation
-    errors during entity tagging
+    This scenario creates multiple paths from object A to object D indirectly without triggering
+    validation errors during entity tagging
 
     Initial:
 
