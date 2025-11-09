@@ -2,12 +2,11 @@
 RelationshipInfo controller
 """
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
-from featurebyte.models.entity import ParentEntity
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.models.relationship import RelationshipInfoModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.relationship_info import (
@@ -18,7 +17,6 @@ from featurebyte.schema.relationship_info import (
 )
 from featurebyte.service.entity import EntityService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
-from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.relationship_info_update import RelationshipInfoUpdateService
 from featurebyte.service.table import TableService

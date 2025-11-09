@@ -1,6 +1,7 @@
 """
 RelationshipInfoUpdateService
 """
+
 from typing import cast
 
 from bson import ObjectId
