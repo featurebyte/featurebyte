@@ -187,6 +187,7 @@ from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupS
 from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
+from featurebyte.service.relationship_info_update import RelationshipInfoUpdateService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.semantic import SemanticService
@@ -415,6 +416,7 @@ app_container_config.register_class(QueryCacheCleanupService)
 app_container_config.register_class(QueryCacheCleanupSchedulerService)
 app_container_config.register_class(RelationshipInfoController)
 app_container_config.register_class(RelationshipInfoService)
+app_container_config.register_class(RelationshipInfoUpdateService)
 app_container_config.register_class(
     SCDTableController,
     dependency_override={"service": "scd_table_service"},
