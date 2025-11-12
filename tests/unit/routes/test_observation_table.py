@@ -1216,6 +1216,38 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         ]
 
     @pytest.mark.asyncio
+    async def test_create_with_downsampling_no_downsampling_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create with an observation table and downsampling rate that does not require downsampling"""
+        test_api_client, _ = test_api_client_persistent
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": 1.0},
+            ],
+        }
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_dict = response.json()
+        assert response_dict["detail"] == [
+            {
+                "type": "value_error",
+                "loc": [
+                    "body",
+                    "request_input",
+                    "source_observation_table",
+                    "downsampling_info",
+                ],
+                "msg": "Value error, At least one sampling rate must be less than 1.0 to enable downsampling",
+                "input": {"sampling_rate_per_target_value": [{"target_value": "1", "rate": 1.0}]},
+                "ctx": {"error": {}},
+            }
+        ]
+
+    @pytest.mark.asyncio
     async def test_create_with_downsampling_duplicate_target_values_422(
         self, test_api_client_persistent, create_success_response
     ):

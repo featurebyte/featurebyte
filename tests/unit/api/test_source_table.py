@@ -277,7 +277,15 @@ def test_create_observation_table_with_sample_rows(
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          *
+          "col_int",
+          "col_float",
+          "col_char",
+          "col_text",
+          "col_binary",
+          "col_boolean",
+          "POINT_IN_TIME",
+          "created_at",
+          "cust_id"
         FROM (
           SELECT
             "col_int",

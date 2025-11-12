@@ -10,7 +10,7 @@ from functools import cached_property
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from dateutil import tz
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select
 from typing_extensions import ClassVar
@@ -87,6 +87,19 @@ class DownSamplingInfo(FeatureByteBaseModel):
                     raise ValueError(f"Duplicate target value found: {sampling.target_value}")
                 target_values.add(sampling.target_value)
         return values
+
+    @model_validator(mode="after")
+    def validate_parameters(self) -> "DownSamplingInfo":  # ensure target values are unique
+        downsampling_needed = self.default_sampling_rate < 1.0
+        for sampling_rate in self.sampling_rate_per_target_value:
+            if sampling_rate.rate < 1.0:
+                downsampling_needed = True
+
+        if not downsampling_needed:
+            raise ValueError(
+                "At least one sampling rate must be less than 1.0 to enable downsampling"
+            )
+        return self
 
 
 class DownSamplingInfoWithTargetColumn(DownSamplingInfo):
@@ -242,14 +255,6 @@ class BaseRequestInput(FeatureByteBaseModel):
         -------
         Select
         """
-        downsampling_needed = downsampling_info.default_sampling_rate < 1.0
-        for sampling_rate in downsampling_info.sampling_rate_per_target_value:
-            if sampling_rate.rate < 1.0:
-                downsampling_needed = True
-
-        # no downsampling needed
-        if not downsampling_needed:
-            return select_expr
 
         original_cols = [
             quoted_identifier(col_expr.alias or col_expr.name)

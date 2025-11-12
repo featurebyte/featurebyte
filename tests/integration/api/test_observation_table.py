@@ -556,3 +556,8 @@ async def test_observation_table_downsampling(
     )
     number_of_rows = observation_table.shape()[0]
     assert number_of_rows < 50
+
+    # ensure weight column is not included in columns_info
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"}
+    actual_columns = {column.name for column in observation_table.columns_info}
+    assert expected_columns == actual_columns

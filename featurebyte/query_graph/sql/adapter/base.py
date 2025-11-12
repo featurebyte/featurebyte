@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from numpy import format_float_positional
 from sqlglot import expressions
@@ -633,10 +633,13 @@ class BaseAdapter(ABC):
         """
         # Nesting the query is required to handle the case when select_expr is a complex view
         # involving operations like joins
-        original_cols = [
-            quoted_identifier(col_expr.alias or col_expr.name)
-            for (column_idx, col_expr) in enumerate(select_expr.expressions)
-        ]
+        if select_expr.expressions[0].name == "*":
+            original_cols: list[Any] = [expressions.Star()]
+        else:
+            original_cols = [
+                quoted_identifier(col_expr.alias or col_expr.name)
+                for (column_idx, col_expr) in enumerate(select_expr.expressions)
+            ]
         nested_select_expr = select(*original_cols).from_(select_expr.subquery())
 
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
