@@ -120,7 +120,7 @@ def get_mocked_session_manager(session):
         yield
 
 
-def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
+def test_event_view_ops(event_view, transaction_data_upper_case_expected, source_type):
     """
     Test operations that can be performed on an EventView before creating features
     """
@@ -141,7 +141,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     check_numeric_operations(event_view)
 
     # construct expected results
-    expected = transaction_data_upper_case.copy()
+    expected = transaction_data_upper_case_expected.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
     expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
     expected["ÀMOUNT"] = expected["ÀMOUNT"].fillna(0)
@@ -730,10 +730,10 @@ async def _test_get_historical_features_with_serving_names(
 def check_string_operations(event_view, column_name, limit=100):
     """Test string operations"""
     event_view = event_view.copy()
+    event_view = event_view[event_view[column_name].notnull()]
     varchar_series = event_view[column_name]
     pandas_frame = varchar_series.preview(limit=limit)
     pandas_series = pandas_frame[pandas_frame.columns[0]]
-
     event_view["str_len"] = varchar_series.str.len()
     event_view["str_lower"] = varchar_series.str.lower()
     event_view["str_upper"] = varchar_series.str.upper()

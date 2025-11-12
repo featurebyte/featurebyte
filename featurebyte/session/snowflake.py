@@ -26,6 +26,7 @@ from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionErro
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import PrivateKeyCredential, UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import NestedFieldMetadata
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -36,6 +37,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.session.base import (
     APPLICATION_NAME,
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    NESTED_FIELD_DELIMITER,
     BaseSchemaInitializer,
     BaseSession,
 )
@@ -370,6 +372,44 @@ class SnowflakeSession(BaseSession):
         logger.warning(f"Snowflake: Not supported data type '{snowflake_var_info}'")
         return DBVarType.UNKNOWN
 
+    def _populate_column_spec(
+        self,
+        column_name: str,
+        var_info: dict[str, Any],
+        comment: str | None,
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription],
+        prefix: list[str] | None = None,
+    ) -> None:
+        prefix = prefix or []
+        fields = var_info.get("fields")
+        if fields:
+            # handle recursive fields (STRUCTURED OBJECT type)
+            prefix = prefix + [column_name]
+            for _field in fields:
+                self._populate_column_spec(
+                    column_name=_field["fieldName"],
+                    var_info=_field["fieldType"],
+                    comment=comment,
+                    column_name_type_map=column_name_type_map,
+                    prefix=prefix,
+                )
+        else:
+            if prefix and len(prefix) > 0:
+                nested_field_metadata = NestedFieldMetadata(
+                    parent_column_name=prefix[0],
+                    keys=prefix[1:] + [column_name],
+                )
+            else:
+                nested_field_metadata = None
+            column_name = NESTED_FIELD_DELIMITER.join(prefix + [column_name])
+            dtype = self._convert_to_internal_variable_type(var_info)
+            column_name_type_map[column_name] = ColumnSpecWithDescription(
+                name=column_name,
+                dtype=dtype,
+                description=comment or None,
+                nested_field_metadata=nested_field_metadata,
+            )
+
     async def list_table_schema(
         self,
         table_name: str | None,
@@ -381,16 +421,18 @@ class SnowflakeSession(BaseSession):
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
             timeout=timeout,
         )
-        column_name_type_map = collections.OrderedDict()
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = (
+            collections.OrderedDict()
+        )
         if schema is not None:
             for _, (column_name, var_info, comment) in schema[
                 ["column_name", "data_type", "comment"]
             ].iterrows():
-                dtype = self._convert_to_internal_variable_type(json.loads(var_info))
-                column_name_type_map[column_name] = ColumnSpecWithDescription(
-                    name=column_name,
-                    dtype=dtype,
-                    description=comment or None,
+                self._populate_column_spec(
+                    column_name=column_name,
+                    var_info=json.loads(var_info),
+                    comment=comment,
+                    column_name_type_map=column_name_type_map,
                 )
 
         return column_name_type_map

@@ -14,7 +14,7 @@ from tests.integration.api.materialized_table.utils import (
 @pytest.mark.asyncio
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 async def test_static_source_table_from_source_table(
-    data_source, feature_store, session, source_type, transaction_data_upper_case
+    data_source, feature_store, session, source_type, transaction_data_upper_case_expected
 ):
     """
     Test creating a static source table from a source table
@@ -33,7 +33,7 @@ async def test_static_source_table_from_source_table(
     check_location_valid(table_details, session)
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
     check_materialized_table_preview_methods(
-        static_source_table, expected_columns=transaction_data_upper_case.columns.tolist()
+        static_source_table, expected_columns=transaction_data_upper_case_expected.columns.tolist()
     )
 
 

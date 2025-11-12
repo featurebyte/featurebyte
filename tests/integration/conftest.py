@@ -15,7 +15,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, List, cast
+from typing import Any, Dict, List, cast
 from unittest import mock
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID, uuid4
@@ -70,6 +70,7 @@ from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
     SparkDetails,
+    TableDetails,
 )
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -80,6 +81,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import BaseSession
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
@@ -700,6 +702,18 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
+@pytest.fixture(name="transaction_data_upper_case_expected", scope="session")
+def transaction_dataframe_upper_case_expected(transaction_data_upper_case):
+    """
+    Flatten nested dict columns in the transaction table and return the expected dataframe
+    """
+    data = transaction_data_upper_case.copy()
+    # Flatten nested dict columns
+    data["NESTED_DICT_a_b"] = data["NESTED_DICT"].apply(lambda x: x["a"]["b"])
+    data["NESTED_DICT_c"] = data["NESTED_DICT"].apply(lambda x: x["c"])
+    yield data.drop("NESTED_DICT", axis=1)
+
+
 @pytest.fixture(name="transaction_data_with_timestamp_schema", scope="session")
 def transaction_data_with_timestamp_schema_fixture(transaction_data_upper_case):
     """
@@ -1079,8 +1093,122 @@ async def datasets_registration_helper_fixture(
             session: BaseSession
                 Session object
             """
+
+            def _transform_nested_dict_col(
+                session: BaseSession, sample_value: dict[str, Any], prefix: str, depth=0
+            ) -> tuple[str, str]:
+                """Transform nested dict column to convert variant columns to structured variant columns"""
+                fields = []
+                typedefs = []
+                field_delimiter = "." if session.source_type == SourceType.BIGQUERY else ":"
+                for key, value in sample_value.items():
+                    field = f"{prefix}{field_delimiter}{key}"
+                    typedef = "int"
+                    if isinstance(value, dict):
+                        field, typedef = _transform_nested_dict_col(
+                            session, value, field, depth=depth + 1
+                        )
+                    fields.append((key, field))
+                    typedefs.append((key, typedef))
+                if session.source_type == SourceType.SNOWFLAKE:
+                    fields_str = ", ".join([f"'{key}', {field}" for key, field in fields])
+                    typdefs_str = ", ".join([f"{key} {typedef}" for key, typedef in typedefs])
+                    transformed_col = f"OBJECT_CONSTRUCT({fields_str})"
+                    transformed_col_typedef = f"OBJECT({typdefs_str})"
+                    if depth > 0:
+                        return transformed_col, transformed_col_typedef
+                    return f"{transformed_col}::{transformed_col_typedef}", ""
+                if session.source_type == SourceType.BIGQUERY:
+                    dict_col = field.split(field_delimiter)[0]
+                    field_key = field_delimiter.join(field.split(field_delimiter)[1:])
+                    fields_str = ", ".join([
+                        f"{field} AS `{key}`"
+                        if field.startswith("STRUCT")
+                        else f"SAFE_CAST(JSON_EXTRACT_SCALAR({dict_col}, '$.{field_key}') AS {typedef}) AS `{key}`"
+                        for key, field in fields
+                    ])
+                    return f"STRUCT({fields_str})", ""
+                raise ValueError(
+                    f"Unsupported source type for dict column transformation: {session.source_type}"
+                )
+
+            def _transform_flat_dict_col(
+                session: BaseSession, sample_value: dict[str, Any], column_name: str
+            ) -> tuple[str, str]:
+                """Transform flat dict column to convert struct column to map column"""
+                fields_str = ", ".join([
+                    f"'{key}', `{column_name}`.`{key}`" for key, value in sample_value.items()
+                ])
+                return f"MAP({fields_str})"
+
+            def _is_dict_column(series: pd.Series) -> bool:
+                """Check if series is a dict column"""
+                if series.dtype != "object":
+                    return False
+                if not isinstance(series.iloc[0], dict):
+                    return False
+                return True
+
+            def _is_nested_dict_column(series: pd.Series) -> bool:
+                """Check if a dict column is nested"""
+                if not _is_dict_column(series):
+                    return False
+                for value in series.iloc[0].values():
+                    if isinstance(value, dict):
+                        return True
+                return False
+
             for table_name, df in self.datasets.items():
-                await session.register_table(table_name, df)
+                flat_dict_columns_to_convert = []
+                nested_dict_columns_to_convert = []
+                if session.source_type in [SourceType.BIGQUERY, SourceType.SNOWFLAKE]:
+                    # BigQuery and Snowflake sessions will register dict columns as non-structured objects
+                    # To be consistent, we convert non-flat dict columns to structured objects
+                    for column_name in df.columns:
+                        if _is_nested_dict_column(df[column_name]):
+                            nested_dict_columns_to_convert.append(column_name)
+                    if nested_dict_columns_to_convert:
+                        transformed_col_selection = {
+                            column_name: f"{_transform_nested_dict_col(session, df[column_name].iloc[0], column_name)[0]} AS {column_name}"
+                            for column_name in nested_dict_columns_to_convert
+                        }
+                else:
+                    # Spark and Databricks sessions will register dict columns as structured objects
+                    # To be consistent, we will convert flat dict columns to map objects
+                    for column_name in df.columns:
+                        if _is_dict_column(df[column_name]) and not _is_nested_dict_column(
+                            df[column_name]
+                        ):
+                            flat_dict_columns_to_convert.append(column_name)
+                    if flat_dict_columns_to_convert:
+                        transformed_col_selection = {
+                            column_name: f"{_transform_flat_dict_col(session, df[column_name].iloc[0], column_name)} AS {column_name}"
+                            for column_name in flat_dict_columns_to_convert
+                        }
+
+                if flat_dict_columns_to_convert or nested_dict_columns_to_convert:
+                    # Register temporary table if any dict columns to handle
+                    temp_table_name = f"_{table_name}"
+                    table_fqn = session.get_fully_qualified_table_name(temp_table_name)
+                    await session.register_table(temp_table_name, df)
+                    column_quote = '"' if session.source_type == SourceType.SNOWFLAKE else "`"
+                    col_selection = ", ".join([
+                        transformed_col_selection.get(
+                            column_name, f"{column_quote}{column_name}{column_quote}"
+                        )
+                        for column_name in df.columns
+                    ])
+                    query = f"SELECT {col_selection} FROM {table_fqn}"
+                    await session.create_table_as(
+                        table_details=TableDetails(
+                            table_name=table_name,
+                            schema_name=session.schema_name,
+                            database_name=session.database_name,
+                        ),
+                        select_expr=query,
+                    )
+                else:
+                    await session.register_table(table_name, df)
 
         @property
         def table_names(self) -> List[str]:
@@ -1496,7 +1624,8 @@ def create_transactions_event_table_from_data_source(
         "ARRAY": "ARRAY",
         "ARRAY_STRING": "ARRAY",
         "FLAT_DICT": "DICT",
-        "NESTED_DICT": "DICT",
+        "NESTED_DICT_a_b": "INT",
+        "NESTED_DICT_c": "INT",
     })
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
     event_table = database_table.create_event_table(
@@ -1590,7 +1719,8 @@ def event_view_fixture(event_table):
         "ARRAY",
         "ARRAY_STRING",
         "FLAT_DICT",
-        "NESTED_DICT",
+        "NESTED_DICT_a_b",
+        "NESTED_DICT_c",
     ]
     return event_view
 

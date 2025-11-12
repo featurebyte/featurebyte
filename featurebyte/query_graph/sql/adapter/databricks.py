@@ -414,3 +414,9 @@ class DatabricksAdapter(BaseAdapter):
         for key in keys:
             expr = expressions.Dot(this=expr, expression=quoted_identifier(key))
         return expr
+
+    @classmethod
+    def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
+        if dtype in [DBVarType.FLAT_DICT, DBVarType.DICT]:
+            return expressions.Cast(this=expr, to=expressions.DataType.build("TEXT"))
+        return expr

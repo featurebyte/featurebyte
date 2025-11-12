@@ -1541,7 +1541,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {
             "data": (
-                '{"schema":{"fields":[{"name":"index","type":"integer"}],"primaryKey":["index"],'
+                '{"schema":{"fields":[{"name":"__index__","type":"integer"}],"primaryKey":["__index__"],'
                 '"pandas_version":"1.4.0"},"data":[]}'
             ),
             "type_conversions": None,

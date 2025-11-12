@@ -61,6 +61,7 @@ APPLICATION_NAME = "FeatureByte"
 MAX_WAIT_TIME_FOR_QUERY_HANDLER = (
     30  # max seconds to wait for query handler to be available for query cancellation
 )
+NESTED_FIELD_DELIMITER = "_"
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 logger = get_logger(__name__)
