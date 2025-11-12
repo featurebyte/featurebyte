@@ -3,49 +3,67 @@ Tests for RelationshipInfoValidationService
 """
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.exception import InvalidEntityRelationshipError
 from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.schema.entity import EntityCreate
+from featurebyte.service.relationship_info_validation import RelationshipInfoValidationService
 
 
 @pytest.fixture(name="service")
-def service_fixture(app_container):
+def service_fixture(app_container) -> RelationshipInfoValidationService:
     """
     Fixture for RelationshipInfoValidationService
     """
     return app_container.relationship_info_validation_service
 
 
-@pytest.fixture(name="entity_a")
-def entity_a_fixture():
+async def create_entity(app_container, _id, name):
+    """
+    Create an entity
+    """
+    entity_model = await app_container.entity_service.create_document(
+        EntityCreate(
+            _id=_id,
+            name=name,
+            serving_name=f"{name}_serving",
+        )
+    )
+    return entity_model.id
+
+
+@pytest_asyncio.fixture(name="entity_a")
+async def entity_a_fixture(app_container):
     """
     Fixture for entity_a
     """
-    return ObjectId("60f7f9f5d2b5c12a3456789a")
+    return await create_entity(app_container, ObjectId("60f7f9f5d2b5c12a3456789a"), "entity_a")
 
 
-@pytest.fixture(name="entity_b")
-def entity_b_fixture():
+@pytest_asyncio.fixture(name="entity_b")
+async def entity_b_fixture(app_container):
     """
     Fixture for entity_b
     """
-    return ObjectId("60f7f9f5d2b5c12a3456789b")
+    return await create_entity(app_container, ObjectId("60f7f9f5d2b5c12a3456789b"), "entity_b")
 
 
-@pytest.fixture(name="entity_c")
-def entity_c_fixture():
+@pytest_asyncio.fixture(name="entity_c")
+async def entity_c_fixture(app_container):
     """
     Fixture for entity_c
     """
-    return ObjectId("60f7f9f5d2b5c12a3456789c")
+    return await create_entity(app_container, ObjectId("60f7f9f5d2b5c12a3456789c"), "entity_c")
 
 
-@pytest.fixture(name="entity_d")
-def entity_d_fixture():
+@pytest_asyncio.fixture(name="entity_d")
+async def entity_d_fixture(app_container):
     """
     Fixture for entity_d
     """
-    return ObjectId("60f7f9f5d2b5c12a3456789d")
+    return await create_entity(app_container, ObjectId("60f7f9f5d2b5c12a3456789d"), "entity_d")
 
 
 @pytest.fixture(name="relationship_a_to_b")
@@ -139,11 +157,12 @@ def check_all_entity_pair_lookup_info(all_entity_pair_lookup_info, expected):
     assert mapping == expected
 
 
-def test_single_relationship_info(service, relationship_a_to_b, entity_a, entity_b):
+@pytest.mark.asyncio
+async def test_single_relationship_info(service, relationship_a_to_b, entity_a, entity_b):
     """
     Test single relationship info
     """
-    result = service.validate_relationships([relationship_a_to_b])
+    result = await service.validate_relationships([relationship_a_to_b])
     assert len(result.all_entity_pair_lookup_info) == 1
     expected = {
         (entity_a, entity_b): [relationship_a_to_b.id],
@@ -152,7 +171,8 @@ def test_single_relationship_info(service, relationship_a_to_b, entity_a, entity
     assert result.unused_relationship_info_ids == []
 
 
-def test_multiple_relationship_infos__valid(
+@pytest.mark.asyncio
+async def test_multiple_relationship_infos__valid(
     service,
     relationship_a_to_b,
     relationship_a_to_c,
@@ -164,7 +184,7 @@ def test_multiple_relationship_infos__valid(
     """
     Test single relationship info
     """
-    result = service.validate_relationships([
+    result = await service.validate_relationships([
         relationship_a_to_b,
         relationship_a_to_c,
         relationship_b_to_c,
@@ -179,7 +199,8 @@ def test_multiple_relationship_infos__valid(
     assert result.unused_relationship_info_ids == [relationship_a_to_c.id]
 
 
-def test_multiple_relationship_infos__invalid(
+@pytest.mark.asyncio
+async def test_multiple_relationship_infos__invalid(
     service,
     relationship_a_to_b,
     relationship_b_to_c,
@@ -189,12 +210,12 @@ def test_multiple_relationship_infos__invalid(
     """
     Test single relationship info
     """
-    with pytest.raises(ValueError) as exc:
-        _ = service.validate_relationships([
+    with pytest.raises(InvalidEntityRelationshipError) as exc:
+        _ = await service.validate_relationships([
             relationship_a_to_b,
             relationship_b_to_c,
             relationship_a_to_d,
             relationship_d_to_c,
         ])
-    expected_error = "Invalid relationship paths between entities 60f7f9f5d2b5c12a3456789a and 60f7f9f5d2b5c12a3456789c."
+    expected_error = "Invalid entity tagging detected between entity_a (60f7f9f5d2b5c12a3456789a) and entity_c (60f7f9f5d2b5c12a3456789c). Please review the entities and their relationships in the catalog."
     assert str(exc.value) == expected_error

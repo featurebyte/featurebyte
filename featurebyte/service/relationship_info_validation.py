@@ -8,7 +8,9 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from bson import ObjectId
 
-from featurebyte.models.relationship import RelationshipInfoModel
+from featurebyte.exception import InvalidEntityRelationshipError
+from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.service.entity import EntityService
 
 
 @dataclass
@@ -173,6 +175,7 @@ def validate_relationships_single_pair(
     relationship_graph: RelationshipInfoGraph,
     from_entity_id: ObjectId,
     to_entity_id: ObjectId,
+    entity_names_mapping: Dict[ObjectId, str],
 ) -> Optional[EntityPairLookupInfo]:
     """
     Validate relationship information between two entities.
@@ -183,8 +186,12 @@ def validate_relationships_single_pair(
     longest_path = max(all_paths, key=lambda x: len(x.relationship_info_ids))
     for path in all_paths:
         if not is_subsequence(path.entity_ids, longest_path.entity_ids):
-            raise ValueError(
-                f"Invalid relationship paths between entities {from_entity_id} and {to_entity_id}."
+            from_entity_name = entity_names_mapping.get(from_entity_id)
+            to_entity_name = entity_names_mapping.get(to_entity_id)
+            raise InvalidEntityRelationshipError(
+                f"Invalid entity tagging detected between {from_entity_name} ({from_entity_id})"
+                f" and {to_entity_name} ({to_entity_id}). Please review the entities and their"
+                " relationships in the catalog."
             )
     entity_pair_lookup_info = EntityPairLookupInfo(
         from_entity_id=from_entity_id,
@@ -197,6 +204,7 @@ def validate_relationships_single_pair(
 
 def validate_relationships(
     all_relationship_info: list[RelationshipInfoModel],
+    entity_names_mapping: Dict[ObjectId, str],
 ) -> ValidatedRelationships:
     """
     Validate relationship information between entities.
@@ -209,7 +217,7 @@ def validate_relationships(
     entity_ids = relationship_graph.get_entity_ids()
     for from_entity_id, to_entity_id in permutations(entity_ids, 2):
         entity_pair_lookup_info = validate_relationships_single_pair(
-            relationship_graph, from_entity_id, to_entity_id
+            relationship_graph, from_entity_id, to_entity_id, entity_names_mapping
         )
         if entity_pair_lookup_info is None:
             continue
@@ -231,9 +239,44 @@ class RelationshipInfoValidationService:
     Service for validating relationship information between entities.
     """
 
-    @classmethod
-    def validate_relationships(
-        cls,
+    def __init__(self, entity_service: EntityService):
+        self.entity_service = entity_service
+
+    async def validate_relationships(
+        self,
         all_relationship_info: list[RelationshipInfoModel],
     ) -> ValidatedRelationships:
-        return validate_relationships(all_relationship_info)
+        child_parent_infos = [
+            info
+            for info in all_relationship_info
+            if info.relationship_type == RelationshipType.CHILD_PARENT
+        ]
+        entity_names_mapping = await self.get_entity_names_mapping(child_parent_infos)
+        return validate_relationships(child_parent_infos, entity_names_mapping)
+
+    async def get_entity_names_mapping(
+        self, relationship_infos: list[RelationshipInfoModel]
+    ) -> Dict[ObjectId, str]:
+        """
+        Get mapping from entity ID to entity name.
+
+        Parameters
+        ----------
+        relationship_infos: list[RelationshipInfoModel]
+            List of relationship information.
+
+        Returns
+        -------
+        Dict[ObjectId, str]
+            Mapping from entity ID to entity name.
+        """
+        entity_ids = set()
+        for info in relationship_infos:
+            entity_ids.add(info.entity_id)
+            entity_ids.add(info.related_entity_id)
+        mapping = {}
+        async for doc in self.entity_service.list_documents_as_dict_iterator(
+            query_filter={"_id": {"$in": list(entity_ids)}}
+        ):
+            mapping[doc["_id"]] = doc["name"]
+        return mapping

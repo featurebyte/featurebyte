@@ -617,3 +617,9 @@ class InvalidComputeOptionValueError(BaseUnprocessableEntityError):
     """
     Raise when an invalid compute option value is provided
     """
+
+
+class InvalidEntityRelationshipError(BaseUnprocessableEntityError):
+    """
+    Raise when an invalid entity relationship is provided
+    """
