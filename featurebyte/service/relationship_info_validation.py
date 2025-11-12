@@ -137,6 +137,16 @@ class RelationshipInfoGraph:
     def convert_path_to_relationship_info_ids(self, path: list[ObjectId]) -> list[ObjectId]:
         """
         Convert a path of entity IDs to a path of relationship info IDs.
+
+        Parameters
+        ----------
+        path : list[ObjectId]
+            List of entity IDs representing the path.
+
+        Returns
+        -------
+        list[ObjectId]
+            List of relationship info IDs corresponding to the path.
         """
         relationship_info_ids = []
         for from_entity_id, to_entity_id in zip(path[:-1], path[1:]):
@@ -179,6 +189,27 @@ def validate_relationships_single_pair(
 ) -> Optional[EntityPairLookupInfo]:
     """
     Validate relationship information between two entities.
+
+    Parameters
+    ----------
+    relationship_graph : RelationshipInfoGraph
+        Graph representation of relationship information.
+    from_entity_id : ObjectId
+        The source entity ID.
+    to_entity_id : ObjectId
+        The target entity ID.
+    entity_names_mapping : Dict[ObjectId, str]
+        Mapping from entity ID to entity name.
+
+    Returns
+    -------
+    Optional[EntityPairLookupInfo]
+        Entity pair lookup information if valid relationship exists, None otherwise.
+
+    Raises
+    ------
+    InvalidEntityRelationshipError
+        If invalid entity tagging is detected between entities.
     """
     all_paths = list(relationship_graph.enumerate_paths(from_entity_id, to_entity_id))
     if not all_paths:
@@ -208,6 +239,18 @@ def validate_relationships(
 ) -> ValidatedRelationships:
     """
     Validate relationship information between entities.
+
+    Parameters
+    ----------
+    all_relationship_info : list[RelationshipInfoModel]
+        List of all relationship information models.
+    entity_names_mapping : Dict[ObjectId, str]
+        Mapping from entity ID to entity name.
+
+    Returns
+    -------
+    ValidatedRelationships
+        Container with validated relationship information and unused relationship info IDs.
     """
     relationship_graph = RelationshipInfoGraph(all_relationship_info)
 
