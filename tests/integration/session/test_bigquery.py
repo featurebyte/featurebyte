@@ -151,7 +151,7 @@ async def test_get_table_details(config, session_without_datasets):
     assert details.dict() == {
         "details": {
             "kind": "bigquery#table",
-            "etag": "4UC71fIDIyUMf3Bzw939EQ==",
+            "etag": "0IcsjoqRbIZEJ3K/m3Z+bg==",
             "id": "vpc-host-prod-xa739-xz970:demo_datasets.groceryinvoice",
             "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/vpc-host-prod-xa739-xz970/datasets/demo_datasets/tables/groceryinvoice",
             "tableReference": {
@@ -162,14 +162,14 @@ async def test_get_table_details(config, session_without_datasets):
             "numBytes": "0",
             "numLongTermBytes": "0",
             "numRows": "0",
-            "creationTime": "1720878239654",
-            "lastModifiedTime": "1722841799143",
+            "creationTime": "1762855921592",
+            "lastModifiedTime": "1762927950238",
             "type": "VIEW",
             "view": {
-                "query": "SELECT * FROM demo_datasets.__groceryinvoice\nWHERE record_available_at <= CURRENT_TIMESTAMP()",
+                "query": "SELECT * FROM `vpc-host-prod-xa739-xz970.demo_datasets.__groceryinvoice`\nWHERE record_available_at <= CURRENT_TIMESTAMP()",
                 "useLegacySql": False,
             },
-            "location": "us-central1",
+            "location": "US",
             "numTotalLogicalBytes": "0",
             "numActiveLogicalBytes": "0",
             "numLongTermLogicalBytes": "0",
