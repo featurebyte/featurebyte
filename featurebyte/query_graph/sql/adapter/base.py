@@ -633,7 +633,11 @@ class BaseAdapter(ABC):
         """
         # Nesting the query is required to handle the case when select_expr is a complex view
         # involving operations like joins
-        nested_select_expr = select("*").from_(select_expr.subquery())
+        original_cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for (column_idx, col_expr) in enumerate(select_expr.expressions)
+        ]
+        nested_select_expr = select(*original_cols).from_(select_expr.subquery())
 
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
         # FROM clause so that the result is still a SELECT expression. This way we can do things
