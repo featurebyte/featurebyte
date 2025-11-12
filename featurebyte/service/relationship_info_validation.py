@@ -62,7 +62,7 @@ class RelationshipInfoGraph:
             nodes_set.add(from_entity_id)
             nodes_set.add(to_entity_id)
 
-            if relationship_info.entity_id not in self.edges:
+            if from_entity_id not in self.edges:
                 self.edges[from_entity_id] = []
             self.edges[from_entity_id].append(to_entity_id)
 
