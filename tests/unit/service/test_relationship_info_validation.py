@@ -85,7 +85,7 @@ def relationship_a_to_b_fixture(entity_a, entity_b, catalog_id):
 @pytest.fixture(name="relationship_a_to_c")
 def relationship_a_to_c_fixture(entity_a, entity_c, catalog_id):
     """
-    Fixture for relationship_info_a
+    Fixture for relationship_info_a_to_c
     """
     return RelationshipInfoModel(
         _id="69136faca6be526b342aa3ac",
@@ -133,7 +133,7 @@ def relationship_b_to_c_fixture(entity_b, entity_c, catalog_id):
 @pytest.fixture(name="relationship_d_to_c")
 def relationship_d_to_c_fixture(entity_d, entity_c, catalog_id):
     """
-    Fixture for relationship_info_b_to_c
+    Fixture for relationship_info_d_to_c
     """
     return RelationshipInfoModel(
         _id="69136faca6be526b342aa3dc",
@@ -187,8 +187,9 @@ async def test_multiple_relationship_infos__valid(
     Test multiple relationship infos
 
     A -> B -> C
-     \       /
-      ------>
+    |         ^
+    |         |
+    +---------+
 
     A to C is a shortcut and is allowed.
     """
