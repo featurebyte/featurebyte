@@ -543,3 +543,21 @@ async def test_observation_table_downsampling(
         f'SELECT DISTINCT __FB_TABLE_ROW_WEIGHT FROM "{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
     )
     assert set(sampling_rates["__FB_TABLE_ROW_WEIGHT"].tolist()) == {4.0, 1.0}
+
+    # create downsampled observation table with sample_rows
+    observation_table = observation_table.create_observation_table(
+        name=f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}_DOWNSAMPLED_WITH_SAMPLE_ROWS",
+        sample_rows=50,
+        downsampling_info=DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                TargetValueSamplingRate(target_value=True, rate=0.5),
+            ],
+        ),
+    )
+    number_of_rows = observation_table.shape()[0]
+    assert number_of_rows < 50
+
+    # ensure weight column is not included in columns_info
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"}
+    actual_columns = {column.name for column in observation_table.columns_info}
+    assert expected_columns == actual_columns

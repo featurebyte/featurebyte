@@ -199,7 +199,7 @@ class BaseMaterializedTableService(
                 entity_id=col_name_to_entity_ids.get(name, None),
             )
             for name, schema in table_schema.items()
-            if name != InternalName.TABLE_ROW_INDEX
+            if name not in [InternalName.TABLE_ROW_INDEX, InternalName.TABLE_ROW_WEIGHT]
         ]
         return columns_info, num_rows
 

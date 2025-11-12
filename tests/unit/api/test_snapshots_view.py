@@ -408,7 +408,8 @@ def test_create_observation_table_from_snapshots_view__with_sample(
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          *
+          "POINT_IN_TIME",
+          "cust_id"
         FROM (
           SELECT
             "POINT_IN_TIME",
