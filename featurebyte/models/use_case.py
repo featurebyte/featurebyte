@@ -28,6 +28,7 @@ class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):
     use_case_type: UseCaseType = UseCaseType.PREDICTIVE  # backward compatibility
     context_id: PydanticObjectId
     default_eda_table_id: Optional[PydanticObjectId] = None
+    archived: bool = False
 
     # TODO: remove default_preview_table_id in future release
     default_preview_table_id: Optional[PydanticObjectId] = None
