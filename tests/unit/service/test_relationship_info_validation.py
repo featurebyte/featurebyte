@@ -161,6 +161,8 @@ def check_all_entity_pair_lookup_info(all_entity_pair_lookup_info, expected):
 async def test_single_relationship_info(service, relationship_a_to_b, entity_a, entity_b):
     """
     Test single relationship info
+
+    A -> B
     """
     result = await service.validate_relationships([relationship_a_to_b])
     assert len(result.all_entity_pair_lookup_info) == 1
@@ -182,7 +184,13 @@ async def test_multiple_relationship_infos__valid(
     entity_c,
 ):
     """
-    Test single relationship info
+    Test multiple relationship infos
+
+    A -> B -> C
+     \       /
+      ------>
+
+    A to C is a shortcut and is allowed.
     """
     result = await service.validate_relationships([
         relationship_a_to_b,
@@ -208,7 +216,16 @@ async def test_multiple_relationship_infos__invalid(
     relationship_d_to_c,
 ):
     """
-    Test single relationship info
+    Test multiple relationship infos (invalid)
+
+    A -> B -> C
+    |         ^
+    v         |
+    D --------+
+
+    There are multiple distinct paths from A to C which is not allowed.
+    * A -> B -> C
+    * A -> D -> C
     """
     with pytest.raises(InvalidEntityRelationshipError) as exc:
         _ = await service.validate_relationships([
