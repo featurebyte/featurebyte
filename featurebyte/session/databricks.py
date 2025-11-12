@@ -140,20 +140,17 @@ class DatabricksSession(BaseSparkSession):
             for column_info in table_info.columns:
                 if column_info.name is None or column_info.type_text is None:
                     continue
-                dtype = self._convert_to_internal_variable_type(column_info.type_text.upper())
-                partition_metadata = (
-                    None
-                    if column_info.partition_index is None
-                    else PartitionMetadata(
+                self._populate_column_spec(
+                    column_info.name,
+                    column_info.type_text.lower(),
+                    column_info.comment,
+                    column_name_type_map,
+                )
+                # add partition key information
+                if column_info.partition_index is not None:
+                    column_name_type_map[column_info.name].partition_metadata = PartitionMetadata(
                         is_partition_key_candidate=True,
                     )
-                )
-                column_name_type_map[column_info.name] = ColumnSpecWithDescription(
-                    name=column_info.name,
-                    dtype=dtype,
-                    description=column_info.comment or None,
-                    partition_metadata=partition_metadata,
-                )
 
             return column_name_type_map
         except NotFound as exc:
@@ -272,6 +269,7 @@ class DatabricksSession(BaseSparkSession):
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         if cursor.active_op_handle:
             cursor.cancel()
+            cursor.active_op_handle = None
             return True
         return False
 
