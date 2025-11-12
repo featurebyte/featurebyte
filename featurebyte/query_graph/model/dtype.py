@@ -144,3 +144,12 @@ class PartitionMetadata(FeatureByteBaseModel):
 
     is_partition_key: bool = Field(default=False)
     is_partition_key_candidate: bool = Field(default=False)
+
+
+class NestedFieldMetadata(FeatureByteBaseModel):
+    """
+    Metadata for NestedFieldMetadata
+    """
+
+    parent_column_name: str
+    keys: list[str] = Field(min_length=1)
