@@ -211,10 +211,16 @@ def validate_relationships_single_pair(
     InvalidEntityRelationshipError
         If invalid entity tagging is detected between entities.
     """
+    # Note: the implementation can be improved in terms of efficiency, such as memoization or
+    # streaming enumeration for the paths. But since the graph is typically small, the current
+    # implementation optimizes for flexibility and clarity.
     all_paths = list(relationship_graph.enumerate_paths(from_entity_id, to_entity_id))
+
     if not all_paths:
         return None
+
     longest_path = max(all_paths, key=lambda x: len(x.relationship_info_ids))
+
     for path in all_paths:
         if not is_subsequence(path.entity_ids, longest_path.entity_ids):
             from_entity_name = entity_names_mapping.get(from_entity_id)
@@ -224,6 +230,7 @@ def validate_relationships_single_pair(
                 f" and {to_entity_name} ({to_entity_id}). Please review the entities and their"
                 " relationships in the catalog."
             )
+
     entity_pair_lookup_info = EntityPairLookupInfo(
         from_entity_id=from_entity_id,
         to_entity_id=to_entity_id,
@@ -239,6 +246,11 @@ def validate_relationships(
 ) -> ValidatedRelationships:
     """
     Validate relationship information between entities.
+
+    The validation checks for each pair of entities whether there is a unique valid path of
+    relationships connecting them. When multiple paths exist, only shortcut paths are allowed.
+
+    Cycles in the graph are assumed to have been prevented by validation performed elsewhere.
 
     Parameters
     ----------
@@ -289,6 +301,18 @@ class RelationshipInfoValidationService:
         self,
         all_relationship_info: list[RelationshipInfoModel],
     ) -> ValidatedRelationships:
+        """
+        Validate relationship information between entities.
+
+        Parameters
+        ----------
+        all_relationship_info : list[RelationshipInfoModel]
+            Relationship information to validate.
+
+        Returns
+        -------
+        ValidatedRelationships
+        """
         child_parent_infos = [
             info
             for info in all_relationship_info
