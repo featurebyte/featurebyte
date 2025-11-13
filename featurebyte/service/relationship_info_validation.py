@@ -155,32 +155,6 @@ class RelationshipInfoGraph:
         return relationship_info_ids
 
 
-def is_subsequence(needle: list[ObjectId], haystack: list[ObjectId]) -> bool:
-    """
-    Check if needle is a subsequence of haystack.
-
-    Parameters
-    ----------
-    needle: list[ObjectId]
-        The subsequence to check.
-    haystack: list[ObjectId]
-        The sequence to check against.
-
-    Returns
-    -------
-    bool
-    """
-    pos = 0
-    for item in needle:
-        # Find the next occurrence of item in haystack[pos:]
-        try:
-            idx = haystack.index(item, pos)
-        except ValueError:
-            return False
-        pos = idx + 1
-    return True
-
-
 def validate_relationships_single_pair(
     relationship_graph: RelationshipInfoGraph,
     from_entity_id: ObjectId,
@@ -222,7 +196,9 @@ def validate_relationships_single_pair(
     longest_path = max(all_paths, key=lambda x: len(x.relationship_info_ids))
 
     for path in all_paths:
-        if not is_subsequence(path.entity_ids, longest_path.entity_ids):
+        # Shortcuts are allowed. A path is a shortcut if all its entities are included in the
+        # longest path.
+        if not set(path.entity_ids).issubset(longest_path.entity_ids):
             from_entity_name = entity_names_mapping.get(from_entity_id)
             to_entity_name = entity_names_mapping.get(to_entity_id)
             raise InvalidEntityRelationshipError(
