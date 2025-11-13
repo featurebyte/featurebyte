@@ -1449,7 +1449,7 @@ def test_feature_list_entity_relationship_validation(
     # construct another feature
     event_view = snowflake_event_table_with_entity.get_view()
     another_feat = create_feature_with_multiple_entity_relationships(event_view, "another_feature")
-    another_feat.save()
+    another_feat.save()  # TODO: failing here
     relationships_info = another_feat.cached_model.relationships_info
     assert len(relationships_info) == 1
     assert relationships_info[0].entity_id == cust_id_entity.id

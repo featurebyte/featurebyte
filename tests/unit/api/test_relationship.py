@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte import Entity
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.relationship import Relationship
+from featurebyte.exception import RecordUpdateException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
@@ -348,3 +349,602 @@ def test_update_relationship_type_and_retag_parent_entity(
     # Retag parent entity
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
     check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
+
+
+def assert_relationships_equal(expected):
+    """
+    Helper function to assert relationships are equal
+    """
+    relationships = Relationship.list()
+    actual = relationships[
+        [
+            "entity",
+            "related_entity",
+            "relationship_type",
+            "relationship_status",
+            "relation_table",
+        ]
+    ].to_dict(orient="records")
+    actual = sorted(actual, key=lambda x: (x["entity"], x["related_entity"]))
+    assert actual == expected
+
+
+def assert_ancestor_ids_equal(expected: dict[str, list[ObjectId]]):
+    """
+    Helper function to assert ancestor ids are equal
+    """
+    Entity._cache.clear()
+    actual = {}
+    for _, entity in Entity.list().iterrows():
+        entity_name = entity["name"]
+        entity = Entity.get(entity_name)
+        actual[entity_name] = sorted(entity.ancestor_ids)
+    for k in expected:
+        expected[k] = sorted(expected[k])
+    assert actual == expected
+
+
+def get_relationship_object_by_entities(
+    entity_name: str,
+    related_entity_name: str,
+):
+    """
+    Helper function to get relationship object by entity names
+    """
+    relationships = Relationship.list()
+    for relationship_record in relationships.to_dict(orient="records"):
+        if (
+            relationship_record["entity"] == entity_name
+            and relationship_record["related_entity"] == related_entity_name
+        ):
+            relationship_obj = Relationship.get_by_id(relationship_record["id"])
+            return relationship_obj
+    raise AssertionError("Expected relationship not found")
+
+
+def test_two_entities_with_shortcut(
+    saved_event_table,
+    saved_scd_table,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test multiple paths between entities
+
+    A: transaction_entity
+    B: cust_id_entity
+    C: another_entity
+
+    A -> B -> C
+    A -> C (shortcut)
+    """
+    # Establish A -> B, A -> C
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+    saved_event_table.cust_id.as_entity(another_entity.name)
+    assert_relationships_equal([
+        {
+            "entity": "transaction",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal({
+        "transaction": [cust_id_entity.id, another_entity.id],
+        "customer": [],
+        "another": [],
+    })
+
+    # Establish B -> C
+    saved_scd_table.col_text.as_entity(cust_id_entity.name)
+    saved_scd_table.cust_id.as_entity(another_entity.name)
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_scd_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "another",
+            "relationship_type": "child_parent_shortcut",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal({
+        "transaction": [cust_id_entity.id, another_entity.id],
+        "customer": [another_entity.id],
+        "another": [],
+    })
+
+
+def test_two_entities_with_conflict(
+    snowflake_scd_table,
+    snowflake_scd_table_v2,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test cycles in entity relationships. This causes the affected relationships to be marked as
+    'conflict', but entity tagging is still allowed
+
+    A: cust_id_entity
+    B: another_entity
+
+    T1: A -> B
+    T2: B -> A
+    """
+    # Establish T1: A -> B
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Establish T2: B -> A
+    snowflake_scd_table_v2.col_text.as_entity(another_entity.name)
+    snowflake_scd_table_v2.cust_id.as_entity(cust_id_entity.name)
+
+    # No errors during entity tagging. But relationships become:
+    assert_relationships_equal([
+        {
+            "entity": "another",
+            "related_entity": "customer",
+            "relationship_type": "disabled",
+            "relationship_status": "conflict",
+            "relation_table": "sf_scd_table_v2",
+        },
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_scd_table",
+        },
+    ])
+    assert_ancestor_ids_equal({
+        "customer": [another_entity.id],
+        "another": [],
+    })
+
+
+@pytest.mark.parametrize("tag_primary_key_first", [True, False])
+def test_non_shortcut_multiple_relationships_not_allowed(
+    snowflake_item_table,
+    saved_event_table,
+    saved_scd_table,
+    item_entity,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+    tag_primary_key_first,
+):
+    """
+    Test that non-shortcut multiple paths between entities are not allowed
+
+    A: item_entity
+    B: transaction_entity
+    C: cust_id
+    D: another_entity
+
+    A -> B -> C
+    A -> D -> C
+    """
+    # Establish A -> B, A -> D
+    snowflake_item_table.item_id_col.as_entity(item_entity.name)
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    snowflake_item_table.item_type.as_entity(another_entity.name)
+
+    # Establish B -> C
+    saved_event_table.cust_id.as_entity(None)  # Clear any existing tagging
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+
+    expected_relationships = [
+        {
+            "entity": "item",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_item_table",
+        },
+        {
+            "entity": "item",
+            "related_entity": "transaction",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_item_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ]
+    expected_ancestor_ids = {
+        "another": [],
+        "transaction": [cust_id_entity.id],
+        "item": [
+            transaction_entity.id,
+            another_entity.id,
+            cust_id_entity.id,
+        ],
+        "customer": [],
+    }
+    assert_relationships_equal(expected_relationships)
+    assert_ancestor_ids_equal(expected_ancestor_ids)
+
+    # Establish D -> C to trigger error
+    with pytest.raises(RecordUpdateException) as exc:
+        if tag_primary_key_first:
+            saved_scd_table.col_text.as_entity(another_entity.name)
+            saved_scd_table.cust_id.as_entity(cust_id_entity.name)
+        else:
+            saved_scd_table.cust_id.as_entity(cust_id_entity.name)
+            saved_scd_table.col_text.as_entity(another_entity.name)
+
+    assert "Invalid entity tagging detected" in str(exc.value)
+
+    assert_relationships_equal(expected_relationships)
+    assert_ancestor_ids_equal(expected_ancestor_ids)
+
+
+@pytest.mark.parametrize("untag_child_or_parent_entity", ["child", "parent"])
+def test_untag_entities_update_shortcut_to_parent_child(
+    saved_event_table,
+    saved_scd_table,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+    untag_child_or_parent_entity,
+):
+    """
+    Test untagging entities with multiple paths between entities
+
+    A: transaction_entity
+    B: cust_id_entity
+    C: another_entity
+
+    Initial:
+    A -> B -> C
+    A -> C (shortcut)
+
+    After untagging B -> C:
+    A -> B
+    A -> C (non-shortcut)
+    """
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+    saved_event_table.cust_id.as_entity(another_entity.name)
+    saved_scd_table.col_text.as_entity(cust_id_entity.name)
+    saved_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Untag B -> C, now A -> C becomes a parent-child relationship again
+    if untag_child_or_parent_entity == "parent":
+        saved_scd_table.cust_id.as_entity(None)
+    else:
+        saved_scd_table.col_text.as_entity(None)
+
+    assert_relationships_equal([
+        {
+            "entity": "transaction",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal({
+        "transaction": [cust_id_entity.id, another_entity.id],
+        "customer": [],
+        "another": [],
+    })
+
+
+def test_untag_entities_update_relation_table(
+    snowflake_scd_table,
+    snowflake_scd_table_v2,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test untagging entities with multiple paths between entities
+
+    A: cust_id_entity
+    B: another_entity
+
+    Initial:
+    T1: A -> B (active relation table)
+    T2: A -> B
+
+    After untagging A -> B in T1:
+    T2: A -> B (active relation table)
+    """
+    # Establish relationships in both SCD tables
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table.cust_id.as_entity(another_entity.name)
+    snowflake_scd_table_v2.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table_v2.cust_id.as_entity(another_entity.name)
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "to_review",
+            "relation_table": "sf_scd_table",
+        }
+    ])
+
+    # Untag A -> B in the first SCD table
+    snowflake_scd_table.cust_id.as_entity(None)
+
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "to_review",
+            "relation_table": "sf_scd_table_v2",
+        }
+    ])
+    assert_ancestor_ids_equal({
+        "customer": [another_entity.id],
+        "another": [],
+    })
+
+
+@pytest.mark.parametrize(
+    "relationship_type", [RelationshipType.DISABLED, RelationshipType.ONE_TO_ONE]
+)
+def test_untag_entities_with_non_parent_child_relationships__untag_related_key(
+    saved_event_table,
+    saved_scd_table,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+    relationship_type,
+):
+    """
+    Test untagging entities with non parent-child relationships (related key untagged)
+
+    A: transaction_entity
+    B: cust_id_entity
+    C: another_entity
+
+    Initial:
+    A -> B (child_parent)
+    A -> C (one_to_one / disabled)
+
+    Untag C.
+    """
+    # Establish A -> B and A -> C
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+    saved_event_table.cust_id.as_entity(another_entity.name)
+
+    # Update A -> C to non parent-child relationship
+    relationship = get_relationship_object_by_entities(
+        entity_name=transaction_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    relationship.update_relationship_type(relationship_type)
+    assert_relationships_equal([
+        {
+            "entity": "transaction",
+            "related_entity": "another",
+            "relationship_type": relationship_type,
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal(
+        {
+            "transaction": [cust_id_entity.id],
+            "customer": [],
+            "another": [],
+        },
+    )
+
+    # Untag A -> C
+    saved_event_table.cust_id.as_entity(None)
+
+    assert_relationships_equal([
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        }
+    ])
+    assert_ancestor_ids_equal(
+        {
+            "transaction": [cust_id_entity.id],
+            "customer": [],
+            "another": [],
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "relationship_type", [RelationshipType.DISABLED, RelationshipType.ONE_TO_ONE]
+)
+def test_untag_entities_with_non_parent_child_relationships__untag_primary_key(
+    saved_event_table,
+    saved_scd_table,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+    relationship_type,
+):
+    """
+    Test untagging entities with non parent-child relationships (primary key untagged)
+
+    A: transaction_entity
+    B: cust_id_entity
+    C: another_entity
+
+    Initial:
+    T1: A -> B
+    T2: B -> C (one_to_one / disabled)
+
+    Untag B in T2.
+    """
+    # Establish T1: A -> B
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+
+    # Establish T2: B -> C
+    saved_scd_table.col_text.as_entity(cust_id_entity.name)
+    saved_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Update T2: B -> C to non parent-child relationship
+    relationship = get_relationship_object_by_entities(
+        entity_name=cust_id_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    relationship.update_relationship_type(relationship_type)
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": relationship_type,
+            "relationship_status": "inferred",
+            "relation_table": "sf_scd_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal(
+        {
+            "transaction": [cust_id_entity.id],
+            "customer": [],
+            "another": [],
+        },
+    )
+
+    # Untag B in T2
+    saved_scd_table.col_text.as_entity(None)
+
+    assert_relationships_equal([
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        }
+    ])
+    assert_ancestor_ids_equal(
+        {
+            "transaction": [cust_id_entity.id],
+            "customer": [],
+            "another": [],
+        },
+    )
+
+
+def test_update_relationship_type_to_disable_with_shortcut(
+    saved_event_table,
+    saved_scd_table,
+    transaction_entity,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test updating relationship type with multiple paths between entities
+
+    A: transaction_entity
+    B: cust_id_entity
+    C: another_entity
+
+    Initial:
+    A -> B -> C
+    A -> C (shortcut)
+
+    After changing B -> C to disabled:
+    A -> B
+    A -> C (non-shortcut)
+    """
+    # Establish A -> B -> C and A -> C shortcut
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.col_text.as_entity(cust_id_entity.name)
+    saved_event_table.cust_id.as_entity(another_entity.name)
+    saved_scd_table.col_text.as_entity(cust_id_entity.name)
+    saved_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Update B -> C to disabled, now A -> C becomes a parent-child relationship again
+    relationship = get_relationship_object_by_entities(
+        entity_name=cust_id_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    relationship.update_relationship_type(RelationshipType.DISABLED)
+
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "disabled",
+            "relationship_status": "inferred",
+            "relation_table": "sf_scd_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+        {
+            "entity": "transaction",
+            "related_entity": "customer",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_event_table",
+        },
+    ])
+    assert_ancestor_ids_equal(
+        {
+            "customer": [],
+            "another": [],
+            "transaction": [cust_id_entity.id, another_entity.id],
+        },
+    )

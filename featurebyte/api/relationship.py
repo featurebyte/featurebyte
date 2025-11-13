@@ -15,7 +15,10 @@ from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.models.relationship import (
+    RelationshipInfoModel,
+    RelationshipType,
+)
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 
 
@@ -49,6 +52,7 @@ class Relationship(ApiObject):
         "related_entity",
         "relation_table",
         "relation_table_type",
+        "relationship_status",
         "enabled",
         "created_at",
         "updated_at",

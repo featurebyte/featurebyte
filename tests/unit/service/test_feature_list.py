@@ -18,7 +18,6 @@ from featurebyte.exception import (
     DocumentNotFoundError,
 )
 from featurebyte.models.base import ReferenceInfo
-from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_list import FeatureReadinessDistribution
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -270,10 +269,6 @@ async def create_entity_family(
             parent_entity_ids_to_add=[parent_id],
             updated_columns_info=mock_columns_info,
         )
-        await entity_relationship_service.add_relationship(
-            parent=ParentEntity(id=parent_id, table_id=table.id, table_type=table.type),
-            child_id=child_id,
-        )
         entity = await entity_service.get_document(document_id=child_id)
         assert parent_id in entity.ancestor_ids
 
@@ -321,9 +316,6 @@ async def test_feature_list__contains_relationships_info(
     await app_container.table_columns_info_service._remove_parent_entity_ids(
         primary_entity_id=descendant_id_to_remove,
         parent_entity_ids_to_remove=[target_entity_id],
-    )
-    await app_container.entity_relationship_service.remove_relationship(
-        parent_id=target_entity_id, child_id=descendant_id_to_remove
     )
     new_feature = await app_container.version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(

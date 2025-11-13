@@ -17,7 +17,7 @@ from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.models.feature_store import TableModel
-from featurebyte.models.relationship import RelationshipType
+from featurebyte.models.relationship import RelationshipInfoEntityPair, RelationshipType
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
@@ -31,6 +31,7 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
+from featurebyte.service.relationship_info_manager import RelationshipInfoManagerService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.snapshots_table import SnapshotsTableService
@@ -212,6 +213,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         entity_relationship_service: EntityRelationshipService,
         entity_dtype_initialization_and_validation_service: EntityDtypeInitializationAndValidationService,
         feature_store_service: FeatureStoreService,
+        relationship_info_manager_service: RelationshipInfoManagerService,
     ):
         self.user = user
         self.persistent = persistent
@@ -223,6 +225,7 @@ class TableColumnsInfoService(OpsServiceMixin):
             entity_dtype_initialization_and_validation_service
         )
         self.feature_store_service = feature_store_service
+        self.relationship_info_manager_service = relationship_info_manager_service
 
     @staticmethod
     async def _validate_column_info_id_field_values(
@@ -434,12 +437,17 @@ class TableColumnsInfoService(OpsServiceMixin):
     async def _remove_parent_entity_ids(
         self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: List[PydanticObjectId]
     ) -> None:
-        # Remove relationship info links for old parent entity relationships
+        pairs = []
         for removed_parent_entity_id in parent_entity_ids_to_remove:
-            await self.relationship_info_service.remove_relationship(
-                primary_entity_id=PydanticObjectId(primary_entity_id),
-                related_entity_id=removed_parent_entity_id,
+            pairs.append(
+                RelationshipInfoEntityPair(
+                    entity_id=primary_entity_id,
+                    related_entity_id=removed_parent_entity_id,
+                )
             )
+        await self.relationship_info_manager_service.handle_untagged_entities(
+            pairs,
+        )
 
     @staticmethod
     def _get_column_name_for_entity_id(columns_info: List[ColumnInfo], entity_id: ObjectId) -> str:
@@ -457,12 +465,13 @@ class TableColumnsInfoService(OpsServiceMixin):
     ) -> None:
         # Add relationship info links for new parent entity relationships
         entity_column_name = self._get_column_name_for_entity_id(updated_columns_info, entity_id)
+        relationship_info_create_list = []
         for new_parent_entity_id in parent_entity_ids_to_add:
             related_entity_column_name = self._get_column_name_for_entity_id(
                 updated_columns_info, new_parent_entity_id
             )
-            await self.relationship_info_service.create_document(
-                data=RelationshipInfoCreate(
+            relationship_info_create_list.append(
+                RelationshipInfoCreate(
                     name=f"{entity_id}_{new_parent_entity_id}",
                     relationship_type=RelationshipType.CHILD_PARENT,
                     entity_id=PydanticObjectId(entity_id),
@@ -474,6 +483,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                     updated_by=self.user.id,
                 )
             )
+        await self.relationship_info_manager_service.handle_tagged_entities(
+            relationship_info_create_list
+        )
 
     async def _update_ancestor_ids_and_add_relationships(
         self,
@@ -482,30 +494,9 @@ class TableColumnsInfoService(OpsServiceMixin):
         document: TableModel,
         updated_columns_info: List[ColumnInfo],
     ) -> None:
-        for parent_id in new_parent_entity_ids:
-            # Update ancestor ids and parents
-            await self.entity_relationship_service.add_relationship(
-                parent=ParentEntity(id=parent_id, table_id=document.id, table_type=document.type),
-                child_id=entity_id,
-            )
-        # Add relationship info links for new parent entity relationships
         await self._add_new_child_parent_relationships(
             entity_id, document.id, updated_columns_info, new_parent_entity_ids
         )
-
-    async def _update_ancestor_ids_and_remove_relationships(
-        self,
-        removed_parent_entity_ids: List[ObjectId],
-        entity_id: ObjectId,
-    ) -> None:
-        for parent_id in removed_parent_entity_ids:
-            # Update ancestor ids and parents
-            await self.entity_relationship_service.remove_relationship(
-                parent_id=parent_id,
-                child_id=entity_id,
-            )
-        # Remove relationship info links for old parent entity relationships
-        await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
     async def _update_entity_relationship(
         self,
@@ -539,22 +530,13 @@ class TableColumnsInfoService(OpsServiceMixin):
         if old_diff_new_primary_entities:
             # old primary entities are removed
             for entity_id in old_diff_new_primary_entities:
-                primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                _, removed_parent_entity_ids = self._exclude_parent_entities(
-                    parents=primary_entity.parents,
-                    table_id=document.id,
-                    table_type=document.type,
-                    parent_entity_ids=list(old_parent_entities),
-                )
-                await self._update_ancestor_ids_and_remove_relationships(
-                    removed_parent_entity_ids=removed_parent_entity_ids,
-                    entity_id=entity_id,
-                )
-                # Remove one-to-one relationship info links
-                await self.relationship_info_service.remove_one_to_one_relationships(
-                    primary_entity_id=entity_id,
-                    related_entity_id=None,
-                    relation_table_id=document.id,
+                await self.relationship_info_manager_service.handle_untagged_entities(
+                    [
+                        RelationshipInfoEntityPair(
+                            entity_id=entity_id,
+                            related_entity_id=None,
+                        )
+                    ],
                 )
 
         if common_primary_entities:
@@ -580,18 +562,16 @@ class TableColumnsInfoService(OpsServiceMixin):
                         document=document,
                         updated_columns_info=updated_columns_info,
                     )
-                    await self._update_ancestor_ids_and_remove_relationships(
-                        removed_parent_entity_ids=removed_parent_entity_ids,
+                untagged_pairs = [
+                    RelationshipInfoEntityPair(
                         entity_id=entity_id,
-                    )
-                # Remove one-to-one relationship info links
-                untagged_entities = old_parent_entities.difference(new_parent_entities)
-                for untagged_entity in untagged_entities:
-                    await self.relationship_info_service.remove_one_to_one_relationships(
-                        primary_entity_id=entity_id,
                         related_entity_id=untagged_entity,
-                        relation_table_id=document.id,
                     )
+                    for untagged_entity in old_parent_entities.difference(new_parent_entities)
+                ]
+                await self.relationship_info_manager_service.handle_untagged_entities(
+                    untagged_pairs,
+                )
 
     async def update_entity_table_references(
         self, document: TableModel, columns_info: List[ColumnInfo]
