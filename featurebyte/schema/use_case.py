@@ -45,6 +45,8 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
     observation_table_id_to_remove: Optional[PydanticObjectId] = Field(default=None)
 
+    archived: Optional[bool] = Field(default=None)
+
     remove_default_eda_table: Optional[bool] = Field(default=None)
     remove_default_preview_table: Optional[bool] = Field(default=None)
 
