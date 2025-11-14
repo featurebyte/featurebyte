@@ -516,6 +516,12 @@ class ObservationTableService(
                 data.request_input.downsampling_info is not None
                 and data.request_input.downsampling_info.sampling_rate_per_target_value
             ):
+                # do not allow both sampling by target value and sample rows
+                if data.sample_rows is not None:
+                    raise ObservationTableInvalidSamplingError(
+                        "Downsampling by both target value and sample rows is not supported."
+                    )
+
                 # ensure target namespace is available if sampling rate per target value is provided
                 if target_namespace_id is None:
                     raise ObservationTableInvalidSamplingError(

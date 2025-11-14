@@ -1418,3 +1418,26 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         queries = extract_session_executed_queries(mocked_get_session, func="execute_query")
         fixture_filename = "tests/fixtures/expected_observation_table_with_downsampling.sql"
         assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+    @pytest.mark.asyncio
+    async def test_create_with_downsampling_and_sample_rows_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create with an observation table and apply both downsampling rate and sample rows"""
+        test_api_client, _ = test_api_client_persistent
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [
+                {"target_value": "1", "rate": 0.5},
+            ],
+        }
+        payload["sample_rows"] = 10
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_dict = response.json()
+        assert (
+            response_dict["detail"]
+            == "Downsampling by both target value and sample rows is not supported."
+        )
