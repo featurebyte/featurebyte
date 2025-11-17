@@ -466,8 +466,10 @@ async def test_observation_table_downsampling(
     view = event_table.get_view()
     scd_view = scd_table.get_view()
     view = view.join(scd_view, on="ÜSER ID")
+    sample_rows = 123
     source_observation_table = view.create_observation_table(
         f"SOURCE_OBSERVATION_TABLE_FOR_DOWNSAMPLING_{source_type}",
+        sample_rows=sample_rows,
         columns=[view.timestamp_column, "ÜSER ID"],
         columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
         use_case_name=user_classification_use_case.name,
@@ -477,14 +479,13 @@ async def test_observation_table_downsampling(
     )
     table_details = source_observation_table.location.table_details
     check_location_valid(table_details, session)
-    sample_rows = source_observation_table.shape()[0]
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
     df_describe = source_observation_table.describe()
     assert df_describe.loc["top", "user_active_24h_target"] == "true"
     pos_obs_count = df_describe.loc["freq", "user_active_24h_target"]
-    assert source_observation_table.shape()[0] == sample_rows
-    neg_obs_count = sample_rows - pos_obs_count
+    assert source_observation_table.shape()[0] == 123
+    neg_obs_count = 123 - pos_obs_count
 
     # create downsampled observation table
     observation_table = source_observation_table.create_observation_table(
@@ -542,7 +543,6 @@ async def test_observation_table_downsampling(
         f'SELECT DISTINCT __FB_TABLE_ROW_WEIGHT FROM "{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"'
     )
     assert set(sampling_rates["__FB_TABLE_ROW_WEIGHT"].tolist()) == {4.0, 1.0}
-
     # ensure weight column is not included in columns_info
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"}
     actual_columns = {column.name for column in observation_table.columns_info}
