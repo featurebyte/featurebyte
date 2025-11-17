@@ -2,12 +2,13 @@
 RelationshipInfoManagerService
 """
 
-from typing import cast
+from dataclasses import dataclass, field
+from typing import Optional, cast
 
 from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError
-from featurebyte.models.entity import ParentEntity
+from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.models.relationship import (
     RelationshipInfoEntityPair,
     RelationshipInfoModel,
@@ -22,6 +23,27 @@ from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.relationship_info_validation import RelationshipInfoValidationService
 from featurebyte.service.table import TableService
+
+
+@dataclass
+class TaggingRequestClassification:
+    """
+    Classification of entity tagging requests after initial validation.
+    """
+
+    new_relationships: list[RelationshipInfoCreate] = field(default_factory=list)
+    conflicts: list[RelationshipInfoCreate] = field(default_factory=list)
+    to_review_ids: set[ObjectId] = field(default_factory=set)
+
+
+@dataclass
+class ShortcutDetermination:
+    """
+    Determination of which relationships should be shortcuts.
+    """
+
+    new_shortcuts: set[ObjectId] = field(default_factory=set)
+    existing_shortcuts: set[ObjectId] = field(default_factory=set)
 
 
 class RelationshipInfoManagerService:
@@ -85,147 +107,327 @@ class RelationshipInfoManagerService:
 
         Raises
         ------
-        DocumentCreationError
-            If the requested entity tagging would create invalid relationships
+        None
         """
+        # Classify the incoming tagging requests
+        entities_map = await self._fetch_entities_for_tagging(data_list)
+        classification = await self._classify_tagging_requests(data_list, entities_map)
+
+        # Determine which relationships should be shortcuts
+        shortcut_determination = await self._determine_shortcut_relationships(
+            classification.new_relationships
+        )
+
+        # Execute the classified actions
+        await self._create_new_relationships(
+            classification.new_relationships, shortcut_determination
+        )
+        await self._mark_existing_as_shortcuts(shortcut_determination.existing_shortcuts)
+        await self._create_conflict_relationships(classification.conflicts)
+        await self._mark_relationships_for_review(classification.to_review_ids)
+
+    async def _fetch_entities_for_tagging(
+        self, data_list: list[RelationshipInfoCreate]
+    ) -> dict[ObjectId, EntityModel]:
+        """
+        Fetch all entities referenced in the tagging requests.
+
+        Parameters
+        ----------
+        data_list : list[RelationshipInfoCreate]
+            List of relationship info creation requests
+
+        Returns
+        -------
+        dict[ObjectId, EntityModel]
+            Dictionary mapping entity IDs to EntityModel objects
+        """
+        entity_ids = set()
+        for data in data_list:
+            entity_ids.add(data.entity_id)
+            entity_ids.add(data.related_entity_id)
+
         entities_map = {}
-        new_data_list = []
-        conflict_data_list = []
+        for entity_id in entity_ids:
+            entities_map[entity_id] = await self.entity_service.get_document(entity_id)
+
+        return entities_map
+
+    async def _classify_tagging_requests(
+        self,
+        data_list: list[RelationshipInfoCreate],
+        entities_map: dict[ObjectId, EntityModel],
+    ) -> TaggingRequestClassification:
+        """
+        Classify tagging requests into new relationships, conflicts, or review updates.
+
+        Parameters
+        ----------
+        data_list : list[RelationshipInfoCreate]
+            List of relationship info creation requests
+        entities_map : dict[ObjectId, EntityModel]
+            Dictionary mapping entity IDs to EntityModel objects
+
+        Returns
+        -------
+        TaggingRequestClassification
+            Classification containing new relationships to create, conflicts to handle,
+            and existing relationship IDs to mark for review.
+
+        Raises
+        ------
+        DocumentCreationError
+            If an entity cannot be both parent and child of itself
+        """
+        classification = TaggingRequestClassification()
 
         for data in data_list:
-            if data.entity_id not in entities_map:
-                entities_map[data.entity_id] = await self.entity_service.get_document(
-                    data.entity_id
-                )
-
-            if data.related_entity_id not in entities_map:
-                entities_map[data.related_entity_id] = await self.entity_service.get_document(
-                    data.related_entity_id
-                )
-
+            # Skip non-CHILD_PARENT relationships (not currently supported in tagging)
             if data.relationship_type != RelationshipType.CHILD_PARENT:
-                # Currently when tagging entities, the relationship type is always CHILD_PARENT.
-                # This should be updated if we later support directly creating relationship types
-                # other than CHILD_PARENT.
                 continue
 
             child_entity = entities_map[data.entity_id]
             parent_entity = entities_map[data.related_entity_id]
 
+            # Validate: entity cannot be parent of itself
             if parent_entity.id == child_entity.id:
                 raise DocumentCreationError(
                     f'Object "{parent_entity.name}" cannot be both parent & child.'
                 )
 
+            # Detect cycles: would create a cycle if child is already ancestor of parent
             if child_entity.id in parent_entity.ancestor_ids:
-                # In case of cycles, still allow entity tagging but create relationship info records
-                # with DISABLED type and CONFLICT status
-                conflict_data_list.append(data)
+                classification.conflicts.append(data)
                 continue
 
-            has_existing_relationship_info = False
-            async for (
-                existing_relationship_info
-            ) in self.relationship_info_service.list_documents_iterator(
-                query_filter={
-                    "entity_id": data.entity_id,
-                    "related_entity_id": data.related_entity_id,
-                },
-            ):
-                if existing_relationship_info.relationship_status == RelationshipStatus.INFERRED:
-                    # A relationship info record between the two entities already exists with status
-                    # INFERRED. This means that there is potentially a new relation table candidate
-                    # that should be reviewed. No need to create a new record but update the
-                    # existing record to TO_REVIEW status.
-                    await self.relationship_info_service.update_document(
-                        document_id=existing_relationship_info.id,
-                        data=RelationshipInfoServiceUpdate(
-                            relationship_status=RelationshipStatus.TO_REVIEW
-                        ),
-                    )
-                has_existing_relationship_info = True
-                break
+            # Check if relationship already exists
+            existing_relationship = await self._find_existing_relationship_info(
+                entity_id=data.entity_id,
+                related_entity_id=data.related_entity_id,
+            )
 
-            if not has_existing_relationship_info:
-                # No existing relationship info found between the two entities. Create a new one if
-                # the relationships are verified to be valid.
-                new_data_list.append(data)
+            if existing_relationship:
+                # New relation table candidate found: mark for user review
+                if existing_relationship.relationship_status == RelationshipStatus.INFERRED:
+                    classification.to_review_ids.add(existing_relationship.id)
+            else:
+                # Completely new relationship
+                classification.new_relationships.append(data)
 
-        # Get existing relationship infos for validation. Retrieve both CHILD_PARENT and
-        # CHILD_PARENT_SHORTCUT since the validation might dictate changing their types.
-        existing_relationship_infos = {}
+        return classification
+
+    async def _find_existing_relationship_info(
+        self,
+        entity_id: ObjectId,
+        related_entity_id: ObjectId,
+    ) -> Optional[RelationshipInfoModel]:
+        """
+        Find existing relationship info between two entities, if any.
+
+        Parameters
+        ----------
+        entity_id : ObjectId
+            The child entity ID
+        related_entity_id : ObjectId
+            The parent entity ID
+
+        Returns
+        -------
+        Optional[RelationshipInfoModel]
+            The existing relationship info if found, None otherwise
+        """
         async for relationship_info in self.relationship_info_service.list_documents_iterator(
+            query_filter={
+                "entity_id": entity_id,
+                "related_entity_id": related_entity_id,
+            },
+        ):
+            return relationship_info  # Return first match
+        return None
+
+    async def _determine_shortcut_relationships(
+        self,
+        new_relationships: list[RelationshipInfoCreate],
+    ) -> ShortcutDetermination:
+        """
+        Determine which relationships should be shortcuts based on graph validation.
+
+        A relationship is a "shortcut" if it's redundant, i.e., the same entity connection exists
+        through a longer path in the relationship graph.
+
+        Parameters
+        ----------
+        new_relationships : list[RelationshipInfoCreate]
+            List of new relationship creation requests to analyze
+
+        Returns
+        -------
+        ShortcutDetermination
+            Determination containing which new and existing relationships should be shortcuts
+        """
+        # Load existing child-parent relationships
+        existing_relationships = await self._load_child_parent_relationships()
+
+        # Convert new requests to models for validation
+        new_relationship_models = {
+            data.id: RelationshipInfoModel(**data.model_dump(by_alias=True))
+            for data in new_relationships
+        }
+
+        # Validate all relationships together
+        all_relationships = list(existing_relationships.values()) + list(
+            new_relationship_models.values()
+        )
+        validation_result = await self.relationship_info_validation_service.validate_relationships(
+            all_relationships
+        )
+
+        # Classify shortcuts
+        determination = ShortcutDetermination()
+        for relationship_id in validation_result.unused_relationship_info_ids:
+            if relationship_id in existing_relationships:
+                determination.existing_shortcuts.add(relationship_id)
+            else:
+                determination.new_shortcuts.add(relationship_id)
+
+        return determination
+
+    async def _load_child_parent_relationships(self) -> dict[ObjectId, RelationshipInfoModel]:
+        """
+        Load all existing CHILD_PARENT and CHILD_PARENT_SHORTCUT relationships.
+
+        Returns
+        -------
+        dict[ObjectId, RelationshipInfoModel]
+            Dictionary mapping relationship IDs to RelationshipInfoModel objects
+        """
+        relationships = {}
+        async for rel_info in self.relationship_info_service.list_documents_iterator(
             query_filter={
                 "relationship_type": {
                     "$in": [RelationshipType.CHILD_PARENT, RelationshipType.CHILD_PARENT_SHORTCUT]
                 }
             },
         ):
-            existing_relationship_infos[relationship_info.id] = relationship_info
+            relationships[rel_info.id] = rel_info
+        return relationships
 
-        # New relationship infos to be created
-        new_relationship_infos = {}
-        for data in new_data_list:
-            new_relationship_info = RelationshipInfoModel(**data.model_dump(by_alias=True))
-            new_relationship_infos[new_relationship_info.id] = new_relationship_info
+    async def _create_new_relationships(
+        self,
+        new_relationships: list[RelationshipInfoCreate],
+        shortcut_determination: ShortcutDetermination,
+    ) -> None:
+        """
+        Create new relationship infos, updating entity ancestor_ids as needed.
 
-        # Run validation. If no error, we are ready to create or update relationship infos.
-        all_relationship_infos = list(existing_relationship_infos.values()) + list(
-            new_relationship_infos.values()
-        )
-        validation_result = await self.relationship_info_validation_service.validate_relationships(
-            all_relationship_infos
-        )
-
-        # Unused relationships should be marked as CHILD_PARENT_SHORTCUT. Track their IDs for both
-        # existing and new relationship infos
-        existing_shortcut_ids = set()
-        new_shortcut_ids = set()
-        for relationship_info_id in validation_result.unused_relationship_info_ids:
-            if relationship_info_id in existing_relationship_infos:
-                existing_shortcut_ids.add(relationship_info_id)
+        Parameters
+        ----------
+        new_relationships : list[RelationshipInfoCreate]
+            List of new relationship creation requests
+        shortcut_determination : ShortcutDetermination
+            Determination of which relationships should be shortcuts
+        """
+        for data in new_relationships:
+            if data.id in shortcut_determination.new_shortcuts:
+                # This is a shortcut relationship, create without updating ancestor_ids since it
+                # should already be up to date through the longer relationships path
+                data = data.model_copy()
+                data.relationship_type = RelationshipType.CHILD_PARENT_SHORTCUT
             else:
-                new_shortcut_ids.add(relationship_info_id)
-
-        # Create new relationship infos records
-        for new_data in new_data_list:
-            if new_data.id in new_shortcut_ids:
-                new_data = new_data.model_copy()
-                new_data.relationship_type = RelationshipType.CHILD_PARENT_SHORTCUT
-            else:
-                # Non-shortcut child parent relationship needs updating entity's ancestor_ids
-                table_model = await self.table_service.get_document(
-                    document_id=new_data.relation_table_id
+                # Update entity ancestor_ids
+                await self._add_parent_to_child_entity(
+                    child_id=data.entity_id,
+                    parent_id=data.related_entity_id,
+                    relation_table_id=data.relation_table_id,
                 )
-                await self.entity_relationship_service.add_relationship(
-                    parent=ParentEntity(
-                        id=new_data.related_entity_id,
-                        table_id=new_data.relation_table_id,
-                        table_type=table_model.type,
-                    ),
-                    child_id=new_data.entity_id,
-                    skip_validation=True,
-                )
-            await self.relationship_info_service.create_document(new_data)
 
-        # Update existing relationship infos to CHILD_PARENT_SHORTCUT if any. No need to update
-        # ancestor_ids since they are still valid through non-shortcut relationships
-        for relationship_info_id in existing_shortcut_ids:
+            await self.relationship_info_service.create_document(data)
+
+    async def _add_parent_to_child_entity(
+        self,
+        child_id: ObjectId,
+        parent_id: ObjectId,
+        relation_table_id: ObjectId,
+    ) -> None:
+        """
+        Add a parent relationship to a child entity, updating ancestor_ids.
+
+        Parameters
+        ----------
+        child_id : ObjectId
+            The child entity ID
+        parent_id : ObjectId
+            The parent entity ID
+        relation_table_id : ObjectId
+            The relation table ID linking the entities
+        """
+        table_model = await self.table_service.get_document(document_id=relation_table_id)
+        await self.entity_relationship_service.add_relationship(
+            parent=ParentEntity(
+                id=parent_id,
+                table_id=relation_table_id,
+                table_type=table_model.type,
+            ),
+            child_id=child_id,
+            skip_validation=True,  # Already validated above
+        )
+
+    async def _mark_existing_as_shortcuts(self, shortcut_ids: set[ObjectId]) -> None:
+        """
+        Mark existing relationships as CHILD_PARENT_SHORTCUT.
+
+        Parameters
+        ----------
+        shortcut_ids : set[ObjectId]
+            Set of relationship IDs to mark as shortcuts
+        """
+        for relationship_id in shortcut_ids:
             await self.relationship_info_service.update_document(
-                document_id=relationship_info_id,
+                document_id=relationship_id,
                 data=RelationshipInfoServiceUpdate(
                     relationship_type=RelationshipType.CHILD_PARENT_SHORTCUT
                 ),
             )
 
-        # Create relationship infos with CONFLICT status
-        for conflict_data in conflict_data_list:
+    async def _create_conflict_relationships(
+        self,
+        conflicts: list[RelationshipInfoCreate],
+    ) -> None:
+        """
+        Create relationship infos with CONFLICT status for detected cycles.
+
+        Parameters
+        ----------
+        conflicts : list[RelationshipInfoCreate]
+            List of conflicting relationship creation requests
+        """
+        for conflict_data in conflicts:
             conflict_data = conflict_data.model_copy()
             conflict_data.relationship_type = RelationshipType.DISABLED
+
             relationship_info = await self.relationship_info_service.create_document(conflict_data)
+
+            # Mark as conflict (requires separate update due to status not in Create schema)
             await self.relationship_info_service.update_document(
                 document_id=relationship_info.id,
                 data=RelationshipInfoServiceUpdate(relationship_status=RelationshipStatus.CONFLICT),
+            )
+
+    async def _mark_relationships_for_review(self, relationship_ids: set[ObjectId]) -> None:
+        """
+        Mark relationships as TO_REVIEW when new relation table candidates are found.
+
+        Parameters
+        ----------
+        relationship_ids : set[ObjectId]
+            Set of relationship IDs to mark for review
+        """
+        for relationship_id in relationship_ids:
+            await self.relationship_info_service.update_document(
+                document_id=relationship_id,
+                data=RelationshipInfoServiceUpdate(
+                    relationship_status=RelationshipStatus.TO_REVIEW
+                ),
             )
 
     async def handle_untagged_entities(
