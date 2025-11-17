@@ -126,7 +126,7 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     relationship_type: RelationshipType
-    relationship_status: Optional[RelationshipStatus] = RelationshipStatus.INFERRED
+    relationship_status: RelationshipStatus = RelationshipStatus.INFERRED
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
