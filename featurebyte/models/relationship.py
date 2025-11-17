@@ -98,6 +98,13 @@ class RelationshipStatus(StrEnum):
     TO_REVIEW = "to_review"
     CONFLICT = "conflict"
 
+    @classmethod
+    def user_settable(cls) -> set["RelationshipStatus"]:
+        return {
+            cls.REVIEWED,
+            cls.TO_REVIEW,
+        }
+
 
 class RelationTable(FeatureByteBaseModel):
     """

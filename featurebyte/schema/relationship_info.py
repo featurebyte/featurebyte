@@ -49,12 +49,22 @@ class RelationshipInfoUpdate(FeatureByteBaseModel):
 
     enabled: Optional[bool] = Field(default=None)
     relationship_type: Optional[RelationshipType] = Field(default=None)
+    relationship_status: Optional[RelationshipStatus] = Field(default=None)
 
     @field_validator("relationship_type")
     @classmethod
     def validate_user_settable(cls, v: Optional[RelationshipType]) -> Optional[RelationshipType]:
         if v is not None and v not in RelationshipType.user_settable():
-            raise ValueError("relationship_type cannot be set to CHILD_PARENT_SHORTCUT by users")
+            raise ValueError(f"relationship_type cannot be updated to {v}")
+        return v
+
+    @field_validator("relationship_status")
+    @classmethod
+    def validate_relationship_status(
+        cls, v: Optional[RelationshipStatus]
+    ) -> Optional[RelationshipStatus]:
+        if v is not None and v not in RelationshipStatus.user_settable():
+            raise ValueError(f"relationship_status cannot be updated to {v}")
         return v
 
 

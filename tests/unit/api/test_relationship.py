@@ -7,12 +7,15 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import Entity
+from featurebyte import Configurations, Entity
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.relationship import Relationship
 from featurebyte.exception import RecordUpdateException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.models.relationship import (
+    RelationshipInfoModel,
+    RelationshipType,
+)
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
 
@@ -948,3 +951,69 @@ def test_update_relationship_type_to_disable_with_shortcut(
             "transaction": [cust_id_entity.id, another_entity.id],
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_tagging_existing_reviewed_relationship_does_not_change_status(
+    snowflake_scd_table,
+    snowflake_scd_table_v2,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test tagging existing reviewed relationship does not change status
+
+    A: cust_id_entity
+    B: another_entity
+
+    Initial:
+    T1: A -> B, reviewed
+
+    After:
+    T1: A -> B, reviewed
+    T2: A -> B
+    """
+    # Establish relationships in both SCD tables
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Change status to reviewed
+    relationship = get_relationship_object_by_entities(
+        entity_name=cust_id_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    client = Configurations().get_client()
+    response = client.patch(
+        f"/relationship_info/{relationship.id}",
+        json={"relationship_status": "reviewed"},
+    )
+    assert response.status_code == 200, response.text
+
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "reviewed",
+            "relation_table": "sf_scd_table",
+        }
+    ])
+
+    # Establish relationship in second table
+    snowflake_scd_table_v2.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table_v2.cust_id.as_entity(another_entity.name)
+
+    # Relationship remains as reviewed
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "reviewed",
+            "relation_table": "sf_scd_table",
+        }
+    ])
+    assert_ancestor_ids_equal({
+        "customer": [another_entity.id],
+        "another": [],
+    })
