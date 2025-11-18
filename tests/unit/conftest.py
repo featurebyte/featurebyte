@@ -2170,7 +2170,7 @@ def snowflake_execute_query_for_materialized_table_fixture(
                 },
                 {
                     "column_name": "sum_30m",
-                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
                     "comment": None,
                 },
             ]
@@ -2190,24 +2190,34 @@ def snowflake_execute_query_for_materialized_table_fixture(
             if query.endswith('"sf_table_with_target"'):
                 res.append({
                     "column_name": "target",
-                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
                     "comment": None,
                 })
             elif query.endswith('"OBSERVATION_TABLE_000000000000000000000000"'):
                 res.append({
                     "column_name": "float_target",
-                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
+                    "comment": None,
+                })
+                res.append({
+                    "column_name": "bool_target",
+                    "data_type": json.dumps({"type": "BOOLEAN", "scale": 0}),
                     "comment": None,
                 })
             elif query.endswith('"OBSERVATION_TABLE_000000000000000000000001"'):
                 res.append({
                     "column_name": "float_target",
-                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
+                    "comment": None,
+                })
+                res.append({
+                    "column_name": "bool_target",
+                    "data_type": json.dumps({"type": "BOOLEAN", "scale": 0}),
                     "comment": None,
                 })
                 res.append({
                     "column_name": "__FB_TABLE_ROW_WEIGHT",
-                    "data_type": json.dumps({"type": "float", "scale": 0}),
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
                     "comment": None,
                 })
         elif "is_row_index_valid" in query:
@@ -2430,6 +2440,16 @@ def float_target_fixture(grouped_event_view):
         target_name="float_target",
         fill_value=0.0,
     )
+    return target
+
+
+@pytest.fixture(name="bool_target")
+def bool_target_fixture(float_target):
+    """
+    Boolean target fixture
+    """
+    target = float_target > 0
+    target.name = "bool_target"
     return target
 
 
