@@ -924,3 +924,117 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+
+
+@pytest.mark.asyncio
+@freezegun.freeze_time("2023-12-29")
+async def test_feature__sql_generation_without_version_suffix(
+    ttl_non_ttl_composite_feature, test_dir, update_fixtures, app_container
+):
+    """Test SQL generation from OfflineStoreInfo with include_feature_version_suffix=False."""
+    # Save and get the feature model
+    ttl_non_ttl_composite_feature.save()
+    feature_model = ttl_non_ttl_composite_feature.cached_model
+
+    # Initialize offline store info with include_feature_version_suffix=False
+    service = app_container.offline_store_info_initialization_service
+    offline_store_info_no_version = await service.initialize_offline_store_info(
+        feature=feature_model,
+        table_name_prefix="cat1",
+        entity_id_to_serving_name={
+            entity_id: str(entity_id) for entity_id in feature_model.entity_ids
+        },
+        dry_run=True,
+        include_feature_version_suffix=False,
+    )
+
+    # Extract ingest query graphs
+    ingest_query_graphs = offline_store_info_no_version.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 2
+
+    # Collect output column names for assertion
+    output_column_names_no_version = [ig.output_column_name for ig in ingest_query_graphs]
+
+    # For decomposed features, check that output column names do NOT include version suffix
+    # The decomposed parts will be named like "__feature__part0", "__feature__part1"
+    for ingest_graph in ingest_query_graphs:
+        # The output column name should not contain version suffix (_V)
+        assert "_V" not in ingest_graph.output_column_name, (
+            f"Expected no version suffix, but got: {ingest_graph.output_column_name}"
+        )
+        # For decomposed features, the parts should use the base feature name pattern
+        assert ingest_graph.output_column_name.startswith(f"__{feature_model.name}__part"), (
+            f"Expected pattern '__{feature_model.name}__part', "
+            f"but got: {ingest_graph.output_column_name}"
+        )
+
+        # Verify that ingest_graph_and_node returns the correct output column name
+        _, ingest_node = ingest_graph.ingest_graph_and_node()
+        assert ingest_node.type == "alias"
+        # The alias name should match the output column name
+        assert ingest_node.parameters.name == ingest_graph.output_column_name
+
+    # Verify the main offline_store_info output is also without version suffix
+    assert offline_store_info_no_version.is_decomposed is True
+
+    # Initialize offline store info with include_feature_version_suffix=True for comparison
+    offline_store_info_with_version = await service.initialize_offline_store_info(
+        feature=feature_model,
+        table_name_prefix="cat1",
+        entity_id_to_serving_name={
+            entity_id: str(entity_id) for entity_id in feature_model.entity_ids
+        },
+        dry_run=False,
+        include_feature_version_suffix=True,
+    )
+
+    # Extract ingest query graphs with version
+    ingest_query_graphs_with_version = (
+        offline_store_info_with_version.extract_offline_store_ingest_query_graphs()
+    )
+    assert len(ingest_query_graphs_with_version) == 2
+
+    # Check that output column names DO include version suffix
+    # For decomposed features with version, parts are named like "__feature_V231229__part0"
+    for ingest_graph in ingest_query_graphs_with_version:
+        # The output column name should include the version
+        assert "_V" in ingest_graph.output_column_name, (
+            f"Expected version suffix, but got: {ingest_graph.output_column_name}"
+        )
+        # Check that it follows the versioned pattern
+        assert ingest_graph.output_column_name.startswith(
+            f"__{feature_model.versioned_name}__part"
+        ), (
+            f"Expected pattern '__{feature_model.versioned_name}__part', "
+            f"but got: {ingest_graph.output_column_name}"
+        )
+
+        # Verify that ingest_graph_and_node returns the correct output column name
+        _, ingest_node = ingest_graph.ingest_graph_and_node()
+        assert ingest_node.type == "alias"
+        assert ingest_node.parameters.name == ingest_graph.output_column_name
+
+    # Verify the main offline_store_info output includes version suffix
+    assert offline_store_info_with_version.is_decomposed is True
+
+    # Verify the contrast: no-version parts don't have version, but with-version parts do
+    output_column_names_with_version = [
+        ig.output_column_name for ig in ingest_query_graphs_with_version
+    ]
+    assert all("_V" not in name for name in output_column_names_no_version)
+    assert all("_V" in name for name in output_column_names_with_version)
+
+    # Test that the parameter cannot be disabled when dry_run=False
+    with pytest.raises(
+        ValueError,
+        match="include_feature_version_suffix can only be disabled when dry_run is True",
+    ):
+        await service.initialize_offline_store_info(
+            feature=feature_model,
+            table_name_prefix="cat1",
+            entity_id_to_serving_name={
+                entity_id: str(entity_id) for entity_id in feature_model.entity_ids
+            },
+            dry_run=False,
+            include_feature_version_suffix=False,
+        )
