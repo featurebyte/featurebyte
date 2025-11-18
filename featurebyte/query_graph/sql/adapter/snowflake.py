@@ -641,3 +641,25 @@ class SnowflakeAdapter(BaseAdapter):
             None,
         )
         return timestamp_str_expr, timezone_expr
+
+    @classmethod
+    def _get_key_from_object(cls, object_expr: Expression, key: str) -> Expression:
+        return expressions.Anonymous(
+            this="GET",
+            expressions=[object_expr, make_literal_value(key)],
+        )
+
+    @classmethod
+    def flatten_nested_field(
+        cls, parent_column_name: str, keys: list[str], dtype: DBVarType
+    ) -> Expression:
+        expr = quoted_identifier(parent_column_name)
+        for key in keys:
+            expr = cls._get_key_from_object(expr, key)
+        # Need to cast to the expected type because GET always returns VARIANT type
+        expr = expressions.Cast(
+            this=expr,
+            to=expressions.DataType.build(cls.get_physical_type_from_dtype(dtype)),
+            dialect="snowflake",
+        )
+        return expr

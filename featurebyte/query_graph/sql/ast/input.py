@@ -12,7 +12,7 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata, NestedFieldMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
 )
@@ -125,6 +125,13 @@ class InputNode(TableNode):
 
     def _select_from_dbtable(self, select_expr: Select, dbtable: Expression) -> Select:
         select_expr = select_expr.from_(dbtable)
+
+        # Flatten nested fields if any
+        select_expr = self._flatten_nested_fields(
+            select_expr=select_expr,
+            columns=self.context.parameters["columns"],
+            adapter=self.context.adapter,
+        )
 
         # Apply partition column filters if available
         partition_column_filter = None
@@ -293,3 +300,64 @@ class InputNode(TableNode):
             select_expr = select_expr.where(partition_filter_condition)
 
         return select_expr
+
+    @classmethod
+    def _flatten_nested_fields(
+        cls,
+        select_expr: Select,
+        columns: list[dict[str, Any]],
+        adapter: BaseAdapter,
+    ) -> Select:
+        """
+        Flatten nested fields in the select expression if any, otherwise return the original select
+        expression.
+
+        Parameters
+        ----------
+        select_expr : Select
+            Select expression
+        columns : list[dict[str, Any]]
+            List of column specifications
+        adapter : BaseAdapter
+            SQL adapter
+
+        Returns
+        -------
+        Select
+        """
+        nested_field_mapping = {}
+        for column_info in columns:
+            metadata = column_info.get("nested_field_metadata")
+            if metadata is not None:
+                nested_field_mapping[column_info["name"]] = NestedFieldMetadata(**metadata)
+
+        if not nested_field_mapping:
+            return select_expr
+
+        column_expressions = []
+        column_names = []
+        for column_info in columns:
+            column_name = column_info["name"]
+            if column_name in nested_field_mapping:
+                nested_field_metadata = nested_field_mapping[column_name]
+                column_expressions.append(
+                    adapter.flatten_nested_field(
+                        parent_column_name=nested_field_metadata.parent_column_name,
+                        keys=nested_field_metadata.keys,
+                        dtype=column_info["dtype"],
+                    )
+                )
+            else:
+                column_expressions.append(quoted_identifier(column_name))
+            column_names.append(column_name)
+
+        # Called by _select_from_dbtable, the output is expected to be a select expression without
+        # any columns. Nested query allows the flattened columns to be referenced by name directly
+        # like other regular columns.
+        flattened_expr = expressions.select().from_(
+            select_expr.select(*[
+                expressions.alias_(expr, alias=col, quoted=True)
+                for expr, col in zip(column_expressions, column_names)
+            ]).subquery()
+        )
+        return flattened_expr

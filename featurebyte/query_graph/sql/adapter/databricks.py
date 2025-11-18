@@ -404,3 +404,13 @@ class DatabricksAdapter(BaseAdapter):
         timestamp_str_expr = _get_value_from_json(cls.ZIPPED_TIMESTAMP_FIELD)
         timezone_expr = _get_value_from_json(cls.ZIPPED_TIMEZONE_FIELD)
         return timestamp_str_expr, timezone_expr
+
+    @classmethod
+    def flatten_nested_field(
+        cls, parent_column_name: str, keys: list[str], dtype: DBVarType
+    ) -> Expression:
+        # Access nested fields using dot notation
+        expr = quoted_identifier(parent_column_name)
+        for key in keys:
+            expr = expressions.Dot(this=expr, expression=quoted_identifier(key))
+        return expr

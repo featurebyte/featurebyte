@@ -1508,3 +1508,25 @@ class BaseAdapter(ABC):
         -------
         Tuple[Expression, Expression]
         """
+
+    @classmethod
+    @abstractmethod
+    def flatten_nested_field(
+        cls, parent_column_name: str, keys: list[str], dtype: DBVarType
+    ) -> Expression:
+        """
+        Flatten nested field access into a single expression
+
+        Parameters
+        ----------
+        parent_column_name: str
+            Parent column name
+        keys: list[str]
+            List of nested field keys
+        dtype: DBVarType
+            Data type of the final nested field
+
+        Returns
+        -------
+        Expression
+        """
