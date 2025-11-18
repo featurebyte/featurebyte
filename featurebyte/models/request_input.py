@@ -299,7 +299,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             default=(
                 quoted_identifier(InternalName.TABLE_ROW_WEIGHT)
                 if sampling_column_exists
-                else make_literal_value(downsampling_info.default_sampling_rate)
+                else make_literal_value(1 / downsampling_info.default_sampling_rate)
             ),
         )
 
