@@ -215,14 +215,14 @@ def test_extract_operation_structure(feature_model_dict):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "exclude_feature_version_suffix,expected_output_column_name",
+    "include_feature_version_suffix,expected_output_column_name",
     [
-        (True, "sum_30m"),
-        (False, "sum_30m_V231231"),
+        (False, "sum_30m"),
+        (True, "sum_30m_V231231"),
     ],
 )
 async def test_ingest_graph_and_node(
-    feature_model_dict, app_container, exclude_feature_version_suffix, expected_output_column_name
+    feature_model_dict, app_container, include_feature_version_suffix, expected_output_column_name
 ):
     """Test ingest_graph_and_node method"""
     feature_model_dict["version"] = {"name": "V231231", "suffix": None}
@@ -233,8 +233,8 @@ async def test_ingest_graph_and_node(
         feature=feature,
         table_name_prefix="cat1",
         entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
-        dry_run=True if exclude_feature_version_suffix else False,
-        exclude_feature_version_suffix=exclude_feature_version_suffix,
+        dry_run=True if not include_feature_version_suffix else False,
+        include_feature_version_suffix=include_feature_version_suffix,
     )
     ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]
 

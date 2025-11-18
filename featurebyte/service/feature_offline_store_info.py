@@ -209,7 +209,7 @@ class OfflineStoreInfoInitializationService:
         table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
-        exclude_feature_version_suffix: bool = False,
+        include_feature_version_suffix: bool = True,
     ) -> OfflineStoreInfo:
         """
         Initialize feature offline store info
@@ -225,8 +225,8 @@ class OfflineStoreInfoInitializationService:
         dry_run: bool
             If True, don't create the offline feature tables but return OfflineStoreInfo consisting
             of dummy feature table names.
-        exclude_feature_version_suffix: bool
-            Whether to exclude feature version suffix in the offline store table name
+        include_feature_version_suffix: bool
+            Whether to include feature version suffix in the offline store table name
 
         Returns
         -------
@@ -235,7 +235,7 @@ class OfflineStoreInfoInitializationService:
         Raises
         ------
         ValueError
-            If exclude_feature_version_suffix is set when dry_run is False
+            If include_feature_version_suffix is disabled when dry_run is False
         """
         if entity_id_to_serving_name is None:
             serv_name_service = self.entity_serving_names_service
@@ -245,17 +245,19 @@ class OfflineStoreInfoInitializationService:
                 )
             )
 
-        if exclude_feature_version_suffix and not dry_run:
-            raise ValueError("exclude_feature_version_suffix can only be set when dry_run is True")
+        if not include_feature_version_suffix and not dry_run:
+            raise ValueError(
+                "include_feature_version_suffix can only be disabled when dry_run is True"
+            )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
         assert feature.name is not None
 
-        output_feature_name = feature.versioned_name
-        feature_version: Optional[str] = feature.version.to_str()
-        if exclude_feature_version_suffix:
-            feature_version = None
-            output_feature_name = feature.name
+        feature_version: Optional[str] = None
+        output_feature_name = feature.name
+        if include_feature_version_suffix:
+            feature_version = feature.version.to_str()
+            output_feature_name = feature.versioned_name
 
         result = transformer.transform(
             target_node=feature.node,
