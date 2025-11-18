@@ -214,7 +214,16 @@ def test_extract_operation_structure(feature_model_dict):
 
 
 @pytest.mark.asyncio
-async def test_ingest_graph_and_node(feature_model_dict, app_container):
+@pytest.mark.parametrize(
+    "exclude_feature_version_suffix,expected_output_column_name",
+    [
+        (True, "sum_30m"),
+        (False, "sum_30m_V231231"),
+    ],
+)
+async def test_ingest_graph_and_node(
+    feature_model_dict, app_container, exclude_feature_version_suffix, expected_output_column_name
+):
     """Test ingest_graph_and_node method"""
     feature_model_dict["version"] = {"name": "V231231", "suffix": None}
     feature_model_dict["catalog_id"] = app_container.catalog_id
@@ -224,6 +233,8 @@ async def test_ingest_graph_and_node(feature_model_dict, app_container):
         feature=feature,
         table_name_prefix="cat1",
         entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature.entity_ids},
+        dry_run=True if exclude_feature_version_suffix else False,
+        exclude_feature_version_suffix=exclude_feature_version_suffix,
     )
     ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]
 
@@ -231,7 +242,7 @@ async def test_ingest_graph_and_node(feature_model_dict, app_container):
     assert ingest_query_graph.ref_node_name is None
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
     assert ingest_node.type == "alias"
-    assert ingest_node.parameters.name == feature.versioned_name
+    assert ingest_node.parameters.name == expected_output_column_name
 
     # case 2: set ref_node_name to make it likes a decomposed graph (output is non-alias node)
     assert feature.node.type != "alias"
@@ -239,7 +250,7 @@ async def test_ingest_graph_and_node(feature_model_dict, app_container):
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
-    assert ingest_node.parameters.name == feature.versioned_name
+    assert ingest_node.parameters.name == expected_output_column_name
 
     # case 3: set ref_node_name to make it likes a decomposed graph (output is alias node)
     input_node = ingest_query_graph.graph.get_node_by_name(ingest_query_graph.node_name)
@@ -255,4 +266,4 @@ async def test_ingest_graph_and_node(feature_model_dict, app_container):
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
     # check the alias node name is the feature name
-    assert ingest_node.parameters.name == feature.versioned_name
+    assert ingest_node.parameters.name == expected_output_column_name
