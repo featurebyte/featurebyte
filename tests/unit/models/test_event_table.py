@@ -33,6 +33,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "event_date",
@@ -43,6 +44,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "event_id",
@@ -53,6 +55,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "created_at",
@@ -63,6 +66,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
     ]
     event_table = EventTableModel(

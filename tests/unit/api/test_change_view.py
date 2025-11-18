@@ -335,6 +335,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "semantic_id": columns_info_dict[0]["semantic_id"],
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "critical_data_info": None,
@@ -345,6 +346,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "semantic_id": columns_info_dict[1]["semantic_id"],
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "critical_data_info": None,
@@ -355,6 +357,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "semantic_id": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "critical_data_info": None,
@@ -365,6 +368,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "semantic_id": columns_info_dict[3]["semantic_id"],
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "critical_data_info": None,
@@ -375,6 +379,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "semantic_id": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
     ]
 

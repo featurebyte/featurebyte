@@ -28,6 +28,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "natural_id",
@@ -38,6 +39,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "surrogate_id",
@@ -48,6 +50,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "created_at",
@@ -58,6 +61,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "effective_at",
@@ -68,6 +72,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "end_at",
@@ -78,6 +83,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "enabled",
@@ -88,6 +94,7 @@ def get_scd_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
     ]
 

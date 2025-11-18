@@ -36,6 +36,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "date",
@@ -49,6 +50,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
                 "timestamp_tuple_schema": None,
             },
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "series_id",
@@ -59,6 +61,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "created_at",
@@ -69,6 +72,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
     ]
     time_series_table = TimeSeriesTableModel(

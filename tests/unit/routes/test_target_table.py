@@ -117,6 +117,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
                     "name": "POINT_IN_TIME",
                     "dtype_metadata": None,
                     "partition_metadata": None,
+                    "nested_field_metadata": None,
                 },
                 {
                     "dtype": "INT",
@@ -124,6 +125,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
                     "name": "cust_id",
                     "dtype_metadata": None,
                     "partition_metadata": None,
+                    "nested_field_metadata": None,
                 },
             ],
             "context_id": None,
