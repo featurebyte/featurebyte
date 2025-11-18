@@ -13,6 +13,7 @@ from featurebyte.models.relationship import (
     RelationshipInfoModel,
     RelationshipStatus,
     RelationshipType,
+    RelationTable,
 )
 from featurebyte.schema.common.base import PaginationMixin
 
@@ -83,3 +84,19 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = Field(default=None)
     updated_by: str
+
+
+class RelationshipInfoRelationTable(RelationTable):
+    """
+    RelationshipInfo relation table
+    """
+
+    relation_table_name: Optional[str]
+
+
+class RelationshipInfoRelationTables(FeatureByteBaseModel):
+    """
+    RelationshipInfo relation tables
+    """
+
+    relation_tables: List[RelationshipInfoRelationTable]
