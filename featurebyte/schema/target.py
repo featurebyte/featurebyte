@@ -19,6 +19,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.models.target import TargetModel
+from featurebyte.models.target_namespace import PositiveLabelType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
@@ -38,6 +39,7 @@ class TargetCreate(FeatureByteBaseModel):
     node_name: str
     tabular_source: TabularSource
     target_type: Optional[TargetType] = Field(default=None)
+    positive_label: Optional[PositiveLabelType] = Field(default=None)
 
 
 class TargetList(PaginationMixin):

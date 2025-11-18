@@ -15,7 +15,7 @@ def test_target_namespace_create_and_delete(item_entity):
     Test target namespace create
     """
     target_namespace = TargetNamespace.create(
-        "target_namespace_1", primary_entity=["item"], dtype=DBVarType.FLOAT, window="7d"
+        "target_namespace_1", primary_entity=["item"], dtype=DBVarType.INT, window="7d"
     )
     assert target_namespace.name == "target_namespace_1"
     assert target_namespace.window == "7d"
@@ -24,6 +24,9 @@ def test_target_namespace_create_and_delete(item_entity):
 
     target_namespace.update_target_type(TargetType.CLASSIFICATION)
     assert target_namespace.target_type == TargetType.CLASSIFICATION
+
+    target_namespace.update_positive_label(1)
+    assert target_namespace.positive_label == 1
 
     with pytest.raises(RecordUpdateException) as exc:
         target_namespace.update_target_type(TargetType.REGRESSION)
@@ -90,6 +93,29 @@ def test_target_namespace_conflict_with_target_type(float_target, item_entity):
     expected = (
         "Target type regression is not consistent with namespace's target type classification"
     )
+    assert expected in str(exc.value)
+
+
+def test_positive_value_conflict_with_target_type(float_target, item_entity):
+    """
+    Test positive value conflict with target
+    """
+    assert not float_target.saved
+    namespace = TargetNamespace.create(
+        name=float_target.name,
+        primary_entity=[item_entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
+    )
+    assert namespace.target_type == TargetType.REGRESSION
+
+    # check positive_label conflict
+    assert not float_target.saved
+    with pytest.raises(RecordCreationException) as exc:
+        float_target.update_positive_label(1)
+        float_target.save()
+
+    expected = "Positive label can only be set for target namespace of type classification"
     assert expected in str(exc.value)
 
 
@@ -187,3 +213,24 @@ def test_target_namespace_positive_label_update_multiple_times_without_obs_table
     assert namespace.cached_model.positive_label == "negative"
 
     namespace.delete()
+
+
+def test_target_namespace_update_with_positive_label_invalid_target_type(item_entity):
+    """
+    Test that updating TargetNamespace with positive_label for non-classification fails
+    """
+    # Try to update regression target namespace with positive_label (should fail)
+    with pytest.raises(RecordUpdateException) as exc:
+        target_namespace = TargetNamespace.create(
+            "regression_with_label",
+            primary_entity=["item"],
+            dtype=DBVarType.INT,
+            window="7d",
+            target_type=TargetType.REGRESSION,
+        )
+        target_namespace.update_positive_label(1)
+
+    assert (
+        "Positive label can only be set for target namespace of type classification, but got regression."
+        in str(exc.value)
+    )

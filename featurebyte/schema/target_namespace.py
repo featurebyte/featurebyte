@@ -9,6 +9,7 @@ from pydantic import Field, model_validator
 
 from featurebyte.common.validator import validate_target_type
 from featurebyte.enum import DBVarType, TargetType
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import (
@@ -83,6 +84,26 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     window: Optional[str] = Field(default=None)
     target_type: Optional[TargetType] = Field(default=None)
     positive_label: Optional[PositiveLabelUpdate] = Field(default=None)
+
+    def validate_positive_label_target_type(self, target_namespace: TargetNamespaceModel) -> None:
+        """
+        Validate that positive label can only be set for classification type target namespace.
+
+        Parameters
+        ----------
+        target_namespace: TargetNamespaceModel
+            Target namespace model
+
+        Raises
+        ------
+        DocumentUpdateError
+            If target namespace is not of classification type
+        """
+        if target_namespace.target_type != TargetType.CLASSIFICATION:
+            raise DocumentUpdateError(
+                f"Positive label can only be set for target namespace of type "
+                f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
+            )
 
 
 class TargetNamespaceClassificationMetadataUpdate(FeatureByteBaseModel):

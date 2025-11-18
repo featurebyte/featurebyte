@@ -240,6 +240,39 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             skip_update_schema_check=True,
         )
 
+    @typechecked
+    def update_positive_label(self, positive_label: PositiveLabelType) -> None:
+        """
+        Update positive label of target.
+
+        The positive label is the value of the positive class in a target for binary classification.
+        Only string, integer and boolean values are supported.
+
+        Parameters
+        ----------
+        positive_label: PositiveLabelType
+            Positive label of the Target for binary classification
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="active_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.BOOL,
+        ...     primary_entity=["customer"],
+        ...     target_type=fb.TargetType.CLASSIFICATION,
+        ... )
+        >>> target_namespace.update_positive_label(True)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={
+                "positive_label": {"value": positive_label, "observation_table_id": None}
+            },
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}",
+            skip_update_schema_check=True,
+        )
+
     def delete(self) -> None:
         """
         Delete a target namespace from the persistent data store. A target namespace can only be deleted

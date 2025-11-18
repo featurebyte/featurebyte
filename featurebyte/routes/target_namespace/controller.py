@@ -166,26 +166,6 @@ class TargetNamespaceController(
             updated_at=target_namespace.updated_at,
         )
 
-    def _validate_positive_label_target_type(self, target_namespace: TargetNamespaceModel) -> None:
-        """
-        Validate that positive label can only be set for classification type target namespace.
-
-        Parameters
-        ----------
-        target_namespace: TargetNamespaceModel
-            Target namespace model
-
-        Raises
-        ------
-        DocumentUpdateError
-            If target namespace is not of classification type
-        """
-        if target_namespace.target_type != TargetType.CLASSIFICATION:
-            raise DocumentUpdateError(
-                f"Positive label can only be set for target namespace of type "
-                f"{TargetType.CLASSIFICATION}, but got {target_namespace.target_type}."
-            )
-
     async def _validate_positive_label_immutability(
         self, target_namespace: TargetNamespaceModel
     ) -> None:
@@ -295,7 +275,7 @@ class TargetNamespaceController(
             return None
 
         # Validate target type
-        self._validate_positive_label_target_type(target_namespace)
+        data.validate_positive_label_target_type(target_namespace)
 
         # Validate immutability
         await self._validate_positive_label_immutability(target_namespace)
@@ -335,7 +315,7 @@ class TargetNamespaceController(
         ):
             raise DocumentUpdateError("Updating target type after setting it is not supported.")
 
-        validate_target_type(target_type=target_namespace.target_type, dtype=target_namespace.dtype)
+        validate_target_type(target_type=data.target_type, dtype=target_namespace.dtype)
 
         # Validate and process positive label
         positive_label = await self._validate_and_process_positive_label(target_namespace, data)

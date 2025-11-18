@@ -18,7 +18,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
-from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.models.target_namespace import PositiveLabelType, TargetNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
@@ -164,6 +164,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         target_namespace_model: TargetNamespaceModel,
         attributes: List[str],
         target_type: Optional[TargetType],
+        positive_label: Optional[PositiveLabelType],
     ) -> None:
         if (
             target_type
@@ -172,6 +173,15 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         ):
             raise DocumentInconsistencyError(
                 f"Target type {target_type} is not consistent with namespace's target type {target_namespace_model.target_type}"
+            )
+
+        if (
+            positive_label
+            and target_namespace_model.positive_label
+            and positive_label != target_namespace_model.positive_label
+        ):
+            raise DocumentInconsistencyError(
+                f"Target positive label {positive_label} is not consistent with namespace's positive label {target_namespace_model.positive_label}"
             )
 
         await validate_version_and_namespace_consistency(
@@ -231,15 +241,21 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                     target_namespace_model=target_namespace,
                     attributes=["name", "dtype"],
                     target_type=data.target_type,
+                    positive_label=data.positive_label,
                 )
+                # Validate target type
+                target_namespace_update = TargetNamespaceServiceUpdate(
+                    target_ids=self.include_object_id(target_namespace.target_ids, document.id),
+                    window=self.derive_window(document=document, namespace=target_namespace),
+                    default_target_id=document.id,
+                    target_type=data.target_type,
+                    positive_label=data.positive_label,
+                )
+                if data.positive_label is not None:
+                    target_namespace_update.validate_positive_label_target_type(target_namespace)
                 await self.target_namespace_service.update_document(
                     document_id=target_namespace.id,
-                    data=TargetNamespaceServiceUpdate(
-                        target_ids=self.include_object_id(target_namespace.target_ids, document.id),
-                        window=self.derive_window(document=document, namespace=target_namespace),
-                        default_target_id=document.id,
-                        target_type=data.target_type,
-                    ),
+                    data=target_namespace_update,
                     return_document=False,
                 )
             else:
