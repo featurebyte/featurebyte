@@ -28,6 +28,7 @@ from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.relationship_info import (
     RelationshipInfoInfo,
     RelationshipInfoList,
+    RelationshipInfoRelationTables,
     RelationshipInfoUpdate,
 )
 
@@ -83,6 +84,25 @@ async def get_relationship_info(
         document_id=ObjectId(relationship_info_id),
     )
     return relationship_info
+
+
+@router.get(
+    "/{relationship_info_id}/relation_tables", response_model=RelationshipInfoRelationTables
+)
+async def get_relationship_info_relation_tables(
+    request: Request,
+    relationship_info_id: PydanticObjectId,
+) -> RelationshipInfoRelationTables:
+    """
+    Retrieve relationship info relation tables
+    """
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
+    relation_tables = await controller.get_relation_tables(
+        document_id=ObjectId(relationship_info_id),
+    )
+    return relation_tables
 
 
 @router.patch("/{relationship_info_id}")

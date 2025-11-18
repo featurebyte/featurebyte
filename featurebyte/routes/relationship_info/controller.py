@@ -13,6 +13,8 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoCreate,
     RelationshipInfoInfo,
     RelationshipInfoList,
+    RelationshipInfoRelationTable,
+    RelationshipInfoRelationTables,
     RelationshipInfoUpdate,
 )
 from featurebyte.service.entity import EntityService
@@ -43,6 +45,7 @@ class RelationshipInfoController(
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
         self.entity_service = entity_service
+        self.table_service = table_service
         self.data_service = table_service
         self.user_service = user_service
         self.relationship_info_manager_service = relationship_info_manager_service
@@ -197,3 +200,42 @@ class RelationshipInfoController(
             relationship_info_id=relationship_info_id,
             data=data,
         )
+
+    async def get_relation_tables(
+        self,
+        document_id: ObjectId,
+    ) -> RelationshipInfoRelationTables:
+        """
+        Get RelationshipInfo relation tables given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        RelationshipInfoRelationTables
+        """
+        relationship_info = await self.service.get_document(document_id=document_id)
+        relation_tables = await self.relationship_info_manager_service.get_relation_tables(
+            entity_id=relationship_info.entity_id,
+            related_entity_id=relationship_info.related_entity_id,
+        )
+        table_name_mapping = {}
+        async for doc in self.table_service.list_documents_as_dict_iterator(
+            projection={"_id": 1, "name": 1}
+        ):
+            table_name_mapping[doc["_id"]] = doc["name"]
+
+        relation_tables_with_names = []
+        for relation_table in relation_tables:
+            table_name = table_name_mapping.get(relation_table.relation_table_id)
+            relation_tables_with_names.append(
+                RelationshipInfoRelationTable(
+                    **relation_table.model_dump(by_alias=True),
+                    relation_table_name=table_name,
+                )
+            )
+
+        return RelationshipInfoRelationTables(relation_tables=relation_tables_with_names)

@@ -1017,3 +1017,25 @@ async def test_tagging_existing_reviewed_relationship_does_not_change_status(
         "customer": [another_entity.id],
         "another": [],
     })
+
+    # Check that both relation tables are returned in the API
+    response = client.get(f"/relationship_info/{relationship.id}/relation_tables")
+    assert response.status_code == 200, response.text
+    response_dict = response.json()
+    expected = {
+        "relation_tables": [
+            {
+                "relation_table_id": str(snowflake_scd_table_v2.id),
+                "entity_column_name": "col_text",
+                "related_entity_column_name": "cust_id",
+                "relation_table_name": "sf_scd_table_v2",
+            },
+            {
+                "relation_table_id": str(snowflake_scd_table.id),
+                "entity_column_name": "col_text",
+                "related_entity_column_name": "cust_id",
+                "relation_table_name": "sf_scd_table",
+            },
+        ]
+    }
+    assert response_dict == expected
