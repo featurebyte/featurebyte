@@ -7,10 +7,10 @@ from typing import Any, Dict, Optional
 from featurebyte.query_graph.enum import NodeType
 
 
-def exclude_default_timestamp_metadata(node_parameters: Dict[str, Any]) -> Dict[str, Any]:
+def exclude_default_column_spec_metadata(node_parameters: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Exclude default timestamp_metadata from node parameters. node_parameters is assumed to be the
-    parameters from an InputNode.
+    Exclude default metadata fields from node parameters such as dtype_metadata to maintain node
+    hashes for existing graphs. node_parameters is assumed to be the parameters from an InputNode.
 
     Parameters
     ----------
@@ -21,11 +21,13 @@ def exclude_default_timestamp_metadata(node_parameters: Dict[str, Any]) -> Dict[
     -------
     Dict[str, Any]
     """
+    fields_to_check = ["dtype_metadata", "nested_field_metadata"]
     if "columns" in node_parameters:
         column_specs = node_parameters["columns"]
         for column_spec in column_specs:
-            if "dtype_metadata" in column_spec and column_spec["dtype_metadata"] is None:
-                column_spec.pop("dtype_metadata")
+            for field in fields_to_check:
+                if field in column_spec and column_spec[field] is None:
+                    column_spec.pop(field)
     return node_parameters
 
 
@@ -105,7 +107,7 @@ def exclude_partition_metadata_from_node_parameters(
     node_parameters: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Exclude partition metadata from node parameters if it is None.
+    Exclude partition metadata from node parameters.
 
     Parameters
     ----------
@@ -121,6 +123,31 @@ def exclude_partition_metadata_from_node_parameters(
 
     for column_spec in node_parameters["columns"]:
         column_spec.pop("partition_metadata", None)
+
+    return node_parameters
+
+
+def exclude_nested_field_metadata_from_node_parameters(
+    node_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Exclude partition metadata from node parameters.
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters
+
+    Returns
+    -------
+    Dict[str, Any]
+    """
+    if "columns" not in node_parameters:
+        return node_parameters
+
+    for column_spec in node_parameters["columns"]:
+        if column_spec.get("nested_field_metadata") is None:
+            column_spec.pop("nested_field_metadata", None)
 
     return node_parameters
 
