@@ -6,11 +6,15 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.models.relationship import (
+    RelationshipInfoModel,
+    RelationshipStatus,
+    RelationshipType,
+)
+from featurebyte.schema.common.base import PaginationMixin
 
 
 class RelationshipInfoCreate(FeatureByteBaseModel):
@@ -38,13 +42,30 @@ class RelationshipInfoList(PaginationMixin):
     data: List[RelationshipInfoModel]
 
 
-class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):
+class RelationshipInfoUpdate(FeatureByteBaseModel):
     """
     RelationshipInfo update payload schema
     """
 
     enabled: Optional[bool] = Field(default=None)
     relationship_type: Optional[RelationshipType] = Field(default=None)
+    relationship_status: Optional[RelationshipStatus] = Field(default=None)
+
+    @field_validator("relationship_type")
+    @classmethod
+    def validate_user_settable(cls, v: Optional[RelationshipType]) -> Optional[RelationshipType]:
+        if v is not None and v not in RelationshipType.user_settable():
+            raise ValueError(f"relationship_type cannot be updated to {v}")
+        return v
+
+    @field_validator("relationship_status")
+    @classmethod
+    def validate_relationship_status(
+        cls, v: Optional[RelationshipStatus]
+    ) -> Optional[RelationshipStatus]:
+        if v is not None and v not in RelationshipStatus.user_settable():
+            raise ValueError(f"relationship_status cannot be updated to {v}")
+        return v
 
 
 class RelationshipInfoInfo(FeatureByteBaseModel):
@@ -54,6 +75,7 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
 
     id: PydanticObjectId
     relationship_type: RelationshipType
+    relationship_status: RelationshipStatus
     entity_name: str
     related_entity_name: str
     table_name: str

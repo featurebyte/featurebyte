@@ -18,7 +18,7 @@ from featurebyte.schema.relationship_info import (
 from featurebyte.service.entity import EntityService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
-from featurebyte.service.relationship_info_update import RelationshipInfoUpdateService
+from featurebyte.service.relationship_info_manager import RelationshipInfoManagerService
 from featurebyte.service.table import TableService
 from featurebyte.service.user_service import UserService
 
@@ -38,14 +38,14 @@ class RelationshipInfoController(
         entity_service: EntityService,
         table_service: TableService,
         user_service: UserService,
-        relationship_info_update_service: RelationshipInfoUpdateService,
+        relationship_info_manager_service: RelationshipInfoManagerService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
         self.entity_service = entity_service
         self.data_service = table_service
         self.user_service = user_service
-        self.relationship_info_update_service = relationship_info_update_service
+        self.relationship_info_manager_service = relationship_info_manager_service
 
     async def create_relationship_info(
         self,
@@ -165,6 +165,7 @@ class RelationshipInfoController(
             created_at=relationship_info.created_at,
             updated_at=relationship_info.updated_at,
             relationship_type=relationship_info.relationship_type,
+            relationship_status=relationship_info.relationship_status,
             table_name=table_info.name,
             data_type=table_info.type,
             entity_name=entity.name,
@@ -192,7 +193,7 @@ class RelationshipInfoController(
         RelationshipInfoModel
             Updated RelationshipInfo object
         """
-        return await self.relationship_info_update_service.update_relationship_info(
+        return await self.relationship_info_manager_service.update_relationship_info(
             relationship_info_id=relationship_info_id,
             data=data,
         )

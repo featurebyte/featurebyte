@@ -89,7 +89,9 @@ class RelationshipService(OpsServiceMixin):
                 f'Object "{parent_obj.name}" is already an ancestor of object "{child_obj.name}".'
             )
 
-    async def add_relationship(self, parent: ParentT, child_id: ObjectId) -> Relationship:
+    async def add_relationship(
+        self, parent: ParentT, child_id: ObjectId, skip_validation: bool = False
+    ) -> Relationship:
         """
         Add parent & child relationship between two objects
 
@@ -99,6 +101,8 @@ class RelationshipService(OpsServiceMixin):
             Parent object ID
         child_id: ObjectId
             Child object ID
+        skip_validation: bool
+            Skip validation check if set to True
 
         Returns
         -------
@@ -108,7 +112,10 @@ class RelationshipService(OpsServiceMixin):
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
-        self._validate_add_relationship_operation(parent_obj=parent_object, child_obj=child_object)
+        if not skip_validation:
+            self._validate_add_relationship_operation(
+                parent_obj=parent_object, child_obj=child_object
+            )
 
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(

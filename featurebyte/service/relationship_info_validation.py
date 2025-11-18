@@ -9,7 +9,7 @@ from typing import Dict, Iterable, Optional, Tuple
 from bson import ObjectId
 
 from featurebyte.exception import InvalidEntityRelationshipError
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
+from featurebyte.models.relationship import RelationshipInfoModel
 from featurebyte.service.entity import EntityService
 
 
@@ -289,13 +289,8 @@ class RelationshipInfoValidationService:
         -------
         ValidatedRelationships
         """
-        child_parent_infos = [
-            info
-            for info in all_relationship_info
-            if info.relationship_type == RelationshipType.CHILD_PARENT
-        ]
-        entity_names_mapping = await self.get_entity_names_mapping(child_parent_infos)
-        return validate_relationships(child_parent_infos, entity_names_mapping)
+        entity_names_mapping = await self.get_entity_names_mapping(all_relationship_info)
+        return validate_relationships(all_relationship_info, entity_names_mapping)
 
     async def get_entity_names_mapping(
         self, relationship_infos: list[RelationshipInfoModel]

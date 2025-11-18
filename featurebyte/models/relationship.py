@@ -18,6 +18,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
 class Parent(FeatureByteBaseModel):
@@ -74,7 +75,45 @@ class RelationshipType(StrEnum):
     """
 
     CHILD_PARENT = "child_parent"
+    CHILD_PARENT_SHORTCUT = "child_parent_shortcut"
     ONE_TO_ONE = "one_to_one"
+    DISABLED = "disabled"
+
+    @classmethod
+    def user_settable(cls) -> set["RelationshipType"]:
+        return {
+            cls.CHILD_PARENT,
+            cls.ONE_TO_ONE,
+            cls.DISABLED,
+        }
+
+
+class RelationshipStatus(StrEnum):
+    """
+    Relationship Status enum
+    """
+
+    INFERRED = "inferred"
+    REVIEWED = "reviewed"
+    TO_REVIEW = "to_review"
+    CONFLICT = "conflict"
+
+    @classmethod
+    def user_settable(cls) -> set["RelationshipStatus"]:
+        return {
+            cls.REVIEWED,
+            cls.TO_REVIEW,
+        }
+
+
+class RelationTable(FeatureByteBaseModel):
+    """
+    Relation table model
+    """
+
+    relation_table_id: PydanticObjectId
+    entity_column_name: str
+    related_entity_column_name: str
 
 
 class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
@@ -87,6 +126,7 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     relationship_type: RelationshipType
+    relationship_status: RelationshipStatus = RelationshipStatus.INFERRED
     entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
     relation_table_id: PydanticObjectId
@@ -133,3 +173,25 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
         if self.entity_id == self.related_entity_id:
             raise ValueError("Primary and Related entity id cannot be the same")
         return self
+
+
+class RelationshipInfoServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    RelationshipInfo update payload schema used internally by service
+    """
+
+    enabled: Optional[bool] = Field(default=None)
+    relationship_type: Optional[RelationshipType] = Field(default=None)
+    relationship_status: Optional[RelationshipStatus] = Field(default=None)
+    relation_table_id: Optional[PydanticObjectId] = Field(default=None)
+    entity_column_name: Optional[str] = Field(default=None)
+    related_entity_column_name: Optional[str] = Field(default=None)
+
+
+class RelationshipInfoEntityPair(FeatureByteBaseModel):
+    """
+    RelationshipInfo entity pair
+    """
+
+    entity_id: Optional[PydanticObjectId]
+    related_entity_id: Optional[PydanticObjectId]

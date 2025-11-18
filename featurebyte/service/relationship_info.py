@@ -2,17 +2,20 @@
 Relationship Info Service
 """
 
-from typing import Any, Optional
-
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
-from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoUpdate
+from featurebyte.models.relationship import (
+    RelationshipInfoModel,
+    RelationshipInfoServiceUpdate,
+)
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.base_document import BaseDocumentService
 
 
 class RelationshipInfoService(
-    BaseDocumentService[RelationshipInfoModel, RelationshipInfoCreate, RelationshipInfoUpdate]
+    BaseDocumentService[
+        RelationshipInfoModel, RelationshipInfoCreate, RelationshipInfoServiceUpdate
+    ]
 ):
     """
     RelationshipInfoService class is responsible for keeping track of the relationship info of various types.
@@ -60,32 +63,3 @@ class RelationshipInfoService(
             )
         assert len(data) == 1
         await self.delete_document(document_id=data[0]["_id"])
-
-    async def remove_one_to_one_relationships(
-        self,
-        primary_entity_id: Optional[PydanticObjectId],
-        related_entity_id: Optional[PydanticObjectId],
-        relation_table_id: PydanticObjectId,
-    ) -> None:
-        """
-        Remove a one-to-one relationship between primary and related entity in a relation table
-
-        Parameters
-        ----------
-        primary_entity_id : Optional[PydanticObjectId]
-            Primary entity id
-        related_entity_id: Optional[PydanticObjectId]
-            Related entity id
-        relation_table_id : PydanticObjectId
-            Relation table id
-        """
-        query_filter: dict[str, Any] = {"relationship_type": RelationshipType.ONE_TO_ONE}
-        if primary_entity_id is not None:
-            query_filter["entity_id"] = primary_entity_id
-        if related_entity_id is not None:
-            query_filter["related_entity_id"] = related_entity_id
-        query_filter["relation_table_id"] = relation_table_id
-        async for relationship_info in self.list_documents_as_dict_iterator(
-            query_filter=query_filter, projection={"id": 1}
-        ):
-            await self.delete_document(document_id=relationship_info["_id"])
