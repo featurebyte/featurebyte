@@ -9,7 +9,8 @@ from __future__ import annotations
 import datetime
 import functools
 import os
-from typing import Any, AsyncGenerator, Awaitable, Callable, List, Optional, Tuple, TypeVar, cast
+from dataclasses import dataclass
+from typing import Any, AsyncGenerator, Awaitable, Callable, List, Optional, TypeVar, cast
 
 from bson import ObjectId
 from cachetools.keys import hashkey
@@ -99,6 +100,18 @@ def async_cache(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
         return result
 
     return wrapper
+
+
+@dataclass
+class TableInfo:
+    """
+    Information of a table
+    """
+
+    shape: FeatureStoreShape
+    has_row_index: bool
+    has_row_weights: bool
+    columns: list[str]
 
 
 class FeatureStoreWarehouseService:
@@ -431,9 +444,8 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
 
-    async def _get_table_shape(
-        self, location: TabularSource, db_session: BaseSession
-    ) -> Tuple[Tuple[int, int], bool, list[str]]:
+    @staticmethod
+    async def _get_table_info(location: TabularSource, db_session: BaseSession) -> TableInfo:
         # check size of the table
         sql_expr = get_source_count_expr(source=location.table_details)
         sql = sql_to_string(
@@ -444,15 +456,20 @@ class FeatureStoreWarehouseService:
         assert result is not None
         columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
         has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
+        has_row_weights = InternalName.TABLE_ROW_WEIGHT in columns_specs
         columns = [
             col_name
             for col_name in columns_specs.keys()
             if col_name not in [InternalName.TABLE_ROW_INDEX, InternalName.TABLE_ROW_WEIGHT]
         ]
-        return (
-            (result["row_count"].iloc[0], len(columns)),
-            has_row_index,
-            columns,
+        return TableInfo(
+            shape=FeatureStoreShape(
+                num_rows=result["row_count"].iloc[0],
+                num_cols=len(columns),
+            ),
+            has_row_index=has_row_index,
+            has_row_weights=has_row_weights,
+            columns=columns,
         )
 
     async def table_shape(
@@ -482,8 +499,8 @@ class FeatureStoreWarehouseService:
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store, timeout=self.session_initialization_timeout
             )
-        shape, _, _ = await self._get_table_shape(location, db_session)
-        return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
+        table_info = await self._get_table_info(location, db_session)
+        return table_info.shape
 
     async def table_preview(
         self,
@@ -620,7 +637,8 @@ class FeatureStoreWarehouseService:
             feature_store=feature_store, timeout=self.session_initialization_timeout
         )
 
-        shape, has_row_index, columns = await self._get_table_shape(location, db_session)
+        table_info = await self._get_table_info(location, db_session)
+        shape = (table_info.shape.num_rows, table_info.shape.num_cols)
         logger.debug(
             "Downloading table from feature store",
             extra={
@@ -632,8 +650,11 @@ class FeatureStoreWarehouseService:
         if shape[0] * shape[1] > MAX_TABLE_CELLS:
             raise LimitExceededError(f"Table size {shape} exceeds download limit.")
 
-        sql_expr = get_source_expr(source=location.table_details, column_names=columns)
-        if has_row_index:
+        column_names = table_info.columns
+        if table_info.has_row_weights:
+            column_names.append(InternalName.TABLE_ROW_WEIGHT)
+        sql_expr = get_source_expr(source=location.table_details, column_names=column_names)
+        if table_info.has_row_index:
             sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
         sql = sql_to_string(
             sql_expr,
