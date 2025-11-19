@@ -551,7 +551,7 @@ async def test_observation_table_downsampling(
 
     # check row weight column is included in the downloaded parquet file
     with tempfile.TemporaryDirectory() as tmpdir:
-        download_path = os.path.join(tmpdir.name, "downloaded_observation_table.parquet")
+        download_path = os.path.join(tmpdir, "downloaded_observation_table.parquet")
         observation_table.download(download_path)
         downloaded_df = pd.read_parquet(download_path)
         assert "__FB_TABLE_ROW_WEIGHT" in downloaded_df.columns
