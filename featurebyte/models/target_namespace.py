@@ -82,6 +82,15 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     def _validate_positive_label_target_type(self) -> "TargetNamespaceModel":
         """
         Validate that positive label can only be set for classification type target namespace.
+
+        Returns
+        -------
+        TargetNamespaceModel
+
+        Raises
+        ------
+        TargetValidationError
+            If positive label is set for non-classification target namespace
         """
         if self.positive_label is not None and self.target_type != TargetType.CLASSIFICATION:
             raise TargetValidationError(
