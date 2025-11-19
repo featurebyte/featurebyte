@@ -251,8 +251,6 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                     target_type=data.target_type,
                     positive_label=data.positive_label,
                 )
-                if data.positive_label is not None:
-                    target_namespace_update.validate_positive_label_target_type(target_namespace)
                 await self.target_namespace_service.update_document(
                     document_id=target_namespace.id,
                     data=target_namespace_update,

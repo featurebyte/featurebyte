@@ -790,7 +790,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             f"/target_namespace/{target_namespace_id}",
             json={
                 "positive_label": {
-                    "observation_table_id": observation_table_id,
+                    "observation_table_id": None,
                     "value": "1.0",
                 }
             },

@@ -274,9 +274,6 @@ class TargetNamespaceController(
         if data.positive_label is None:
             return None
 
-        # Validate target type
-        data.validate_positive_label_target_type(target_namespace)
-
         # Validate immutability
         await self._validate_positive_label_immutability(target_namespace)
 

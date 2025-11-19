@@ -5,10 +5,11 @@ Target namespace module
 from typing import List, Optional, Union
 
 import pymongo
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator, duration_string_validator
 from featurebyte.enum import DBVarType, TargetType
+from featurebyte.exception import TargetValidationError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
 
@@ -76,3 +77,15 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
             pymongo.operations.IndexModel("target_ids"),
             pymongo.operations.IndexModel("default_target_id"),
         ]
+
+    @model_validator(mode="after")
+    def _validate_positive_label_target_type(self) -> "TargetNamespaceModel":
+        """
+        Validate that positive label can only be set for classification type target namespace.
+        """
+        if self.positive_label is not None and self.target_type != TargetType.CLASSIFICATION:
+            raise TargetValidationError(
+                f"Positive label can only be set for target namespace of type "
+                f"{TargetType.CLASSIFICATION}, but got {self.target_type}."
+            )
+        return self
