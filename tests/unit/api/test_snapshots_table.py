@@ -75,6 +75,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -85,6 +86,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": "Float column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -95,6 +97,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": "Char column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -105,6 +108,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": "Text column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -115,6 +119,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -125,6 +130,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -138,6 +144,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                     "is_partition_key": True,
                     "is_partition_key_candidate": False,
                 },
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -148,6 +155,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -158,6 +166,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "critical_data_info": None,
@@ -168,6 +177,7 @@ def snapshots_table_dict_fixture(snowflake_database_snapshots_table, user_id):
                 "name": "another_timestamp_col",
                 "semantic_id": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
         ],
         "series_id_column": "col_int",

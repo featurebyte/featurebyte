@@ -2185,6 +2185,7 @@ def query_graph_single_node(
                         "dtype": "FLOAT",
                         "dtype_metadata": None,
                         "partition_metadata": None,
+                        "nested_field_metadata": None,
                     }
                 ],
                 "table_details": event_table_details.model_dump(),

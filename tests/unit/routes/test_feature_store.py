@@ -379,6 +379,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "semantic_id": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "critical_data_info": None,
@@ -389,6 +390,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "semantic_id": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "critical_data_info": None,
@@ -399,6 +401,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "semantic_id": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
         ]
 

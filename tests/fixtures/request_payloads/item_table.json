@@ -13,6 +13,7 @@
             "dtype_metadata": null,
             "entity_id": "63f94ed6ea1f050131379204",
             "name": "event_id_col",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -22,6 +23,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "item_id_col",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -31,6 +33,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "item_type",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -40,6 +43,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "item_amount",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -49,6 +53,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "created_at",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -58,6 +63,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "event_timestamp",
+            "nested_field_metadata": null,
             "partition_metadata": null
         }
     ],

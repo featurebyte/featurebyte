@@ -13,6 +13,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_int",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -22,6 +23,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_float",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -31,6 +33,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_char",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -40,6 +43,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_text",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -49,6 +53,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_binary",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -58,6 +63,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "col_boolean",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -67,6 +73,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "event_timestamp",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -76,6 +83,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "created_at",
+            "nested_field_metadata": null,
             "partition_metadata": null
         },
         {
@@ -85,6 +93,7 @@
             "dtype_metadata": null,
             "entity_id": null,
             "name": "cust_id",
+            "nested_field_metadata": null,
             "partition_metadata": null
         }
     ],

@@ -102,66 +102,77 @@
                             "dtype": "INT",
                             "dtype_metadata": null,
                             "name": "col_int",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "FLOAT",
                             "dtype_metadata": null,
                             "name": "col_float",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "BOOL",
                             "dtype_metadata": null,
                             "name": "is_active",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "VARCHAR",
                             "dtype_metadata": null,
                             "name": "col_text",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "BINARY",
                             "dtype_metadata": null,
                             "name": "col_binary",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "BOOL",
                             "dtype_metadata": null,
                             "name": "col_boolean",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "TIMESTAMP_TZ",
                             "dtype_metadata": null,
                             "name": "effective_timestamp",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "TIMESTAMP_TZ",
                             "dtype_metadata": null,
                             "name": "end_timestamp",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "TIMESTAMP",
                             "dtype_metadata": null,
                             "name": "date_of_birth",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "TIMESTAMP_TZ",
                             "dtype_metadata": null,
                             "name": "created_at",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         },
                         {
                             "dtype": "INT",
                             "dtype_metadata": null,
                             "name": "cust_id",
+                            "nested_field_metadata": null,
                             "partition_metadata": null
                         }
                     ],

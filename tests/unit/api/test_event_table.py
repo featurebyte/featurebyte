@@ -70,6 +70,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -80,6 +81,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": "Float column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -90,6 +92,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": "Char column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -100,6 +103,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": "Text column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -110,6 +114,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -120,6 +125,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -130,6 +136,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": "Timestamp column",
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -140,6 +147,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
             {
                 "entity_id": None,
@@ -150,6 +158,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
                 "description": None,
                 "dtype_metadata": None,
                 "partition_metadata": None,
+                "nested_field_metadata": None,
             },
         ],
         "event_timestamp_column": "event_timestamp",

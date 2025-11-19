@@ -123,6 +123,7 @@ def _check_event_table_with_critical_data_info(event_table):
         "description": None,
         "dtype_metadata": None,
         "partition_metadata": None,
+        "nested_field_metadata": None,
     }
     assert event_table.frame.node.type == NodeType.INPUT
 

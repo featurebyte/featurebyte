@@ -28,6 +28,7 @@ def get_dimension_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "dimension_id",
@@ -38,6 +39,7 @@ def get_dimension_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
         {
             "name": "created_at",
@@ -48,6 +50,7 @@ def get_dimension_columns_info():
             "description": None,
             "dtype_metadata": None,
             "partition_metadata": None,
+            "nested_field_metadata": None,
         },
     ]
 
