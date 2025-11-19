@@ -3,6 +3,7 @@ Integration tests for ObservationTable
 """
 
 import os
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -547,3 +548,10 @@ async def test_observation_table_downsampling(
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"}
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
+
+    # check row weight column is included in the downloaded parquet file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        download_path = os.path.join(tmpdir, "downloaded_observation_table.parquet")
+        observation_table.download(download_path)
+        downloaded_df = pd.read_parquet(download_path)
+        assert "__FB_TABLE_ROW_WEIGHT" in downloaded_df.columns
