@@ -37,6 +37,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     AddTimestampSchema,
+    CastToNumeric,
     DisguisedValueImputation,
     MissingValueImputation,
 )
@@ -1505,6 +1506,93 @@ def test_add_timestamp_schema_validation(saved_event_table):
         'Timestamp schema timezone offset column "col_text" cannot be the same as the column name'
     )
     assert expected in str(exc.value)
+
+
+def test_cast_to_numeric(
+    saved_event_table, cust_id_entity, arbitrary_default_feature_job_setting, update_fixtures
+):
+    """Test cast varchar column to numeric types"""
+    # add entity
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # add cast to numeric cleaning operation to cast varchar to float
+    cleaning_operations = [CastToNumeric(target_dtype=DBVarType.FLOAT)]
+    saved_event_table.col_text.update_critical_data_info(cleaning_operations=cleaning_operations)
+    assert (
+        saved_event_table.col_text.info.critical_data_info.cleaning_operations
+        == cleaning_operations
+    )
+
+    # check preview sql - the column should now have TRY_CAST applied
+    expected_preview_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      TRY_CAST("col_text" AS DOUBLE) AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
+    view = saved_event_table.get_view()
+    assert view.preview_sql().strip() == textwrap.dedent(expected_preview_sql).strip()
+
+    # construct feature & save
+    feat = view.groupby("cust_id").aggregate_over(
+        "col_text",
+        method="max",
+        windows=["7d"],
+        feature_names=["max_col_text"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["max_col_text"]
+    feat.save()
+
+    # verify the feature is working correctly
+    assert feat.name == "max_col_text"
+    assert feat.saved is True
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/cast_to_numeric.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+    )
+
+
+def test_cast_to_numeric_validation(saved_event_table):
+    """Test cast to numeric validation"""
+    # check validation on non-supported dtype (INT column)
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_int.update_critical_data_info(
+            cleaning_operations=[CastToNumeric(target_dtype=DBVarType.FLOAT)]
+        )
+
+    expected = "Cleaning operation CastToNumeric(target_dtype='FLOAT') does not support dtype INT"
+    assert expected in str(exc.value)
+
+    # check validation on non-supported dtype (FLOAT column)
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_float.update_critical_data_info(
+            cleaning_operations=[CastToNumeric(target_dtype=DBVarType.INT)]
+        )
+
+    expected = "Cleaning operation CastToNumeric(target_dtype='INT') does not support dtype FLOAT"
+    assert expected in str(exc.value)
+
+    # check when cast to numeric is applied on VARCHAR column, expect no error
+    saved_event_table.col_text.update_critical_data_info(
+        cleaning_operations=[CastToNumeric(target_dtype=DBVarType.INT)]
+    )
+
+    # check when cast to numeric is applied on CHAR column, expect no error
+    saved_event_table.col_char.update_critical_data_info(
+        cleaning_operations=[CastToNumeric(target_dtype=DBVarType.FLOAT)]
+    )
 
 
 def test_event_table_with_event_timestamp_schema(snowflake_event_table_with_timestamp_schema):

@@ -42,6 +42,9 @@ class CleaningOperationType(StrEnum):
     GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
     IS_STRING = "is_string"
 
+    # type conversion operations
+    CAST_TO_NUMERIC = "cast_to_numeric"
+
     # add metadata to the schema
     ADD_TIMESTAMP_SCHEMA = "add_timestamp_schema"
 
@@ -174,6 +177,59 @@ class AddTimestampSchema(BaseCleaningOperation):
                 timestamp_schema=self.timestamp_schema
             )
         )
+
+
+class CastToNumeric(BaseCleaningOperation):
+    """
+    CastToNumeric class is used to declare the operation to cast varchar column values to numeric types (INT or FLOAT).
+
+    This cleaning operation is designed for varchar columns that contain numeric values stored as strings. It attempts
+    to cast the string values to the specified target data type (INT or FLOAT). Values that cannot be successfully cast
+    will be converted to NULL.
+
+    Parameters
+    ----------
+    target_dtype: DBVarType
+        The target numeric data type to cast to. Must be either DBVarType.INT or DBVarType.FLOAT.
+
+    Examples
+    --------
+    Create a cleaning operation to cast varchar column values to integer type:
+
+    >>> fb.CastToNumeric(target_dtype=fb.enum.DBVarType.INT)  # doctest: +SKIP
+
+    Create a cleaning operation to cast varchar column values to float type:
+
+    >>> fb.CastToNumeric(target_dtype=fb.enum.DBVarType.FLOAT)  # doctest: +SKIP
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.CastToNumeric")
+
+    # instance variables
+    type: Literal[CleaningOperationType.CAST_TO_NUMERIC] = Field(
+        CleaningOperationType.CAST_TO_NUMERIC, frozen=True, repr=False
+    )
+    target_dtype: Literal[DBVarType.INT, DBVarType.FLOAT] = Field(
+        description="Target numeric data type to cast to (INT or FLOAT)."
+    )
+
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {DBVarType.CHAR, DBVarType.VARCHAR}
+
+    def add_cleaning_operation(
+        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
+    ) -> "Node":
+        target_dtype = DBVarType(self.target_dtype)
+        cast_node = graph_node.add_operation(
+            node_type=NodeType.TRY_CAST,
+            node_params={"type": target_dtype.to_type_str(), "from_dtype": dtype},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+        return cast_node
+
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.CAST_TO_NUMERIC(target_dtype=self.target_dtype)
 
 
 class BaseImputationCleaningOperation(BaseCleaningOperation):
@@ -607,6 +663,7 @@ CLEANING_OPERATION_TYPES = [
     ValueBeyondEndpointImputation,
     StringValueImputation,
     AddTimestampSchema,
+    CastToNumeric,
 ]
 if TYPE_CHECKING:
     CleaningOperation = BaseCleaningOperation

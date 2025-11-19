@@ -307,8 +307,23 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{self.parameters.type}({operand})"
 
 
+class TryCastNode(CastNode):
+    """TryCastNode class (used by cleaning operations only)"""
+
+    type: Literal[NodeType.TRY_CAST] = NodeType.TRY_CAST  # type: ignore[assignment]
+
+    def generate_expression(self, operand: str) -> str:
+        raise RuntimeError("Not implemented")
+
+    def generate_odfv_expression(self, operand: str) -> str:
+        raise RuntimeError("Not implemented")
+
+    def generate_udf_expression(self, operand: str) -> str:
+        raise RuntimeError("Not implemented")
+
+
 class IsStringNode(BaseSeriesOutputWithSingleOperandNode):
-    """IsStringNode class"""
+    """IsStringNode class (used by cleaning operations only)"""
 
     type: Literal[NodeType.IS_STRING] = NodeType.IS_STRING
 

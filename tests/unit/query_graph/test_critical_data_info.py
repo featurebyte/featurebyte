@@ -10,6 +10,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node.cleaning_operation import (
+    CastToNumeric,
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
@@ -227,6 +228,79 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
     )
 
 
+def test_cast_to_numeric__add_cleaning_operation(input_node):
+    """Test CastToNumeric cleaning operation output graph"""
+    # Test casting VARCHAR to INT
+    graph_node, _ = GraphNode.create(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    imputation = CastToNumeric(target_dtype=DBVarType.INT)
+    node_op = imputation.add_cleaning_operation(
+        graph_node=graph_node,
+        input_node=graph_node.output_node,
+        dtype=DBVarType.VARCHAR,
+    )
+    assert node_op.type == NodeType.TRY_CAST
+    nested_graph = graph_node.parameters.graph
+    compare_pydantic_obj(
+        nested_graph.nodes[0],
+        expected={
+            "name": "proxy_input_1",
+            "type": "proxy_input",
+            "output_type": "frame",
+            "parameters": {"input_order": 0},
+        },
+    )
+    compare_pydantic_obj(
+        nested_graph.nodes[1],
+        expected={
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {"columns": ["a"]},
+        },
+    )
+    compare_pydantic_obj(
+        nested_graph.nodes[2],
+        expected={
+            "name": "try_cast_1",
+            "type": "try_cast",
+            "output_type": "series",
+            "parameters": {"type": "int", "from_dtype": "VARCHAR"},
+        },
+    )
+
+    # Test casting VARCHAR to FLOAT
+    graph_node2, _ = GraphNode.create(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    imputation2 = CastToNumeric(target_dtype=DBVarType.FLOAT)
+    node_op2 = imputation2.add_cleaning_operation(
+        graph_node=graph_node2,
+        input_node=graph_node2.output_node,
+        dtype=DBVarType.VARCHAR,
+    )
+    assert node_op2.type == NodeType.TRY_CAST
+    nested_graph2 = graph_node2.parameters.graph
+    compare_pydantic_obj(
+        nested_graph2.nodes[2],
+        expected={
+            "name": "try_cast_1",
+            "type": "try_cast",
+            "output_type": "series",
+            "parameters": {"type": "float", "from_dtype": "VARCHAR"},
+        },
+    )
+
+
 @pytest.mark.parametrize(
     "cleaning_operation,expected_repr",
     [
@@ -245,6 +319,14 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
             "ValueBeyondEndpointImputation(type='greater_than', imputed_value=0, end_point=0)",
         ),
         (StringValueImputation(imputed_value=None), "StringValueImputation(imputed_value=None)"),
+        (
+            CastToNumeric(target_dtype=DBVarType.INT),
+            "CastToNumeric(target_dtype='INT')",
+        ),
+        (
+            CastToNumeric(target_dtype=DBVarType.FLOAT),
+            "CastToNumeric(target_dtype='FLOAT')",
+        ),
     ],
 )
 def test_cleaning_operation_representation(cleaning_operation, expected_repr):
