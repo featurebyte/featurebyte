@@ -49,6 +49,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.session.base import (
     APPLICATION_NAME,
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    NESTED_FIELD_DELIMITER,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -641,7 +642,7 @@ class BigQuerySession(BaseSession):
                 scale=field.scale,
                 mode=field.mode,
             )
-            column_name = ".".join(prefix + [field.name])
+            column_name = NESTED_FIELD_DELIMITER.join(prefix + [field.name])
             column_name_type_map[column_name] = ColumnSpecWithDescription(
                 name=column_name,
                 dtype=dtype,

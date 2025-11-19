@@ -15,6 +15,7 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+import featurebyte as fb
 from featurebyte import SourceType
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.exception import (
@@ -25,7 +26,7 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.dtype import NestedFieldMetadata
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import QueryMetadata
-from tests.util.helper import truncate_timestamps
+from tests.util.helper import fb_assert_frame_equal, truncate_timestamps
 
 
 def sample_dataframe():
@@ -261,9 +262,9 @@ async def test_list_table_schema(test_session):
             ),
         ),
         (
-            "record.a",
+            "record_a",
             ColumnSpecWithDescription(
-                name="record.a",
+                name="record_a",
                 dtype="INT",
                 dtype_metadata=None,
                 partition_metadata=None,
@@ -272,9 +273,9 @@ async def test_list_table_schema(test_session):
             ),
         ),
         (
-            "record.b.c",
+            "record_b_c",
             ColumnSpecWithDescription(
-                name="record.b.c",
+                name="record_b_c",
                 dtype="FLOAT",
                 dtype_metadata=None,
                 partition_metadata=None,
@@ -622,3 +623,44 @@ async def test_list_compute_options(feature_store, feature_store_credential):
         }
     else:
         assert compute_options == []
+
+
+@pytest.mark.asyncio
+async def test_nested_fields(config, test_session, data_source):
+    _ = config
+    source_table = data_source.get_source_table(
+        "TEST_DATA_TABLE",
+        schema_name=test_session.schema_name,
+        database_name=test_session.database_name,
+    )
+
+    # expect source table preview shows nested fields flattened
+    df = source_table.preview(12)
+    assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
+    assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
+    assert (df["record_b_c"] == expected_df["record"].apply(lambda x: x["b"]["c"])).all()
+
+    event_table = source_table.create_event_table(
+        name="TEST_DATA_DATA_TABLE_EVENT_TABLE",
+        event_timestamp_column="timestamp",
+        event_id_column="string",
+    )
+    df = event_table.preview(12)
+    expected_df = expected_dataframe()
+    # expect nested fields be flattened
+    assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
+    assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
+    assert (df["record_b_c"] == expected_df["record"].apply(lambda x: x["b"]["c"])).all()
+
+    # create feature using nested field
+    event_entity = fb.Entity.create("event_entity", serving_names=["event_id"])
+    event_table["string"].as_entity(event_entity.name)
+    event_view = event_table.get_view()
+    feature = event_view["record_b_c"].as_feature("record_b_c_feature")
+    df_preview = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2020-01-05 10:00:00"), "event_id": "Bob"}
+    ])
+    df_feature = feature.preview(df_preview)
+    df_expected = df_preview.copy()
+    df_expected["record_b_c_feature"] = 2.2
+    fb_assert_frame_equal(df_feature, df_expected)

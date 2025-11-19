@@ -24,6 +24,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    NESTED_FIELD_DELIMITER,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -337,7 +338,7 @@ class BaseSparkSession(BaseSession, ABC):
             else:
                 nested_field_metadata = None
             dtype = self._convert_to_internal_variable_type(var_info.upper())
-            column_name = ".".join(prefix + [column_name])
+            column_name = NESTED_FIELD_DELIMITER.join(prefix + [column_name])
             column_name_type_map[column_name] = ColumnSpecWithDescription(
                 name=column_name,
                 dtype=dtype,
