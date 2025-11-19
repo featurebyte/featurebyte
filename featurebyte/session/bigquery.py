@@ -39,6 +39,7 @@ from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import GoogleCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import NestedFieldMetadata
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -615,6 +616,39 @@ class BigQuerySession(BaseSession):
         )
         job.result()
 
+    @staticmethod
+    def _populate_column_spec(
+        field: SchemaField,
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription],
+        prefix: list[str] | None = None,
+    ) -> None:
+        prefix = prefix or []
+        if field.fields:
+            # handle recursive fields (STRUCT / RECORD)
+            prefix = prefix + [field.name]
+            for _field in field.fields:
+                BigQuerySession._populate_column_spec(_field, column_name_type_map, prefix)
+        else:
+            if prefix and len(prefix) > 0:
+                nested_field_metadata = NestedFieldMetadata(
+                    parent_column_name=prefix[0],
+                    keys=prefix[1:] + [field.name],
+                )
+            else:
+                nested_field_metadata = None
+            dtype = convert_to_internal_variable_type(
+                bigquery_typecode=field.field_type,
+                scale=field.scale,
+                mode=field.mode,
+            )
+            column_name = ".".join(prefix + [field.name])
+            column_name_type_map[column_name] = ColumnSpecWithDescription(
+                name=column_name,
+                dtype=dtype,
+                description=field.description or None,
+                nested_field_metadata=nested_field_metadata,
+            )
+
     async def list_table_schema(
         self,
         table_name: str | None,
@@ -630,20 +664,12 @@ class BigQuerySession(BaseSession):
             table_id=table_name,
         )
         table = self._client.get_table(table_ref)
-        column_name_type_map = collections.OrderedDict()
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = (
+            collections.OrderedDict()
+        )
         if table.schema is not None:
             for field in table.schema:
-                dtype = convert_to_internal_variable_type(
-                    bigquery_typecode=field.field_type,
-                    scale=field.scale,
-                    mode=field.mode,
-                )
-                column_name_type_map[field.name] = ColumnSpecWithDescription(
-                    name=field.name,
-                    dtype=dtype,
-                    description=field.description or None,
-                )
-
+                self._populate_column_spec(field, column_name_type_map)
         return column_name_type_map
 
     async def get_table_details(
