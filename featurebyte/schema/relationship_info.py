@@ -51,6 +51,7 @@ class RelationshipInfoUpdate(FeatureByteBaseModel):
     enabled: Optional[bool] = Field(default=None)
     relationship_type: Optional[RelationshipType] = Field(default=None)
     relationship_status: Optional[RelationshipStatus] = Field(default=None)
+    relation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     @field_validator("relationship_type")
     @classmethod

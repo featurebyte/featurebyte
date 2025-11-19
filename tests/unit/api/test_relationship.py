@@ -2,6 +2,8 @@
 Test relationships module
 """
 
+from http.client import UNPROCESSABLE_ENTITY
+
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -1039,3 +1041,104 @@ async def test_tagging_existing_reviewed_relationship_does_not_change_status(
         ]
     }
     assert response_dict == expected
+
+
+@pytest.mark.asyncio
+async def test_update_relation_table(
+    snowflake_scd_table,
+    snowflake_scd_table_v2,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test updating relation_table_id for relationship info
+
+    A: cust_id_entity
+    B: another_entity
+
+    Initial:
+    T1: A -> B (using sf_scd_table)
+    T2: A -> B (using sf_scd_table_v2)
+
+    After updating relation_table_id:
+    T2: A -> B, reviewed (now using sf_scd_table_v2 as active relation table)
+    """
+    # Establish relationships in both SCD tables
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table.cust_id.as_entity(another_entity.name)
+    snowflake_scd_table_v2.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table_v2.cust_id.as_entity(another_entity.name)
+
+    # Update relation table and change status to reviewed
+    relationship = get_relationship_object_by_entities(
+        entity_name=cust_id_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    client = Configurations().get_client()
+    response = client.patch(
+        f"/relationship_info/{relationship.id}",
+        json={
+            "relation_table_id": str(snowflake_scd_table_v2.id),
+            "relationship_status": "reviewed",
+        },
+    )
+    assert response.status_code == 200, response.text
+
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "reviewed",
+            "relation_table": "sf_scd_table_v2",
+        }
+    ])
+    assert_ancestor_ids_equal({
+        "customer": [another_entity.id],
+        "another": [],
+    })
+
+
+@pytest.mark.asyncio
+async def test_update_relation_table__invalid_relation_table_id(
+    snowflake_scd_table,
+    snowflake_scd_table_v2,
+    cust_id_entity,
+    another_entity,
+):
+    """
+    Test updating relation table using an invalid table
+    """
+    # Establish relationships in only the first SCD table
+    snowflake_scd_table.col_text.as_entity(cust_id_entity.name)
+    snowflake_scd_table.cust_id.as_entity(another_entity.name)
+
+    # Update relation table and change status to reviewed
+    relationship = get_relationship_object_by_entities(
+        entity_name=cust_id_entity.name,
+        related_entity_name=another_entity.name,
+    )
+    client = Configurations().get_client()
+    response = client.patch(
+        f"/relationship_info/{relationship.id}",
+        json={
+            "relation_table_id": str(snowflake_scd_table_v2.id),
+            "relationship_status": "reviewed",
+        },
+    )
+    assert response.status_code == UNPROCESSABLE_ENTITY
+    assert "not a valid relation table" in response.json()["detail"]
+
+    assert_relationships_equal([
+        {
+            "entity": "customer",
+            "related_entity": "another",
+            "relationship_type": "child_parent",
+            "relationship_status": "inferred",
+            "relation_table": "sf_scd_table",
+        }
+    ])
+    assert_ancestor_ids_equal({
+        "customer": [another_entity.id],
+        "another": [],
+    })

@@ -7,7 +7,7 @@ from typing import Optional, cast
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.models.relationship import (
     RelationshipInfoEntityPair,
@@ -715,11 +715,17 @@ class RelationshipInfoManagerService:
         -------
         RelationshipInfoModel
             Updated RelationshipInfo object
+
+        Raises
+        ------
+        DocumentUpdateError
+            If relation table ID is not valid for the given entity pair
         """
         relationship_info = await self.relationship_info_service.get_document(
             document_id=relationship_info_id
         )
 
+        # Handle relationship type change separately
         if (
             data.relationship_type is not None
             and data.relationship_type != relationship_info.relationship_type
@@ -731,7 +737,28 @@ class RelationshipInfoManagerService:
             # Reset field to None to avoid updating again below
             data.relationship_type = None
 
+        # RelationshipInfoServiceUpdate contains internal fields not directly exposed to users
         update_data = RelationshipInfoServiceUpdate(**data.model_dump(exclude_unset=True))
+
+        # Handle relation table change
+        if data.relation_table_id is not None:
+            relation_tables = await self.get_relation_tables(
+                entity_id=relationship_info.entity_id,
+                related_entity_id=relationship_info.related_entity_id,
+            )
+            for rel_table in relation_tables:
+                if rel_table.relation_table_id == data.relation_table_id:
+                    # Found valid relation table, proceed with update
+                    break
+            else:
+                raise DocumentUpdateError(
+                    f"Relation table ID {data.relation_table_id} is not a valid relation table "
+                    "for the given entity pair"
+                )
+            update_data.relation_table_id = rel_table.relation_table_id
+            update_data.entity_column_name = rel_table.entity_column_name
+            update_data.related_entity_column_name = rel_table.related_entity_column_name
+
         updated_relationship_info = await self.relationship_info_service.update_document(
             document_id=relationship_info_id, data=update_data
         )
