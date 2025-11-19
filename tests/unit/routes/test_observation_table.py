@@ -1326,7 +1326,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "sampling_rate_per_target_value": [
                 {"target_value": "1", "rate": 0.5},
             ],
-            "default_sampling_rate": 1.0,
+            "default_sampling_rate": 0.2,
         }
 
         # expect failure due to target type not set
