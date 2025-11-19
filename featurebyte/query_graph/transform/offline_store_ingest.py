@@ -76,14 +76,14 @@ class OfflineStoreIngestQueryGraphGlobalState:
 
     # variables used to construct offline store table name
     feature_name: str
-    feature_version: str
+    feature_version: Optional[str]
     ingest_graph_node_counter: int
 
     @classmethod
     def create(
         cls,
         feature_name: str,
-        feature_version: str,
+        feature_version: Optional[str],
         target_node_name: str,
         decompose_point_info: DecomposePointState,
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
@@ -94,7 +94,7 @@ class OfflineStoreIngestQueryGraphGlobalState:
         ----------
         feature_name: str
             Feature name
-        feature_version: str
+        feature_version: Optional[str]
             Feature version
         target_node_name: str
             Target node name
@@ -259,9 +259,13 @@ class OfflineStoreIngestQueryGraphTransformer(
             ],
         )
         part_num = global_state.ingest_graph_node_counter
-        column_name = (
-            f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
-        )
+        if global_state.feature_version is None:
+            column_name = f"__{global_state.feature_name}__part{part_num}"
+        else:
+            column_name = (
+                f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
+            )
+
         graph_node = GraphNode(
             name="graph",
             output_type=subgraph_output_node.output_type,
@@ -340,7 +344,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         target_node: Node,
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
-        feature_version: str,
+        feature_version: Optional[str],
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -353,8 +357,9 @@ class OfflineStoreIngestQueryGraphTransformer(
             Relationships info (used to get the primary entity ids & create the offline store table name)
         feature_name: str
             Feature name (used to create the offline store table column name)
-        feature_version: str
-            Feature version (used to create the offline store table column name)
+        feature_version: Optional[str]
+            Feature version (used to create the offline store table column name). If None,
+            the version is excluded from the column name.
 
         Returns
         -------

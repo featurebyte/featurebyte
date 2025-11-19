@@ -209,6 +209,7 @@ class OfflineStoreInfoInitializationService:
         table_name_prefix: str,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
+        include_feature_version_suffix: bool = True,
     ) -> OfflineStoreInfo:
         """
         Initialize feature offline store info
@@ -224,10 +225,17 @@ class OfflineStoreInfoInitializationService:
         dry_run: bool
             If True, don't create the offline feature tables but return OfflineStoreInfo consisting
             of dummy feature table names.
+        include_feature_version_suffix: bool
+            Whether to include feature version suffix in the offline store table name
 
         Returns
         -------
         OfflineStoreInfo
+
+        Raises
+        ------
+        ValueError
+            If include_feature_version_suffix is disabled when dry_run is False
         """
         if entity_id_to_serving_name is None:
             serv_name_service = self.entity_serving_names_service
@@ -237,13 +245,25 @@ class OfflineStoreInfoInitializationService:
                 )
             )
 
+        if not include_feature_version_suffix and not dry_run:
+            raise ValueError(
+                "include_feature_version_suffix can only be disabled when dry_run is True"
+            )
+
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
         assert feature.name is not None
+
+        feature_version: Optional[str] = None
+        output_feature_name = feature.name
+        if include_feature_version_suffix:
+            feature_version = feature.version.to_str()
+            output_feature_name = feature.versioned_name
+
         result = transformer.transform(
             target_node=feature.node,
             relationships_info=feature.relationships_info or [],
             feature_name=feature.name,
-            feature_version=feature.version.to_str(),
+            feature_version=feature_version,
         )
 
         null_filling_value = None
@@ -297,7 +317,7 @@ class OfflineStoreInfoInitializationService:
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
-                output_column_name=feature.versioned_name,
+                output_column_name=output_feature_name,
                 output_dtype_info=DBVarTypeInfo(dtype=feature.dtype),
                 primary_entity_ids=feature.primary_entity_ids,
                 primary_entity_dtypes=[
@@ -324,7 +344,7 @@ class OfflineStoreInfoInitializationService:
                 setting.feature_job_setting for setting in feature.table_id_feature_job_settings
             ]
             offline_store_info.initialize(
-                feature_versioned_name=feature.versioned_name,
+                feature_versioned_name=output_feature_name,
                 feature_dtype=feature.dtype,
                 feature_job_settings=feature_job_settings,
                 feature_id=feature.id,
