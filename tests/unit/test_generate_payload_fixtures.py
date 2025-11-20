@@ -105,6 +105,7 @@ def test_save_payload_fixtures(
     snowflake_snapshots_table,
     snowflake_event_view_with_entity,
     float_target,
+    bool_target,
     feature_group,
     cust_id_entity,
     transaction_entity,
@@ -128,6 +129,7 @@ def test_save_payload_fixtures(
     )
     feature_iet = replace_obj_id(feature_iet, ObjectId("646f6c1c0ed28a5271fb02d0"))
     float_target = replace_obj_id(float_target, ObjectId("64a80107d667dd0c2b13d8cd"))
+    bool_target = replace_obj_id(bool_target, ObjectId("64a80107d667dd0c2b13d8ce"))
 
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event_table")
@@ -358,6 +360,7 @@ def test_save_payload_fixtures(
         (feature_list_repeated, "feature_list_single_repeated"),
         (feature_list_multiple, "feature_list_multi"),
         (float_target, "target"),
+        (bool_target, "bool_target"),
     ]
     table_names = {"event_table", "item_table", "dimension_table", "scd_table"}
     for api_object, name in api_object_name_pairs:

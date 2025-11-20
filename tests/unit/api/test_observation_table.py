@@ -294,12 +294,12 @@ def test_create_observation_table_from_observation_table(
     _ = patched_observation_table_service
 
     target_namespace = TargetNamespace.create(
-        "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.FLOAT
+        "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.INT
     )
     target_namespace.update_target_type(TargetType.CLASSIFICATION)
     observation_table = snowflake_database_table.create_observation_table(
         "observation_table_from_source_table",
-        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "target"},
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_int": "target"},
         target_column="target",
         primary_entities=[cust_id_entity.name],
     )

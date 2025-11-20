@@ -89,10 +89,10 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         assert response.json()["target_type"] is None
 
         response = test_api_client.patch(
-            f"/target_namespace/{target_namespace_id}", json={"target_type": "classification"}
+            f"/target_namespace/{target_namespace_id}", json={"target_type": "regression"}
         )
         assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json()["target_type"] == "classification"
+        assert response.json()["target_type"] == "regression"
 
     def test_delete_target_namespace(self, test_api_client_persistent, create_success_response):
         """Test delete target namespace"""

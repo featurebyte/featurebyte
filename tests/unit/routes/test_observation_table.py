@@ -790,7 +790,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             f"/target_namespace/{target_namespace_id}",
             json={
                 "positive_label": {
-                    "observation_table_id": observation_table_id,
+                    "observation_table_id": None,
                     "value": "1.0",
                 }
             },
@@ -1296,15 +1296,30 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
         mock_generate_session_unique_id.return_value = "68DFBD342ECAABD7D21D4759"
 
-        # get use case
-        response = test_api_client.get("/use_case/64dc9461ad86dba795606745")
-        assert response.status_code == HTTPStatus.OK, response.json()
+        # create boolean target
+        payload = self.load_payload("tests/fixtures/request_payloads/bool_target.json")
+        response = test_api_client.post("/target", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        bool_target_id = response_dict["_id"]
+
+        # create use case
+        payload = {
+            "_id": str(ObjectId()),
+            "name": "classification_use_case",
+            "context_id": "646f6c1c0ed28a5271fb02d5",
+            "target_id": bool_target_id,
+        }
+        response = test_api_client.post("/use_case", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        use_case_id = response_dict["_id"]
         use_case_target_namespace_id = response.json()["target_namespace_id"]
 
         payload = copy.deepcopy(self.payload)
         payload["primary_entity_ids"] = None
         payload["context_id"] = None
-        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["use_case_id"] = use_case_id
         payload["purpose"] = "eda"
         response = self.post(test_api_client, payload)
         response_dict = response.json()
@@ -1321,10 +1336,11 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
-        payload["use_case_id"] = "64dc9461ad86dba795606745"
+        payload["use_case_id"] = use_case_id
+        payload["request_input"]["observation_table_id"] = source_observation_table_id
         payload["request_input"]["downsampling_info"] = {
             "sampling_rate_per_target_value": [
-                {"target_value": "1", "rate": 0.5},
+                {"target_value": True, "rate": 0.5},
             ],
             "default_sampling_rate": 0.2,
         }
@@ -1370,7 +1386,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload["request_input"]["observation_table_id"] = new_source_observation_table_id
         payload["request_input"]["downsampling_info"] = {
             "sampling_rate_per_target_value": [
-                {"target_value": "1", "rate": 0.3},
+                {"target_value": True, "rate": 0.3},
             ],
             "default_sampling_rate": 1.0,
         }

@@ -103,20 +103,22 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."cust_id",
-  CAST(CASE
-    WHEN (
-      "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1" IS NULL
-    )
-    THEN 0.0
-    ELSE "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1"
-  END AS DOUBLE) AS "float_target"
+  (
+    CASE
+      WHEN (
+        "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1" IS NULL
+      )
+      THEN 0.0
+      ELSE "_fb_internal_cust_id_forward_sum_col_float_cust_id_None_project_1"
+    END > 0
+  ) AS "bool_target"
 FROM _FB_AGGREGATED AS AGG;
 
 CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000" AS
 SELECT
   REQ."POINT_IN_TIME",
   REQ."cust_id",
-  T0."float_target"
+  T0."bool_target"
 FROM "REQUEST_TABLE_68DFBD342ECAABD7D21D4759" AS REQ
 LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
   ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX";
@@ -148,23 +150,27 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
-  CASE WHEN "float_target" = '1' THEN CAST(2.0 AS FLOAT) ELSE 5.0 END AS "__FB_TABLE_ROW_WEIGHT"
+  "bool_target",
+  CASE WHEN "bool_target" = TRUE THEN CAST(2.0 AS FLOAT) ELSE 5.0 END AS "__FB_TABLE_ROW_WEIGHT"
 FROM (
   SELECT
     CAST(BITAND(RANDOM(0), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
     "cust_id",
     "POINT_IN_TIME",
-    "float_target"
+    "float_target",
+    "bool_target"
   FROM (
     SELECT
       "cust_id",
       "POINT_IN_TIME",
-      "float_target"
+      "float_target",
+      "bool_target"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
         "POINT_IN_TIME" AS "POINT_IN_TIME",
-        "float_target" AS "float_target"
+        "float_target" AS "float_target",
+        "bool_target" AS "bool_target"
       FROM (
         SELECT
           *
@@ -179,22 +185,24 @@ FROM (
 )
 WHERE
   (
-    "float_target" = '1' AND "prob" <= 0.5
+    "bool_target" = TRUE AND "prob" <= 0.5
   )
   OR (
-    NOT "float_target" IN ('1') AND "prob" <= 0.2
+    NOT "bool_target" IN (TRUE) AND "prob" <= 0.2
   );
 
 CREATE TABLE "sf_database"."sf_schema"."missing_data_OBSERVATION_TABLE_000000000000000000000001" AS
 SELECT
   "cust_id",
   "POINT_IN_TIME",
-  "float_target"
+  "float_target",
+  "bool_target"
 FROM (
   SELECT
     "cust_id" AS "cust_id",
     "POINT_IN_TIME" AS "POINT_IN_TIME",
-    "float_target" AS "float_target"
+    "float_target" AS "float_target",
+    "bool_target" AS "bool_target"
   FROM (
     SELECT
       *
@@ -221,7 +229,7 @@ SELECT
 FROM "missing_data_OBSERVATION_TABLE_000000000000000000000001";
 
 SELECT
-  DISTINCT "float_target"
+  DISTINCT "bool_target"
 FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
@@ -233,8 +241,9 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
+  "bool_target",
   CASE
-    WHEN "float_target" = '1'
+    WHEN "bool_target" = TRUE
     THEN CAST("__FB_TABLE_ROW_WEIGHT" * 3.3333333333333335 AS FLOAT)
     ELSE "__FB_TABLE_ROW_WEIGHT"
   END AS "__FB_TABLE_ROW_WEIGHT"
@@ -244,18 +253,21 @@ FROM (
     "cust_id",
     "POINT_IN_TIME",
     "float_target",
+    "bool_target",
     "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
       "cust_id",
       "POINT_IN_TIME",
       "float_target",
+      "bool_target",
       "__FB_TABLE_ROW_WEIGHT"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
         "POINT_IN_TIME" AS "POINT_IN_TIME",
         "float_target" AS "float_target",
+        "bool_target" AS "bool_target",
         "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
       FROM (
         SELECT
@@ -271,10 +283,10 @@ FROM (
 )
 WHERE
   (
-    "float_target" = '1' AND "prob" <= 0.3
+    "bool_target" = TRUE AND "prob" <= 0.3
   )
   OR (
-    NOT "float_target" IN ('1') AND "prob" <= 1.0
+    NOT "bool_target" IN (TRUE) AND "prob" <= 1.0
   );
 
 CREATE TABLE "sf_database"."sf_schema"."missing_data_OBSERVATION_TABLE_000000000000000000000002" AS
@@ -282,12 +294,14 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
+  "bool_target",
   "__FB_TABLE_ROW_WEIGHT"
 FROM (
   SELECT
     "cust_id" AS "cust_id",
     "POINT_IN_TIME" AS "POINT_IN_TIME",
     "float_target" AS "float_target",
+    "bool_target" AS "bool_target",
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
@@ -315,7 +329,7 @@ SELECT
 FROM "missing_data_OBSERVATION_TABLE_000000000000000000000002";
 
 SELECT
-  DISTINCT "float_target"
+  DISTINCT "bool_target"
 FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000002";
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
@@ -327,12 +341,14 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
+  "bool_target",
   "__FB_TABLE_ROW_WEIGHT"
 FROM (
   SELECT
     "cust_id" AS "cust_id",
     "POINT_IN_TIME" AS "POINT_IN_TIME",
     "float_target" AS "float_target",
+    "bool_target" AS "bool_target",
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
@@ -350,12 +366,14 @@ SELECT
   "cust_id",
   "POINT_IN_TIME",
   "float_target",
+  "bool_target",
   "__FB_TABLE_ROW_WEIGHT"
 FROM (
   SELECT
     "cust_id" AS "cust_id",
     "POINT_IN_TIME" AS "POINT_IN_TIME",
     "float_target" AS "float_target",
+    "bool_target" AS "bool_target",
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
@@ -383,5 +401,5 @@ SELECT
 FROM "missing_data_OBSERVATION_TABLE_000000000000000000000003";
 
 SELECT
-  DISTINCT "float_target"
+  DISTINCT "bool_target"
 FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000003";

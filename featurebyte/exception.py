@@ -623,3 +623,9 @@ class InvalidEntityRelationshipError(BaseUnprocessableEntityError):
     """
     Raise when an invalid entity relationship is provided
     """
+
+
+class TargetValidationError(BaseUnprocessableEntityError):
+    """
+    Raise when target validation fails
+    """

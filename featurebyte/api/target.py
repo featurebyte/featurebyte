@@ -41,6 +41,7 @@ from featurebyte.core.series import Series
 from featurebyte.enum import TargetType
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
+from featurebyte.models.target_namespace import PositiveLabelType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_table import TargetTableCreate
@@ -78,6 +79,9 @@ class Target(
     )
     # this is used to store the target_type before the target is saved
     internal_target_type: Optional[TargetType] = Field(default=None, alias="target_type")
+    internal_positive_label: Optional[PositiveLabelType] = Field(
+        default=None, alias="positive_label"
+    )
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = TargetCreate(**self.model_dump(by_alias=True))
@@ -435,6 +439,20 @@ class Target(
             return self.target_namespace.target_type
         return self.internal_target_type
 
+    @property
+    def positive_label(self) -> Optional[PositiveLabelType]:
+        """
+        Positive label
+
+        Returns
+        -------
+        Optional[PositiveLabelType]
+            Positive label
+        """
+        if self.saved:
+            return self.target_namespace.positive_label
+        return self.internal_positive_label
+
     @typechecked
     def update_description(self, description: Optional[str]) -> None:
         """
@@ -487,6 +505,29 @@ class Target(
             self.target_namespace.update_target_type(target_type=value)
         else:
             self.internal_target_type = value
+
+    @typechecked
+    def update_positive_label(self, positive_label: PositiveLabelType) -> None:
+        """
+        Update positive label of target.
+
+        The positive label is the value of the positive class in a target for binary classification.
+        Only string, integer and boolean values are supported.
+
+        Parameters
+        ----------
+        positive_label: PositiveLabelType
+            Positive label of the Target for binary classification
+
+        Examples
+        --------
+        >>> target = catalog.get_target("CustomerActive_60days")  # doctest: +SKIP
+        >>> target.update_target_type("CLASSIFICATION")  # doctest: +SKIP
+        """
+        if self.saved:
+            self.target_namespace.update_positive_label(positive_label=positive_label)
+        else:
+            self.internal_positive_label = positive_label
 
     def delete(self) -> None:
         """
