@@ -3,7 +3,6 @@ from bson import ObjectId
 from featurebyte import CastToNumeric
 from featurebyte import ColumnCleaningOperation
 from featurebyte import EventTable
-from featurebyte import FeatureJobSetting
 
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
@@ -16,16 +15,8 @@ event_view = event_table.get_view(
         )
     ],
 )
-grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
-    value_column="col_text",
-    method="max",
-    windows=["7d"],
-    feature_names=["max_col_text"],
-    feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="900s", offset="180s"
-    ),
-    skip_fill_na=True,
-    offset=None,
+grouped = event_view.as_features(
+    column_names=["col_text"], feature_names=["latest_col_text"], offset=None
 )
-feat = grouped["max_col_text"]
+feat = grouped["latest_col_text"]
 output = feat

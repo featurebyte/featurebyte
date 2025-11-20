@@ -214,7 +214,12 @@ class CastToNumeric(BaseCleaningOperation):
         description="Target numeric data type to cast to (INT or FLOAT)."
     )
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {DBVarType.CHAR, DBVarType.VARCHAR}
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {
+        DBVarType.CHAR,
+        DBVarType.VARCHAR,
+        DBVarType.INT,
+        DBVarType.FLOAT,
+    }
 
     def add_cleaning_operation(
         self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType

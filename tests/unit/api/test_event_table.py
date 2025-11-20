@@ -1508,15 +1508,44 @@ def test_add_timestamp_schema_validation(saved_event_table):
     assert expected in str(exc.value)
 
 
+@pytest.mark.parametrize(
+    "target_dtype,agg_method,agg_column,feature_name,fixture_name,use_lookup",
+    [
+        (
+            DBVarType.INT,
+            "sum",
+            "col_text",
+            "sum_col_text_7d",
+            "cast_to_numeric_aggregate_over.py",
+            False,
+        ),
+        (DBVarType.FLOAT, None, "col_text", "latest_col_text", "cast_to_numeric_lookup.py", True),
+    ],
+)
 def test_cast_to_numeric(
-    saved_event_table, cust_id_entity, arbitrary_default_feature_job_setting, update_fixtures
+    saved_event_table,
+    cust_id_entity,
+    arbitrary_default_feature_job_setting,
+    update_fixtures,
+    target_dtype,
+    agg_method,
+    agg_column,
+    feature_name,
+    fixture_name,
+    use_lookup,
 ):
-    """Test cast varchar column to numeric types"""
+    """Test cast varchar column to numeric types with different feature types"""
     # add entity
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
 
-    # add cast to numeric cleaning operation to cast varchar to float
-    cleaning_operations = [CastToNumeric(target_dtype=DBVarType.FLOAT)]
+    # add entity to event_id column if testing lookup feature
+    if use_lookup:
+        transaction_entity = Entity(name="transaction", serving_names=["transaction_id"])
+        transaction_entity.save()
+        saved_event_table.col_int.as_entity("transaction")
+
+    # add cast to numeric cleaning operation
+    cleaning_operations = [CastToNumeric(target_dtype=target_dtype)]
     saved_event_table.col_text.update_critical_data_info(cleaning_operations=cleaning_operations)
     assert (
         saved_event_table.col_text.info.critical_data_info.cleaning_operations
@@ -1525,12 +1554,13 @@ def test_cast_to_numeric(
     assert saved_event_table.col_text.info.dtype == DBVarType.VARCHAR
 
     # check preview sql - the column should now have TRY_CAST applied
-    expected_preview_sql = """
+    sql_type = "DOUBLE" if target_dtype == DBVarType.FLOAT else "BIGINT"
+    expected_preview_sql = f"""
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
       "col_char" AS "col_char",
-      TRY_CAST("col_text" AS DOUBLE) AS "col_text",
+      TRY_CAST("col_text" AS {sql_type}) AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
       CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
@@ -1539,27 +1569,33 @@ def test_cast_to_numeric(
     LIMIT 10
     """
     view = saved_event_table.get_view()
+    assert (
+        view.col_text.dtype == DBVarType.FLOAT if target_dtype == DBVarType.FLOAT else DBVarType.INT
+    )
     assert view.preview_sql().strip() == textwrap.dedent(expected_preview_sql).strip()
 
-    # construct feature & save
-    feat = view.groupby("cust_id").aggregate_over(
-        "col_text",
-        method="max",
-        windows=["7d"],
-        feature_names=["max_col_text"],
-        feature_job_setting=arbitrary_default_feature_job_setting,
-    )["max_col_text"]
+    # construct feature based on feature type
+    if use_lookup:
+        feat = view.col_text.as_feature(feature_name)
+    else:
+        feat = view.groupby("cust_id").aggregate_over(
+            agg_column,
+            method=agg_method,
+            windows=["7d"],
+            feature_names=[feature_name],
+            feature_job_setting=arbitrary_default_feature_job_setting,
+        )[feature_name]
     feat.save()
 
     # verify the feature is working correctly
-    assert feat.name == "max_col_text"
+    assert feat.name == feature_name
     assert feat.saved is True
 
     check_sdk_code_generation(
         feat,
         to_use_saved_data=True,
         to_format=True,
-        fixture_path="tests/fixtures/sdk_code/cast_to_numeric.py",
+        fixture_path=f"tests/fixtures/sdk_code/{fixture_name}",
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
     )
@@ -1567,22 +1603,15 @@ def test_cast_to_numeric(
 
 def test_cast_to_numeric_validation(saved_event_table):
     """Test cast to numeric validation"""
-    # check validation on non-supported dtype (INT column)
+    # check validation on non-supported dtype
     with pytest.raises(RecordUpdateException) as exc:
-        saved_event_table.col_int.update_critical_data_info(
+        saved_event_table.col_binary.update_critical_data_info(
             cleaning_operations=[CastToNumeric(target_dtype=DBVarType.FLOAT)]
         )
 
-    expected = "Cleaning operation CastToNumeric(target_dtype='FLOAT') does not support dtype INT"
-    assert expected in str(exc.value)
-
-    # check validation on non-supported dtype (FLOAT column)
-    with pytest.raises(RecordUpdateException) as exc:
-        saved_event_table.col_float.update_critical_data_info(
-            cleaning_operations=[CastToNumeric(target_dtype=DBVarType.INT)]
-        )
-
-    expected = "Cleaning operation CastToNumeric(target_dtype='INT') does not support dtype FLOAT"
+    expected = (
+        "Cleaning operation CastToNumeric(target_dtype='FLOAT') does not support dtype BINARY"
+    )
     assert expected in str(exc.value)
 
     # check when cast to numeric is applied on VARCHAR column, expect no error

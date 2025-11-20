@@ -207,6 +207,7 @@ def test_cast_to_numeric_varchar_to_float(event_table):
 
     # Get view and preview
     event_view = event_table.get_view()
+    assert event_view["TRANSACTION_ID"].dtype == DBVarType.FLOAT
     preview_df = event_view.preview()
 
     # Check that the column now contains numeric values (valid numeric strings are converted, invalid become null)
@@ -254,6 +255,7 @@ def test_cast_to_numeric_varchar_to_int(source_table_with_numeric_strings, custo
 
     # Get view and preview
     event_view = test_event_table.get_view()
+    assert event_view["numeric_string"].dtype == DBVarType.INT
     preview_df = event_view.preview()
 
     # Check that valid numeric strings are converted to INT, invalid ones become NULL

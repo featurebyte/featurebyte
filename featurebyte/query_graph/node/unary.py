@@ -341,7 +341,7 @@ class AddTimestampSchemaNodeParameters(FeatureByteBaseModel):
 
 
 class AddTimestampSchemaNode(BaseSeriesOutputWithSingleOperandNode):
-    """AddTimestampSchemaNode class"""
+    """AddTimestampSchemaNode class (used by cleaning operations only)"""
 
     type: Literal[NodeType.ADD_TIMESTAMP_SCHEMA] = NodeType.ADD_TIMESTAMP_SCHEMA
     parameters: AddTimestampSchemaNodeParameters

@@ -320,6 +320,9 @@ class ItemTable(TableApiObject):
         inserted_graph_node = GlobalQueryGraph().add_node(
             view_graph_node, input_nodes=[data_node, event_view.node]
         )
+        columns_info = self._prepare_columns_info_for_view(
+            view_node=inserted_graph_node, columns_info=columns_info
+        )
         return ItemView(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
