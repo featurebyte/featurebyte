@@ -857,6 +857,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ColumnCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "AddTimestampSchema"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "CastToNumeric"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TargetType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),

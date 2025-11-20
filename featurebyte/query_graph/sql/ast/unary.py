@@ -90,38 +90,72 @@ class IsNullNode(ExpressionNode):
 
 
 @dataclass
-class CastNode(ExpressionNode):
-    """Node for casting operation"""
+class BaseCastNode(ExpressionNode):
+    """Base class for casting operations"""
 
     expr: ExpressionNode
     new_type: Literal["int", "float", "str"]
     from_dtype: DBVarType
-    query_node_type = NodeType.CAST
 
-    @property
-    def sql(self) -> Expression:
-        expr: Expression
+    def _get_cast_expression_class(self) -> type[expressions.Expression]:
+        """
+        Get the appropriate cast expression class (Cast or TryCast).
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not implemented in the subclass
+        """
+        raise NotImplementedError("Subclasses must implement _get_cast_expression_class")
+
+    def _prepare_input_expression(self) -> Expression:
+        """
+        Prepare the input expression with necessary transformations.
+
+        Returns
+        -------
+        Expression
+            The prepared input expression
+        """
         if self.from_dtype == DBVarType.FLOAT and self.new_type == "int":
             # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
             # to mimic pandas astype(int)
-            expr = expressions.Floor(this=self.expr.sql)
+            return expressions.Floor(this=self.expr.sql)
         elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
             # Casting to FLOAT from BOOL directly is not allowed
-            expr = expressions.Cast(this=self.expr.sql, to=expressions.DataType.build("BIGINT"))
+            cast_class = self._get_cast_expression_class()
+            return cast_class(this=self.expr.sql, to=expressions.DataType.build("BIGINT"))
         else:
-            expr = self.expr.sql
-        type_expr = {
-            "int": expressions.DataType.build("BIGINT"),
-            "float": expressions.DataType.build("DOUBLE"),
-            "str": expressions.DataType.build("VARCHAR"),
-        }[self.new_type]
-        output_expr = expressions.Cast(this=expr, to=type_expr)
+            return self.expr.sql
+
+    def _get_target_data_type(self) -> expressions.DataType:
+        """
+        Get the target data type for the cast operation.
+
+        Returns
+        -------
+        expressions.DataType
+            The target data type
+        """
+        type_mapping = {
+            "int": "BIGINT",
+            "float": "DOUBLE",
+            "str": "VARCHAR",
+        }
+        return expressions.DataType.build(type_mapping[self.new_type])
+
+    @property
+    def sql(self) -> Expression:
+        expr = self._prepare_input_expression()
+        type_expr = self._get_target_data_type()
+        cast_class = self._get_cast_expression_class()
+        output_expr = cast_class(this=expr, to=type_expr)
         return output_expr
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> CastNode:
+    def build(cls, context: SQLNodeContext) -> "BaseCastNode":
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
-        sql_node = CastNode(
+        sql_node = cls(
             context=context,
             table_node=table_node,
             expr=input_expr_node,
@@ -129,6 +163,26 @@ class CastNode(ExpressionNode):
             from_dtype=parameters["from_dtype"],
         )
         return sql_node
+
+
+@dataclass
+class CastNode(BaseCastNode):
+    """Node for casting operation"""
+
+    query_node_type = NodeType.CAST
+
+    def _get_cast_expression_class(self) -> type[expressions.Expression]:
+        return expressions.Cast
+
+
+@dataclass
+class TryCastNode(BaseCastNode):
+    """Node for try casting operation (returns NULL on cast failure instead of error)"""
+
+    query_node_type = NodeType.TRY_CAST
+
+    def _get_cast_expression_class(self) -> type[expressions.Expression]:
+        return expressions.TryCast
 
 
 @dataclass

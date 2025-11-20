@@ -69,6 +69,7 @@ class NodeType(StrEnum):
     ALIAS = "alias"
     IS_NULL = "is_null"
     CAST = "cast"
+    TRY_CAST = "try_cast"
     IS_IN = "is_in"
     IS_STRING = "is_string"  # SQL generation has not been implemented
     GET_VALUE = "get_value"

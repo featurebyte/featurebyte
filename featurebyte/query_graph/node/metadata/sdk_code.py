@@ -244,6 +244,7 @@ class ClassEnum(Enum):
     VALUE_BEYOND_ENDPOINT_IMPUTATION = ("featurebyte", "ValueBeyondEndpointImputation")
     STRING_VALUE_IMPUTATION = ("featurebyte", "StringValueImputation")
     ADD_TIMESTAMP_SCHEMA = ("featurebyte", "AddTimestampSchema")
+    CAST_TO_NUMERIC = ("featurebyte", "CastToNumeric")
 
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")

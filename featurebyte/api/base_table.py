@@ -23,12 +23,13 @@ from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
-from featurebyte.enum import TableDataType, ViewMode
+from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel, TableStatus
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -1080,6 +1081,22 @@ class TableApiObject(
                 if col.critical_data_info and col.critical_data_info.cleaning_operations
             ]
         return table_data, column_cleaning_operations
+
+    @staticmethod
+    def _prepare_columns_info_for_view(
+        view_node: Node, columns_info: List[ColumnInfo]
+    ) -> List[ColumnInfo]:
+        op_struct = GlobalQueryGraph().extract_operation_structure(node=view_node)
+        col_name_to_dtype = {col_info.name: col_info.dtype for col_info in op_struct.columns}
+        for col_info in columns_info:
+            if (
+                col_info.name in col_name_to_dtype
+                and col_name_to_dtype[col_info.name] not in DBVarType.supported_timestamp_types()
+            ):
+                # casting column with AddTimestampSchema operation may throw error as non-string column
+                # (after casting) should not have timestamp_schema with non-empty format_string
+                col_info.dtype = col_name_to_dtype[col_info.name]
+        return columns_info
 
     @typechecked
     def update_column_entity(self, column_name: str, entity_name: Optional[str]) -> None:

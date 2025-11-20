@@ -95,6 +95,7 @@ from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, Time
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.cleaning_operation import (
     AddTimestampSchema,
+    CastToNumeric,
     ColumnCleaningOperation,
     DisguisedValueImputation,
     MissingValueImputation,
@@ -555,6 +556,7 @@ __all__ = [
     "StringValueImputation",
     # other cleaning operation(s)
     "AddTimestampSchema",
+    "CastToNumeric",
     # feature & feature list version specific classes
     "DefaultVersionMode",
     "FeatureVersionInfo",
