@@ -3,6 +3,7 @@ import pytest
 
 from featurebyte import (
     AggFunc,
+    CastToNumeric,
     DisguisedValueImputation,
     FeatureJobSetting,
     FeatureList,
@@ -11,6 +12,7 @@ from featurebyte import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
+from featurebyte.enum import DBVarType
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -193,3 +195,102 @@ def test_item_table_update_critical_data_info(item_table):
 
     # remove critical data info
     item_table["item_type"].update_critical_data_info(cleaning_operations=[])
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_cast_to_numeric_varchar_to_float(event_table):
+    """Test CastToNumeric cleaning operation - VARCHAR to FLOAT"""
+    assert event_table.dtypes.loc["TRANSACTION_ID"] == "VARCHAR"
+    event_table["TRANSACTION_ID"].update_critical_data_info(
+        cleaning_operations=[CastToNumeric(target_dtype=DBVarType.FLOAT)]
+    )
+
+    # Get view and preview
+    event_view = event_table.get_view()
+    preview_df = event_view.preview()
+
+    # Check that the column now contains numeric values (valid numeric strings are converted, invalid become null)
+    assert preview_df["TRANSACTION_ID"].dtype == "float"
+    assert preview_df["TRANSACTION_ID"].isnull().all()
+
+    # Test with aggregation
+    feature = event_view.groupby("CUST_ID").aggregate_over(
+        value_column="TRANSACTION_ID",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_transaction_id_24h"],
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
+    )["sum_transaction_id_24h"]
+
+    feat_preview_df = feature.preview(
+        observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-14", "cust_id": 938}])
+    )
+    # Since all values are NULL after cast, sum should be NULL
+    assert feat_preview_df["sum_transaction_id_24h"].isnull().all()
+
+    # Clean up
+    event_table["TRANSACTION_ID"].update_critical_data_info(cleaning_operations=[])
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_cast_to_numeric_varchar_to_int(source_table_with_numeric_strings, customer_entity):
+    """Test CastToNumeric cleaning operation - VARCHAR to INT with valid numeric strings"""
+    test_event_table = source_table_with_numeric_strings.create_event_table(
+        name="test_cast_numeric_table",
+        event_id_column="event_id",
+        event_timestamp_column="event_timestamp",
+    )
+
+    # Check original dtype
+    assert test_event_table.dtypes.loc["numeric_string"] == "VARCHAR"
+
+    # Apply CastToNumeric to cast VARCHAR to INT
+    test_event_table["numeric_string"].update_critical_data_info(
+        cleaning_operations=[CastToNumeric(target_dtype=DBVarType.INT)]
+    )
+
+    # Mark cust_id as entity before creating view (needed for aggregation)
+    test_event_table.cust_id.as_entity(customer_entity.name)
+
+    # Get view and preview
+    event_view = test_event_table.get_view()
+    preview_df = event_view.preview()
+
+    # Check that valid numeric strings are converted to INT, invalid ones become NULL
+    assert preview_df["numeric_string"].dtype == "float"
+    valid_values = preview_df["numeric_string"].dropna()
+    assert len(valid_values) == 3  # Three valid values: 100, 200, 300
+    assert set(valid_values.astype(int)) == {100, 200, 300}
+    assert preview_df["numeric_string"].isnull().sum() == 1  # One invalid value
+
+    # Test aggregation with the cast column
+    # Use 'max' method which is supported for VARCHAR (like in the unit test)
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="numeric_string",
+        method="max",
+        windows=["7d"],
+        feature_names=["max_numeric_7d"],
+        feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),
+    )["max_numeric_7d"]
+
+    # Test preview - cust_id=1 should have max of 200 (from 100, 200)
+    feat_preview_df = feature.preview(
+        observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-02", "cust_id": 1}])
+    )
+    assert feat_preview_df["max_numeric_7d"].iloc[0] == 200.0
+
+    # Test preview - cust_id=2 should have max of 300 (invalid value is NULL, not counted)
+    feat_preview_df2 = feature.preview(
+        observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-02", "cust_id": 2}])
+    )
+    assert feat_preview_df2["max_numeric_7d"].iloc[0] == 300.0
+
+    # Test historical features
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 00:00:00", "2001-01-02 00:00:00"]),
+        "cust_id": [1, 2],
+    })
+    hist_feat = FeatureList([feature], name="cast_numeric_test").compute_historical_features(
+        df_training_events
+    )
+    assert hist_feat["max_numeric_7d"].tolist() == [200.0, 300.0]

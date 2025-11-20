@@ -101,10 +101,10 @@ class BaseCastNode(ExpressionNode):
         """
         Get the appropriate cast expression class (Cast or TryCast).
 
-        Returns
-        -------
-        type[expressions.Expression]
-            The cast expression class to use
+        Raises
+        ------
+        NotImplementedError
+            If the method is not implemented in the subclass
         """
         raise NotImplementedError("Subclasses must implement _get_cast_expression_class")
 

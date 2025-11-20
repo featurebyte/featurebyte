@@ -1522,6 +1522,7 @@ def test_cast_to_numeric(
         saved_event_table.col_text.info.critical_data_info.cleaning_operations
         == cleaning_operations
     )
+    assert saved_event_table.col_text.info.dtype == DBVarType.VARCHAR
 
     # check preview sql - the column should now have TRY_CAST applied
     expected_preview_sql = """
