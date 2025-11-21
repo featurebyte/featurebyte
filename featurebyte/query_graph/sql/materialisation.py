@@ -22,9 +22,25 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
+@dataclass
+class ExtendedSourceMetadata:
+    """
+    Extended metadata information for a source table. If provided, the source will be materialized
+    via a query graph instead of directly querying the source table.
+
+    These are the information required to construct an InputNode in the query graph.
+    """
+
+    columns_info: List[ColumnInfo]
+    feature_store_id: PydanticObjectId
+    feature_store_details: FeatureStoreDetails
+    source_info: SourceInfo
+
+
 def get_source_expr(
     source: TableDetails,
     column_names: Optional[List[str]] = None,
+    metadata: Optional[ExtendedSourceMetadata] = None,
 ) -> Select:
     """
     Construct SQL query to materialize a table from a source table
@@ -40,11 +56,29 @@ def get_source_expr(
     -------
     Select
     """
-    select_expr = expressions.select().from_(get_fully_qualified_table_name(source.model_dump()))
-    if column_names:
-        select_expr = select_expr.select(*[quoted_identifier(col) for col in column_names])
+    if metadata is None:
+        select_expr = expressions.select("*").from_(
+            get_fully_qualified_table_name(source.model_dump())
+        )
     else:
-        select_expr = select_expr.select("*")
+        source_table_data = SourceTableData(
+            columns_info=metadata.columns_info,
+            tabular_source=TabularSource(
+                feature_store_id=metadata.feature_store_id,
+                table_details=source,
+            ),
+        )
+        graph = QueryGraph()
+        input_node = graph.add_operation_node(
+            node=source_table_data.construct_input_node(metadata.feature_store_details),
+            input_nodes=[],
+        )
+        interpreter = GraphInterpreter(query_graph=graph, source_info=metadata.source_info)
+        select_expr = interpreter.construct_materialize_expr(input_node.name)
+
+    if column_names:
+        select_expr.args["expressions"] = [quoted_identifier(col) for col in column_names]
+
     return select_expr
 
 
