@@ -636,6 +636,7 @@ async def test_nested_fields(config, test_session, data_source):
 
     # expect source table preview shows nested fields flattened
     df = source_table.preview(12)
+    expected_df = expected_dataframe()
     assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
     assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
     assert (df["record_b_c"] == expected_df["record"].apply(lambda x: x["b"]["c"])).all()
@@ -646,7 +647,6 @@ async def test_nested_fields(config, test_session, data_source):
         event_id_column="string",
     )
     df = event_table.preview(12)
-    expected_df = expected_dataframe()
     # expect nested fields be flattened
     assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
     assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
