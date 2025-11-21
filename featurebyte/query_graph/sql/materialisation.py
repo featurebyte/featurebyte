@@ -4,14 +4,20 @@ SQL generation related to materialising tables such as ObservationTable
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, SpecialColumnName
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.model.table import SourceTableData
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,

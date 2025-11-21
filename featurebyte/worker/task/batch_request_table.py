@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.batch_request_table import (
     BatchRequestTableModel,
     ManagedViewBatchRequestInput,
@@ -52,6 +53,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
     async def create_batch_request_table(
         self,
         db_session: BaseSession,
+        feature_store: FeatureStoreModel,
         payload: BatchRequestTableTaskPayload,
         create_document: bool = True,
     ) -> BatchRequestTableModel:
@@ -91,6 +93,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
         await request_input.materialize(
             session=db_session,
             destination=location.table_details,
+            feature_store=feature_store,
             sample_rows=None,
         )
         await service.add_row_index_column(db_session, location.table_details)
@@ -123,4 +126,4 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
             document_id=payload.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
-        await self.create_batch_request_table(db_session, payload)
+        await self.create_batch_request_table(db_session, feature_store, payload)

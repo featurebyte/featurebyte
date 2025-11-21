@@ -105,7 +105,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
             )
             batch_request_table_model = (
                 await self.batch_request_table_task.create_batch_request_table(
-                    db_session, batch_request_table_payload, create_document=False
+                    db_session, feature_store, batch_request_table_payload, create_document=False
                 )
             )
 
