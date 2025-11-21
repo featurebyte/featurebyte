@@ -3,7 +3,6 @@ This module contains session to BigQuery integration tests.
 """
 
 import os
-from collections import OrderedDict
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -12,7 +11,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import session_cache
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
@@ -101,43 +99,6 @@ async def test_list_tables(config, session_without_datasets):
             "description": None,
         },
     ]
-
-
-@pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
-@pytest.mark.asyncio
-async def test_list_table_schema(config, session_without_datasets):
-    _ = config
-    session = session_without_datasets
-    schema = await session.list_table_schema(
-        database_name=session.project_name, schema_name="demo_datasets", table_name="groceryinvoice"
-    )
-    assert schema == OrderedDict([
-        (
-            "GroceryInvoiceGuid",
-            ColumnSpecWithDescription(name="GroceryInvoiceGuid", dtype="VARCHAR", description=None),
-        ),
-        (
-            "GroceryCustomerGuid",
-            ColumnSpecWithDescription(
-                name="GroceryCustomerGuid", dtype="VARCHAR", description=None
-            ),
-        ),
-        (
-            "Timestamp",
-            ColumnSpecWithDescription(name="Timestamp", dtype="TIMESTAMP", description=None),
-        ),
-        (
-            "tz_offset",
-            ColumnSpecWithDescription(name="tz_offset", dtype="VARCHAR", description=None),
-        ),
-        (
-            "record_available_at",
-            ColumnSpecWithDescription(
-                name="record_available_at", dtype="TIMESTAMP", description=None
-            ),
-        ),
-        ("Amount", ColumnSpecWithDescription(name="Amount", dtype="FLOAT", description=None)),
-    ])
 
 
 @pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)

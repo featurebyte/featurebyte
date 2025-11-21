@@ -33,6 +33,8 @@ def data_to_convert_fixture():
     Dataframe fixture for conversion test
     """
     dataframe = pd.DataFrame({
+        "index_col": range(1, 11),
+        "index": range(2, 12),
         "a": range(10),
         "b": [f"2020-01-03 12:00:00+{i:02d}:00" for i in range(10)],
         "c": [f"2020-01-03 12:00:{i:02d}" for i in range(10)],
@@ -42,6 +44,7 @@ def data_to_convert_fixture():
             pickle.dumps(ObjectId("574b4454ba8c5eb4f98a8f59")) for _ in range(10)
         ],
     })
+    dataframe.set_index("index_col", inplace=True)
     type_conversions = {"b": DBVarType.TIMESTAMP_TZ, "c": DBVarType.TIMESTAMP, "d": DBVarType.DATE}
     return dataframe, type_conversions
 
@@ -61,7 +64,7 @@ def test_dataframe_to_json(data_to_convert):
     Test test_dataframe_to_json
     """
     original_df, type_conversions = data_to_convert
-    data = dataframe_to_json(original_df, type_conversions)
+    data = dataframe_to_json(original_df, type_conversions, skip_prepare=True)
     output_df = dataframe_from_json(data)
     # timestamp column should be casted to datetime with tz offsets
     original_df["b"] = pd.to_datetime(original_df["b"])
@@ -79,7 +82,7 @@ def test_dataframe_to_json_no_column_name(data_to_convert):
     original_df, _ = data_to_convert
     original_df = original_df[["b"]].copy()
     type_conversions = {None: DBVarType.TIMESTAMP_TZ}
-    data = dataframe_to_json(original_df, type_conversions)
+    data = dataframe_to_json(original_df, type_conversions, skip_prepare=True)
     output_df = dataframe_from_json(data)
     # timestamp column should be casted to datetime with tz offsets
     original_df["b"] = pd.to_datetime(original_df["b"])
@@ -161,3 +164,15 @@ def test_dataframe_from_arrow_table():
         schema=schema,
     )
     assert dataframe_from_arrow_table(table).value.tolist() == [{"a": "\n", "b": None}, None, None]
+
+
+def test_dataframe_to_json_index_without_name(data_to_convert):
+    """
+    Test test_dataframe_to_json for single column without name in conversion
+    """
+    original_df, _ = data_to_convert
+    original_df = original_df[["a", "index"]].copy()
+    original_df.index = np.arange(len(original_df))
+    data = dataframe_to_json(original_df, skip_prepare=True)
+    output_df = dataframe_from_json(data)
+    assert_frame_equal(output_df, original_df)

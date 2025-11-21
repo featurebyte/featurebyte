@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import contextvars
-import ctypes
 import functools
 import os
 import threading
@@ -61,6 +60,7 @@ APPLICATION_NAME = "FeatureByte"
 MAX_WAIT_TIME_FOR_QUERY_HANDLER = (
     30  # max seconds to wait for query handler to be available for query cancellation
 )
+NESTED_FIELD_DELIMITER = "_"
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 logger = get_logger(__name__)
@@ -99,16 +99,6 @@ async def to_thread(
         thread_info["tid"] = threading.get_ident()
         return func(*args, **kwargs)
 
-    def _raise_exception_in_thread(thread_id: int) -> None:
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            ctypes.c_ulong(thread_id), ctypes.py_object(asyncio.exceptions.CancelledError)
-        )
-        if res > 1:
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
-            raise ValueError("Exception raise failure")
-        if res:
-            logger.info("Raised exception in thread")
-
     thread_info: Dict[str, int] = {}
     func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
 
@@ -130,10 +120,6 @@ async def to_thread(
                 await error_handler()
             except Exception:
                 logger.error("Error handling exception", exc_info=True)
-
-        tid = thread_info.get("tid")
-        if tid:
-            _raise_exception_in_thread(thread_info["tid"])
         raise
 
 

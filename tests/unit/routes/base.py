@@ -1537,10 +1537,7 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/{doc_id}/preview")
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {
-            "data": (
-                '{"schema":{"fields":[{"name":"index","type":"integer"}],"primaryKey":["index"],'
-                '"pandas_version":"1.4.0"},"data":[]}'
-            ),
+            "data": ('{"schema":{"fields":[],"pandas_version":"1.4.0"},"data":[]}'),
             "type_conversions": None,
         }
 
