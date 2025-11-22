@@ -333,15 +333,20 @@ async def test_validate__point_in_time_no_missing_values(
 
 
 @pytest.mark.asyncio
-async def test_request_input_get_row_count(observation_table_from_source_table, db_session):
+async def test_request_input_get_row_count(
+    observation_table_from_source_table, db_session, snowflake_feature_store
+):
     """
     Test get_row_count triggers expected query
     """
     db_session.execute_query = AsyncMock(return_value=pd.DataFrame({"row_count": [1000]}))
+    db_session.get_source_info.return_value.source_type = SourceType.SNOWFLAKE
 
     row_count = await observation_table_from_source_table.request_input.get_row_count(
         db_session,
-        observation_table_from_source_table.request_input.get_query_expr(db_session.source_type),
+        await observation_table_from_source_table.request_input.get_query_expr(
+            db_session, snowflake_feature_store
+        ),
     )
     assert row_count == 1000
 
@@ -351,7 +356,8 @@ async def test_request_input_get_row_count(observation_table_from_source_table, 
           COUNT(*) AS "row_count"
         FROM (
           SELECT
-            *
+            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_event_table"
         )
         """
