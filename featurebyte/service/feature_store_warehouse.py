@@ -28,11 +28,13 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.feature_store_cache import FeatureStoreCacheModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
+from featurebyte.query_graph.node.schema import TableDetails as NodeTableDetails
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.materialisation import (
+    ExtendedSourceMetadata,
     get_feature_store_id_expr,
     get_source_count_expr,
     get_source_expr,
@@ -502,6 +504,32 @@ class FeatureStoreWarehouseService:
         table_info = await self._get_table_info(location, db_session)
         return table_info.shape
 
+    @classmethod
+    async def get_extended_source_metadata(
+        cls,
+        db_session: BaseSession,
+        feature_store: FeatureStoreModel,
+        table_details: NodeTableDetails,
+    ) -> ExtendedSourceMetadata:
+        """
+        Get extended source metadata for the table
+        """
+        table_schema = await db_session.list_table_schema(
+            table_name=table_details.table_name,
+            schema_name=table_details.schema_name,
+            database_name=table_details.database_name,
+        )
+        columns_info = [
+            ColumnInfo(**schema.model_dump(by_alias=True)) for schema in table_schema.values()
+        ]
+        metadata = ExtendedSourceMetadata(
+            columns_info=columns_info,
+            feature_store_id=feature_store.id,
+            feature_store_details=feature_store.get_feature_store_details(),
+            source_info=db_session.get_source_info(),
+        )
+        return metadata
+
     async def table_preview(
         self,
         location: TabularSource,
@@ -534,7 +562,16 @@ class FeatureStoreWarehouseService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, timeout=self.session_initialization_timeout
         )
-        sql_expr = get_source_expr(source=location.table_details, column_names=column_names)
+        metadata = await self.get_extended_source_metadata(
+            db_session=db_session,
+            feature_store=feature_store,
+            table_details=location.table_details,
+        )
+        sql_expr = get_source_expr(
+            source=location.table_details,
+            column_names=column_names,
+            metadata=metadata,
+        )
 
         # apply order by if specified
         if order_by_column:
