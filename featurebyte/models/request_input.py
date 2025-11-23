@@ -127,8 +127,10 @@ class BaseRequestInput(FeatureByteBaseModel):
 
         Parameters
         ----------
-        source_info: SourceInfo
-            The source type of the destination table
+        session: BaseSession
+            The session to use to get the query expression
+        feature_store: FeatureStoreModel
+            The feature store model
 
         Returns
         -------
@@ -385,6 +387,8 @@ class BaseRequestInput(FeatureByteBaseModel):
             The session to use to materialize the table
         destination: TableDetails
             The destination table details
+        feature_store: FeatureStoreModel
+            The feature store model
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
         sample_from_timestamp: Optional[datetime]

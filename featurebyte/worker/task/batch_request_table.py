@@ -64,6 +64,8 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
         ----------
         db_session: BaseSession
             Database session
+        feature_store: FeatureStoreModel
+            Feature store model
         payload: BatchRequestTableTaskPayload
             Task payload
         create_document: bool

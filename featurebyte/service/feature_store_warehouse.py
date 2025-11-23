@@ -513,6 +513,19 @@ class FeatureStoreWarehouseService:
     ) -> ExtendedSourceMetadata:
         """
         Get extended source metadata for the table
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        feature_store: FeatureStoreModel
+            Feature store model
+        table_details: NodeTableDetails
+            Table details
+
+        Returns
+        -------
+        ExtendedSourceMetadata
         """
         table_schema = await db_session.list_table_schema(
             table_name=table_details.table_name,

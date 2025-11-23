@@ -57,6 +57,8 @@ def get_source_expr(
         Source table details
     column_names: Optional[List[str]]
         List of column names to select if specified
+    metadata: Optional[ExtendedSourceMetadata]
+        Extended source metadata
 
     Returns
     -------

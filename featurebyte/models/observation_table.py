@@ -79,6 +79,8 @@ class NoOpMaterializeMixin:
             The session to use to materialize the target input
         destination: TableDetails
             The destination table to materialize the target input to
+        feature_store: FeatureStoreModel
+            The feature store model
         sample_rows: Optional[int]
             The number of rows to sample from the target input
         sample_from_timestamp: Optional[datetime]
