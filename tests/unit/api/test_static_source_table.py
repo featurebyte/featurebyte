@@ -8,7 +8,9 @@ import pandas as pd
 import pytest
 
 from featurebyte.api.static_source_table import StaticSourceTable
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 
 
 def test_get(static_source_table_from_source):
@@ -99,8 +101,9 @@ def test_data_source(static_source_table_from_source):
     assert source_table.tabular_source.table_details == static_source_table.location.table_details
 
 
+@patch("featurebyte.session.snowflake.SnowflakeSession.list_table_schema")
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_preview(mock_execute_query, static_source_table_from_source):
+def test_preview(mock_execute_query, mock_list_table_schema, static_source_table_from_source):
     """
     Test preview() calls the underlying SourceTable's preview() method
     """
@@ -110,6 +113,9 @@ def test_preview(mock_execute_query, static_source_table_from_source):
         return pd.DataFrame()
 
     mock_execute_query.side_effect = side_effect
+    mock_list_table_schema.return_value = {
+        "col_index": ColumnSpecWithDescription(name="col_index", dtype=DBVarType.INT)
+    }
     static_source_table_from_source.preview(limit=123)
     assert len(mock_execute_query.call_args_list) == 1
 
@@ -117,7 +123,8 @@ def test_preview(mock_execute_query, static_source_table_from_source):
     assert mock_execute_query.call_args_list[0]
 
     # check generated SQL query
-    assert sql_query.startswith('SELECT\n  *\nFROM "sf_database"."sf_schema"."STATIC_SOURCE_TABLE_')
+    assert 'SELECT\n  "col_index" AS "col_index"' in sql_query
+    assert 'FROM "sf_database"."sf_schema"."STATIC_SOURCE_TABLE_' in sql_query
     assert not sql_query.endswith("ORDER BY\n  __FB_TABLE_ROW_INDEX NULLS FIRST\nLIMIT 123")
 
 

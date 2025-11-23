@@ -8,6 +8,8 @@ import pandas as pd
 import pytest
 
 from featurebyte.common.utils import dataframe_to_json
+from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
@@ -118,6 +120,10 @@ async def test_table_preview(
         "col_b": ["a", "b", "c"],
     })
     mock_snowflake_session.execute_query.return_value = expected_data
+    mock_snowflake_session.list_table_schema.return_value = {
+        "col_a": ColumnSpecWithDescription(name="col_a", dtype=DBVarType.INT),
+        "col_b": ColumnSpecWithDescription(name="col_b", dtype=DBVarType.VARCHAR),
+    }
     result = await feature_store_warehouse_service.table_preview(
         location=TabularSource(
             feature_store_id=feature_store.id,
@@ -134,7 +140,8 @@ async def test_table_preview(
     expected_query = textwrap.dedent(
         """
         SELECT
-          *
+          "col_a" AS "col_a",
+          "col_b" AS "col_b"
         FROM "my_db"."my_schema"."my_table"
         LIMIT 3
         """

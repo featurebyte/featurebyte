@@ -14,6 +14,7 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import RecordCreationException
 from featurebyte.models.observation_table import Purpose
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
@@ -86,8 +87,9 @@ def test_data_source(observation_table_from_source):
     assert source_table.tabular_source.table_details == observation_table.location.table_details
 
 
+@patch("featurebyte.session.snowflake.SnowflakeSession.list_table_schema")
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_preview(mock_execute_query, observation_table_from_source):
+def test_preview(mock_execute_query, mock_list_table_schema, observation_table_from_source):
     """
     Test preview() calls the underlying SourceTable's preview() method
     """
@@ -97,6 +99,9 @@ def test_preview(mock_execute_query, observation_table_from_source):
         return pd.DataFrame()
 
     mock_execute_query.side_effect = side_effect
+    mock_list_table_schema.return_value = {
+        "col_index": ColumnSpecWithDescription(name="col_index", dtype=DBVarType.INT)
+    }
     observation_table_from_source.preview(limit=123)
     assert len(mock_execute_query.call_args_list) == 1
 
@@ -104,7 +109,8 @@ def test_preview(mock_execute_query, observation_table_from_source):
     assert mock_execute_query.call_args_list[0]
 
     # check generated SQL query
-    assert sql_query.startswith('SELECT\n  *\nFROM "sf_database"."sf_schema"."OBSERVATION_TABLE_')
+    assert 'SELECT\n  "col_index" AS "col_index"' in sql_query
+    assert 'FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_' in sql_query
     assert sql_query.endswith('ORDER BY\n  "__FB_TABLE_ROW_INDEX"\nLIMIT 123')
 
 

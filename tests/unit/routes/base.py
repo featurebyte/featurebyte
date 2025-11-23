@@ -1533,6 +1533,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = pd.DataFrame()
+        mock_session.list_table_schema.return_value = {
+            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+        }
 
         response = test_api_client.post(f"{self.base_route}/{doc_id}/preview")
         assert response.status_code == HTTPStatus.OK

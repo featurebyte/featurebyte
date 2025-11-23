@@ -10,6 +10,7 @@ import pytest
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from tests.util.helper import check_observation_table_creation_query, check_sdk_code_generation
 
 
@@ -380,18 +381,51 @@ def test_table_shape(snowflake_database_table):
     assert snowflake_database_table.shape() == (100, 9)
 
 
-def test_table_preview(snowflake_database_table):
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@patch("featurebyte.session.snowflake.SnowflakeSession.list_table_schema")
+def test_table_preview(mock_list_table_schema, mock_execute_query, snowflake_database_table):
     """Test table preview"""
-    assert snowflake_database_table.preview(limit=3).to_dict() == {
-        "col_int": {0: [1, 2, 3]},
-        "col_float": {0: [1.0, 2.0, 3.0]},
-        "col_char": {0: ["a", "b", "c"]},
-        "col_text": {0: ["abc", "def", "ghi"]},
-        "col_binary": {0: [1, 0, 1]},
-        "col_boolean": {0: [True, False, True]},
+    mock_list_table_schema.return_value = {
+        "col_int": ColumnSpecWithDescription(name="col_int", dtype=DBVarType.INT),
+        "col_float": ColumnSpecWithDescription(name="col_float", dtype=DBVarType.FLOAT),
+        "col_char": ColumnSpecWithDescription(name="col_char", dtype=DBVarType.CHAR),
+        "col_text": ColumnSpecWithDescription(name="col_text", dtype=DBVarType.VARCHAR),
+        "col_binary": ColumnSpecWithDescription(name="col_binary", dtype=DBVarType.INT),
+        "col_boolean": ColumnSpecWithDescription(name="col_boolean", dtype=DBVarType.BOOL),
+        "event_timestamp": ColumnSpecWithDescription(
+            name="event_timestamp", dtype=DBVarType.TIMESTAMP_TZ
+        ),
+        "created_at": ColumnSpecWithDescription(name="created_at", dtype=DBVarType.TIMESTAMP_TZ),
+        "cust_id": ColumnSpecWithDescription(name="cust_id", dtype=DBVarType.INT),
+    }
+    mock_execute_query.return_value = pd.DataFrame({
+        "col_int": [1, 2, 3],
+        "col_float": [1.0, 2.0, 3.0],
+        "col_char": ["a", "b", "c"],
+        "col_text": ["abc", "def", "ghi"],
+        "col_binary": [1, 0, 1],
+        "col_boolean": [True, False, True],
+        "event_timestamp": ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"],
+        "created_at": ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"],
+        "cust_id": [1, 2, 3],
+    })
+    actual = snowflake_database_table.preview(limit=3).to_dict()
+    assert actual == {
+        "col_int": {0: 1, 1: 2, 2: 3},
+        "col_float": {0: 1.0, 1: 2.0, 2: 3.0},
+        "col_char": {0: "a", 1: "b", 2: "c"},
+        "col_text": {0: "abc", 1: "def", 2: "ghi"},
+        "col_binary": {0: 1, 1: 0, 2: 1},
+        "col_boolean": {0: True, 1: False, 2: True},
         "event_timestamp": {
-            0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]
+            0: "2021-01-01 00:00:00",
+            1: "2021-01-01 00:00:00",
+            2: "2021-01-01 00:00:00",
         },
-        "created_at": {0: ["2021-01-01 00:00:00", "2021-01-01 00:00:00", "2021-01-01 00:00:00"]},
-        "cust_id": {0: [1, 2, 3]},
+        "created_at": {
+            0: "2021-01-01 00:00:00",
+            1: "2021-01-01 00:00:00",
+            2: "2021-01-01 00:00:00",
+        },
+        "cust_id": {0: 1, 1: 2, 2: 3},
     }
