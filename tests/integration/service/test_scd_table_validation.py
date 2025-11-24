@@ -10,6 +10,7 @@ from featurebyte.exception import TableValidationError
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
@@ -88,6 +89,7 @@ async def test_validate_scd_table__valid(
     scd_create_payload,
     session_without_datasets,
     table_name,
+    feature_store,
 ):
     """
     Test validate SCD table (valid case)
@@ -105,7 +107,13 @@ async def test_validate_scd_table__valid(
     })
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_payload)
-    await service._validate_table(session, table_model)
+    metadata = ExtendedSourceMetadata(
+        columns_info=table_model.columns_info,
+        feature_store_id=table_model.tabular_source.feature_store_id,
+        feature_store_details=feature_store.get_feature_store_details(),
+        source_info=session.get_source_info(),
+    )
+    await service._validate_table(session, table_model, metadata)
 
 
 @pytest.mark.parametrize("table_name", ["test_validate_scd_table__valid_with_null_values"])
@@ -116,6 +124,7 @@ async def test_validate_scd_table__valid_with_null_values(
     scd_create_payload,
     session_without_datasets,
     table_name,
+    feature_store,
 ):
     """
     Test validate SCD table (valid case)
@@ -133,7 +142,13 @@ async def test_validate_scd_table__valid_with_null_values(
     })
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_payload)
-    await service._validate_table(session, table_model)
+    metadata = ExtendedSourceMetadata(
+        columns_info=table_model.columns_info,
+        feature_store_id=table_model.tabular_source.feature_store_id,
+        feature_store_details=feature_store.get_feature_store_details(),
+        source_info=session.get_source_info(),
+    )
+    await service._validate_table(session, table_model, metadata)
 
 
 @pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid_multiple_active_records"])
@@ -144,6 +159,7 @@ async def test_validate_scd_table__invalid_multiple_active_records(
     scd_create_with_end_date_payload,
     session_without_datasets,
     table_name,
+    feature_store,
 ):
     """
     Test validate SCD table (invalid case)
@@ -165,8 +181,14 @@ async def test_validate_scd_table__invalid_multiple_active_records(
     })
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_with_end_date_payload)
+    metadata = ExtendedSourceMetadata(
+        columns_info=table_model.columns_info,
+        feature_store_id=table_model.tabular_source.feature_store_id,
+        feature_store_details=feature_store.get_feature_store_details(),
+        source_info=session.get_source_info(),
+    )
     with pytest.raises(TableValidationError) as exc_info:
-        await service._validate_table(session, table_model)
+        await service._validate_table(session, table_model, metadata)
     assert (
         str(exc_info.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [1000]"
@@ -183,6 +205,7 @@ async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
     scd_create_payload,
     session_without_datasets,
     table_name,
+    feature_store,
 ):
     """
     Test validate SCD table (invalid case)
@@ -199,8 +222,14 @@ async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
     })
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_payload)
+    metadata = ExtendedSourceMetadata(
+        columns_info=table_model.columns_info,
+        feature_store_id=table_model.tabular_source.feature_store_id,
+        feature_store_details=feature_store.get_feature_store_details(),
+        source_info=session.get_source_info(),
+    )
     with pytest.raises(TableValidationError) as exc_info:
-        await service._validate_table(session, table_model)
+        await service._validate_table(session, table_model, metadata)
     assert (
         str(exc_info.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000]"
