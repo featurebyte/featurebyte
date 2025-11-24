@@ -63,6 +63,8 @@ class SCDTableValidationService(
             Session object
         table_model: SCDTableModel
             Table model
+        metadata: ExtendedSourceMetadata
+            Extended source metadata
         num_records: int
             Number of records to return in the error message
 
