@@ -6,14 +6,17 @@ from unittest.mock import Mock, patch
 
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte import TimestampSchema
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import TableValidationError
 from featurebyte.models.scd_table import SCDTableModel
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.schema.scd_table import SCDTableCreate
 
 
@@ -115,6 +118,41 @@ def timestamp_schema():
     return TimestampSchema(format_string="%Y-%m-%d %H:%M:%S", timezone="Etc/UTC")
 
 
+@pytest.fixture(name="mock_metadata")
+def mock_metadata_fixture() -> ExtendedSourceMetadata:
+    """
+    Fixture for mock ExtendedSourceMetadata
+    """
+    return ExtendedSourceMetadata(
+        columns_info=[
+            ColumnInfo(
+                name="effective_timestamp",
+                dtype=DBVarType.TIMESTAMP,
+                entity_id=None,
+                semantic_id=None,
+            ),
+            ColumnInfo(name="cust_id", dtype=DBVarType.INT, entity_id=None, semantic_id=None),
+            ColumnInfo(
+                name="end_timestamp", dtype=DBVarType.TIMESTAMP, entity_id=None, semantic_id=None
+            ),
+        ],
+        feature_store_id=ObjectId("65f8b5e01234567890abcdef"),
+        feature_store_details=FeatureStoreDetails(
+            type=SourceType.SNOWFLAKE,
+            details=SnowflakeDetails(
+                account="sf_account",
+                database_name="my_db",
+                schema_name="my_schema",
+                warehouse="sf_warehouse",
+                role_name="TESTING",
+            ),
+        ),
+        source_info=SourceInfo(
+            database_name="my_db", schema_name="my_schema", source_type=SourceType.SNOWFLAKE
+        ),
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "params,expected_table_needs_validation,expected_call",
@@ -138,6 +176,7 @@ async def test_scd_table_validation(
     params,
     expected_table_needs_validation,
     timestamp_schema,
+    mock_metadata,
     expected_call,
 ):
     """
@@ -164,5 +203,7 @@ async def test_scd_table_validation(
     with patch.object(
         scd_table_validation_service, "_validate_timestamp_format_string"
     ) as mock_validate_timestamp_format_string:
-        await scd_table_validation_service.validate_table(session=Mock(), table_model=table_model)
+        await scd_table_validation_service.validate_table(
+            session=Mock(), table_model=table_model, metadata=mock_metadata
+        )
         assert mock_validate_timestamp_format_string.call_count == expected_call

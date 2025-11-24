@@ -9,7 +9,7 @@ from sqlglot import expressions
 from featurebyte.exception import TableValidationError
 from featurebyte.models.snapshots_table import SnapshotsTableModel
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
-from featurebyte.query_graph.sql.materialisation import get_source_expr
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata, get_source_expr
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 from featurebyte.query_graph.sql.validation_helper import get_duplicate_rows_per_keys
 from featurebyte.schema.snapshots_table import SnapshotsTableCreate, SnapshotsTableServiceUpdate
@@ -38,6 +38,7 @@ class SnapshotsTableValidationService(
         self,
         session: BaseSession,
         table_model: SnapshotsTableModel,
+        metadata: ExtendedSourceMetadata,
         num_records: int = 10,
     ) -> None:
         # Validate table is a valid snapshots table: check uniqueness for a given snapshot id and
@@ -53,7 +54,10 @@ class SnapshotsTableValidationService(
             offset_size=0,
             adapter=session.adapter,
         )
-        source_expr = get_source_expr(source=table_model.tabular_source.table_details).where(
+        source_expr = get_source_expr(
+            source=table_model.tabular_source.table_details,
+            metadata=metadata,
+        ).where(
             expressions.EQ(
                 this=quoted_identifier(table_model.snapshot_datetime_column),
                 expression=adjusted_snapshot_date,

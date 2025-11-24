@@ -5,16 +5,51 @@ Unit tests for SCDTableValidationService
 import pandas as pd
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import TableValidationError
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
+
+
+@pytest.fixture(name="mock_metadata")
+def mock_metadata_fixture() -> ExtendedSourceMetadata:
+    """
+    Fixture for mock ExtendedSourceMetadata
+    """
+    return ExtendedSourceMetadata(
+        columns_info=[
+            ColumnInfo(
+                name="effective_date", dtype=DBVarType.TIMESTAMP, entity_id=None, semantic_id=None
+            ),
+            ColumnInfo(name="cust_id", dtype=DBVarType.INT, entity_id=None, semantic_id=None),
+            ColumnInfo(
+                name="end_date", dtype=DBVarType.TIMESTAMP, entity_id=None, semantic_id=None
+            ),
+        ],
+        feature_store_id=ObjectId("65f8b5e01234567890abcdef"),
+        feature_store_details=FeatureStoreDetails(
+            type=SourceType.SNOWFLAKE,
+            details=SnowflakeDetails(
+                account="sf_account",
+                database_name="my_db",
+                schema_name="my_schema",
+                warehouse="sf_warehouse",
+                role_name="TESTING",
+            ),
+        ),
+        source_info=SourceInfo(
+            database_name="my_db", schema_name="my_schema", source_type=SourceType.SNOWFLAKE
+        ),
+    )
 
 
 @pytest.fixture(name="service")
@@ -22,7 +57,8 @@ def service_fixture(app_container) -> SCDTableValidationService:
     """
     Fixture for SCDTableValidationService
     """
-    return app_container.scd_table_validation_service
+    service = app_container.scd_table_validation_service
+    return service
 
 
 @pytest.fixture(name="document_service")
@@ -92,6 +128,7 @@ async def test_validation_query__no_end_timestamp(
     service,
     mock_snowflake_session,
     table_no_end_timestamp,
+    mock_metadata,
     adapter,
     update_fixtures,
 ):
@@ -99,7 +136,7 @@ async def test_validation_query__no_end_timestamp(
     Test active record counts query when end_timestamp_column is None
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
-    await service._validate_table(mock_snowflake_session, table_no_end_timestamp)
+    await service._validate_table(mock_snowflake_session, table_no_end_timestamp, mock_metadata)
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
@@ -113,6 +150,7 @@ async def test_validation_query__with_end_timestamp(
     service,
     mock_snowflake_session,
     table_with_end_timestamp,
+    mock_metadata,
     adapter,
     update_fixtures,
 ):
@@ -120,7 +158,7 @@ async def test_validation_query__with_end_timestamp(
     Test active record counts query when end_timestamp_column is available
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
-    await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
+    await service._validate_table(mock_snowflake_session, table_with_end_timestamp, mock_metadata)
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
@@ -131,7 +169,7 @@ async def test_validation_query__with_end_timestamp(
 
 @pytest.mark.asyncio
 async def test_validation_exception__with_end_timestamp_1(
-    service, table_with_end_timestamp, mock_snowflake_session
+    service, table_with_end_timestamp, mock_metadata, mock_snowflake_session
 ):
     """
     Test exception when multiple active records are found with end_timestamp_column
@@ -140,7 +178,9 @@ async def test_validation_exception__with_end_timestamp_1(
         pd.DataFrame({"cust_id": [100, 101]})
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
+        await service._validate_table(
+            mock_snowflake_session, table_with_end_timestamp, mock_metadata
+        )
     assert (
         str(exc.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [100, 101]"
@@ -149,7 +189,7 @@ async def test_validation_exception__with_end_timestamp_1(
 
 @pytest.mark.asyncio
 async def test_validation_exception__with_end_timestamp_2(
-    service, table_with_end_timestamp, mock_snowflake_session
+    service, table_with_end_timestamp, mock_metadata, mock_snowflake_session
 ):
     """
     Test exception when duplicate records are found with end_timestamp_column
@@ -159,7 +199,9 @@ async def test_validation_exception__with_end_timestamp_2(
         pd.DataFrame({"cust_id": [100, 101]}),
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
+        await service._validate_table(
+            mock_snowflake_session, table_with_end_timestamp, mock_metadata
+        )
     assert (
         str(exc.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [100, 101]"
@@ -168,7 +210,7 @@ async def test_validation_exception__with_end_timestamp_2(
 
 @pytest.mark.asyncio
 async def test_validation_exception__no_end_timestamp(
-    service, table_no_end_timestamp, mock_snowflake_session
+    service, table_no_end_timestamp, mock_metadata, mock_snowflake_session
 ):
     """
     Test exception when duplicate records are found with no end_timestamp_column
@@ -177,7 +219,7 @@ async def test_validation_exception__no_end_timestamp(
         pd.DataFrame({"cust_id": [100, 101]})
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service._validate_table(mock_snowflake_session, table_no_end_timestamp)
+        await service._validate_table(mock_snowflake_session, table_no_end_timestamp, mock_metadata)
     assert (
         str(exc.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [100, 101]"
