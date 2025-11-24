@@ -5,25 +5,58 @@ Unit tests for SCDTableValidationService
 import pandas as pd
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte import TimeInterval, TimestampSchema
-from featurebyte.enum import DBVarType, TimeIntervalUnit
+from featurebyte.enum import DBVarType, SourceType, TimeIntervalUnit
 from featurebyte.exception import TableValidationError
-from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.schema.snapshots_table import SnapshotsTableCreate
 from featurebyte.service.snapshots_table import SnapshotsTableService
 from featurebyte.service.snapshots_table_validation import SnapshotsTableValidationService
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
+@pytest.fixture(name="mock_metadata")
+def mock_metadata_fixture() -> ExtendedSourceMetadata:
+    """
+    Fixture for mock ExtendedSourceMetadata
+    """
+    return ExtendedSourceMetadata(
+        columns_info=[
+            ColumnInfo(
+                name="snapshot_date", dtype=DBVarType.TIMESTAMP, entity_id=None, semantic_id=None
+            ),
+            ColumnInfo(name="cust_id", dtype=DBVarType.INT, entity_id=None, semantic_id=None),
+        ],
+        feature_store_id=ObjectId("65f8b5e01234567890abcdef"),
+        feature_store_details=FeatureStoreDetails(
+            type=SourceType.SNOWFLAKE,
+            details=SnowflakeDetails(
+                account="sf_account",
+                database_name="my_db",
+                schema_name="my_schema",
+                warehouse="sf_warehouse",
+                role_name="TESTING",
+            ),
+        ),
+        source_info=SourceInfo(
+            database_name="my_db", schema_name="my_schema", source_type=SourceType.SNOWFLAKE
+        ),
+    )
+
+
 @pytest.fixture(name="service")
 def service_fixture(app_container) -> SnapshotsTableValidationService:
     """
-    Fixture for SCDTableValidationService
+    Fixture for SnapshotsTableValidationService
     """
-    return app_container.snapshots_table_validation_service
+    service = app_container.snapshots_table_validation_service
+    return service
 
 
 @pytest.fixture(name="document_service")
@@ -79,6 +112,7 @@ async def test_validation_query__no_end_timestamp(
     service,
     mock_snowflake_session,
     snapshots_table,
+    mock_metadata,
     adapter,
     update_fixtures,
 ):
@@ -86,7 +120,7 @@ async def test_validation_query__no_end_timestamp(
     Test active record counts query when end_timestamp_column is None
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
-    await service._validate_table(mock_snowflake_session, snapshots_table)
+    await service._validate_table(mock_snowflake_session, snapshots_table, mock_metadata)
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
@@ -96,7 +130,9 @@ async def test_validation_query__no_end_timestamp(
 
 
 @pytest.mark.asyncio
-async def test_validation_exception(service, snapshots_table, mock_snowflake_session):
+async def test_validation_exception(
+    service, snapshots_table, mock_metadata, mock_snowflake_session
+):
     """
     Test validation exception handling
     """
@@ -107,7 +143,7 @@ async def test_validation_exception(service, snapshots_table, mock_snowflake_ses
         })
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service._validate_table(mock_snowflake_session, snapshots_table)
+        await service._validate_table(mock_snowflake_session, snapshots_table, mock_metadata)
     expected = (
         "Table my_snapshots_table is not a valid snapshots table. "
         "The following snapshot ID column and snapshot datetime column pairs are not unique: "

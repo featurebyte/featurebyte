@@ -4,7 +4,8 @@ SELECT
   COUNT(*) AS "COUNT_PER_SNAPSHOT_ID_AND_DATETIME"
 FROM (
   SELECT
-    *
+    "snapshot_date" AS "snapshot_date",
+    "cust_id" AS "cust_id"
   FROM "my_db"."my_schema"."my_table"
   WHERE
     "snapshot_date" = TO_CHAR(

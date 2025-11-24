@@ -16,7 +16,11 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
 from featurebyte.models.column_statistics import ColumnStatisticsModel, StatisticsModel
 from featurebyte.models.entity_universe import columns_not_null
-from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
+from featurebyte.models.feature_store import (
+    TableModel,
+    TableValidation,
+    TableValidationStatus,
+)
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.cleaning_operation import (
     AddTimestampSchema,
@@ -27,6 +31,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.materialisation import ExtendedSourceMetadata
 from featurebyte.query_graph.sql.timestamp_helper import convert_timezone
 from featurebyte.service.base_table_document import (
     BaseTableDocumentService,
@@ -84,8 +89,17 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         feature_store = await self.feature_store_service.get_document(feature_store_id)
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         table_model = await self.table_document_service.get_document(table_id)
+        # Construct ExtendedSourceMetadata here where feature store info is already available
+        assert isinstance(table_model, TableModel)
+        metadata = ExtendedSourceMetadata(
+            columns_info=table_model.columns_info,
+            feature_store_id=feature_store.id,
+            feature_store_details=feature_store.get_feature_store_details(),
+            source_info=session.get_source_info(),
+        )
+
         try:
-            await self.validate_table(session, table_model)
+            await self.validate_table(session, table_model, metadata)  # type: ignore
         except TableValidationError as e:
             new_validation_state = TableValidation(
                 status=TableValidationStatus.FAILED,
@@ -96,7 +110,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             table_id,
             self.table_document_service.document_update_class(validation=new_validation_state),
         )
-        await self.compute_column_statistics(session, table_model)
+        await self.compute_column_statistics(session, table_model)  # type: ignore
 
     @classmethod
     def table_needs_validation(cls, table_model: Document) -> bool:
@@ -210,6 +224,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         self,
         session: BaseSession,
         table_model: Document,
+        metadata: ExtendedSourceMetadata,
         num_records: int = 10,
     ) -> None:
         """
@@ -222,6 +237,8 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             Session object
         table_model: Document
             Table model
+        metadata: ExtendedSourceMetadata
+            Extended source metadata for the table
         num_records: int
             Number of records to return in the error message
         """
@@ -253,6 +270,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         await self._validate_table(
             session=session,
             table_model=table_model,  # type: ignore
+            metadata=metadata,
             num_records=num_records,
         )
 
@@ -260,10 +278,12 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         self,
         session: BaseSession,
         table_model: Document,
+        metadata: ExtendedSourceMetadata,
         num_records: int = 10,
     ) -> None:
         _ = session
         _ = table_model
+        _ = metadata
         _ = num_records
 
     async def compute_column_statistics(self, session: BaseSession, table_model: Document) -> None:
