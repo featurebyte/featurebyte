@@ -103,6 +103,8 @@ from featurebyte.service.deploy import (
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.deployed_tile_table_manager import DeployedTileTableManagerService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.deployment_sql import DeploymentSqlService
+from featurebyte.service.deployment_sql_generation import DeploymentSqlGenerationService
 from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.dimension_table_validation import DimensionTableValidationService
@@ -322,6 +324,8 @@ app_container_config.register_class(DeployedTileTableService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
 app_container_config.register_class(DeploymentServingEntityService)
+app_container_config.register_class(DeploymentSqlService)
+app_container_config.register_class(DeploymentSqlGenerationService)
 app_container_config.register_class(DevelopmentDatasetService)
 app_container_config.register_class(DevelopmentDatasetController)
 app_container_config.register_class(DerivePrimaryEntityHelper)
