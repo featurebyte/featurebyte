@@ -6,6 +6,8 @@ SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
 
+SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
+
 CREATE TABLE "sf_database"."sf_schema"."__TEMP_OBSERVATION_TABLE_000000000000000000000000" AS
 SELECT
   "cust_id",
@@ -16,7 +18,8 @@ FROM (
     "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME"
     FROM "sf_database"."sf_schema"."sf_table"
   )
 )
@@ -35,7 +38,8 @@ FROM (
     "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME"
     FROM "sf_database"."sf_schema"."sf_table"
   )
 )
@@ -145,6 +149,8 @@ SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_0000000000000000000
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000";
 
+SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000";
+
 CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001" AS
 SELECT
   "cust_id",
@@ -173,7 +179,10 @@ FROM (
         "bool_target" AS "bool_target"
       FROM (
         SELECT
-          *
+          "cust_id" AS "cust_id",
+          "POINT_IN_TIME" AS "POINT_IN_TIME",
+          "float_target" AS "float_target",
+          "bool_target" AS "bool_target"
         FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
       )
     )
@@ -205,7 +214,10 @@ FROM (
     "bool_target" AS "bool_target"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME",
+      "float_target" AS "float_target",
+      "bool_target" AS "bool_target"
     FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000000"
   )
 )
@@ -231,6 +243,8 @@ FROM "missing_data_OBSERVATION_TABLE_000000000000000000000001";
 SELECT
   DISTINCT "bool_target"
 FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
+
+SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
 
@@ -271,7 +285,11 @@ FROM (
         "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
       FROM (
         SELECT
-          *
+          "cust_id" AS "cust_id",
+          "POINT_IN_TIME" AS "POINT_IN_TIME",
+          "float_target" AS "float_target",
+          "bool_target" AS "bool_target",
+          "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
         FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001"
       )
     )
@@ -305,7 +323,11 @@ FROM (
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME",
+      "float_target" AS "float_target",
+      "bool_target" AS "bool_target",
+      "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
     FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001"
   )
 )
@@ -336,6 +358,8 @@ SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_0000000000000000000
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
 
+SHOW COLUMNS IN "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001";
+
 CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000003" AS
 SELECT
   "cust_id",
@@ -352,7 +376,11 @@ FROM (
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME",
+      "float_target" AS "float_target",
+      "bool_target" AS "bool_target",
+      "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
     FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001"
   )
 )
@@ -377,7 +405,11 @@ FROM (
     "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME",
+      "float_target" AS "float_target",
+      "bool_target" AS "bool_target",
+      "__FB_TABLE_ROW_WEIGHT" AS "__FB_TABLE_ROW_WEIGHT"
     FROM "sf_database"."sf_schema"."OBSERVATION_TABLE_000000000000000000000001"
   )
 )

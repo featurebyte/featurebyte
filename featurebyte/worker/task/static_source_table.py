@@ -52,6 +52,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
         await payload.request_input.materialize(
             session=db_session,
             destination=location.table_details,
+            feature_store=feature_store,
             sample_rows=payload.sample_rows,
         )
 

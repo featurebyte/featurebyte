@@ -22,14 +22,18 @@ from featurebyte.models.observation_table import (
     SourceTableObservationInput,
     TargetInput,
 )
-from featurebyte.models.request_input import DownSamplingInfoWithTargetColumn
+from featurebyte.models.request_input import (
+    DownSamplingInfoWithTargetColumn,
+)
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,
 )
-from featurebyte.query_graph.sql.materialisation import get_source_count_expr
+from featurebyte.query_graph.sql.materialisation import (
+    get_source_count_expr,
+)
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.entity import EntityService
@@ -207,6 +211,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             await request_input.materialize(
                 session=db_session,
                 destination=temp_location.table_details,
+                feature_store=feature_store,
                 sample_rows=sample_rows,
                 sample_from_timestamp=sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,
@@ -393,6 +398,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             await request_input.materialize(
                 session=db_session,
                 destination=location.table_details,
+                feature_store=feature_store,
                 sample_rows=payload.sample_rows,
                 sample_from_timestamp=payload.sample_from_timestamp,
                 sample_to_timestamp=sample_to_timestamp,

@@ -33,7 +33,7 @@ def session_fixture(adapter):
         list_table_schema=AsyncMock(
             return_value={
                 "a": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
-                "b": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
+                "b": ColumnSpecWithDescription(name="b", dtype=DBVarType.INT),
                 "event_timestamp": ColumnSpecWithDescription(
                     name="event_timestamp", dtype=DBVarType.TIMESTAMP
                 ),
@@ -60,7 +60,9 @@ def destination_table_fixture():
 
 
 @pytest.mark.asyncio
-async def test_materialize__with_columns_only(session, snowflake_database_table, destination_table):
+async def test_materialize__with_columns_only(
+    session, snowflake_database_table, destination_table, snowflake_feature_store
+):
     """
     Test materializing when columns filter is specified
     """
@@ -68,11 +70,15 @@ async def test_materialize__with_columns_only(session, snowflake_database_table,
         columns=["a", "b"],
         source=snowflake_database_table.tabular_source,
     )
-    await request_input.materialize(session, destination_table, None)
+    await request_input.materialize(session, destination_table, snowflake_feature_store, None)
 
-    assert session.list_table_schema.call_args_list == [
+    assert len(session.list_table_schema.call_args_list) == 2
+    assert (
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
-    ]
+        in session.list_table_schema.call_args_list
+        or call(table_name="sf_table", schema_name="sf_schema", database_name="sf_database")
+        in session.list_table_schema.call_args_list
+    )
 
     expected_query = textwrap.dedent(
         """
@@ -82,7 +88,9 @@ async def test_materialize__with_columns_only(session, snowflake_database_table,
           "b" AS "b"
         FROM (
           SELECT
-            *
+            "a" AS "a",
+            "b" AS "b",
+            "event_timestamp" AS "event_timestamp"
           FROM "sf_database"."sf_schema"."sf_table"
         )
         """
@@ -92,7 +100,7 @@ async def test_materialize__with_columns_only(session, snowflake_database_table,
 
 @pytest.mark.asyncio
 async def test_materialize__with_columns_and_renames(
-    session, snowflake_database_table, destination_table
+    session, snowflake_database_table, destination_table, snowflake_feature_store
 ):
     """
     Test materializing when columns filter and rename mapping are specified
@@ -103,12 +111,20 @@ async def test_materialize__with_columns_and_renames(
         source=snowflake_database_table.tabular_source,
     )
     await request_input.materialize(
-        session, destination_table, None, columns_to_exclude_missing_values=["NEW_B"]
+        session,
+        destination_table,
+        snowflake_feature_store,
+        None,
+        columns_to_exclude_missing_values=["NEW_B"],
     )
 
-    assert session.list_table_schema.call_args_list == [
+    assert len(session.list_table_schema.call_args_list) == 2
+    assert (
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
-    ]
+        in session.list_table_schema.call_args_list
+        or call(table_name="sf_table", schema_name="sf_schema", database_name="sf_database")
+        in session.list_table_schema.call_args_list
+    )
 
     expected_query = textwrap.dedent(
         """
@@ -122,7 +138,9 @@ async def test_materialize__with_columns_and_renames(
             "b" AS "NEW_B"
           FROM (
             SELECT
-              *
+              "a" AS "a",
+              "b" AS "b",
+              "event_timestamp" AS "event_timestamp"
             FROM "sf_database"."sf_schema"."sf_table"
           )
         )
@@ -134,7 +152,9 @@ async def test_materialize__with_columns_and_renames(
 
 
 @pytest.mark.asyncio
-async def test_materialize__with_renames_only(session, snowflake_database_table, destination_table):
+async def test_materialize__with_renames_only(
+    session, snowflake_database_table, destination_table, snowflake_feature_store
+):
     """
     Test materializing when only the columns rename mapping is specified
     """
@@ -144,12 +164,20 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
         source=snowflake_database_table.tabular_source,
     )
     await request_input.materialize(
-        session, destination_table, None, columns_to_exclude_missing_values=["NEW_B"]
+        session,
+        destination_table,
+        snowflake_feature_store,
+        None,
+        columns_to_exclude_missing_values=["NEW_B"],
     )
 
-    assert session.list_table_schema.call_args_list == [
+    assert len(session.list_table_schema.call_args_list) == 2
+    assert (
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
-    ]
+        in session.list_table_schema.call_args_list
+        or call(table_name="sf_table", schema_name="sf_schema", database_name="sf_database")
+        in session.list_table_schema.call_args_list
+    )
 
     expected_query = textwrap.dedent(
         """
@@ -163,7 +191,9 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
             "b" AS "NEW_B"
           FROM (
             SELECT
-              *
+              "a" AS "a",
+              "b" AS "b",
+              "event_timestamp" AS "event_timestamp"
             FROM "sf_database"."sf_schema"."sf_table"
           )
         )
@@ -175,7 +205,9 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
 
 
 @pytest.mark.asyncio
-async def test_materialize__invalid_columns(session, snowflake_database_table, destination_table):
+async def test_materialize__invalid_columns(
+    session, snowflake_database_table, destination_table, snowflake_feature_store
+):
     """
     Test invalid columns filter
     """
@@ -184,13 +216,13 @@ async def test_materialize__invalid_columns(session, snowflake_database_table, d
         source=snowflake_database_table.tabular_source,
     )
     with pytest.raises(ColumnNotFoundError) as exc:
-        await request_input.materialize(session, destination_table, None)
+        await request_input.materialize(session, destination_table, snowflake_feature_store, None)
     assert "Columns ['unknown_column'] not found" in str(exc.value)
 
 
 @pytest.mark.asyncio
 async def test_materialize__invalid_rename_mapping(
-    session, snowflake_database_table, destination_table
+    session, snowflake_database_table, destination_table, snowflake_feature_store
 ):
     """
     Test invalid columns rename mapping
@@ -200,13 +232,13 @@ async def test_materialize__invalid_rename_mapping(
         source=snowflake_database_table.tabular_source,
     )
     with pytest.raises(ColumnNotFoundError) as exc:
-        await request_input.materialize(session, destination_table, None)
+        await request_input.materialize(session, destination_table, snowflake_feature_store, None)
     assert "Columns ['unknown_column'] not found" in str(exc.value)
 
 
 @pytest.mark.asyncio
 async def test_materialize__from_view_with_columns_and_renames(
-    session, destination_table, snowflake_event_table
+    session, destination_table, snowflake_event_table, snowflake_feature_store
 ):
     """
     Test materializing from view
@@ -220,7 +252,11 @@ async def test_materialize__from_view_with_columns_and_renames(
         node_name=mapped_node.name,
     )
     await request_input.materialize(
-        session, destination_table, None, columns_to_exclude_missing_values=["POINT_IN_TIME"]
+        session,
+        destination_table,
+        snowflake_feature_store,
+        None,
+        columns_to_exclude_missing_values=["POINT_IN_TIME"],
     )
 
     # No need to query database to get column names
@@ -258,7 +294,12 @@ async def test_materialize__from_view_with_columns_and_renames(
 
 @pytest.mark.asyncio
 async def test_materialize__view_bigquery(
-    session, destination_table, snowflake_event_table, bigquery_source_info, update_fixtures
+    session,
+    destination_table,
+    snowflake_event_table,
+    bigquery_source_info,
+    update_fixtures,
+    snowflake_feature_store,
 ):
     """
     Test materializing from view in bigquery
@@ -273,7 +314,7 @@ async def test_materialize__view_bigquery(
         graph=pruned_graph,
         node_name=mapped_node.name,
     )
-    await request_input.materialize(session, destination_table, 100)
+    await request_input.materialize(session, destination_table, snowflake_feature_store, 100)
 
     # No need to query database to get column names
     assert session.list_table_schema.call_args_list == []
@@ -288,7 +329,7 @@ async def test_materialize__view_bigquery(
 
 @pytest.mark.asyncio
 async def test_materialize__with_sample_timestamp(
-    session, snowflake_event_table, destination_table
+    session, snowflake_event_table, destination_table, snowflake_feature_store
 ):
     """
     Test materializing with sample from timestamp
@@ -301,7 +342,9 @@ async def test_materialize__with_sample_timestamp(
         graph=pruned_graph,
         node_name=mapped_node.name,
     )
-    await request_input.materialize(session, destination_table, None, None, datetime(2011, 3, 8))
+    await request_input.materialize(
+        session, destination_table, snowflake_feature_store, None, None, datetime(2011, 3, 8)
+    )
 
     # No need to query database to get column names
     assert session.list_table_schema.call_args_list == []
@@ -338,7 +381,11 @@ async def test_materialize__with_sample_timestamp(
 
 @pytest.mark.asyncio
 async def test_materialize__with_sample_timestamp_biqquery(
-    session, snowflake_database_table, destination_table, bigquery_source_info
+    session,
+    snowflake_database_table,
+    destination_table,
+    bigquery_source_info,
+    snowflake_feature_store,
 ):
     """
     Test materializing with sample from timestamp
@@ -351,12 +398,21 @@ async def test_materialize__with_sample_timestamp_biqquery(
         source=snowflake_database_table.tabular_source,
     )
     await request_input.materialize(
-        session, destination_table, None, datetime(2011, 3, 8), datetime(2012, 5, 9)
+        session,
+        destination_table,
+        snowflake_feature_store,
+        None,
+        datetime(2011, 3, 8),
+        datetime(2012, 5, 9),
     )
 
-    assert session.list_table_schema.call_args_list == [
+    assert len(session.list_table_schema.call_args_list) == 2
+    assert (
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
-    ]
+        in session.list_table_schema.call_args_list
+        or call(table_name="sf_table", schema_name="sf_schema", database_name="sf_database")
+        in session.list_table_schema.call_args_list
+    )
 
     expected_query = textwrap.dedent(
         """
@@ -372,7 +428,9 @@ async def test_materialize__with_sample_timestamp_biqquery(
             `event_timestamp` AS `POINT_IN_TIME`
           FROM (
             SELECT
-              *
+              `a` AS `a`,
+              `b` AS `b`,
+              `event_timestamp` AS `event_timestamp`
             FROM `sf_database`.`sf_schema`.`sf_table`
           )
         )
@@ -386,7 +444,7 @@ async def test_materialize__with_sample_timestamp_biqquery(
 
 @pytest.mark.asyncio
 async def test_materialize__with_sample_timestamp_no_columns_rename(
-    session, snowflake_event_table, destination_table
+    session, snowflake_event_table, destination_table, snowflake_feature_store
 ):
     """
     Test materializing with sample from timestamp without column rename,
@@ -400,7 +458,12 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
         node_name=mapped_node.name,
     )
     await request_input.materialize(
-        session, destination_table, None, datetime(2011, 3, 8), datetime(2012, 5, 9)
+        session,
+        destination_table,
+        snowflake_feature_store,
+        None,
+        datetime(2011, 3, 8),
+        datetime(2012, 5, 9),
     )
 
     expected_query = textwrap.dedent(
@@ -438,7 +501,7 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
 
 @pytest.mark.asyncio
 async def test_materialize__with_sample_timestamp_with_tz(
-    session, snowflake_event_table, destination_table
+    session, snowflake_event_table, destination_table, snowflake_feature_store
 ):
     """
     Test materializing with sample from timestamp with timezone
@@ -455,6 +518,7 @@ async def test_materialize__with_sample_timestamp_with_tz(
     await request_input.materialize(
         session,
         destination_table,
+        snowflake_feature_store,
         None,
         datetime(2011, 3, 8, tzinfo=tz.gettz("Asia/Singapore")),
         datetime(2012, 5, 9, tzinfo=tz.gettz("Asia/Singapore")),

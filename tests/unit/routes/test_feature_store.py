@@ -18,6 +18,7 @@ from snowflake.connector.errors import ProgrammingError
 
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json, dataframe_to_json
+from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError
 from featurebyte.models.credential import (
     CredentialModel,
@@ -870,6 +871,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
         mock_session.generate_session_unique_id = Mock(return_value="1")
+        mock_session.list_table_schema.return_value = {
+            "col_int": ColumnSpecWithDescription(name="col_int", dtype=DBVarType.INT)
+        }
 
         response = test_api_client.post(
             "/feature_store/table_preview?limit=3", json=tabular_source.json_dict()
@@ -881,7 +885,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             == textwrap.dedent(
                 """
                 SELECT
-                  *
+                  "col_int" AS "col_int"
                 FROM "sf_database"."sf_schema"."sf_table"
                 LIMIT 3
                 """

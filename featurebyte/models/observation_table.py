@@ -15,6 +15,7 @@ from typing_extensions import Annotated, Literal
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import (
@@ -58,6 +59,7 @@ class NoOpMaterializeMixin:
         self,
         session: BaseSession,
         destination: TableDetails,
+        feature_store: FeatureStoreModel,
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
@@ -77,6 +79,8 @@ class NoOpMaterializeMixin:
             The session to use to materialize the target input
         destination: TableDetails
             The destination table to materialize the target input to
+        feature_store: FeatureStoreModel
+            The feature store model
         sample_rows: Optional[int]
             The number of rows to sample from the target input
         sample_from_timestamp: Optional[datetime]

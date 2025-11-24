@@ -18,7 +18,9 @@ from typing_extensions import ClassVar
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, InternalName, SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
@@ -29,12 +31,12 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.materialisation import (
+    ExtendedSourceMetadata,
     get_row_count_sql,
     get_source_expr,
     get_view_expr,
     select_and_rename_columns,
 )
-from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
 
@@ -117,14 +119,18 @@ class BaseRequestInput(FeatureByteBaseModel):
     columns_rename_mapping: Optional[Dict[str, str]] = Field(default=None)
 
     @abstractmethod
-    def get_query_expr(self, source_info: SourceInfo) -> Select:
+    async def get_query_expr(
+        self, session: BaseSession, feature_store: FeatureStoreModel
+    ) -> Select:
         """
         Get the SQL expression for the underlying data (can be either a table or a view)
 
         Parameters
         ----------
-        source_info: SourceInfo
-            The source type of the destination table
+        session: BaseSession
+            The session to use to get the query expression
+        feature_store: FeatureStoreModel
+            The feature store model
 
         Returns
         -------
@@ -364,6 +370,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         self,
         session: BaseSession,
         destination: TableDetails,
+        feature_store: FeatureStoreModel,
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
@@ -380,6 +387,8 @@ class BaseRequestInput(FeatureByteBaseModel):
             The session to use to materialize the table
         destination: TableDetails
             The destination table details
+        feature_store: FeatureStoreModel
+            The feature store model
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
         sample_from_timestamp: Optional[datetime]
@@ -394,7 +403,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             Missing data table details
         """
         # Get the base query and column info
-        query_expr = self.get_query_expr(source_info=session.get_source_info())
+        query_expr = await self.get_query_expr(session=session, feature_store=feature_store)
 
         # Derive output column names and dtypes
         input_columns, output_column_names_and_dtypes = await self.get_output_columns_and_dtypes(
@@ -575,8 +584,13 @@ class ViewRequestInput(BaseRequestInput):
             assert isinstance(self.internal_graph, QueryGraphModel)
             return self.internal_graph
 
-    def get_query_expr(self, source_info: SourceInfo) -> Select:
-        return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)
+    async def get_query_expr(
+        self, session: BaseSession, feature_store: FeatureStoreModel
+    ) -> Select:
+        _ = feature_store
+        return get_view_expr(
+            graph=self.graph, node_name=self.node_name, source_info=session.get_source_info()
+        )
 
     async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         node = self.graph.get_node_by_name(self.node_name)
@@ -600,9 +614,24 @@ class SourceTableRequestInput(BaseRequestInput):
     source: TabularSource
     type: Literal[RequestInputType.SOURCE_TABLE] = RequestInputType.SOURCE_TABLE
 
-    def get_query_expr(self, source_info: SourceInfo) -> Select:
-        _ = source_info
-        return get_source_expr(source=self.source.table_details)
+    async def get_query_expr(
+        self, session: BaseSession, feature_store: FeatureStoreModel
+    ) -> Select:
+        table_schema = await session.list_table_schema(
+            table_name=self.source.table_details.table_name,
+            schema_name=self.source.table_details.schema_name,
+            database_name=self.source.table_details.database_name,
+        )
+        columns_info = [
+            ColumnInfo(**schema.model_dump(by_alias=True)) for schema in table_schema.values()
+        ]
+        metadata = ExtendedSourceMetadata(
+            columns_info=columns_info,
+            feature_store_id=feature_store.id,
+            feature_store_details=feature_store.get_feature_store_details(),
+            source_info=session.get_source_info(),
+        )
+        return get_source_expr(source=self.source.table_details, metadata=metadata)
 
     async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         table_schema = await session.list_table_schema(
@@ -624,7 +653,9 @@ class ManagedViewRequestInput(BaseRequestInput):
     managed_view_id: PydanticObjectId
     type: Literal[RequestInputType.MANAGED_VIEW] = RequestInputType.MANAGED_VIEW
 
-    def get_query_expr(self, source_info: SourceInfo) -> Select:
+    async def get_query_expr(
+        self, session: BaseSession, feature_store: FeatureStoreModel
+    ) -> Select:
         raise NotImplementedError
 
     async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:

@@ -14,6 +14,8 @@ from pandas.testing import assert_frame_equal
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_from_json, dataframe_to_arrow_bytes
+from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.sql.feature_compute import FeatureQueryPlan
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
@@ -276,6 +278,13 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         })
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
+        mock_session.list_table_schema.return_value = {
+            "POINT_IN_TIME": ColumnSpecWithDescription(
+                name="POINT_IN_TIME", dtype=DBVarType.TIMESTAMP
+            ),
+            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype=DBVarType.INT),
+            "sum_30m": ColumnSpecWithDescription(name="sum_30m", dtype=DBVarType.FLOAT),
+        }
 
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(

@@ -4,7 +4,8 @@ SELECT
   "POINT_IN_TIME" AS "POINT_IN_TIME"
 FROM (
   SELECT
-    *
+    "cust_id" AS "cust_id",
+    "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM "sf_database"."sf_schema"."dimension_table"
 );
 
@@ -23,7 +24,8 @@ SELECT
   "cust_id" AS "cust_id"
 FROM (
   SELECT
-    *
+    "cust_id" AS "cust_id",
+    "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM "sf_database"."sf_schema"."dimension_table"
 );
 

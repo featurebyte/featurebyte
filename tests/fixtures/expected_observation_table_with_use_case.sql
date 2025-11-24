@@ -6,6 +6,8 @@ SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
 
 SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
 
+SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table";
+
 CREATE TABLE "sf_database"."sf_schema"."__TEMP_OBSERVATION_TABLE_000000000000000000000000" AS
 SELECT
   "cust_id",
@@ -16,7 +18,8 @@ FROM (
     "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME"
     FROM "sf_database"."sf_schema"."sf_table"
   )
 )
@@ -35,7 +38,8 @@ FROM (
     "POINT_IN_TIME" AS "POINT_IN_TIME"
   FROM (
     SELECT
-      *
+      "cust_id" AS "cust_id",
+      "POINT_IN_TIME" AS "POINT_IN_TIME"
     FROM "sf_database"."sf_schema"."sf_table"
   )
 )
