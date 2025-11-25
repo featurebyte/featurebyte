@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.3.1 (2025-11-25)
+
+### 💡 Enhancements
+
++ `service` Add support for target based downsampling when creating observation table from existing one for classification target.
++ `service` Add option to include point in time column in batch prediction tables
+
+### 🐛 Bug Fixes
+
++ `service` Fix an error when enabling online store after a deployment is enabled
+
 ## v3.3.0 (2025-10-22)
 
 ### 💡 Enhancements
