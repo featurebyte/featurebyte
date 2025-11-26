@@ -507,7 +507,12 @@ async def test_observation_table_downsampling(
     assert number_of_rows == pos_obs_count_after_downsampling + neg_obs_count
     check_materialized_table_preview_methods(
         observation_table,
-        [SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target"],
+        [
+            SpecialColumnName.POINT_IN_TIME,
+            "üser id",
+            "user_active_24h_target",
+            "__FB_TABLE_ROW_WEIGHT",
+        ],
         number_of_rows,
     )
     table_details = observation_table.location.table_details
@@ -536,7 +541,12 @@ async def test_observation_table_downsampling(
     assert number_of_rows == pos_obs_count_after_downsampling + neg_obs_count
     check_materialized_table_preview_methods(
         observation_table,
-        [SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target", "__FB_TABLE_ROW_WEIGHT"],
+        [
+            SpecialColumnName.POINT_IN_TIME,
+            "üser id",
+            "user_active_24h_target",
+            "__FB_TABLE_ROW_WEIGHT",
+        ],
         number_of_rows,
     )
     table_details = observation_table.location.table_details
@@ -545,7 +555,12 @@ async def test_observation_table_downsampling(
     )
     assert set(sampling_rates["__FB_TABLE_ROW_WEIGHT"].tolist()) == {4.0, 1.0}
     # ensure weight column is not included in columns_info
-    expected_columns = {SpecialColumnName.POINT_IN_TIME, "üser id", "user_active_24h_target", "__FB_TABLE_ROW_WEIGHT"}
+    expected_columns = {
+        SpecialColumnName.POINT_IN_TIME,
+        "üser id",
+        "user_active_24h_target",
+        "__FB_TABLE_ROW_WEIGHT",
+    }
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
 
