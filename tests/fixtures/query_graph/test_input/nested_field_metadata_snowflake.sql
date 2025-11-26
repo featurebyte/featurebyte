@@ -18,3 +18,7 @@ FROM (
 WHERE
   "partition_col" >= TO_CHAR(CAST('2023-01-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
   AND "partition_col" <= TO_CHAR(CAST('2023-06-01 00:00:00' AS TIMESTAMP), '%Y-%m-%d')
+QUALIFY
+  (
+    LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") = 1
+  )
