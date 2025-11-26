@@ -5,13 +5,17 @@ DeploymentSqlGenerationService
 from bson import ObjectId
 from sqlglot import expressions
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
 from featurebyte.models.offline_store_feature_table import get_combined_ingest_graph
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
+from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -42,6 +46,7 @@ class DeploymentSqlGenerationService:
         offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         entity_service: EntityService,
         entity_validation_service: EntityValidationService,
+        column_statistics_service: ColumnStatisticsService,
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
@@ -55,6 +60,7 @@ class DeploymentSqlGenerationService:
         )
         self.entity_service = entity_service
         self.entity_validation_service = entity_validation_service
+        self.column_statistics_service = column_statistics_service
 
     async def generate_deployment_sql(self, deployment_id: ObjectId) -> DeploymentSqlModel:
         """
@@ -122,11 +128,10 @@ class DeploymentSqlGenerationService:
             request_column_names = [
                 primary_entity.serving_names[0] for primary_entity in primary_entities
             ]
+            graph = ingest_graph_metadata.feature_cluster.graph
+            nodes = ingest_graph_metadata.feature_cluster.nodes
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph_nodes=(
-                    ingest_graph_metadata.feature_cluster.graph,
-                    ingest_graph_metadata.feature_cluster.nodes,
-                ),
+                graph_nodes=(graph, nodes),
                 feature_list_model=None,
                 offline_store_feature_table_primary_entity_ids=ingest_graph.primary_entity_ids,
                 request_column_names=set(request_column_names),
@@ -137,17 +142,36 @@ class DeploymentSqlGenerationService:
                 current_feature_timestamp=point_in_time_placeholder,
                 last_materialized_timestamp=None,
             )
+            partition_column_filters = get_partition_filters_from_graph(
+                query_graph=graph,
+                min_point_in_time=point_in_time_placeholder,
+                max_point_in_time=point_in_time_placeholder,
+                adapter=get_sql_adapter(feature_store_model.get_source_info()),
+            )
+            column_statistics_info = (
+                await self.column_statistics_service.get_column_statistics_info()
+            )
             feature_query_plan = get_deployment_feature_query_plan(
-                graph=ingest_graph_metadata.feature_cluster.graph,
-                nodes=ingest_graph_metadata.feature_cluster.nodes,
+                graph=graph,
+                nodes=nodes,
                 source_info=feature_store_model.get_source_info(),
                 point_in_time_placeholder=point_in_time_placeholder,
                 request_table_columns=request_column_names,
                 request_table_expr=request_table_expr,
                 parent_serving_preparation=parent_serving_preparation,
+                partition_column_filters=partition_column_filters,
+                column_statistics_info=column_statistics_info,
+            )
+            feature_query_expr = feature_query_plan.get_standalone_expr()
+            feature_query_expr = feature_query_expr.select(
+                expressions.alias_(
+                    point_in_time_placeholder,
+                    alias=SpecialColumnName.POINT_IN_TIME,
+                    quoted=True,
+                )
             )
             feature_query_str = sql_to_string(
-                feature_query_plan.get_standalone_expr(), source_type=feature_store_model.type
+                feature_query_expr, source_type=feature_store_model.type
             )
             feature_table_sqls.append(
                 FeatureTableSql(

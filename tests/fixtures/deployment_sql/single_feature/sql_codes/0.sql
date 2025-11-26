@@ -91,5 +91,6 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
 )
 SELECT
   AGG."cust_id",
-  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d"
+  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d",
+  {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"
 FROM _FB_AGGREGATED AS AGG
