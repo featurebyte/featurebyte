@@ -351,10 +351,17 @@ class InputNode(TableNode):
                 column_expressions.append(quoted_identifier(column_name))
             column_names.append(column_name)
 
+        # Move qualify condition to the outer select if exists. This is necessary for lags to work
+        # correctly.
+        if "qualify" in select_expr.args:
+            qualify_expr = select_expr.args.pop("qualify")
+        else:
+            qualify_expr = None
+
         # Called by _select_from_dbtable, the output is expected to be a select expression without
         # any columns. Nested query allows the flattened columns to be referenced by name directly
         # like other regular columns.
-        flattened_expr = expressions.select().from_(
+        flattened_expr = expressions.Select(qualify=qualify_expr).from_(
             select_expr.select(*[
                 expressions.alias_(expr, alias=col, quoted=True)
                 for expr, col in zip(column_expressions, column_names)

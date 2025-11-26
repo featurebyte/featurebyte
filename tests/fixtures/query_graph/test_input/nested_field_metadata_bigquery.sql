@@ -18,3 +18,7 @@ FROM (
 WHERE
   `partition_col` >= FORMAT_DATETIME('%Y-%m-%d', CAST('2023-01-01 00:00:00' AS DATETIME))
   AND `partition_col` <= FORMAT_DATETIME('%Y-%m-%d', CAST('2023-06-01 00:00:00' AS DATETIME))
+QUALIFY
+  (
+    LAG(`a`, 1) OVER (PARTITION BY `cust_id` ORDER BY `ts` NULLS LAST) = 1
+  )

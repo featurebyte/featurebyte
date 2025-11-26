@@ -24,6 +24,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.unit.query_graph.sql.ast.test_window_functions import make_lag_node
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -339,6 +340,20 @@ def test_nested_field_metadata(global_graph, input_details, update_fixtures, sou
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
+    # add a window function based filter operation
+    lagged_a = make_lag_node(global_graph, input_node, "a", "cust_id", "ts")
+    node_eq = global_graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[lagged_a],
+    )
+    node = global_graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node, node_eq],
+    )
     source_info = SourceInfo(
         database_name="my_db", schema_name="my_schema", source_type=source_type
     )
@@ -356,7 +371,7 @@ def test_nested_field_metadata(global_graph, input_details, update_fixtures, sou
         partition_column_filters=partition_column_filters,
         source_info=source_info,
     )
-    actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
+    actual = sql_to_string(sql_graph.build(node).sql, source_type)
     fixture_filename = (
         f"tests/fixtures/query_graph/test_input/nested_field_metadata_{source_type}.sql"
     )
