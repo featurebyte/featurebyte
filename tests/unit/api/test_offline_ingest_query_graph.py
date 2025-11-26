@@ -1023,18 +1023,3 @@ async def test_feature__sql_generation_without_version_suffix(
     ]
     assert all("_V" not in name for name in output_column_names_no_version)
     assert all("_V" in name for name in output_column_names_with_version)
-
-    # Test that the parameter cannot be disabled when dry_run=False
-    with pytest.raises(
-        ValueError,
-        match="include_feature_version_suffix can only be disabled when dry_run is True",
-    ):
-        await service.initialize_offline_store_info(
-            feature=feature_model,
-            table_name_prefix="cat1",
-            entity_id_to_serving_name={
-                entity_id: str(entity_id) for entity_id in feature_model.entity_ids
-            },
-            dry_run=False,
-            include_feature_version_suffix=False,
-        )

@@ -24,8 +24,8 @@ def deployment_sql_generation_service_fixture(app_container):
     return app_container.deployment_sql_generation_service
 
 
-@pytest.fixture(name="float_feat_deployment_id")
-def float_feat_deployment_id_fixture():
+@pytest.fixture(name="deployment_id")
+def deployment_id_fixture():
     """
     Deployment id fixture
     """
@@ -36,7 +36,7 @@ def float_feat_deployment_id_fixture():
 async def deployed_float_feature_list_cust_id_use_case(
     app_container,
     float_feature,
-    float_feat_deployment_id,
+    deployment_id,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
 ):
@@ -48,7 +48,29 @@ async def deployed_float_feature_list_cust_id_use_case(
         app_container,
         float_feature,
         return_type="feature_list",
-        deployment_id=float_feat_deployment_id,
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_scd_lookup_feature_list(
+    app_container,
+    scd_lookup_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed scd lookup feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_feature(
+        app_container,
+        scd_lookup_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
     )
     return feature_list
 
@@ -97,21 +119,42 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
             assert actual_sql.strip() == expected_sql.strip()
 
 
+@pytest.fixture
+def setup_deployment_case(request, test_case_name):
+    """
+    Fixture to setup deployment case. Deliberately not async to allow parametrization.
+    """
+    test_case_mapping = {
+        "float_feature": "deployed_float_feature_list_cust_id_use_case",
+        "scd_lookup_feature": "deployed_scd_lookup_feature_list",
+    }
+    fixture_name = test_case_mapping[test_case_name]
+    # This can be an async fixture, pytest-asyncio will handle it here safely
+    request.getfixturevalue(fixture_name)
+
+
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "float_feature",
+        "scd_lookup_feature",
+    ],
+)
 @pytest.mark.asyncio
-async def test_single_feature_deployment(
+async def test_deployment_sql(
+    test_case_name,
+    setup_deployment_case,
     deployment_sql_generation_service,
-    deployed_float_feature_list_cust_id_use_case,
-    float_feat_deployment_id,
+    deployment_id,
     update_fixtures,
 ):
     """
     Test single feature deployment SQL generation
     """
-    deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(
-        float_feat_deployment_id
-    )
+    _ = setup_deployment_case
+    deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
     check_deployment_sql(
         deployment_sql,
-        "tests/fixtures/deployment_sql/single_feature",
+        f"tests/fixtures/deployment_sql/{test_case_name}",
         update_fixtures,
     )
