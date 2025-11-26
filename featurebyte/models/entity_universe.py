@@ -1013,7 +1013,7 @@ class EntityUniverseModel(FeatureByteBaseModel):
 
     def get_entity_universe_expr(
         self,
-        current_feature_timestamp: datetime,
+        current_feature_timestamp: datetime | expressions.Expression,
         last_materialized_timestamp: Optional[datetime],
     ) -> Select:
         """
@@ -1031,11 +1031,13 @@ class EntityUniverseModel(FeatureByteBaseModel):
         -------
         Expression
         """
-        params = {
-            CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER: make_literal_value(
+        if isinstance(current_feature_timestamp, expressions.Expression):
+            current_feature_timestamp_expr = current_feature_timestamp
+        else:
+            current_feature_timestamp_expr = make_literal_value(
                 current_feature_timestamp, cast_as_timestamp=True
-            ),
-        }
+            )
+        params = {CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER: current_feature_timestamp_expr}
         if last_materialized_timestamp is not None:
             params[LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER] = make_literal_value(
                 last_materialized_timestamp, cast_as_timestamp=True

@@ -245,10 +245,10 @@ class OfflineStoreInfoInitializationService:
                 )
             )
 
-        if not include_feature_version_suffix and not dry_run:
-            raise ValueError(
-                "include_feature_version_suffix can only be disabled when dry_run is True"
-            )
+        # if not include_feature_version_suffix and not dry_run:
+        #     raise ValueError(
+        #         "include_feature_version_suffix can only be disabled when dry_run is True"
+        #     )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
         assert feature.name is not None
