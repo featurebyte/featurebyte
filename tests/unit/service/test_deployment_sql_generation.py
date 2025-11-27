@@ -129,7 +129,6 @@ async def deployed_not_supported_feature_list(
     return feature_list
 
 
-
 def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixtures):
     """
     Check deployment SQL against fixture
@@ -210,7 +209,7 @@ async def test_deployment_sql(
 
 @pytest.mark.asyncio
 async def test_deployment_sql__not_supported(
-    deployed_not_supported_feature_list ,
+    deployed_not_supported_feature_list,
     deployment_sql_generation_service,
     deployment_id,
     update_fixtures,
