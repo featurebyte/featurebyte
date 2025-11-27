@@ -15,6 +15,12 @@ from tests.util.helper import (
     deploy_feature,
 )
 
+TEST_CASES_MAPPING = {
+    "float_feature": "deployed_float_feature_list_cust_id_use_case",
+    "scd_lookup_feature": "deployed_scd_lookup_feature_list",
+    "snapshots_lookup_feature": "deployed_snapshot_feature_list",
+}
+
 
 @pytest.fixture(name="deployment_sql_generation_service")
 def deployment_sql_generation_service_fixture(app_container):
@@ -75,6 +81,28 @@ async def deployed_scd_lookup_feature_list(
     return feature_list
 
 
+@pytest_asyncio.fixture
+async def deployed_snapshot_feature_list(
+    app_container,
+    snapshots_lookup_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed snapshots lookup feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_feature(
+        app_container,
+        snapshots_lookup_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
 def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixtures):
     """
     Check deployment SQL against fixture
@@ -124,21 +152,14 @@ def setup_deployment_case(request, test_case_name):
     """
     Fixture to setup deployment case. Deliberately not async to allow parametrization.
     """
-    test_case_mapping = {
-        "float_feature": "deployed_float_feature_list_cust_id_use_case",
-        "scd_lookup_feature": "deployed_scd_lookup_feature_list",
-    }
-    fixture_name = test_case_mapping[test_case_name]
+    fixture_name = TEST_CASES_MAPPING[test_case_name]
     # This can be an async fixture, pytest-asyncio will handle it here safely
     request.getfixturevalue(fixture_name)
 
 
 @pytest.mark.parametrize(
     "test_case_name",
-    [
-        "float_feature",
-        "scd_lookup_feature",
-    ],
+    list(TEST_CASES_MAPPING.keys()),
 )
 @pytest.mark.asyncio
 async def test_deployment_sql(
