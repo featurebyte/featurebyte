@@ -168,6 +168,8 @@ class EntityValidationService:
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
             Offline store feature table model when the request is initiated by feature materialize
             service
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]]
+            Primary entity IDs for offline store feature table
 
         Returns
         -------
@@ -260,6 +262,8 @@ class EntityValidationService:
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
             Offline store feature table model when the request is initiated by feature materialize
             service
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]]
+            Primary entity IDs for offline store feature table
 
         Returns
         -------

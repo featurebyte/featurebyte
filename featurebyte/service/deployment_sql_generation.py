@@ -68,13 +68,18 @@ class DeploymentSqlGenerationService:
 
         Parameters
         ----------
-        deployment_id: str
+        deployment_id: ObjectId
             The ID of the deployment for which to generate SQL.
 
         Returns
         -------
         DeploymentSqlModel
             The generated deployment SQL model.
+
+        Raises
+        ------
+        DeploymentSqlGenerationError
+            If deployment SQL generation fails.
         """
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)

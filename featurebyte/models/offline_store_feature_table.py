@@ -416,10 +416,10 @@ def get_combined_ingest_graph(
 
     Parameters
     ----------
-    features : List[FeatureModel]
-        List of features
-    primary_entities : List[EntityModel]
-        List of primary entity models
+    feature_infos : List[Tuple[FeatureModel, OfflineStoreInfo]]
+        List of feature model and offline store info tuples
+    primary_entity_ids : List[ObjectId]
+        List of primary entity IDs
     has_ttl : bool
         Whether the feature table has TTL
     feature_job_setting : Optional[FeatureJobSettingUnion]

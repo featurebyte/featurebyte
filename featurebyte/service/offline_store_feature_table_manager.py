@@ -96,6 +96,15 @@ class OfflineIngestGraphContainer:
     ) -> OfflineIngestGraphContainer:
         """
         Build OfflineIngestGraphContainer from feature models and offline store infos
+
+        Parameters
+        ----------
+        feature_infos : list[Tuple[FeatureModel, OfflineStoreInfo]]
+            List of feature model and offline store info tuples
+
+        Returns
+        -------
+        OfflineIngestGraphContainer
         """
         # Group features by offline store feature table name
         offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)

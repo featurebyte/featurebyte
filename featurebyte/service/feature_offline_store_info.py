@@ -231,11 +231,6 @@ class OfflineStoreInfoInitializationService:
         Returns
         -------
         OfflineStoreInfo
-
-        Raises
-        ------
-        ValueError
-            If include_feature_version_suffix is disabled when dry_run is False
         """
         if entity_id_to_serving_name is None:
             serv_name_service = self.entity_serving_names_service

@@ -9,6 +9,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models.deployment_sql import DeploymentSqlModel
 from tests.util.helper import (
     assert_equal_json_fixture,
@@ -103,6 +104,32 @@ async def deployed_snapshot_feature_list(
     return feature_list
 
 
+@pytest_asyncio.fixture
+async def deployed_not_supported_feature_list(
+    app_container,
+    snapshots_lookup_feature,
+    float_feature_composite_entity,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed not supported feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature = snapshots_lookup_feature + float_feature_composite_entity
+    feature.name = "my_feature"
+    feature_list = await deploy_feature(
+        app_container,
+        feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+
 def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixtures):
     """
     Check deployment SQL against fixture
@@ -179,3 +206,19 @@ async def test_deployment_sql(
         f"tests/fixtures/deployment_sql/{test_case_name}",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_deployment_sql__not_supported(
+    deployed_not_supported_feature_list ,
+    deployment_sql_generation_service,
+    deployment_id,
+    update_fixtures,
+):
+    """
+    Test single feature deployment SQL generation
+    """
+    _ = setup_deployment_case
+    with pytest.raises(DeploymentSqlGenerationError) as exc:
+        _ = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    assert "Deployment SQL generation is not supported" in str(exc.value)

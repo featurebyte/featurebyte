@@ -46,6 +46,8 @@ def get_deployment_feature_query_plan(
         Request table columns
     request_table_expr: Optional[expressions.Select]
         Select statement for the request table
+    point_in_time_placeholder: expressions.Expression
+        Point in time placeholder expression
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     column_statistics_info: Optional[ColumnStatisticsInfo]
