@@ -17,7 +17,7 @@ from sqlglot import expressions, parse_one
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 
@@ -511,7 +511,9 @@ async def test_not_raise_on_error__dropped_column(
 
         query_expr = parse_one(query, dialect=get_dialect_from_source_type(session.source_type))
 
-        def _invalidate_query_if_product_action_in_groupby(node: expressions.Expression) -> expressions.Expression:
+        def _invalidate_query_if_product_action_in_groupby(
+            node: expressions.Expression,
+        ) -> expressions.Expression:
             if isinstance(node, expressions.Select) and "group" in node.args:
                 group_expr = node.args["group"]
                 for col_expr in group_expr.expressions:
@@ -527,7 +529,9 @@ async def test_not_raise_on_error__dropped_column(
         return await original_execute_query(query, *args, **kwargs)
 
     # Try to create feature table cache with missing column
-    with patch("featurebyte.session.base.BaseSession.execute_query", side_effect=mocked_execute_query):
+    with patch(
+        "featurebyte.session.base.BaseSession.execute_query", side_effect=mocked_execute_query
+    ):
         result = await feature_table_cache_service.create_or_update_feature_table_cache(
             feature_store=feature_store_model,
             observation_table=observation_table.cached_model,
