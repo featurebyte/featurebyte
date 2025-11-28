@@ -14,7 +14,6 @@ from bson import ObjectId
 from sqlglot import parse_one
 
 from featurebyte import FeatureStore, SourceType
-from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import (
     DescribeQueryExecutionError,
     MissingPointInTimeColumnError,
@@ -591,14 +590,13 @@ async def test_describe_drop_all_null_stats(
 
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
-    result = dataframe_from_json(
-        await preview_service.describe(
-            feature_store_sample,
-            size=5000,
-            seed=0,
-            drop_all_null_stats=drop_all_null_stats,
-        )
+    result = await preview_service.describe(
+        feature_store_sample,
+        size=5000,
+        seed=0,
+        drop_all_null_stats=drop_all_null_stats,
     )
+
     if drop_all_null_stats:
         assert "%missing" not in result.index
     else:

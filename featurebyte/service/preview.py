@@ -14,7 +14,7 @@ from bson import ObjectId
 from redis import Redis
 from sqlglot.expressions import Select
 
-from featurebyte.common.utils import dataframe_to_json, timer
+from featurebyte.common.utils import apply_type_conversions, dataframe_to_json, timer
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
@@ -281,9 +281,12 @@ class NonCatalogSpecificPreviewService:
             num_cols=num_cols,
         )
 
-    async def preview(
-        self, preview: FeatureStorePreview, limit: int, allow_long_running: bool = True
-    ) -> dict[str, Any]:
+    async def _preview(
+        self,
+        preview: FeatureStorePreview,
+        limit: int,
+        allow_long_running: bool = True,
+    ) -> Tuple[pd.DataFrame, Optional[dict[Optional[str], DBVarType]]]:
         """
         Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -298,8 +301,8 @@ class NonCatalogSpecificPreviewService:
 
         Returns
         -------
-        dict[str, Any]
-            Dataframe converted to json string
+        Tuple[pd.DataFrame, Optional[dict[Optional[str], DBVarType]]]
+            Dataframe of preview results and type conversions
         """
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
@@ -318,6 +321,58 @@ class NonCatalogSpecificPreviewService:
             node_name=preview.node_name, num_rows=limit, clip_timestamp_columns=True
         )
         result = await self._execute_query(session, preview_sql, allow_long_running)
+        return result, type_conversions
+
+    async def preview(
+        self,
+        preview: FeatureStorePreview,
+        limit: int,
+        allow_long_running: bool = True,
+    ) -> pd.DataFrame:
+        """
+        Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        limit: int
+            Row limit on preview results
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of preview results
+        """
+        result, type_conversions = await self._preview(preview, limit, allow_long_running)
+        return apply_type_conversions(result, type_conversions)
+
+    async def preview_as_json(
+        self,
+        preview: FeatureStorePreview,
+        limit: int,
+        allow_long_running: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        limit: int
+            Row limit on preview results
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        result, type_conversions = await self._preview(preview, limit, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
     @staticmethod
@@ -458,7 +513,7 @@ class NonCatalogSpecificPreviewService:
                     database_name=session.database_name,
                 )
 
-    async def describe(  # pylint: disable=too-many-locals
+    async def _describe(  # pylint: disable=too-many-locals
         self,
         sample: FeatureStoreSample,
         size: int,
@@ -467,7 +522,7 @@ class NonCatalogSpecificPreviewService:
         drop_all_null_stats: bool = True,
         allow_long_running: bool = True,
         sample_on_primary_table: bool = False,
-    ) -> dict[str, Any]:
+    ) -> Tuple[pd.DataFrame, Optional[dict[Optional[str], DBVarType]]]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -493,8 +548,8 @@ class NonCatalogSpecificPreviewService:
 
         Returns
         -------
-        dict[str, Any]
-            Dataframe converted to json string
+        Tuple[pd.DataFrame, Optional[dict[Optional[str], DBVarType]]]
+            Dataframe of describe results and type conversions
         """
         if columns_batch_size is None:
             columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
@@ -607,8 +662,105 @@ class NonCatalogSpecificPreviewService:
         results = pd.concat(df_queries, axis=1)
         if drop_all_null_stats:
             results = results.dropna(axis=0, how="all")
+        return results, type_conversions
 
-        return dataframe_to_json(results, type_conversions, skip_prepare=True)
+    async def describe(  # pylint: disable=too-many-locals
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        columns_batch_size: Optional[int] = None,
+        drop_all_null_stats: bool = True,
+        allow_long_running: bool = True,
+        sample_on_primary_table: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        columns_batch_size: Optional[int]
+            Maximum number of columns to describe in a single query. More columns in the data will
+            be described in multiple queries. If None, a default value will be used. If 0, batching
+            will be disabled.
+        drop_all_null_stats: bool
+            Whether to drop the result of a statistics if all values across all columns are null
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. This has an effect only when the
+            QueryObject is a join of multiple tables.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of describe results
+        """
+        result, type_conversions = await self._describe(
+            sample=sample,
+            size=size,
+            seed=seed,
+            columns_batch_size=columns_batch_size,
+            drop_all_null_stats=drop_all_null_stats,
+            allow_long_running=allow_long_running,
+            sample_on_primary_table=sample_on_primary_table,
+        )
+        return apply_type_conversions(result, type_conversions)
+
+    async def describe_as_json(  # pylint: disable=too-many-locals
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        columns_batch_size: Optional[int] = None,
+        drop_all_null_stats: bool = True,
+        allow_long_running: bool = True,
+        sample_on_primary_table: bool = False,
+    ) -> dict[str, Any]:
+        """
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        columns_batch_size: Optional[int]
+            Maximum number of columns to describe in a single query. More columns in the data will
+            be described in multiple queries. If None, a default value will be used. If 0, batching
+            will be disabled.
+        drop_all_null_stats: bool
+            Whether to drop the result of a statistics if all values across all columns are null
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. This has an effect only when the
+            QueryObject is a join of multiple tables.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        result, type_conversions = await self._describe(
+            sample=sample,
+            size=size,
+            seed=seed,
+            columns_batch_size=columns_batch_size,
+            drop_all_null_stats=drop_all_null_stats,
+            allow_long_running=allow_long_running,
+            sample_on_primary_table=sample_on_primary_table,
+        )
+        return dataframe_to_json(result, type_conversions, skip_prepare=True)
 
     async def _run_describe_queries_with_batching(
         self,
