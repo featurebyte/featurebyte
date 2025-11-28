@@ -4,6 +4,7 @@ Test base session
 
 import asyncio
 import datetime
+import tempfile
 from io import BytesIO
 from uuid import UUID
 
@@ -412,3 +413,23 @@ async def test_list_compute_options(feature_store, feature_store_credential):
         }
     else:
         assert compute_options == []
+
+
+@pytest.mark.parametrize(
+    "source_type", ["spark", "databricks_unity", "snowflake", "bigquery"], indirect=True
+)
+@pytest.mark.asyncio
+async def test_upload_parquet_as_table(session_without_datasets):
+    test_df = sample_dataframe()
+    with tempfile.NamedTemporaryFile(suffix=".parquet") as file_obj:
+        file_path = file_obj.name
+        table_name = f"PARQUET_UPLOAD_TEST_{str(ObjectId()).upper()}"
+        test_df.to_parquet(file_path, index=False)
+        await session_without_datasets.upload_parquet_as_table(
+            parquet_file_path=file_path,
+            table_name=table_name,
+        )
+    result_df = await session_without_datasets.execute_query(
+        f"SELECT * FROM {session_without_datasets.get_fully_qualified_table_name(table_name)}"
+    )
+    assert_frame_equal(result_df, test_df)

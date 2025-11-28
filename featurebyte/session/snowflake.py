@@ -12,6 +12,7 @@ from typing import Annotated, Any, AsyncGenerator, OrderedDict, Union
 
 import pandas as pd
 import pyarrow as pa
+from pyarrow.parquet import ParquetFile
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
@@ -295,6 +296,60 @@ class SnowflakeSession(BaseSession):
         dataframe = self._prep_dataframe_before_write_pandas(dataframe, schema)
         write_pandas(self._connection, dataframe, table_name)
 
+    async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+        # create destination table using empty dataframe
+        schema = self.get_columns_schema_from_parquet(parquet_file_path)
+        create_command = "CREATE OR REPLACE TABLE"
+        cursor = self._connection.cursor()
+        cursor.execute(
+            f"""
+            {create_command} "{table_name}"(
+                {", ".join([f'"{colname}" {coltype}' for colname, coltype in schema])}
+            )
+            """
+        )
+
+        # clear data in new table
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": table_name,
+            "schema_name": self.schema_name,
+            "database_name": self.database_name,
+        })
+        table_fqn = sql_to_string(fully_qualified_table_name, source_type=self.source_type)
+        stage_name = f"temp_stage_{table_name}"
+        try:
+            cursor.execute(f"DELETE FROM {table_fqn} WHERE TRUE")
+            # create file format
+            cursor.execute(
+                "CREATE OR REPLACE FILE FORMAT parquet_format "
+                "TYPE = PARQUET COMPRESSION = AUTO USE_LOGICAL_TYPE = TRUE"
+            )
+            # create temporary stage
+            stage_location = f"@{stage_name}"
+            cursor.execute(f"CREATE OR REPLACE STAGE {stage_name} FILE_FORMAT = parquet_format")
+            # upload parquet file to stage
+            cursor.execute(f"PUT file://{parquet_file_path} {stage_location} OVERWRITE = TRUE")
+            # copy data from stage to table
+            select_string = ", ".join([
+                f"TRY_TO_BINARY($1:{colname}::VARCHAR, 'UTF-8')"
+                if coltype == "BINARY"
+                else f"$1:{colname}::{coltype}"
+                for colname, coltype in schema
+            ])
+            copy_sql = (
+                f"COPY INTO {table_fqn} FROM (SELECT {select_string} FROM {stage_location}) "
+                "FILE_FORMAT = (FORMAT_NAME = 'parquet_format')"
+            )
+            cursor.execute(copy_sql)
+        except ProgrammingError:
+            # drop table if copy fails
+            cursor.execute(f"DROP TABLE IF EXISTS {table_fqn}")
+            raise
+        finally:
+            # clean up stage and file format
+            cursor.execute(f"DROP STAGE IF EXISTS {stage_name}")
+            cursor.execute("DROP FILE FORMAT IF EXISTS parquet_format")
+
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
         if snowflake_var_info["type"] in db_vartype_mapping:
@@ -420,6 +475,47 @@ class SnowflakeSession(BaseSession):
             else:
                 db_type = "VARCHAR"
             schema.append((colname, db_type))
+        return schema
+
+    @staticmethod
+    def get_columns_schema_from_parquet(parquet_file_path: str) -> list[tuple[str, str]]:
+        """Get schema that can be used in CREATE TABLE statement from parquet file
+
+        Parameters
+        ----------
+        parquet_file_path : str
+            Path to parquet file
+
+        Returns
+        -------
+        list[tuple[str, str]]
+        """
+        schema = []
+        parquet_file = ParquetFile(parquet_file_path)
+        arrow_schema: pa.Schema = parquet_file.schema_arrow
+        for field in arrow_schema:
+            if isinstance(field.type, pa.TimestampType):
+                if field.type.tz is not None:
+                    db_type = "TIMESTAMP_TZ"
+                else:
+                    db_type = "TIMESTAMP_NTZ"
+            elif field.type in {pa.date32(), pa.date64()}:
+                db_type = "DATE"
+            elif field.type == pa.bool_():
+                db_type = "BOOLEAN"
+            elif field.type in {pa.float32(), pa.float64()}:
+                db_type = "DOUBLE"
+            elif field.type in {pa.int8(), pa.int16(), pa.int32(), pa.int64()}:
+                db_type = "INT"
+            elif field.type == pa.binary():
+                db_type = "BINARY"
+            elif isinstance(field.type, pa.ListType):
+                db_type = "ARRAY"
+            elif isinstance(field.type, pa.StructType):
+                db_type = "OBJECT"
+            else:
+                db_type = "VARCHAR"
+            schema.append((field.name, db_type))
         return schema
 
     @staticmethod
