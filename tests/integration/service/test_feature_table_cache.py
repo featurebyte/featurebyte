@@ -5,6 +5,7 @@ Integration test for feature table cache
 import tempfile
 import time
 from contextlib import asynccontextmanager
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -16,7 +17,8 @@ from sqlglot import expressions, parse_one
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 
 @pytest.fixture(name="feature_list")
@@ -466,31 +468,6 @@ async def backup_and_restore_event_table(session):
     )
 
 
-@pytest_asyncio.fixture(name="drop_product_action_column")
-async def drop_product_action_column_fixture(observation_table, session):
-    """
-    Drop product action column fixture
-    """
-    # Make sure observation table is created first before dropping the column
-    _ = observation_table
-    async with backup_and_restore_event_table(session):
-        # Drop product action column
-        query = sql_to_string(
-            expressions.Alter(
-                this=expressions.Table(this=quoted_identifier("TEST_TABLE")),
-                kind="TABLE",
-                actions=[
-                    expressions.Drop(
-                        this=quoted_identifier("PRODUCT_ACTION"), kind="COLUMN", exists=True
-                    )
-                ],
-            ),
-            source_type=session.source_type,
-        )
-        await session.execute_query_long_running(query)
-        yield
-
-
 @pytest_asyncio.fixture(name="drop_event_table")
 async def drop_event_table_fixture(observation_table, session):
     """
@@ -508,7 +485,6 @@ async def drop_event_table_fixture(observation_table, session):
         yield
 
 
-@pytest.mark.usefixtures("drop_product_action_column")
 @pytest.mark.asyncio
 async def test_not_raise_on_error__dropped_column(
     feature_table_cache_service,
@@ -516,6 +492,7 @@ async def test_not_raise_on_error__dropped_column(
     feature_store,
     observation_table,
     feature_list,
+    session,
 ):
     """
     Test create_or_update_feature_table_cache when raise_on_error=False
@@ -524,15 +501,43 @@ async def test_not_raise_on_error__dropped_column(
     feature_list_model = feature_list.cached_model
     feature_cluster = feature_list_model.feature_clusters[0]
 
+    original_execute_query = session.execute_query
+
+    async def mocked_execute_query(query: str, *args, **kwargs) -> pd.DataFrame:
+        """
+        Simulate failing queries for a subset of the features (those that have PRODUCT_ACTION as the
+        group by column)
+        """
+
+        query_expr = parse_one(query, dialect=get_dialect_from_source_type(session.source_type))
+
+        def _invalidate_query_if_product_action_in_groupby(
+            node: expressions.Expression,
+        ) -> expressions.Expression:
+            if isinstance(node, expressions.Select) and "group" in node.args:
+                group_expr = node.args["group"]
+                for col_expr in group_expr.expressions:
+                    if "PRODUCT_ACTION" in str(col_expr):
+                        raise session._no_schema_error("Failing on purpose")
+            return node
+
+        query_expr = query_expr.transform(_invalidate_query_if_product_action_in_groupby)
+        query = sql_to_string(query_expr, source_type=session.source_type)
+
+        return await original_execute_query(query, *args, **kwargs)
+
     # Try to create feature table cache with missing column
-    result = await feature_table_cache_service.create_or_update_feature_table_cache(
-        feature_store=feature_store_model,
-        observation_table=observation_table.cached_model,
-        graph=feature_cluster.graph,
-        nodes=feature_cluster.nodes,
-        feature_list_id=feature_list_model.id,
-        raise_on_error=False,
-    )
+    with patch(
+        "featurebyte.session.base.BaseSession.execute_query", side_effect=mocked_execute_query
+    ):
+        result = await feature_table_cache_service.create_or_update_feature_table_cache(
+            feature_store=feature_store_model,
+            observation_table=observation_table.cached_model,
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            feature_list_id=feature_list_model.id,
+            raise_on_error=False,
+        )
 
     # Check result
     assert len(result.features_computation_result.failed_node_names) > 0
