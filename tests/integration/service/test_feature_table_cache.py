@@ -518,9 +518,7 @@ async def test_not_raise_on_error__dropped_column(
                 group_expr = node.args["group"]
                 for col_expr in group_expr.expressions:
                     if "PRODUCT_ACTION" in str(col_expr):
-                        return parse_one(
-                            "SELECT THIS, IS, AN, INVALID, QUERY FROM MY_TABLE GROUP BY K, THX, BYE"
-                        )
+                        raise session._no_schema_error("Failing on purpose")
             return node
 
         query_expr = query_expr.transform(_invalidate_query_if_product_action_in_groupby)
