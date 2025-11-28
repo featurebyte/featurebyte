@@ -378,11 +378,6 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
     -------
     pd.DataFrame
         Dataframe object
-
-    Raises
-    ------
-    NotImplementedError
-        Unsupported type conversion
     """
     dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
     type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
