@@ -389,7 +389,7 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.preview_service.preview(
+        return await self.preview_service.preview_as_json(
             preview=preview, limit=limit, allow_long_running=False
         )
 
@@ -471,7 +471,7 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.preview_service.describe(
+        return await self.preview_service.describe_as_json(
             sample=sample, size=size, seed=seed, allow_long_running=False
         )
 

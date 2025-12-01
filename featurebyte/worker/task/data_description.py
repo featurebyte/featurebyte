@@ -50,7 +50,7 @@ class DataDescriptionTask(BaseTask[DataDescriptionTaskPayload]):
         """
         await self.task_progress_updater.update_progress(percent=5, message="Running Query")
 
-        result = await self.preview_service.describe(
+        result = await self.preview_service.describe_as_json(
             sample=payload.sample, size=payload.size, seed=payload.seed
         )
 

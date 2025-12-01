@@ -286,19 +286,23 @@ def dataframe_to_json(
     }
 
 
-def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
+def apply_type_conversions(
+    dataframe: pd.DataFrame, type_conversions: Optional[dict[Optional[str], DBVarType]]
+) -> pd.DataFrame:
     """
-    Read pandas dataframe from json
+    Apply type conversions to dataframe columns
 
     Parameters
     ----------
-    values: dict[str, Any]
-        Dict containing JSON string and type conversions
+    dataframe: pd.DataFrame
+        Dataframe object
+    type_conversions: Optional[dict[Optional[str], DBVarType]]
+        Conversions to apply on columns
 
     Returns
     -------
     pd.DataFrame
-        Dataframe object
+        Dataframe with applied type conversions
 
     Raises
     ------
@@ -346,8 +350,6 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
                 pass
         return value
 
-    dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
-    type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     if type_conversions:
         for col_name, dtype in type_conversions.items():
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
@@ -361,6 +363,25 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
             else:
                 raise NotImplementedError()
     return dataframe
+
+
+def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
+    """
+    Read pandas dataframe from json
+
+    Parameters
+    ----------
+    values: dict[str, Any]
+        Dict containing JSON string and type conversions
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe object
+    """
+    dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
+    type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
+    return apply_type_conversions(dataframe, type_conversions)
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

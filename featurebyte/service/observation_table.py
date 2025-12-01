@@ -16,7 +16,6 @@ from sqlglot.expressions import Expression
 
 from featurebyte import TargetType
 from featurebyte.api.source_table import SourceTable
-from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import (
     DBVarType,
     MaterializedTableNamePrefix,
@@ -797,8 +796,7 @@ class ObservationTableService(
             feature_store_id=feature_store.id,
             enable_query_cache=False,  # query is one off and not expected to be reused
         )
-        describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
-        describe_stats_dataframe = dataframe_from_json(describe_stats_json)
+        describe_stats_dataframe = await self.preview_service.describe(sample, 0, 1234)
         entity_columns_stats = []
         for col in columns_info:
             if col.entity_id is None:
