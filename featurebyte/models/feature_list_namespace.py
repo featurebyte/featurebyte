@@ -35,7 +35,7 @@ class FeatureListStatus(OrderedStrEnum):
 class FeatureListRole(StrEnum):
     """Feature List Role. Determines how the list should be used for causal modeling."""
 
-    OUTCOUME_PREDICTORS = "outcome-predictors"
+    OUTCOME_PREDICTORS = "outcome-predictors"
     CONFOUNDERS = "confounders"
     MODERATORS = "moderators"
 
@@ -67,7 +67,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     default_feature_list_id: PydanticObjectId = Field(frozen=True)
     status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
-    role: FeatureListRole = Field(default=FeatureListRole.OUTCOUME_PREDICTORS)
+    role: FeatureListRole = Field(default=FeatureListRole.OUTCOME_PREDICTORS)
 
     # pydantic validators
     _sort_ids_validator = field_validator(

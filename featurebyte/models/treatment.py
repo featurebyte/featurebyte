@@ -72,7 +72,7 @@ class AssignmentDesign(StrEnum):
     MATCHED_PAIR = "matched-pair"
     # Paired or matched units randomized within pairs (matched RCT).
 
-    ENCOURAGEMENT = "encouragemnt"
+    ENCOURAGEMENT = "encouragement"
     # Instrumental variable design where random "encouragement" affects T
     # but not Y directly. Produces LATE.
 
