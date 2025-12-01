@@ -56,6 +56,9 @@ def check_materialized_table_preview_methods(table, expected_columns: List[str],
 
     df_sample = table.sample(size=number_of_rows)
     assert df_sample.shape[0] == number_of_rows
+    # Table weight column is not included in sample preview
+    if "__FB_TABLE_ROW_WEIGHT" in expected_columns:
+        expected_columns = [col for col in expected_columns if col != "__FB_TABLE_ROW_WEIGHT"]
     assert df_sample.columns.tolist() == expected_columns
 
     df_describe = table.describe()

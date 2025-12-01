@@ -559,7 +559,6 @@ async def test_observation_table_downsampling(
         SpecialColumnName.POINT_IN_TIME,
         "üser id",
         "user_active_24h_target",
-        "__FB_TABLE_ROW_WEIGHT",
     }
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
