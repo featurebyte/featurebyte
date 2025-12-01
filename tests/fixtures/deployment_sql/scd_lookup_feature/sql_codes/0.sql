@@ -1,0 +1,140 @@
+WITH DEPLOYMENT_REQUEST_TABLE AS (
+  SELECT
+    REQ."cust_id",
+    {{ CURRENT_TIMESTAMP }} AS POINT_IN_TIME
+  FROM (
+    SELECT DISTINCT
+      "col_text" AS "cust_id"
+    FROM (
+      SELECT
+        "col_int" AS "col_int",
+        "col_float" AS "col_float",
+        "col_text" AS "col_text",
+        "col_binary" AS "col_binary",
+        "col_boolean" AS "col_boolean",
+        "effective_timestamp" AS "effective_timestamp",
+        "end_timestamp" AS "end_timestamp",
+        "date_of_birth" AS "date_of_birth",
+        "created_at" AS "created_at",
+        "cust_id" AS "cust_id"
+      FROM "sf_database"."sf_schema"."scd_table"
+      WHERE
+        "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMP)
+        AND "effective_timestamp" < {{ CURRENT_TIMESTAMP }}
+    )
+    WHERE
+      NOT "col_text" IS NULL
+  ) AS REQ
+), _FB_AGGREGATED AS (
+  SELECT
+    REQ."cust_id" AS "cust_id",
+    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+    REQ."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+  FROM (
+    SELECT
+      L."cust_id" AS "cust_id",
+      L."POINT_IN_TIME" AS "POINT_IN_TIME",
+      R."col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+    FROM (
+      SELECT
+        "__FB_KEY_COL_0",
+        "__FB_LAST_TS",
+        "__FB_TS_COL",
+        "cust_id",
+        "POINT_IN_TIME"
+      FROM (
+        SELECT
+          "__FB_KEY_COL_0",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          "__FB_TS_COL",
+          "cust_id",
+          "POINT_IN_TIME",
+          "__FB_EFFECTIVE_TS_COL"
+        FROM (
+          SELECT
+            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
+            "cust_id" AS "__FB_KEY_COL_0",
+            NULL AS "__FB_EFFECTIVE_TS_COL",
+            2 AS "__FB_TS_TIE_BREAKER_COL",
+            "cust_id" AS "cust_id",
+            "POINT_IN_TIME" AS "POINT_IN_TIME"
+          FROM (
+            SELECT
+              REQ."cust_id",
+              REQ."POINT_IN_TIME"
+            FROM DEPLOYMENT_REQUEST_TABLE AS REQ
+          )
+          UNION ALL
+          SELECT
+            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
+            "col_text" AS "__FB_KEY_COL_0",
+            "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
+            1 AS "__FB_TS_TIE_BREAKER_COL",
+            NULL AS "cust_id",
+            NULL AS "POINT_IN_TIME"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "effective_timestamp" AS "effective_timestamp",
+              "end_timestamp" AS "end_timestamp",
+              "date_of_birth" AS "date_of_birth",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."scd_table"
+            WHERE
+              "effective_timestamp" IS NOT NULL
+          )
+        )
+      )
+      WHERE
+        "__FB_EFFECTIVE_TS_COL" IS NULL
+    ) AS L
+    LEFT JOIN (
+      SELECT
+        ANY_VALUE("col_int") AS "col_int",
+        ANY_VALUE("col_float") AS "col_float",
+        "col_text",
+        ANY_VALUE("col_binary") AS "col_binary",
+        ANY_VALUE("col_boolean") AS "col_boolean",
+        "effective_timestamp",
+        ANY_VALUE("end_timestamp") AS "end_timestamp",
+        ANY_VALUE("date_of_birth") AS "date_of_birth",
+        ANY_VALUE("created_at") AS "created_at",
+        ANY_VALUE("cust_id") AS "cust_id"
+      FROM (
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "effective_timestamp" AS "effective_timestamp",
+          "end_timestamp" AS "end_timestamp",
+          "date_of_birth" AS "date_of_birth",
+          "created_at" AS "created_at",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."scd_table"
+        WHERE
+          "effective_timestamp" IS NOT NULL
+      )
+      GROUP BY
+        "effective_timestamp",
+        "col_text"
+    ) AS R
+      ON L."__FB_LAST_TS" = R."effective_timestamp"
+      AND L."__FB_KEY_COL_0" = R."col_text"
+      AND (
+        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        OR R."end_timestamp" IS NULL
+      )
+  ) AS REQ
+)
+SELECT
+  AGG."cust_id",
+  "_fb_internal_cust_id_lookup_col_boolean_project_1" AS "some_lookup_feature",
+  {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"
+FROM _FB_AGGREGATED AS AGG

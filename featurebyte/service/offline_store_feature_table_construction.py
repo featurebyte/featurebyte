@@ -168,8 +168,8 @@ class OfflineStoreFeatureTableConstructionService:
             If the entity universe cannot be determined
         """
         ingest_graph_metadata = get_combined_ingest_graph(
-            features=features,
-            primary_entities=primary_entities,
+            feature_infos=[(feature, feature.offline_store_info) for feature in features],
+            primary_entity_ids=[entity.id for entity in primary_entities],
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
         )

@@ -629,3 +629,9 @@ class TargetValidationError(BaseUnprocessableEntityError):
     """
     Raise when target validation fails
     """
+
+
+class DeploymentSqlGenerationError(BaseUnprocessableEntityError):
+    """
+    Raise when there is an error during deployment SQL generation
+    """

@@ -149,6 +149,7 @@ class EntityValidationService:
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel] = None,
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]] = None,
     ) -> EntityInfo:
         """
         Create an EntityInfo instance given graph and request
@@ -167,6 +168,8 @@ class EntityValidationService:
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
             Offline store feature table model when the request is initiated by feature materialize
             service
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]]
+            Primary entity IDs for offline store feature table
 
         Returns
         -------
@@ -203,6 +206,8 @@ class EntityValidationService:
         elif offline_store_feature_table_model is not None:
             if to_use_frozen_relationships(offline_store_feature_table_model.feature_cluster):
                 required_entity_ids = offline_store_feature_table_model.primary_entity_ids
+        elif offline_store_feature_table_primary_entity_ids is not None:
+            required_entity_ids = offline_store_feature_table_primary_entity_ids
 
         if required_entity_ids is None:
             assert graph_nodes is not None
@@ -236,6 +241,7 @@ class EntityValidationService:
         feature_list_model: Optional[FeatureListModel] = None,
         serving_names_mapping: dict[str, str] | None = None,
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel] = None,
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]] = None,
     ) -> ParentServingPreparation:
         """
         Validate that entities are provided correctly in feature requests
@@ -256,6 +262,8 @@ class EntityValidationService:
         offline_store_feature_table_model: Optional[OfflineStoreFeatureTableModel]
             Offline store feature table model when the request is initiated by feature materialize
             service
+        offline_store_feature_table_primary_entity_ids: Optional[List[ObjectId]]
+            Primary entity IDs for offline store feature table
 
         Returns
         -------
@@ -277,6 +285,7 @@ class EntityValidationService:
             request_column_names=request_column_names,
             serving_names_mapping=serving_names_mapping,
             offline_store_feature_table_model=offline_store_feature_table_model,
+            offline_store_feature_table_primary_entity_ids=offline_store_feature_table_primary_entity_ids,
         )
         entity_relationships_context = await self._get_entity_relationships_context(
             entity_info,

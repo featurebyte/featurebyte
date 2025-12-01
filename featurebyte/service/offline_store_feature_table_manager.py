@@ -27,7 +27,10 @@ from featurebyte.models.offline_store_feature_table import (
     FeaturesUpdate,
     OfflineStoreFeatureTableModel,
 )
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreInfo,
+    OfflineStoreIngestQueryGraph,
+)
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
@@ -80,15 +83,35 @@ class OfflineIngestGraphContainer:
         -------
         OfflineIngestGraphContainer
         """
+        feature_infos = []
+        for feature in features:
+            offline_store_info = feature.offline_store_info
+            assert offline_store_info is not None
+            feature_infos.append((feature, offline_store_info))
+        return cls.build_from_feature_infos(feature_infos)
+
+    @classmethod
+    def build_from_feature_infos(
+        cls, feature_infos: list[Tuple[FeatureModel, OfflineStoreInfo]]
+    ) -> OfflineIngestGraphContainer:
+        """
+        Build OfflineIngestGraphContainer from feature models and offline store infos
+
+        Parameters
+        ----------
+        feature_infos : list[Tuple[FeatureModel, OfflineStoreInfo]]
+            List of feature model and offline store info tuples
+
+        Returns
+        -------
+        OfflineIngestGraphContainer
+        """
         # Group features by offline store feature table name
         offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
         offline_store_table_name_to_graphs = defaultdict(list)
-        for feature in features:
-            offline_ingest_graphs = (
-                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
-            )
-
+        for feature, offline_store_info in feature_infos:
+            offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
             for offline_ingest_graph in offline_ingest_graphs:
                 table_name = offline_ingest_graph.offline_store_table_name
                 if feature.id not in offline_store_table_name_to_feature_ids[table_name]:

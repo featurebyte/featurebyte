@@ -15,17 +15,19 @@ from pydantic import Field, model_validator
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
+from featurebyte.models import FeatureModel
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueValuesConstraint,
 )
-from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_universe import EntityUniverseModel
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreInfo,
+    OfflineStoreIngestQueryGraph,
+)
 from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -403,8 +405,8 @@ class OfflineIngestGraphMetadata:
 
 
 def get_combined_ingest_graph(
-    features: List[FeatureModel],
-    primary_entities: List[EntityModel],
+    feature_infos: List[Tuple[FeatureModel, OfflineStoreInfo]],
+    primary_entity_ids: List[ObjectId],
     has_ttl: bool,
     feature_job_setting: Optional[FeatureJobSettingUnion],
 ) -> OfflineIngestGraphMetadata:
@@ -414,10 +416,10 @@ def get_combined_ingest_graph(
 
     Parameters
     ----------
-    features : List[FeatureModel]
-        List of features
-    primary_entities : List[EntityModel]
-        List of primary entity models
+    feature_infos : List[Tuple[FeatureModel, OfflineStoreInfo]]
+        List of feature model and offline store info tuples
+    primary_entity_ids : List[ObjectId]
+        List of primary entity IDs
     has_ttl : bool
         Whether the feature table has TTL
     feature_job_setting : Optional[FeatureJobSettingUnion]
@@ -434,12 +436,10 @@ def get_combined_ingest_graph(
     aggregation_ids = set()
     all_offline_ingest_graphs = []
 
-    primary_entity_ids = sorted([entity.id for entity in primary_entities])
+    primary_entity_ids = sorted(primary_entity_ids)
     feature_node_relationships_info = []
-    for feature in features:
-        offline_ingest_graphs = (
-            feature.offline_store_info.extract_offline_store_ingest_query_graphs()
-        )
+    for feature, offline_store_info in feature_infos:
+        offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
         for offline_ingest_graph in offline_ingest_graphs:
             if (
                 offline_ingest_graph.primary_entity_ids != primary_entity_ids
@@ -471,7 +471,7 @@ def get_combined_ingest_graph(
             ))
 
     feature_cluster = FeatureCluster(
-        feature_store_id=features[0].tabular_source.feature_store_id,
+        feature_store_id=feature_infos[0][0].tabular_source.feature_store_id,
         graph=local_query_graph,
         node_names=[node.name for node in output_nodes],
         feature_node_relationships_infos=feature_node_relationships_info,

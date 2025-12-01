@@ -231,11 +231,6 @@ class OfflineStoreInfoInitializationService:
         Returns
         -------
         OfflineStoreInfo
-
-        Raises
-        ------
-        ValueError
-            If include_feature_version_suffix is disabled when dry_run is False
         """
         if entity_id_to_serving_name is None:
             serv_name_service = self.entity_serving_names_service
@@ -243,11 +238,6 @@ class OfflineStoreInfoInitializationService:
                 await serv_name_service.get_entity_id_to_serving_name_for_offline_store(
                     entity_ids=feature.entity_ids
                 )
-            )
-
-        if not include_feature_version_suffix and not dry_run:
-            raise ValueError(
-                "include_feature_version_suffix can only be disabled when dry_run is True"
             )
 
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
