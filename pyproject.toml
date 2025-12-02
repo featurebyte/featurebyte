@@ -83,7 +83,7 @@ server = [
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
   "motor",
-  "pdfkit",
+  "weasyprint",
   "pyhive[hive_pure_sasl]",
   "redis",
   "requests-kerberos",

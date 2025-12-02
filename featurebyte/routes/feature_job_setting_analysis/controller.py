@@ -7,7 +7,7 @@ from __future__ import annotations
 import tempfile
 from io import BytesIO
 
-import pdfkit
+import weasyprint
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
 
@@ -168,12 +168,8 @@ class FeatureJobSettingAnalysisController(
         )
         buffer = BytesIO()
 
-        options = {"page-size": "Letter", "encoding": "UTF-8", "no-outline": None}
         with tempfile.NamedTemporaryFile() as file_obj:
-            pdfkit.from_string(analysis.analysis_report, file_obj.name, options=options)
-            file_obj.seek(0)
-            buffer.write(file_obj.read())
-            buffer.seek(0)
+            weasyprint.HTML(string=analysis.analysis_report).write_pdf(file_obj)
         return StreamingResponse(
             buffer,
             media_type="application/pdf",
