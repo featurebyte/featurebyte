@@ -112,6 +112,9 @@ class SQLiteSession(BaseSession):
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()
 
+    async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+        raise NotImplementedError()
+
     async def execute_query(
         self,
         query: str,

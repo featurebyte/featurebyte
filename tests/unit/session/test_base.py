@@ -88,6 +88,9 @@ def base_session_test_fixture():
         ) -> None:
             return None
 
+        async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+            return None
+
         async def comment_table(self, table_name: str, comment: str) -> None:
             pass
 
