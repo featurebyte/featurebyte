@@ -603,9 +603,6 @@ class FeatureStoreWarehouseService:
             # drop row index column if present
             if InternalName.TABLE_ROW_INDEX in result.columns:
                 columns_to_drop.append(InternalName.TABLE_ROW_INDEX)
-            # drop sampling rate column if present
-            if InternalName.TABLE_ROW_WEIGHT in result.columns:
-                columns_to_drop.append(InternalName.TABLE_ROW_WEIGHT)
             if columns_to_drop:
                 result.drop(columns=columns_to_drop, inplace=True)
 
