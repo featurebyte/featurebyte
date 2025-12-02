@@ -31,7 +31,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,7 +101,7 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -136,7 +136,7 @@ jobs:
       - test-deep-dive-notebooks
       - test-playground-notebooks
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}
