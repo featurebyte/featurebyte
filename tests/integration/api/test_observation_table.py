@@ -44,6 +44,7 @@ def user_use_case_fixture(event_view, user_entity):
         window="24h",
         target_name="user_avg_24h_target",
         fill_value=None,
+        target_type=TargetType.REGRESSION,
     )
     target.save()
     context = Context.create(name="user_context", primary_entity=[user_entity.name])
@@ -64,6 +65,7 @@ def customer_use_case_fixture(event_view, customer_entity):
         window="24h",
         target_name="cust_avg_24h_target",
         fill_value=None,
+        target_type=TargetType.REGRESSION,
     )
     target.save()
     context = Context.create(name="customer_context", primary_entity=[customer_entity.name])
@@ -89,6 +91,7 @@ def user_classification_use_case_fixture(event_view, user_entity):
     target.name = "user_active_24h_target"
     target.save()
     target.update_target_type(TargetType.CLASSIFICATION)
+    target.update_positive_label(True)
     context = Context.create(name="user_classification_context", primary_entity=[user_entity.name])
     use_case = UseCase.create(
         name="user_classification_use_case", target_name=target.name, context_name=context.name
@@ -326,7 +329,10 @@ async def test_observation_table_upload(
 
     target_name = "Target"
     target_namespace = TargetNamespace.create(
-        name=target_name, primary_entity=[], dtype=DBVarType.FLOAT
+        name=target_name,
+        primary_entity=[],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
 
     number_of_rows = df[target_name].dropna().shape[0]

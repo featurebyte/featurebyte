@@ -65,6 +65,15 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
 
+            if api_object == "target":
+                # update target type
+                target_namespace_id = response.json().get("target_namespace_id")
+                response = api_client.patch(
+                    f"/target_namespace/{target_namespace_id}",
+                    json={"target_type": "regression"},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
@@ -780,3 +789,47 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
                 "Please review the table for details and create a new table with all required data filled in."
             )
         }
+
+    def test_create_no_target_type_422(self, test_api_client_persistent):
+        """Test create use case with no target type"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target without target type
+        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
+        target_id = str(ObjectId())
+        target_payload["_id"] = target_id
+        target_payload["name"] = "float_target_no_type"
+        response = test_api_client.post("/target", json=target_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        use_case_payload = self.payload.copy()
+        use_case_payload["target_id"] = target_id
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Target type is not set for the target: float_target_no_type"
+        )
+
+    def test_create_no_positive_label_422(self, test_api_client_persistent):
+        """Test create use case with no target positive label"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create target without target type
+        target_payload = self.load_payload("tests/fixtures/request_payloads/bool_target.json")
+        target_id = str(ObjectId())
+        target_payload["_id"] = target_id
+        target_payload["target_type"] = "classification"
+        response = test_api_client.post("/target", json=target_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        use_case_payload = self.payload.copy()
+        use_case_payload["target_id"] = target_id
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Positive label is not set for the classification target: bool_target"
+        )

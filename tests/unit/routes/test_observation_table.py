@@ -71,6 +71,15 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
 
+            if api_object == "target":
+                # update target type
+                target_namespace_id = response.json().get("target_namespace_id")
+                response = api_client.patch(
+                    f"/target_namespace/{target_namespace_id}",
+                    json={"target_type": "regression"},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
@@ -1298,31 +1307,25 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
         mock_generate_session_unique_id.return_value = "68DFBD342ECAABD7D21D4759"
 
-        # create boolean target
-        payload = self.load_payload("tests/fixtures/request_payloads/bool_target.json")
-        response = test_api_client.post("/target", json=payload)
+        # create boolean target namespace
+        payload = self.load_payload("tests/fixtures/request_payloads/target_namespace.json")
+        payload["dtype"] = "BOOL"
+        payload["name"] = "bool_target"
+        payload["target_type"] = None
+        payload["target_ids"] = []
+        response = test_api_client.post("/target_namespace", json=payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
-        bool_target_id = response_dict["_id"]
-
-        # create use case
-        payload = {
-            "_id": str(ObjectId()),
-            "name": "classification_use_case",
-            "context_id": "646f6c1c0ed28a5271fb02d5",
-            "target_id": bool_target_id,
-        }
-        response = test_api_client.post("/use_case", json=payload)
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.CREATED, response_dict
-        use_case_id = response_dict["_id"]
-        use_case_target_namespace_id = response.json()["target_namespace_id"]
+        target_namespace_id = response.json()["_id"]
 
         payload = copy.deepcopy(self.payload)
         payload["primary_entity_ids"] = None
         payload["context_id"] = None
-        payload["use_case_id"] = use_case_id
         payload["purpose"] = "eda"
+        payload["target_column"] = "bool_target"
+        payload["request_input"]["source"]["table_details"]["table_name"] = (
+            "sf_table_with_target_namespace"
+        )
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
@@ -1338,7 +1341,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         payload = self.load_payload(
             "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
         )
-        payload["use_case_id"] = use_case_id
+        payload["use_case_id"] = None
         payload["request_input"]["observation_table_id"] = source_observation_table_id
         payload["request_input"]["downsampling_info"] = {
             "sampling_rate_per_target_value": [
@@ -1358,7 +1361,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         # update target type
         response = test_api_client.patch(
-            f"/target_namespace/{use_case_target_namespace_id}",
+            f"/target_namespace/{target_namespace_id}",
             json={"target_type": "classification"},
         )
         assert response.status_code == HTTPStatus.OK, response.json()

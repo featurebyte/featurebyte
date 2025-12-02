@@ -16,6 +16,7 @@ from featurebyte import (
     Catalog,
     RequestColumn,
     TargetNamespace,
+    TargetType,
     TimeInterval,
     TimestampSchema,
     UseCase,
@@ -595,6 +596,7 @@ def use_case_fixture(catalog, float_target, context):
     """
     _ = catalog
     float_target.save()
+    float_target.update_target_type(TargetType.REGRESSION)
     target_namespace = TargetNamespace.get(float_target.name)
 
     use_case = UseCase(

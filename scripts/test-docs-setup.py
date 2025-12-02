@@ -4,7 +4,7 @@ Setup for running doctests.
 
 import featurebyte as fb
 from featurebyte import FeatureList, FunctionParameter, MySQLOnlineStoreDetails, UserDefinedFunction
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 
 
 def setup() -> None:
@@ -230,10 +230,22 @@ def setup() -> None:
     )
     target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
 
+    target_invoice_amount_avg_30days = grocery_invoice_view.groupby(
+        "GroceryCustomerGuid"
+    ).forward_aggregate(
+        value_column="Amount",
+        method="avg",
+        window="30d",
+        target_name="target_invoice_amount_avg_30days",
+        fill_value=None,
+        target_type=TargetType.REGRESSION,
+    )
+    target_invoice_amount_avg_30days.save(conflict_resolution="retrieve")
+
     # UseCase setup
     context = fb.Context.create(name="context", primary_entity=["grocerycustomer"])
     fb.UseCase.create(
-        name="use_case", target_name=target_latest_invoice_timestamp.name, context_name=context.name
+        name="use_case", target_name=target_invoice_amount_avg_30days.name, context_name=context.name
     )
 
 

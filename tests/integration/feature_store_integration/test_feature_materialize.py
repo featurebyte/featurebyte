@@ -20,7 +20,7 @@ from sqlglot import parse_one
 
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType, TargetType
 from featurebyte.feast.patch import augment_response_with_on_demand_transforms
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -478,6 +478,7 @@ def order_use_case_fixture(order_entity):
         "order_target",
         primary_entity=[order_entity.name],
         dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     context = fb.Context.create(
         name="order_context",
@@ -559,6 +560,7 @@ def item_use_case_fixture(item_entity):
         "item_target",
         primary_entity=[item_entity.name],
         dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     context = fb.Context.create(
         name="item_context",
