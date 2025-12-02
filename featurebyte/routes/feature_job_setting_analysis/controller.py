@@ -4,10 +4,9 @@ FeatureJobSettingAnalysis API route controller
 
 from __future__ import annotations
 
-import tempfile
 from io import BytesIO
 
-import pdfkit
+import weasyprint
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
 
@@ -167,13 +166,19 @@ class FeatureJobSettingAnalysisController(
             document_id=feature_job_setting_analysis_id
         )
         buffer = BytesIO()
+        stylesheet = weasyprint.CSS(string="""
+        @page {
+          margin-left: 0;
+          margin-right: 0;
+          size: letter;
+        }
+        .fb-analysis-section {
+          break-after: always;
+        }
+        """)
+        weasyprint.HTML(string=analysis.analysis_report).write_pdf(buffer, stylesheets=[stylesheet])
 
-        options = {"page-size": "Letter", "encoding": "UTF-8", "no-outline": None}
-        with tempfile.NamedTemporaryFile() as file_obj:
-            pdfkit.from_string(analysis.analysis_report, file_obj.name, options=options)
-            file_obj.seek(0)
-            buffer.write(file_obj.read())
-            buffer.seek(0)
+        buffer.seek(0)
         return StreamingResponse(
             buffer,
             media_type="application/pdf",
