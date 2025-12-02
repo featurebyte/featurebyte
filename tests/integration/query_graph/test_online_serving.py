@@ -2,13 +2,9 @@
 Integration test for online store SQL generation
 """
 
-import asyncio
 import copy
-import threading
 import time
-from collections import defaultdict
 from datetime import datetime
-from queue import Queue
 from unittest.mock import patch
 
 import pandas as pd
@@ -17,14 +13,10 @@ from bson import ObjectId
 from sqlglot import expressions
 
 from featurebyte import FeatureList
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.query_graph.sql.online_store_compute_query import (
-    get_online_store_precompute_queries,
-)
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -200,50 +192,10 @@ async def test_online_serving_sql(
         # clear batch request table
         batch_request_table.delete()
         assert batch_request_table.saved is False
-
-        await check_concurrent_online_store_table_updates(
-            get_session_callback,
-            feature_list,
-            pd.Timestamp(schedule_time).strftime("%Y-%m-%d %H:%M:%S"),
-            online_store_table_version_service_factory,
-        )
     finally:
         deployment.disable()
         time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is False
-
-
-def get_online_store_table_name_to_aggregation_id(feature_list):
-    """
-    Helper function to get a mapping from online store table name to aggregation ids
-    """
-    online_store_table_name_to_aggregation_id = defaultdict(set)
-    for _, feature_object in feature_list.feature_objects.items():
-        feature_model = feature_object.cached_model
-        precompute_queries = get_online_store_precompute_queries(
-            graph=feature_model.graph,
-            node=feature_model.node,
-            source_info=feature_model.get_source_info(),
-            agg_result_name_include_serving_names=feature_model.agg_result_name_include_serving_names,
-        )
-        for query in precompute_queries:
-            online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
-    return online_store_table_name_to_aggregation_id
-
-
-async def sanity_check_online_store_tables(session, feature_list):
-    """
-    Verify that online enabling related features do not trigger redundant online store updates
-    """
-    table_names = list(get_online_store_table_name_to_aggregation_id(feature_list).keys())
-    for table_name in table_names:
-        df = await session.execute_query(
-            f"SELECT MAX({InternalName.ONLINE_STORE_VERSION_COLUMN}) AS OUT FROM {table_name}"
-        )
-        max_version = df.iloc[0]["OUT"]
-        # Verify that all results are at the very first version. If that is not the case, some
-        # results were calculated more than once.
-        assert max_version == 0
 
 
 def check_online_features_route(deployment, config, df_historical, columns):
@@ -429,61 +381,3 @@ async def check_get_batch_features_feature_table(
         assert table_location == original_table_location, (
             "Table location should remain the same after populating the table"
         )
-
-
-async def check_concurrent_online_store_table_updates(
-    get_session_callback,
-    feature_list,
-    job_schedule_ts_str,
-    online_store_table_version_service_factory,
-):
-    """
-    Test concurrent online store table updates
-    """
-    # Find concurrent online store table updates given a FeatureList. Concurrent online store table
-    # updates occur when tile jobs associated with different aggregation ids write to the same
-    # online store table. The logic below finds such a table and the associated aggregation ids.
-    online_store_table_name_to_aggregation_id = get_online_store_table_name_to_aggregation_id(
-        feature_list
-    )
-
-    table_with_concurrent_updates = None
-    for table_name, agg_ids in online_store_table_name_to_aggregation_id.items():
-        if len(agg_ids) > 1:
-            table_with_concurrent_updates = table_name
-            break
-    if table_with_concurrent_updates is None:
-        raise AssertionError("No table with concurrent updates found")
-
-    aggregation_ids = list(online_store_table_name_to_aggregation_id[table_with_concurrent_updates])
-
-    async def run(aggregation_id, out):
-        """
-        Trigger online store updates for the given aggregation_id
-        """
-        session = await get_session_callback()
-        online_store_job = TileScheduleOnlineStore(
-            session=session,
-            aggregation_id=aggregation_id,
-            job_schedule_ts_str=job_schedule_ts_str,
-            online_store_table_version_service=online_store_table_version_service_factory(),
-        )
-        try:
-            await online_store_job.execute()
-        except Exception as e:
-            out.put(e)
-
-    out = Queue()
-
-    for _ in range(3):
-        threads = []
-        for aggregation_id in aggregation_ids:
-            t = threading.Thread(target=asyncio.run, args=(run(aggregation_id, out),))
-            threads.append(t)
-            t.start()
-
-        for t in threads:
-            t.join()
-
-        if not out.empty():
-            raise out.get()

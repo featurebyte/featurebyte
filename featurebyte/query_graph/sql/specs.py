@@ -8,7 +8,7 @@ import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, List, Optional, Type, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -38,7 +38,6 @@ from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transform.pruning import prune_query_graph
 
 NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
@@ -151,8 +150,6 @@ class TileBasedAggregationSpec(AggregationSpec):
     is_order_dependent: bool
     tile_value_columns: list[str]
     dtype: DBVarType
-    pruned_graph: QueryGraphModel
-    pruned_node: Node
     agg_func: AggFunc
 
     @property
@@ -244,7 +241,7 @@ class TileBasedAggregationSpec(AggregationSpec):
             offset_secs = None
         for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
             window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
-            pruned_graph, pruned_node, dtype = cls._get_aggregation_column_type(
+            dtype = cls._get_aggregation_column_type(
                 graph=graph,
                 groupby_node=groupby_node,
                 feature_name=feature_name,
@@ -269,8 +266,6 @@ class TileBasedAggregationSpec(AggregationSpec):
                 tile_value_columns=tile_value_columns,
                 entity_ids=groupby_node_params.entity_ids,
                 dtype=dtype,
-                pruned_graph=pruned_graph,
-                pruned_node=pruned_node,
                 agg_func=groupby_node_params.agg_func,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             )
@@ -284,7 +279,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         graph: QueryGraphModel,
         groupby_node: Node,
         feature_name: str,
-    ) -> Tuple[QueryGraphModel, Node, DBVarType]:
+    ) -> DBVarType:
         """Get the column type of the aggregation
 
         Parameters
@@ -306,19 +301,17 @@ class TileBasedAggregationSpec(AggregationSpec):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[groupby_node],
         )
-        pruned_graph, node_name_map, _ = prune_query_graph(graph=graph, node=project_node)
-        pruned_node = pruned_graph.get_node_by_name(node_name_map[project_node.name])
         op_struct = (
-            OperationStructureExtractor(graph=pruned_graph)
-            .extract(node=pruned_node)
-            .operation_structure_map[pruned_node.name]
+            OperationStructureExtractor(graph=graph)
+            .extract(node=project_node)
+            .operation_structure_map[project_node.name]
         )
         aggregations = op_struct.aggregations
         assert len(aggregations) == 1, (
             f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
         )
         aggregation = aggregations[0]
-        return pruned_graph, pruned_node, aggregation.dtype
+        return aggregation.dtype
 
 
 @dataclass

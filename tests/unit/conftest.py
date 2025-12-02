@@ -67,9 +67,6 @@ from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, Time
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.feature_historical import HistoricalFeatureQueryGenerator
-from featurebyte.query_graph.sql.online_store_compute_query import (
-    get_online_store_precompute_queries,
-)
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -3457,21 +3454,8 @@ def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id)
 def mock_update_data_warehouse(app_container):
     """Mock update data warehouse method"""
 
-    async def mock_func(feature, target_online_enabled):
-        _ = target_online_enabled
-        if target_online_enabled:
-            precompute_queries = get_online_store_precompute_queries(
-                graph=feature.graph,
-                node=feature.node,
-                source_info=feature.get_source_info(),
-                agg_result_name_include_serving_names=feature.agg_result_name_include_serving_names,
-            )
-            for query in precompute_queries:
-                await app_container.online_store_compute_query_service.create_document(query)
-
     with patch(
         "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse",
-        side_effect=mock_func,
     ) as mock_update_data_warehouse:
         yield mock_update_data_warehouse
 
