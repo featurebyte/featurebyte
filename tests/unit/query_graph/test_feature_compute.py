@@ -35,10 +35,10 @@ from tests.util.helper import (
 
 
 @pytest.fixture(name="agg_spec_template")
-def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
+def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
     agg_spec = TileBasedAggregationSpec(
-        node_name=expected_pruned_graph_and_node_1["pruned_node"].name,
+        node_name="groupby_1",
         window=86400,
         offset=None,
         frequency=3600,
@@ -58,7 +58,6 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
         dtype=DBVarType.FLOAT,
         agg_func=AggFunc.SUM,
         agg_result_name_include_serving_names=True,
-        **expected_pruned_graph_and_node_1,
     )
     return agg_spec
 
@@ -248,8 +247,6 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
 def test_feature_execution_planner(
     query_graph_with_groupby,
     groupby_node_aggregation_id,
-    expected_pruned_graph_and_node_1,
-    expected_pruned_graph_and_node_2,
     source_info,
 ):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
@@ -298,7 +295,6 @@ def test_feature_execution_planner(
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
                 agg_result_name_include_serving_names=True,
-                **expected_pruned_graph_and_node_1,
             )
         ],
         [
@@ -337,7 +333,6 @@ def test_feature_execution_planner(
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
                 agg_result_name_include_serving_names=True,
-                **expected_pruned_graph_and_node_2,
             )
         ],
     ]
@@ -364,8 +359,6 @@ def test_feature_execution_planner(
 def test_feature_execution_planner__serving_names_mapping(
     query_graph_with_groupby,
     groupby_node_aggregation_id,
-    expected_pruned_graph_and_node_1,
-    expected_pruned_graph_and_node_2,
     source_info,
 ):
     """Test FeatureExecutionPlanner with serving names mapping provided"""
@@ -417,7 +410,6 @@ def test_feature_execution_planner__serving_names_mapping(
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
                 agg_result_name_include_serving_names=True,
-                **expected_pruned_graph_and_node_1,
             )
         ],
         [
@@ -456,7 +448,6 @@ def test_feature_execution_planner__serving_names_mapping(
                 dtype=DBVarType.FLOAT,
                 agg_func=AggFunc.AVG,
                 agg_result_name_include_serving_names=True,
-                **expected_pruned_graph_and_node_2,
             )
         ],
     ]

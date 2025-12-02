@@ -15,9 +15,6 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
-from featurebyte.query_graph.sql.online_store_compute_query import (
-    get_online_store_precompute_queries,
-)
 
 
 @contextlib.contextmanager
@@ -130,27 +127,6 @@ async def list_online_store_compute_queries(
     out = []
     async for query in online_store_compute_query_service.list_by_aggregation_ids([agg_id]):
         out.append(query)
-    return out
-
-
-async def list_online_store_cleanup_tasks(
-    online_store_cleanup_scheduler_service, feature_service, saved_feature
-):
-    """
-    List online store cleanup tasks for the given feature
-    """
-    feature_model = await feature_service.get_document(saved_feature.id)
-    precompute_queries = get_online_store_precompute_queries(
-        graph=feature_model.graph,
-        node=feature_model.node,
-        source_info=feature_model.get_source_info(),
-        agg_result_name_include_serving_names=feature_model.agg_result_name_include_serving_names,
-    )
-    out = []
-    for query in precompute_queries:
-        task = await online_store_cleanup_scheduler_service.get_periodic_task(query.table_name)
-        if task is not None:
-            out.append(task)
     return out
 
 

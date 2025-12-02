@@ -24,8 +24,6 @@ def graph_and_groupby_node_fixture(query_graph_with_groupby):
 def expected_tile_based_aggregation_specs_fixture(
     graph_and_groupby_node,
     groupby_node_aggregation_id,
-    expected_pruned_graph_and_node_1,
-    expected_pruned_graph_and_node_2,
 ):
     """
     Expected aggregation specs
@@ -67,7 +65,6 @@ def expected_tile_based_aggregation_specs_fixture(
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
-            **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
@@ -104,7 +101,6 @@ def expected_tile_based_aggregation_specs_fixture(
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
-            **expected_pruned_graph_and_node_2,
         ),
     ]
     return expected_agg_specs
