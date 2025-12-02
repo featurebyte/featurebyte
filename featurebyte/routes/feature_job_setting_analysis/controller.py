@@ -166,7 +166,17 @@ class FeatureJobSettingAnalysisController(
             document_id=feature_job_setting_analysis_id
         )
         buffer = BytesIO()
-        weasyprint.HTML(string=analysis.analysis_report).write_pdf(buffer)
+        stylesheet = weasyprint.CSS(string="""
+        @page {
+          margin-left: 0;
+          margin-right: 0;
+          size: letter;
+        }
+        .fb-analysis-section {
+          break-after: always;
+        }
+        """)
+        weasyprint.HTML(string=analysis.analysis_report).write_pdf(buffer, stylesheets=[stylesheet])
 
         buffer.seek(0)
         return StreamingResponse(
