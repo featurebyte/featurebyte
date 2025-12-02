@@ -111,7 +111,7 @@ def test_get_client__success():
         # check api token included in header
         assert client.headers == {
             "user-agent": "Python SDK",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept-Encoding": "gzip, deflate, br",
             "accept": "application/json",
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",
@@ -229,7 +229,7 @@ def test_client_redirection(mock_check_sdk_versions):
         # check api token included in header
         assert client.headers == {
             "user-agent": "Python SDK",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept-Encoding": "gzip, deflate, br",
             "accept": "application/json",
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",

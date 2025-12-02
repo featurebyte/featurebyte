@@ -4,7 +4,6 @@ FeatureJobSettingAnalysis API route controller
 
 from __future__ import annotations
 
-import tempfile
 from io import BytesIO
 
 import weasyprint
@@ -167,9 +166,9 @@ class FeatureJobSettingAnalysisController(
             document_id=feature_job_setting_analysis_id
         )
         buffer = BytesIO()
+        weasyprint.HTML(string=analysis.analysis_report).write_pdf(buffer)
 
-        with tempfile.NamedTemporaryFile() as file_obj:
-            weasyprint.HTML(string=analysis.analysis_report).write_pdf(file_obj)
+        buffer.seek(0)
         return StreamingResponse(
             buffer,
             media_type="application/pdf",
