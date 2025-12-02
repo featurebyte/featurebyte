@@ -297,7 +297,7 @@ class SnowflakeSession(BaseSession):
         write_pandas(self._connection, dataframe, table_name)
 
     async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
-        # create destination table using empty dataframe
+        # create destination table using schema from parquet file
         schema = self.get_columns_schema_from_parquet(parquet_file_path)
         create_command = "CREATE OR REPLACE TABLE"
         cursor = self._connection.cursor()
@@ -318,7 +318,6 @@ class SnowflakeSession(BaseSession):
         table_fqn = sql_to_string(fully_qualified_table_name, source_type=self.source_type)
         stage_name = f"temp_stage_{table_name}"
         try:
-            cursor.execute(f"DELETE FROM {table_fqn} WHERE TRUE")
             # create file format
             cursor.execute(
                 "CREATE OR REPLACE FILE FORMAT parquet_format "
@@ -331,9 +330,9 @@ class SnowflakeSession(BaseSession):
             cursor.execute(f"PUT file://{parquet_file_path} {stage_location} OVERWRITE = TRUE")
             # copy data from stage to table
             select_string = ", ".join([
-                f"TRY_TO_BINARY($1:{colname}::VARCHAR, 'UTF-8')"
+                f"TRY_TO_BINARY($1:\"{colname}\"::VARCHAR, 'UTF-8')"
                 if coltype == "BINARY"
-                else f"$1:{colname}::{coltype}"
+                else f'$1:"{colname}"::{coltype}'
                 for colname, coltype in schema
             ])
             copy_sql = (
