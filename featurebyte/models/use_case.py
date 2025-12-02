@@ -20,6 +20,7 @@ class UseCaseType(StrEnum):
 
     PREDICTIVE = "predictive"
     DESCRIPTIVE = "descriptive"
+    CAUSAL = "causal"
 
 
 class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):
@@ -71,6 +72,6 @@ class DescriptiveUseCaseModel(BaseUseCaseModel):
 class UseCaseModel(BaseUseCaseModel):
     """PredictiveUseCaseModel represents a predictive use case within a feature store"""
 
-    use_case_type: Literal[UseCaseType.PREDICTIVE] = UseCaseType.PREDICTIVE
+    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = UseCaseType.PREDICTIVE
     target_id: Optional[PydanticObjectId] = None
     target_namespace_id: PydanticObjectId

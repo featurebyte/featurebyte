@@ -60,6 +60,7 @@ def feature_list_namespace_model_dict_fixture():
         "feature_list_ids": feature_list_ids,
         "deployed_feature_list_ids": [],
         "status": "DRAFT",
+        "role": "outcome-predictors",
         "default_feature_list_id": feature_list_ids[0],
         "created_at": None,
         "updated_at": None,

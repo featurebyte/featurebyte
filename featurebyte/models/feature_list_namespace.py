@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
-from featurebyte.enum import OrderedStrEnum
+from featurebyte.enum import OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -32,6 +32,14 @@ class FeatureListStatus(OrderedStrEnum):
     DEPLOYED = "DEPLOYED"
 
 
+class FeatureListRole(StrEnum):
+    """Feature List Role. Determines how the list should be used for causal modeling."""
+
+    OUTCOME_PREDICTORS = "outcome-predictors"
+    CONFOUNDERS = "confounders"
+    MODERATORS = "moderators"
+
+
 class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
     Feature list set with the same feature list name
@@ -50,6 +58,8 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         Default feature list id
     status: FeatureListStatus
         Feature list status
+    role: FeatureListRole
+        Role of the Feature List. Determines how the feature list should be used for causal modeling
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(frozen=True)
@@ -57,6 +67,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     default_feature_list_id: PydanticObjectId = Field(frozen=True)
     status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
+    role: FeatureListRole = Field(default=FeatureListRole.OUTCOME_PREDICTORS)
 
     # pydantic validators
     _sort_ids_validator = field_validator(
