@@ -465,6 +465,19 @@ class BaseSession(BaseModel):
             DataFrame to register
         """
 
+    @abstractmethod
+    async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+        """
+        Register a table from an uploaded parquet file
+
+        Parameters
+        ----------
+        table_name : str
+            Table name
+        parquet_file_path : str
+            Parquet file path
+        """
+
     @classmethod
     @abstractmethod
     def is_threadsafe(cls) -> bool:

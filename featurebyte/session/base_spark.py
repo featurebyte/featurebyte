@@ -220,6 +220,20 @@ class BaseSparkSession(BaseSession, ABC):
         await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
         await self.execute_query_long_running(f"CACHE TABLE `{table_name}`")
 
+    async def _register_table_from_uploaded_file(self, table_name: str, remote_path: str) -> None:
+        try:
+            await self.execute_query(
+                f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
+                f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
+                f"AS SELECT * FROM PARQUET.`{self.storage_path}/{remote_path}`"
+            )
+        finally:
+            # clean up staging file
+            try:
+                self.delete_path_from_storage(remote_path=remote_path)
+            except Exception as exc:
+                logger.error(f"Exception while deleting temp file {remote_path}: {exc}")
+
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         # truncate timestamps to microseconds to avoid parquet and Spark issues
         if dataframe.shape[0] > 0:
@@ -232,19 +246,12 @@ class BaseSparkSession(BaseSession, ABC):
         # write to parquet file
         temp_filename = f"temp_{ObjectId()}.parquet"
         self.upload_dataframe_to_storage(dataframe=dataframe, remote_path=temp_filename)
+        await self._register_table_from_uploaded_file(table_name, temp_filename)
 
-        try:
-            await self.execute_query(
-                f"CREATE OR REPLACE TABLE `{table_name}` USING DELTA "
-                f"TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5') "
-                f"AS SELECT * FROM PARQUET.`{self.storage_path}/{temp_filename}`"
-            )
-        finally:
-            # clean up staging file
-            try:
-                self.delete_path_from_storage(remote_path=temp_filename)
-            except Exception as exc:
-                logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
+    async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+        temp_filename = f"temp_{ObjectId()}.parquet"
+        self.upload_file_to_storage(local_path=parquet_file_path, remote_path=temp_filename)
+        await self._register_table_from_uploaded_file(table_name, temp_filename)
 
     async def _list_databases(self) -> list[str]:
         try:

@@ -166,7 +166,8 @@ class FeatureJobSettingAnalysisController(
             document_id=feature_job_setting_analysis_id
         )
         buffer = BytesIO()
-        stylesheet = weasyprint.CSS(string="""
+        stylesheet = weasyprint.CSS(
+            string="""
         @page {
           margin-left: 0;
           margin-right: 0;
@@ -175,7 +176,8 @@ class FeatureJobSettingAnalysisController(
         .fb-analysis-section {
           break-after: always;
         }
-        """)
+        """
+        )
         weasyprint.HTML(string=analysis.analysis_report).write_pdf(buffer, stylesheets=[stylesheet])
 
         buffer.seek(0)

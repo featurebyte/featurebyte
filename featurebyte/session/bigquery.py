@@ -615,6 +615,26 @@ class BigQuerySession(BaseSession):
         )
         job.result()
 
+    async def upload_parquet_as_table(self, table_name: str, parquet_file_path: str) -> None:
+        parquet_options = bigquery.ParquetOptions()
+        parquet_options.enable_list_inference = True
+        job_config = LoadJobConfig(
+            source_format="PARQUET",
+            write_disposition="WRITE_EMPTY",
+            parquet_options=parquet_options,
+        )
+        table_ref = TableReference(
+            dataset_ref=self.dataset_ref,
+            table_id=table_name,
+        )
+        with open(parquet_file_path, "rb") as file_obj:
+            job = self._client.load_table_from_file(
+                file_obj=file_obj,
+                destination=table_ref,
+                job_config=job_config,
+            )
+        job.result()
+
     async def list_table_schema(
         self,
         table_name: str | None,
