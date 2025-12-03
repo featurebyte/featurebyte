@@ -17,9 +17,11 @@ from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
+    NameQuery,
     PageQuery,
     PageSizeQuery,
     SearchQuery,
+    SortByQuery,
     SortDirQuery,
 )
 from featurebyte.routes.deployment_sql.controller import DeploymentSqlController
@@ -27,7 +29,6 @@ from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.deployment_sql import (
     DeploymentSqlCreate,
     DeploymentSqlList,
-    DeploymentSqlModelResponse,
 )
 from featurebyte.schema.task import Task
 
@@ -59,14 +60,6 @@ class DeploymentSqlRouter(
             response_model=Task,
             status_code=HTTPStatus.CREATED,
         )
-
-        # # Get by deployment ID
-        # self.router.add_api_route(
-        #     "/deployment/{deployment_id}",
-        #     self.get_deployment_sql_by_deployment_id,
-        #     methods=["GET"],
-        #     response_model=DeploymentSqlModelResponse,
-        # )
 
     async def get_object(
         self, request: Request, deployment_sql_id: PydanticObjectId
@@ -104,22 +97,30 @@ class DeploymentSqlRouter(
         task = await controller.generate_deployment_sql(str(data.deployment_id))
         return task
 
-    async def get_deployment_sql_by_deployment_id(
-        self, request: Request, deployment_id: PydanticObjectId
-    ) -> DeploymentSqlModelResponse:
+    async def list_objects(
+        self,
+        request: Request,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = SortByQuery,
+        sort_dir: Optional[SortDir] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+        name: Optional[str] = NameQuery,
+        deployment_id: Optional[PydanticObjectId] = None,
+    ) -> DeploymentSqlList:
         """
-        Get DeploymentSql by deployment ID
+        List deployment SQL objects, optionally filtered by deployment ID
         """
         controller = self.get_controller_for_request(request)
-        # Query by deployment_id field
-        query_filter = {"deployment_id": ObjectId(deployment_id)}
-        documents = await controller.service.list_documents_as_dict(
-            query_filter=query_filter, page=0, page_size=1
+        kwargs = {}
+        if deployment_id is not None:
+            kwargs["query_filter"] = {"deployment_id": ObjectId(deployment_id)}
+
+        return await controller.list(
+            page=page,
+            page_size=page_size,
+            sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
+            search=search,
+            name=name,
+            **kwargs,
         )
-        if not documents["data"]:
-            from featurebyte.exception import DocumentNotFoundError
-
-            raise DocumentNotFoundError("DeploymentSql not found for deployment")
-
-        document = documents["data"][0]
-        return DeploymentSqlModelResponse(**document)

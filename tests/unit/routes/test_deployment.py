@@ -866,3 +866,50 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert_equal_json_fixture(
             response_dict, "tests/fixtures/deployment_sql/deployment_sql.json", update_fixtures
         )
+
+    def test_deployment_sql_list_with_deployment_id_filter(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test deployment sql list with deployment_id query parameter"""
+        deployment_responses = create_multiple_success_responses
+        test_api_client, _ = test_api_client_persistent
+
+        # Create deployment SQL records for multiple deployments
+        created_deployment_ids = []
+        for deployment_response in deployment_responses:
+            deployment_id = deployment_response.json()["payload"]["output_document_id"]
+            created_deployment_ids.append(deployment_id)
+
+            task_response = test_api_client.post(
+                "/deployment_sql/", json={"deployment_id": deployment_id}
+            )
+            task_response = self.wait_for_results(test_api_client, task_response)
+            task_response_dict = task_response.json()
+            assert task_response.status_code == HTTPStatus.OK
+            assert task_response_dict["status"] == "SUCCESS"
+
+        # Test listing all deployment SQL records (should be > 1)
+        list_response = test_api_client.get("/deployment_sql/")
+        assert list_response.status_code == HTTPStatus.OK
+        all_deployment_sqls = list_response.json()
+        assert all_deployment_sqls["total"] > 1
+
+        # Test filtering by specific deployment_id
+        target_deployment_id = created_deployment_ids[0]
+        filtered_response = test_api_client.get(
+            "/deployment_sql/", params={"deployment_id": target_deployment_id}
+        )
+        assert filtered_response.status_code == HTTPStatus.OK
+        filtered_deployment_sqls = filtered_response.json()
+        assert filtered_deployment_sqls["total"] == 1
+        assert filtered_deployment_sqls["data"][0]["deployment_id"] == target_deployment_id
+
+        # Test filtering by non-existent deployment_id
+        non_existent_id = str(ObjectId())
+        empty_response = test_api_client.get(
+            "/deployment_sql/", params={"deployment_id": non_existent_id}
+        )
+        assert empty_response.status_code == HTTPStatus.OK
+        empty_deployment_sqls = empty_response.json()
+        assert empty_deployment_sqls["total"] == 0
+        assert empty_deployment_sqls["data"] == []
