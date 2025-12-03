@@ -6,6 +6,7 @@
 /deployment
 /deployment/all
 /deployment/summary
+/deployment_sql
 /development_dataset
 /dimension_table
 /entity
