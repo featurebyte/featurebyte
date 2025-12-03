@@ -15,6 +15,7 @@ from bson import ObjectId
 
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
 from tests.unit.routes.base import BaseAsyncApiTestSuite, BaseCatalogApiTestSuite
+from tests.util.helper import assert_equal_json_fixture
 
 
 class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
@@ -837,4 +838,31 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response_dict["detail"] == (
             "Cannot update compute option for an enabled deployment. Please disable the deployment first."
+        )
+
+    def test_deployment_sql(
+        self, test_api_client_persistent, create_success_response, update_fixtures
+    ):
+        """Test deployment sql generation"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, _ = test_api_client_persistent
+
+        task_response = test_api_client.post(
+            "/deployment_sql/", json={"deployment_id": deployment_id}
+        )
+        task_response = self.wait_for_results(test_api_client, task_response)
+        task_response_dict = task_response.json()
+        assert task_response.status_code == HTTPStatus.OK
+        assert task_response_dict["status"] == "SUCCESS"
+
+        response = test_api_client.get(task_response_dict["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        keys_to_check = [
+            "deployment_id",
+            "feature_table_sqls",
+        ]
+        response_dict = {k: response_dict[k] for k in keys_to_check}
+        assert_equal_json_fixture(
+            response_dict, "tests/fixtures/deployment_sql/deployment_sql.json", update_fixtures
         )

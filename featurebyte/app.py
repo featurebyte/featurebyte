@@ -23,6 +23,7 @@ from featurebyte.routes.catalog.api import CatalogRouter
 from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
 from featurebyte.routes.deployment.api import DeploymentRouter
+from featurebyte.routes.deployment_sql.api import DeploymentSqlRouter
 from featurebyte.routes.development_dataset.api import DevelopmentDatasetRouter
 from featurebyte.routes.dimension_table.api import DimensionTableRouter
 from featurebyte.routes.entity.api import EntityRouter
@@ -232,6 +233,7 @@ def get_app() -> FastAPI:
         BatchRequestTableRouter(),
         ContextRouter(),
         DeploymentRouter(),
+        DeploymentSqlRouter(),
         DimensionTableRouter(),
         EntityRouter(),
         EventTableRouter(),

@@ -2,6 +2,8 @@
 DeploymentSqlGenerationService
 """
 
+from typing import Optional
+
 from bson import ObjectId
 from sqlglot import expressions
 
@@ -62,7 +64,11 @@ class DeploymentSqlGenerationService:
         self.entity_validation_service = entity_validation_service
         self.column_statistics_service = column_statistics_service
 
-    async def generate_deployment_sql(self, deployment_id: ObjectId) -> DeploymentSqlModel:
+    async def generate_deployment_sql(
+        self,
+        deployment_id: ObjectId,
+        output_document_id: Optional[ObjectId] = None,
+    ) -> DeploymentSqlModel:
         """
         Generate SQL code for the given deployment ID.
 
@@ -81,6 +87,9 @@ class DeploymentSqlGenerationService:
         DeploymentSqlGenerationError
             If deployment SQL generation fails.
         """
+        if output_document_id is None:
+            output_document_id = ObjectId()
+
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
         feature_mapping = {}
@@ -186,6 +195,7 @@ class DeploymentSqlGenerationService:
                 )
             )
         deployment_sql_model = DeploymentSqlModel(
+            _id=output_document_id,
             deployment_id=deployment_id,
             feature_table_sqls=feature_table_sqls,
             catalog_id=catalog_model.id,
