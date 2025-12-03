@@ -76,6 +76,8 @@ class DeploymentSqlGenerationService:
         ----------
         deployment_id: ObjectId
             The ID of the deployment for which to generate SQL.
+        output_document_id: Optional[ObjectId]
+            Optional ID of the output document to associate with the generated SQL.
 
         Returns
         -------
