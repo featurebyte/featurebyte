@@ -913,3 +913,45 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         empty_deployment_sqls = empty_response.json()
         assert empty_deployment_sqls["total"] == 0
         assert empty_deployment_sqls["data"] == []
+
+    def test_delete_200_cascades_deployment_sql(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete deployment cascades to DeploymentSqlModel"""
+        test_api_client, _ = test_api_client_persistent
+        deployment_id = create_success_response.json()["_id"]
+
+        # Create deployment SQL record
+        task_response = test_api_client.post(
+            "/deployment_sql/", json={"deployment_id": deployment_id}
+        )
+        task_response = self.wait_for_results(test_api_client, task_response)
+        task_response_dict = task_response.json()
+        assert task_response.status_code == HTTPStatus.OK
+        assert task_response_dict["status"] == "SUCCESS"
+
+        # Verify deployment SQL record exists
+        sql_response = test_api_client.get(
+            "/deployment_sql/", params={"deployment_id": deployment_id}
+        )
+        assert sql_response.status_code == HTTPStatus.OK
+        sql_data = sql_response.json()
+        assert sql_data["total"] == 1
+        assert sql_data["data"][0]["deployment_id"] == deployment_id
+
+        # Delete deployment
+        response = test_api_client.delete(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # Verify deployment is deleted
+        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+        # Verify associated deployment SQL records are also deleted
+        sql_response = test_api_client.get(
+            "/deployment_sql/", params={"deployment_id": deployment_id}
+        )
+        assert sql_response.status_code == HTTPStatus.OK
+        sql_data = sql_response.json()
+        assert sql_data["total"] == 0
+        assert sql_data["data"] == []
