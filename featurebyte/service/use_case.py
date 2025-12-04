@@ -9,7 +9,7 @@ from typing import Any, Optional, cast
 from bson import ObjectId
 from redis import Redis
 
-from featurebyte import TargetType
+from featurebyte.enum import TargetType
 from featurebyte.exception import DocumentCreationError
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
