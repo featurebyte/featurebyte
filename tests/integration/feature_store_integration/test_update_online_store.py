@@ -12,7 +12,7 @@ import pytest_asyncio
 from sqlglot import parse_one
 
 import featurebyte as fb
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
@@ -59,6 +59,7 @@ def order_use_case_fixture(order_entity):
         "update_online_store_order_target",
         primary_entity=[order_entity.name],
         dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     context = fb.Context.create(
         name="update_online_store_order_context",

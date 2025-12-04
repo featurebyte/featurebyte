@@ -6,7 +6,7 @@ import freezegun
 import pandas as pd
 import pytest
 
-from featurebyte import Context, DatabricksDetails, FeatureList, UseCase
+from featurebyte import Context, DatabricksDetails, FeatureList, TargetType, UseCase
 from featurebyte.exception import DeploymentDataBricksAccessorError, NotInDataBricksEnvironmentError
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.precomputed_lookup_feature_table import get_lookup_steps_unique_identifier
@@ -33,6 +33,7 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
         window="1d",
         target_name="float_target",
         fill_value=0.0,
+        target_type=TargetType.REGRESSION,
     )
     target.save()
     context = Context.create(name="transaction_context", primary_entity=primary_entity)
@@ -48,7 +49,9 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
 def another_databricks_use_case_fixture(item_entity, snowflake_item_view_with_entity):
     """Another databricks use case fixture"""
     primary_entity = [item_entity.name]
-    target = snowflake_item_view_with_entity.item_amount.as_target("item_amount", fill_value=None)
+    target = snowflake_item_view_with_entity.item_amount.as_target(
+        "item_amount", fill_value=None, target_type=TargetType.REGRESSION
+    )
     target.save()
     context = Context.create(name="item_context", primary_entity=primary_entity)
     use_case = UseCase.create(

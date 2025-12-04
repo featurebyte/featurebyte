@@ -311,6 +311,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
 
         # create target
         target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
+        target_payload["target_type"] = "regression"
         response = test_api_client.post("/target", json=target_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 

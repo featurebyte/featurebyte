@@ -2190,6 +2190,12 @@ def snowflake_execute_query_for_materialized_table_fixture(
                     "data_type": json.dumps({"type": "REAL", "scale": 0}),
                     "comment": None,
                 })
+            if query.endswith('"sf_table_with_target_namespace"'):
+                res.append({
+                    "column_name": "bool_target",
+                    "data_type": json.dumps({"type": "BOOLEAN", "scale": 0}),
+                    "comment": None,
+                })
             elif query.endswith('"OBSERVATION_TABLE_000000000000000000000000"'):
                 res.append({
                     "column_name": "float_target",

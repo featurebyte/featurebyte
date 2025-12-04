@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from bson import ObjectId
 
 from featurebyte.exception import (
-    DocumentCreationError,
     DocumentDeletionError,
     DocumentUpdateError,
     ObservationTableInvalidUseCaseError,
@@ -77,38 +76,10 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         data: UseCaseCreate
             use case creation data
 
-        Raises
-        ------
-        DocumentCreationError
-            if target and context have different primary entities or target and target namespace have different target
-
         Returns
         -------
         UseCaseModel
         """
-        # validate both target and context exists
-        context = await self.context_service.get_document(document_id=data.context_id)
-
-        if not data.target_namespace_id and data.target_id:
-            target = await self.target_service.get_document(document_id=data.target_id)
-            data.target_namespace_id = target.target_namespace_id
-
-        target_namespace = await self.target_namespace_service.get_document(
-            document_id=data.target_namespace_id  # type: ignore
-        )
-
-        if data.target_id:
-            if data.target_id != target_namespace.default_target_id:
-                raise DocumentCreationError(
-                    "Input target_id and target namespace default_target_id must be the same"
-                )
-        else:
-            data.target_id = target_namespace.default_target_id
-
-        # validate target and context have the same entities
-        if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
-            raise DocumentCreationError("Target and context must have the same entities")
-
         return await self.service.create_use_case(data)
 
     async def update_use_case(self, use_case_id: ObjectId, data: UseCaseUpdate) -> UseCaseModel:

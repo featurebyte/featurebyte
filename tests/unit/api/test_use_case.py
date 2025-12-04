@@ -3,7 +3,7 @@ Unit test for UseCase class
 """
 
 from featurebyte import ObservationTable, TargetNamespace, UseCase
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 
 
 def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, context):
@@ -19,6 +19,7 @@ def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, contex
         window="28d",
         primary_entity=[cust_id_entity.name],
         dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     assert namespace.name == target_name
     use_case = UseCase.create(
@@ -42,6 +43,7 @@ def test_create_use_case(catalog, float_target, context):
 
     if not float_target.saved:
         float_target.save()
+        float_target.update_target_type(TargetType.REGRESSION)
 
     use_case = UseCase.create(
         name="test_use_case_1",

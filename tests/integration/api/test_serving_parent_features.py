@@ -20,7 +20,7 @@ from featurebyte import (
     TimestampSchema,
     UseCase,
 )
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import safe_freeze_time, tz_localize_if_needed
 
@@ -269,7 +269,10 @@ def event_use_case_fixture(event_entity):
     can be served by providing serving_event_id
     """
     target = TargetNamespace.create(
-        name="dummy_target", primary_entity=[event_entity.name], dtype=DBVarType.FLOAT
+        name="dummy_target",
+        primary_entity=[event_entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     context = Context.create(name="event_context", primary_entity=[event_entity.name])
     use_case = UseCase.create(
@@ -351,7 +354,10 @@ def test_use_case_list_filtering_by_feature_list(feature_list_with_parent_child_
     # create another use case with different primary entity
     entity = Entity.create(name="another_entity", serving_names=["another_serving_id"])
     target = TargetNamespace.create(
-        name="another_target", primary_entity=[entity.name], dtype=DBVarType.FLOAT
+        name="another_target",
+        primary_entity=[entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
     )
     context = Context.create(name="another_context", primary_entity=[entity.name])
     another_use_case = UseCase.create(
