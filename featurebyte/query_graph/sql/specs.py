@@ -124,6 +124,10 @@ class AggregationSpec(ABC):
     def include_query_node_name_in_result(self) -> bool:
         """
         Whether to include query node name in the aggregation result name
+
+        Returns
+        -------
+        bool
         """
         return True
 
@@ -314,12 +318,20 @@ class AggregationSpec(ABC):
             Source of the aggregation
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
-        graph: Optional[QueryGraphModel]
+        graph: QueryGraphModel
             Query graph
         agg_result_name_include_serving_names: bool
             Whether to include serving names in the aggregation result names
         column_statistics_info: Optional[ColumnStatisticsInfo]
             Column statistics information
+        on_demand_tile_tables_mapping: Optional[dict[str, str]]
+            Optional mapping from tile table id to on-demand tile table name
+        adapter: BaseAdapter
+            Instance of BaseAdapter
+
+        Returns
+        -------
+        list[AggregationSpecT]
         """
 
     @classmethod
@@ -375,7 +387,7 @@ class AggregationSpec(ABC):
             Whether to include serving names in the aggregation result names
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
-        source_info: Optional[SourceInfo]
+        source_info: SourceInfo
             Source type information. Mandatory if aggregation_source is not provided
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
@@ -518,18 +530,22 @@ class TileBasedAggregationSpec(AggregationSpec):
 
         Parameters
         ----------
-        graph : QueryGraphModel
-            Query graph
-        groupby_node : Node
+        node: Node
             Query graph node with groupby type
-        adapter : BaseAdapter
-            Instance of BaseAdapter
-        serving_names_mapping : dict[str, str]
+        aggregation_source: AggregationSource
+            Source of the aggregation
+        serving_names_mapping: Optional[dict[str, str]]
             Mapping from original serving name to new serving name
+        graph: QueryGraphModel
+            Query graph
         agg_result_name_include_serving_names: bool
             Whether to include serving names in the aggregation result names
-        on_demand_tile_tables_mapping: dict[str, str]
+        column_statistics_info: Optional[ColumnStatisticsInfo]
+            Column statistics information
+        on_demand_tile_tables_mapping: Optional[dict[str, str]]
             Optional mapping from tile table id to on-demand tile table name
+        adapter: BaseAdapter
+            Instance of BaseAdapter
 
         Returns
         -------
