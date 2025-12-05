@@ -52,6 +52,7 @@ from featurebyte.routes.common.primary_entity_validator import PrimaryEntityVali
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
+from featurebyte.routes.deployment_sql.controller import DeploymentSqlController
 from featurebyte.routes.development_dataset.controller import DevelopmentDatasetController
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
@@ -248,6 +249,7 @@ from featurebyte.worker.task.catalog_cleanup import CatalogCleanupTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
+from featurebyte.worker.task.deployment_sql import DeploymentSqlCreateTask
 from featurebyte.worker.task.development_dataset import (
     DevelopmentDatasetAddTablesTask,
     DevelopmentDatasetCreateTask,
@@ -324,6 +326,9 @@ app_container_config.register_class(DeployedTileTableService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
 app_container_config.register_class(DeploymentServingEntityService)
+app_container_config.register_class(
+    DeploymentSqlController, dependency_override={"service": "deployment_sql_service"}
+)
 app_container_config.register_class(DeploymentSqlService)
 app_container_config.register_class(DeploymentSqlGenerationService)
 app_container_config.register_class(DevelopmentDatasetService)
@@ -525,6 +530,7 @@ app_container_config.register_class(HistoricalFeatureTableTask)
 app_container_config.register_class(ObservationTableTask)
 app_container_config.register_class(ObservationTableUploadTask)
 app_container_config.register_class(DeploymentCreateUpdateTask)
+app_container_config.register_class(DeploymentSqlCreateTask)
 app_container_config.register_class(BatchRequestTableTask)
 app_container_config.register_class(BatchFeatureTableTask)
 app_container_config.register_class(MaterializedTableDeleteTask)

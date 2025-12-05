@@ -11,6 +11,7 @@ from redis import Redis
 
 from featurebyte.exception import InvalidComputeOptionValueError
 from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment_sql import DeploymentSqlModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
@@ -150,6 +151,47 @@ class DeploymentService(
         )
         assert updated_doc
         return updated_doc
+
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """
+        Delete deployment document and associated DeploymentSqlModel documents
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of the deployment document to delete
+        exception_detail: Optional[str]
+            Exception detail
+        use_raw_query_filter: bool
+            Whether to use raw query filter
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        int
+            Number of documents deleted
+        """
+        # Delete associated DeploymentSqlModel documents first
+        await self.persistent.delete_many(
+            collection_name=DeploymentSqlModel.Settings.collection_name,
+            query_filter={"deployment_id": document_id},
+            user_id=self.user.id,
+        )
+
+        # Delete the deployment document
+        return await super().delete_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
 
 
 class AllDeploymentService(DeploymentService):

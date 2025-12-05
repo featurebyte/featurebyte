@@ -18,6 +18,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.deployment_sql import DeploymentSqlService
 from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
@@ -78,6 +79,7 @@ DocumentServiceT = TypeVar(
     StaticSourceTableService,
     BatchFeatureTableService,
     DeploymentService,
+    DeploymentSqlService,
     TargetService,
     TargetNamespaceService,
     TargetTableService,
