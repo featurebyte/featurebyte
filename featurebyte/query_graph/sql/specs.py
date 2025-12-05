@@ -23,11 +23,12 @@ from featurebyte.query_graph.node.generic import (
     ForwardAggregateNode,
     ForwardAggregateParameters,
     GroupByNode,
+    GroupByNodeParameters,
     ItemGroupbyNode,
     ItemGroupbyParameters,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
-from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     DevelopmentDatasets,
     EventTableTimestampFilter,
@@ -39,9 +40,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
-NonTileBasedAggregationSpecT = TypeVar(
-    "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
-)
+AggregationSpecT = TypeVar("AggregationSpecT", bound="AggregationSpec")
 
 FB_INTERNAL_COLUMN_PREFIX = "_fb_internal"
 
@@ -65,6 +64,18 @@ class AggregationType(StrEnum):
 
 
 @dataclass
+class AggregationSource:
+    """
+    Represents the source of an aggregation. The aggregation is to be done via lookup,
+    aggregate_asat, etc.
+    """
+
+    expr: Select
+    query_node_name: str
+    is_scd_filtered_by_current_flag: Optional[bool] = None
+
+
+@dataclass
 class AggregationSpec(ABC):
     """
     Base class of all aggregation specifications
@@ -76,6 +87,7 @@ class AggregationSpec(ABC):
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
     agg_result_name_include_serving_names: bool
+    aggregation_source: AggregationSource
 
     def __post_init__(self) -> None:
         self.original_serving_names = self.serving_names[:]
@@ -108,6 +120,13 @@ class AggregationSpec(ABC):
         AggregationType
         """
 
+    @property
+    def include_query_node_name_in_result(self) -> bool:
+        """
+        Whether to include query node name in the aggregation result name
+        """
+        return True
+
     def construct_agg_result_name(self, *args: Any) -> str:
         """
         Helper function to construct the aggregation result name
@@ -127,213 +146,9 @@ class AggregationSpec(ABC):
             parts.extend(self.serving_names)
         parts.append(self.aggregation_type)
         parts.extend([f"{arg}" for arg in args])
+        if self.include_query_node_name_in_result:
+            parts.append(self.aggregation_source.query_node_name)
         return "_".join(parts)
-
-
-@dataclass
-class TileBasedAggregationSpec(AggregationSpec):
-    """
-    Window aggregation specification
-    """
-
-    window: int | None
-    offset: int | None
-    frequency: int
-    blind_spot: int
-    time_modulo_frequency: int
-    tile_table_id: str
-    aggregation_id: str
-    keys: list[str]
-    value_by: str | None
-    merge_expr: Expression
-    feature_name: str
-    is_order_dependent: bool
-    tile_value_columns: list[str]
-    dtype: DBVarType
-    agg_func: AggFunc
-
-    @property
-    def agg_result_name(self) -> str:
-        """Column name of the aggregated result
-
-        Returns
-        -------
-        str
-            Column names of the aggregated result
-        """
-        if self.window is not None:
-            args = [f"w{self.window}", self.aggregation_id]
-        else:
-            # In this case, this is latest aggregation without time window. The aggregation_id would
-            # have a "latest_" prefix already.
-            args = [self.aggregation_id.replace("latest_", "")]
-        if self.offset is not None:
-            args.append(f"o{self.offset}")
-        return self.construct_agg_result_name(*args)
-
-    @property
-    def aggregation_type(self) -> AggregationType:
-        if self.window is None:
-            return AggregationType.LATEST
-        return AggregationType.WINDOW
-
-    @classmethod
-    def from_groupby_query_node(
-        cls,
-        graph: QueryGraphModel,
-        groupby_node: Node,
-        adapter: BaseAdapter,
-        agg_result_name_include_serving_names: bool,
-        serving_names_mapping: dict[str, str] | None = None,
-        on_demand_tile_tables_mapping: dict[str, str] | None = None,
-    ) -> list[TileBasedAggregationSpec]:
-        """Construct an AggregationSpec from a query graph and groupby node
-
-        Parameters
-        ----------
-        graph : QueryGraphModel
-            Query graph
-        groupby_node : Node
-            Query graph node with groupby type
-        adapter : BaseAdapter
-            Instance of BaseAdapter
-        serving_names_mapping : dict[str, str]
-            Mapping from original serving name to new serving name
-        agg_result_name_include_serving_names: bool
-            Whether to include serving names in the aggregation result names
-        on_demand_tile_tables_mapping: dict[str, str]
-            Optional mapping from tile table id to on-demand tile table name
-
-        Returns
-        -------
-        list[TileBasedAggregationSpec]
-            List of AggregationSpec
-        """
-
-        assert isinstance(groupby_node, GroupByNode)
-        groupby_node_params = groupby_node.parameters
-        tile_table_id = groupby_node_params.tile_id
-        aggregation_id = groupby_node.parameters.aggregation_id
-        assert tile_table_id is not None
-        assert aggregation_id is not None
-
-        # When tile tables are generated as temporary on-demand tables, the aggregation specs use
-        # the on-demand table name instead of the tile_id in the groupby node parameters.
-        if on_demand_tile_tables_mapping is not None:
-            tile_table_id = on_demand_tile_tables_mapping[tile_table_id]
-
-        aggregation_specs = []
-        parent_dtype = None
-        parent_column = None
-        parent_column_name = groupby_node_params.parent
-        if parent_column_name:
-            parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
-            parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
-        aggregator = get_aggregator(
-            groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype
-        )
-        tile_value_columns = [
-            spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
-        ]
-        if groupby_node_params.offset is not None:
-            offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
-        else:
-            offset_secs = None
-        for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
-            window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
-            dtype = cls._get_aggregation_column_type(
-                graph=graph,
-                groupby_node=groupby_node,
-                feature_name=feature_name,
-            )
-            fjs = groupby_node_params.feature_job_setting
-            agg_spec = cls(
-                node_name=groupby_node.name,
-                feature_name=feature_name,
-                window=window_secs,
-                frequency=fjs.period_seconds,
-                time_modulo_frequency=fjs.offset_seconds,
-                blind_spot=fjs.blind_spot_seconds,
-                offset=offset_secs,
-                tile_table_id=tile_table_id,
-                aggregation_id=aggregation_id,
-                keys=groupby_node_params.keys,  # type: ignore[arg-type]
-                serving_names=groupby_node_params.serving_names,
-                serving_names_mapping=serving_names_mapping,
-                value_by=groupby_node_params.value_by,
-                merge_expr=aggregator.merge(aggregation_id),
-                is_order_dependent=aggregator.is_order_dependent,
-                tile_value_columns=tile_value_columns,
-                entity_ids=groupby_node_params.entity_ids,
-                dtype=dtype,
-                agg_func=groupby_node_params.agg_func,
-                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
-            )
-            aggregation_specs.append(agg_spec)
-
-        return aggregation_specs
-
-    @classmethod
-    def _get_aggregation_column_type(
-        cls,
-        graph: QueryGraphModel,
-        groupby_node: Node,
-        feature_name: str,
-    ) -> DBVarType:
-        """Get the column type of the aggregation
-
-        Parameters
-        ----------
-        graph : QueryGraphModel
-            Query graph
-        groupby_node : Node
-            Groupby node
-        feature_name : str
-            Feature name of interest. Should be one of the features generated by the groupby node.
-
-        Returns
-        -------
-        DBVarType
-        """
-        project_node = graph.add_operation(
-            NodeType.PROJECT,
-            node_params={"columns": [feature_name]},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[groupby_node],
-        )
-        op_struct = (
-            OperationStructureExtractor(graph=graph)
-            .extract(node=project_node)
-            .operation_structure_map[project_node.name]
-        )
-        aggregations = op_struct.aggregations
-        assert len(aggregations) == 1, (
-            f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
-        )
-        aggregation = aggregations[0]
-        return aggregation.dtype
-
-
-@dataclass
-class AggregationSource:
-    """
-    Represents the source of an aggregation. The aggregation is to be done via lookup,
-    aggregate_asat, etc.
-    """
-
-    expr: Select
-    query_node_name: str
-    is_scd_filtered_by_current_flag: Optional[bool] = None
-
-
-@dataclass
-class NonTileBasedAggregationSpec(AggregationSpec):
-    """
-    Represents an aggregation that is performed directly on the source without tile based
-    pre-aggregation
-    """
-
-    aggregation_source: AggregationSource
 
     @classmethod
     def get_aggregation_source(
@@ -388,9 +203,6 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
         sql_node = cast(Aggregate, sql_node)
         return sql_node.to_aggregation_source()  # type: ignore
-
-    def construct_agg_result_name(self, *args: Any) -> str:
-        return super().construct_agg_result_name(*args, self.aggregation_source.query_node_name)
 
     def get_agg_result_name_from_groupby_parameters(
         self,
@@ -481,14 +293,16 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     @classmethod
     @abstractmethod
     def construct_specs(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: Type[AggregationSpecT],
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        graph: QueryGraphModel,
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
-    ) -> list[NonTileBasedAggregationSpecT]:
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
+    ) -> list[AggregationSpecT]:
         """
         Construct the list of specifications
 
@@ -535,19 +349,20 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
     @classmethod
     def from_query_graph_node(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: Type[AggregationSpecT],
         node: Node,
         graph: QueryGraphModel,
+        source_info: SourceInfo,
         agg_result_name_include_serving_names: bool = True,
         aggregation_source: Optional[AggregationSource] = None,
-        source_info: Optional[SourceInfo] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
-    ) -> list[NonTileBasedAggregationSpecT]:
+        on_demand_tile_tables_mapping: Optional[dict[str, str]] = None,
+    ) -> list[AggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
         Parameters
@@ -574,10 +389,12 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Partition column filters to apply if applicable
         development_datasets: Optional[DevelopmentDatasets]
             Development datasets to apply if applicable
+        on_demand_tile_tables_mapping: dict[str, str]
+            Optional mapping from tile table id to on-demand tile table name
 
         Returns
         -------
-        NonTileBasedAggregationSpecT
+        AggregationSpecT
         """
         if aggregation_source is None:
             assert graph is not None
@@ -603,11 +420,231 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             graph=graph,
             agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             column_statistics_info=column_statistics_info,
+            on_demand_tile_tables_mapping=on_demand_tile_tables_mapping,
+            adapter=get_sql_adapter(source_info),
         )
 
 
 @dataclass
-class ItemAggregationSpec(NonTileBasedAggregationSpec):
+class TileBasedAggregationSpec(AggregationSpec):
+    """
+    Window aggregation specification
+    """
+
+    window: int | None
+    offset: int | None
+    frequency: int
+    blind_spot: int
+    time_modulo_frequency: int
+    tile_table_id: str
+    aggregation_id: str
+    keys: list[str]
+    value_by: str | None
+    merge_expr: Expression
+    feature_name: str
+    is_order_dependent: bool
+    tile_value_columns: list[str]
+    dtype: DBVarType
+    agg_func: AggFunc
+    parameters: GroupByNodeParameters
+
+    @property
+    def include_query_node_name_in_result(self) -> bool:
+        return False
+
+    def get_source_hash_parameters(self) -> dict[str, Any]:
+        # Input to be aggregated
+        params: dict[str, Any] = {
+            "source_expr": self.source_expr.sql(),
+            "window": self.window,
+            "offset": self.offset,
+        }
+
+        # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
+        if self.parameters.value_by is None:
+            parameters_dict = self.parameters.model_dump(
+                exclude={"parent", "agg_func", "names", "windows", "offset"}
+            )
+        else:
+            parameters_dict = self.parameters.model_dump(exclude={"names", "windows", "offset"})
+        if parameters_dict.get("timestamp_metadata", None) is None:
+            parameters_dict.pop("timestamp_metadata", None)
+        if parameters_dict.get("entity_ids") is not None:
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
+        params["parameters"] = parameters_dict
+
+        return params
+
+    @property
+    def agg_result_name(self) -> str:
+        """Column name of the aggregated result
+
+        Returns
+        -------
+        str
+            Column names of the aggregated result
+        """
+        if self.window is not None:
+            args = [f"w{self.window}", self.aggregation_id]
+        else:
+            # In this case, this is latest aggregation without time window. The aggregation_id would
+            # have a "latest_" prefix already.
+            args = [self.aggregation_id.replace("latest_", "")]
+        if self.offset is not None:
+            args.append(f"o{self.offset}")
+        return self.construct_agg_result_name(*args)
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        if self.window is None:
+            return AggregationType.LATEST
+        return AggregationType.WINDOW
+
+    @classmethod
+    def construct_specs(
+        cls: Type[TileBasedAggregationSpec],
+        node: Node,
+        aggregation_source: AggregationSource,
+        serving_names_mapping: Optional[dict[str, str]],
+        graph: QueryGraphModel,
+        agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
+    ) -> list[TileBasedAggregationSpec]:
+        """Construct an AggregationSpec from a query graph and groupby node
+
+        Parameters
+        ----------
+        graph : QueryGraphModel
+            Query graph
+        groupby_node : Node
+            Query graph node with groupby type
+        adapter : BaseAdapter
+            Instance of BaseAdapter
+        serving_names_mapping : dict[str, str]
+            Mapping from original serving name to new serving name
+        agg_result_name_include_serving_names: bool
+            Whether to include serving names in the aggregation result names
+        on_demand_tile_tables_mapping: dict[str, str]
+            Optional mapping from tile table id to on-demand tile table name
+
+        Returns
+        -------
+        list[TileBasedAggregationSpec]
+            List of AggregationSpec
+        """
+        groupby_node = node
+        assert isinstance(groupby_node, GroupByNode)
+        groupby_node_params = groupby_node.parameters
+        tile_table_id = groupby_node_params.tile_id
+        aggregation_id = groupby_node.parameters.aggregation_id
+        assert tile_table_id is not None
+        assert aggregation_id is not None
+
+        # When tile tables are generated as temporary on-demand tables, the aggregation specs use
+        # the on-demand table name instead of the tile_id in the groupby node parameters.
+        if on_demand_tile_tables_mapping is not None:
+            tile_table_id = on_demand_tile_tables_mapping[tile_table_id]
+
+        aggregation_specs = []
+        parent_dtype = None
+        parent_column = None
+        parent_column_name = groupby_node_params.parent
+        if parent_column_name:
+            parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
+            parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
+        aggregator = get_aggregator(
+            groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype
+        )
+        tile_value_columns = [
+            spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
+        ]
+        if groupby_node_params.offset is not None:
+            offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
+        else:
+            offset_secs = None
+        for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
+            window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
+            dtype = cls._get_aggregation_column_type(
+                graph=graph,
+                groupby_node=groupby_node,
+                feature_name=feature_name,
+            )
+            fjs = groupby_node_params.feature_job_setting
+            agg_spec = cls(
+                node_name=groupby_node.name,
+                feature_name=feature_name,
+                window=window_secs,
+                frequency=fjs.period_seconds,
+                time_modulo_frequency=fjs.offset_seconds,
+                blind_spot=fjs.blind_spot_seconds,
+                offset=offset_secs,
+                tile_table_id=tile_table_id,
+                aggregation_id=aggregation_id,
+                keys=groupby_node_params.keys,  # type: ignore[arg-type]
+                serving_names=groupby_node_params.serving_names,
+                serving_names_mapping=serving_names_mapping,
+                value_by=groupby_node_params.value_by,
+                merge_expr=aggregator.merge(aggregation_id),
+                is_order_dependent=aggregator.is_order_dependent,
+                tile_value_columns=tile_value_columns,
+                entity_ids=groupby_node_params.entity_ids,
+                dtype=dtype,
+                agg_func=groupby_node_params.agg_func,
+                agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                aggregation_source=aggregation_source,
+                parameters=groupby_node_params,
+            )
+            aggregation_specs.append(agg_spec)
+
+        return aggregation_specs
+
+    @classmethod
+    def _get_aggregation_column_type(
+        cls,
+        graph: QueryGraphModel,
+        groupby_node: Node,
+        feature_name: str,
+    ) -> DBVarType:
+        """Get the column type of the aggregation
+
+        Parameters
+        ----------
+        graph : QueryGraphModel
+            Query graph
+        groupby_node : Node
+            Groupby node
+        feature_name : str
+            Feature name of interest. Should be one of the features generated by the groupby node.
+
+        Returns
+        -------
+        DBVarType
+        """
+        project_node = graph.add_operation(
+            NodeType.PROJECT,
+            node_params={"columns": [feature_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[groupby_node],
+        )
+        op_struct = (
+            OperationStructureExtractor(graph=graph)
+            .extract(node=project_node)
+            .operation_structure_map[project_node.name]
+        )
+        aggregations = op_struct.aggregations
+        assert len(aggregations) == 1, (
+            f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
+        )
+        aggregation = aggregations[0]
+        return aggregation.dtype
+
+
+@dataclass
+class ItemAggregationSpec(AggregationSpec):
     """
     Non-time aware aggregation specification
     """
@@ -652,6 +689,8 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
@@ -670,7 +709,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
 
 
 @dataclass
-class ForwardAggregateSpec(NonTileBasedAggregationSpec):
+class ForwardAggregateSpec(AggregationSpec):
     """
     ForwardAggregateSpec contains all information required to generate sql for a forward aggregate target.
     """
@@ -703,13 +742,15 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
 
     @classmethod
     def construct_specs(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: Type[AggregationSpecT],
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [

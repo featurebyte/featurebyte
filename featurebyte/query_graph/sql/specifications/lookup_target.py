@@ -11,6 +11,7 @@ from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupTargetNode
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
 from featurebyte.query_graph.sql.specs import AggregationSource, AggregationType
 
@@ -37,9 +38,11 @@ class LookupTargetSpec(BaseLookupSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        graph: QueryGraphModel,
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[LookupTargetSpec]:
         assert isinstance(node, LookupTargetNode)
         params = node.parameters
