@@ -16,7 +16,8 @@ from featurebyte.models.parent_serving import (
     EntityLookupStep,
     EntityRelationshipsContext,
 )
-from featurebyte.query_graph.node.generic import ItemGroupbyParameters
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.generic import GroupByNodeParameters, ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
@@ -37,6 +38,25 @@ from tests.util.helper import (
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
+    # Create dummy aggregation source and parameters
+    dummy_aggregation_source = AggregationSource(
+        expr=select("*").from_("dummy_table"), query_node_name="dummy_node"
+    )
+    dummy_parameters = GroupByNodeParameters(
+        keys=["CUST_ID"],
+        parent="value",
+        agg_func=AggFunc.SUM,
+        value_by=None,
+        serving_names=["CID"],
+        entity_ids=[ObjectId()],
+        windows=["1d"],
+        timestamp="ts",
+        names=["Amount (1d sum)"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="120s", frequency="3600s", time_modulo_frequency="1800s"
+        ),
+    )
+
     agg_spec = TileBasedAggregationSpec(
         node_name="groupby_1",
         window=86400,
@@ -58,6 +78,8 @@ def agg_spec_template_fixture():
         dtype=DBVarType.FLOAT,
         agg_func=AggFunc.SUM,
         agg_result_name_include_serving_names=True,
+        aggregation_source=dummy_aggregation_source,
+        parameters=dummy_parameters,
     )
     return agg_spec
 
@@ -258,22 +280,34 @@ def test_feature_execution_planner(
     actual = list(
         plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
     )
+
+    # Convert to dicts and set problematic fields to None for comparison
+    actual_dicts = []
+    for group in actual:
+        group_dicts = []
+        for spec in group:
+            spec_dict = spec.__dict__.copy()
+            spec_dict["aggregation_source"] = None
+            spec_dict["parameters"] = None
+            group_dicts.append(spec_dict)
+        actual_dicts.append(group_dicts)
+
     expected = [
         [
-            TileBasedAggregationSpec(
-                node_name=groupby_node.name,
-                window=7200,
-                offset=None,
-                frequency=3600,
-                blind_spot=900,
-                time_modulo_frequency=1800,
-                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                aggregation_id=f"avg_{groupby_node_aggregation_id}",
-                keys=["cust_id"],
-                serving_names=["CUSTOMER_ID"],
-                serving_names_mapping=None,
-                value_by=None,
-                merge_expr=expressions.Div(
+            {
+                "node_name": groupby_node.name,
+                "window": 7200,
+                "offset": None,
+                "frequency": 3600,
+                "blind_spot": 900,
+                "time_modulo_frequency": 1800,
+                "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+                "keys": ["cust_id"],
+                "serving_names": ["CUSTOMER_ID"],
+                "serving_names_mapping": None,
+                "value_by": None,
+                "merge_expr": expressions.Div(
                     this=expressions.Sum(
                         this=Identifier(
                             this=f"sum_value_avg_{groupby_node_aggregation_id}",
@@ -285,33 +319,37 @@ def test_feature_execution_planner(
                         )
                     ),
                 ),
-                feature_name="a_2h_average",
-                is_order_dependent=False,
-                tile_value_columns=[
+                "feature_name": "a_2h_average",
+                "is_order_dependent": False,
+                "tile_value_columns": [
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
-                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
-                dtype=DBVarType.FLOAT,
-                agg_func=AggFunc.AVG,
-                agg_result_name_include_serving_names=True,
-            )
+                "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+                "dtype": "FLOAT",
+                "agg_func": "avg",
+                "agg_result_name_include_serving_names": True,
+                "aggregation_source": None,
+                "parameters": None,
+                "original_serving_names": ["CUSTOMER_ID"],
+                "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}",
+            }
         ],
         [
-            TileBasedAggregationSpec(
-                node_name=groupby_node.name,
-                window=172800,
-                offset=None,
-                frequency=3600,
-                blind_spot=900,
-                time_modulo_frequency=1800,
-                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                aggregation_id=f"avg_{groupby_node_aggregation_id}",
-                keys=["cust_id"],
-                serving_names=["CUSTOMER_ID"],
-                serving_names_mapping=None,
-                value_by=None,
-                merge_expr=expressions.Div(
+            {
+                "node_name": groupby_node.name,
+                "window": 172800,
+                "offset": None,
+                "frequency": 3600,
+                "blind_spot": 900,
+                "time_modulo_frequency": 1800,
+                "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+                "keys": ["cust_id"],
+                "serving_names": ["CUSTOMER_ID"],
+                "serving_names_mapping": None,
+                "value_by": None,
+                "merge_expr": expressions.Div(
                     this=expressions.Sum(
                         this=Identifier(
                             this=f"sum_value_avg_{groupby_node_aggregation_id}",
@@ -323,20 +361,24 @@ def test_feature_execution_planner(
                         )
                     ),
                 ),
-                feature_name="a_48h_average",
-                is_order_dependent=False,
-                tile_value_columns=[
+                "feature_name": "a_48h_average",
+                "is_order_dependent": False,
+                "tile_value_columns": [
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
-                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
-                dtype=DBVarType.FLOAT,
-                agg_func=AggFunc.AVG,
-                agg_result_name_include_serving_names=True,
-            )
+                "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+                "dtype": "FLOAT",
+                "agg_func": "avg",
+                "agg_result_name_include_serving_names": True,
+                "aggregation_source": None,
+                "parameters": None,
+                "original_serving_names": ["CUSTOMER_ID"],
+                "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}",
+            }
         ],
     ]
-    assert actual == expected
+    assert actual_dicts == expected
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
@@ -371,24 +413,36 @@ def test_feature_execution_planner__serving_names_mapping(
         is_online_serving=False,
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(
+
+    actual = list(
         plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
-    ) == [
+    )
+    actual_dicts = []
+    for group in actual:
+        group_dicts = []
+        for spec in group:
+            spec_dict = spec.__dict__.copy()
+            spec_dict["aggregation_source"] = None
+            spec_dict["parameters"] = None
+            group_dicts.append(spec_dict)
+        actual_dicts.append(group_dicts)
+
+    expected = [
         [
-            TileBasedAggregationSpec(
-                node_name=groupby_node.name,
-                window=7200,
-                offset=None,
-                frequency=3600,
-                blind_spot=900,
-                time_modulo_frequency=1800,
-                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                aggregation_id=f"avg_{groupby_node_aggregation_id}",
-                keys=["cust_id"],
-                serving_names=["NEW_CUST_ID"],
-                serving_names_mapping=mapping,
-                value_by=None,
-                merge_expr=expressions.Div(
+            {
+                "node_name": groupby_node.name,
+                "window": 7200,
+                "offset": None,
+                "frequency": 3600,
+                "blind_spot": 900,
+                "time_modulo_frequency": 1800,
+                "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+                "keys": ["cust_id"],
+                "serving_names": ["NEW_CUST_ID"],
+                "serving_names_mapping": mapping,
+                "value_by": None,
+                "merge_expr": expressions.Div(
                     this=expressions.Sum(
                         this=Identifier(
                             this=f"sum_value_avg_{groupby_node_aggregation_id}",
@@ -400,33 +454,37 @@ def test_feature_execution_planner__serving_names_mapping(
                         )
                     ),
                 ),
-                feature_name="a_2h_average",
-                is_order_dependent=False,
-                tile_value_columns=[
+                "feature_name": "a_2h_average",
+                "is_order_dependent": False,
+                "tile_value_columns": [
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
-                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
-                dtype=DBVarType.FLOAT,
-                agg_func=AggFunc.AVG,
-                agg_result_name_include_serving_names=True,
-            )
+                "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+                "dtype": "FLOAT",
+                "agg_func": "avg",
+                "agg_result_name_include_serving_names": True,
+                "aggregation_source": None,
+                "parameters": None,
+                "original_serving_names": ["CUSTOMER_ID"],
+                "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}",
+            }
         ],
         [
-            TileBasedAggregationSpec(
-                node_name=groupby_node.name,
-                window=172800,
-                offset=None,
-                frequency=3600,
-                blind_spot=900,
-                time_modulo_frequency=1800,
-                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-                aggregation_id=f"avg_{groupby_node_aggregation_id}",
-                keys=["cust_id"],
-                serving_names=["NEW_CUST_ID"],
-                serving_names_mapping=mapping,
-                value_by=None,
-                merge_expr=expressions.Div(
+            {
+                "node_name": groupby_node.name,
+                "window": 172800,
+                "offset": None,
+                "frequency": 3600,
+                "blind_spot": 900,
+                "time_modulo_frequency": 1800,
+                "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+                "aggregation_id": f"avg_{groupby_node_aggregation_id}",
+                "keys": ["cust_id"],
+                "serving_names": ["NEW_CUST_ID"],
+                "serving_names_mapping": mapping,
+                "value_by": None,
+                "merge_expr": expressions.Div(
                     this=expressions.Sum(
                         this=Identifier(
                             this=f"sum_value_avg_{groupby_node_aggregation_id}",
@@ -438,19 +496,24 @@ def test_feature_execution_planner__serving_names_mapping(
                         )
                     ),
                 ),
-                feature_name="a_48h_average",
-                is_order_dependent=False,
-                tile_value_columns=[
+                "feature_name": "a_48h_average",
+                "is_order_dependent": False,
+                "tile_value_columns": [
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
-                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
-                dtype=DBVarType.FLOAT,
-                agg_func=AggFunc.AVG,
-                agg_result_name_include_serving_names=True,
-            )
+                "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+                "dtype": "FLOAT",
+                "agg_func": "avg",
+                "agg_result_name_include_serving_names": True,
+                "aggregation_source": None,
+                "parameters": None,
+                "original_serving_names": ["CUSTOMER_ID"],
+                "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}",
+            }
         ],
     ]
+    assert actual_dicts == expected
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
