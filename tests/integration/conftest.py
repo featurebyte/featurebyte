@@ -70,6 +70,7 @@ from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
     SparkDetails,
+    TableDetails,
 )
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -673,10 +674,12 @@ def transaction_dataframe(source_type):
         data["array"] = [rng.random(rng.randint(5, 10)).tolist() for _ in range(row_number)]
         data["array_string"] = [["a", "b", "c"] for _ in range(row_number)]
         data["flat_dict"] = [
-            {"a": rng.randint(0, 10), "b": rng.randint(0, 10)} for _ in range(row_number)
+            json.dumps({"a": rng.randint(0, 10), "b": rng.randint(0, 10)})
+            for _ in range(row_number)
         ]
         data["nested_dict"] = [
-            {"a": {"b": rng.randint(0, 10)}, "c": rng.randint(0, 10)} for _ in range(row_number)
+            json.dumps({"a": {"b": rng.randint(0, 10)}, "c": rng.randint(0, 10)})
+            for _ in range(row_number)
         ]
 
     yield data
@@ -698,6 +701,19 @@ def transaction_dataframe_upper_case(transaction_data):
         data.to_csv(f"transactions_data_upper_case_{suffix}.csv", index=False)
 
     yield data
+
+
+@pytest.fixture(name="transaction_data_upper_case_expected", scope="session")
+def transaction_dataframe_upper_case_expected(transaction_data_upper_case):
+    """
+    Flatten nested dict columns in the transaction table and return the expected dataframe
+    """
+    data = transaction_data_upper_case.copy()
+    data["FLAT_DICT"] = data["FLAT_DICT"].apply(json.loads)
+    # Flatten nested dict columns
+    data["NESTED_DICT_a_b"] = data["NESTED_DICT"].apply(lambda x: json.loads(x)["a"]["b"])
+    data["NESTED_DICT_c"] = data["NESTED_DICT"].apply(lambda x: json.loads(x)["c"])
+    yield data.drop("NESTED_DICT", axis=1)
 
 
 @pytest.fixture(name="transaction_data_with_timestamp_schema", scope="session")
@@ -1079,8 +1095,60 @@ async def datasets_registration_helper_fixture(
             session: BaseSession
                 Session object
             """
+
             for table_name, df in self.datasets.items():
-                await session.register_table(table_name, df)
+                if "FLAT_DICT" in df.columns:
+                    # Register temporary table if any dict columns to handle
+                    temp_table_name = f"_{table_name}"
+                    table_fqn = session.get_fully_qualified_table_name(temp_table_name)
+                    await session.register_table(temp_table_name, df)
+                    columns = [
+                        column
+                        for column in df.columns
+                        if column not in {"FLAT_DICT", "NESTED_DICT"}
+                    ]
+                    sql_map = {
+                        SourceType.BIGQUERY: (
+                            """
+                            SELECT * EXCEPT (`FLAT_DICT`, `NESTED_DICT`),
+                            PARSE_JSON(`FLAT_DICT`) AS `FLAT_DICT`,
+                            STRUCT(
+                              STRUCT(
+                                CAST(JSON_VALUE(`NESTED_DICT`, '$.a.b') AS INT64) AS b
+                              ) AS a,
+                              CAST(JSON_VALUE(`NESTED_DICT`, '$.c') AS INT64) AS c
+                            ) AS `NESTED_DICT`
+                            """
+                        ),
+                        SourceType.SNOWFLAKE: (
+                            """
+                            SELECT * EXCLUDE ("FLAT_DICT", "NESTED_DICT"),
+                            CAST(PARSE_JSON("FLAT_DICT") AS OBJECT) AS "FLAT_DICT",
+                            PARSE_JSON("NESTED_DICT")::OBJECT(a OBJECT(b int), c int) AS "NESTED_DICT"
+                            """
+                        ),
+                        SourceType.DATABRICKS_UNITY: (
+                            f"""
+                            SELECT {", ".join([f"`{col}`" for col in columns])},
+                            FROM_JSON(`FLAT_DICT`, 'MAP<STRING, INT>') AS `FLAT_DICT`,
+                            FROM_JSON(`NESTED_DICT`, 'STRUCT<a:STRUCT<b:INT>, c:INT>') AS `NESTED_DICT`
+                            """
+                        ),
+                    }
+                    col_selection_query = sql_map.get(
+                        session.source_type, sql_map[SourceType.DATABRICKS_UNITY]
+                    )
+                    query = f"{col_selection_query} FROM {table_fqn}"
+                    await session.create_table_as(
+                        table_details=TableDetails(
+                            table_name=table_name,
+                            schema_name=session.schema_name,
+                            database_name=session.database_name,
+                        ),
+                        select_expr=query,
+                    )
+                else:
+                    await session.register_table(table_name, df)
 
         @property
         def table_names(self) -> List[str]:
@@ -1496,7 +1564,8 @@ def create_transactions_event_table_from_data_source(
         "ARRAY": "ARRAY",
         "ARRAY_STRING": "ARRAY",
         "FLAT_DICT": "DICT",
-        "NESTED_DICT": "DICT",
+        "NESTED_DICT_a_b": "INT",
+        "NESTED_DICT_c": "INT",
     })
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
     event_table = database_table.create_event_table(
@@ -1590,7 +1659,8 @@ def event_view_fixture(event_table):
         "ARRAY",
         "ARRAY_STRING",
         "FLAT_DICT",
-        "NESTED_DICT",
+        "NESTED_DICT_a_b",
+        "NESTED_DICT_c",
     ]
     return event_view
 

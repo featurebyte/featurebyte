@@ -18,12 +18,13 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.dtype import PartitionMetadata
+from featurebyte.query_graph.model.dtype import NestedFieldMetadata, PartitionMetadata
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    NESTED_FIELD_DELIMITER,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -296,6 +297,64 @@ class BaseSparkSession(BaseSession, ABC):
                 output.append(TableSpec(name=name))
         return output
 
+    @staticmethod
+    def _extract_struct_fields(struct_definition: str) -> list[Tuple[str, str]]:
+        """
+        Extract struct fields from struct definition
+
+        Parameters
+        ----------
+        struct_definition: str
+            Struct definition string
+
+        Returns
+        -------
+        list[Tuple[str, str]]
+            List of field name and type tuples
+        """
+        if not struct_definition.startswith("struct"):
+            return []
+        fields = []
+        struct_body = struct_definition[7:-1]  # remove 'struct<' and '>'
+        for field in struct_body.split(","):
+            field_name, field_type = field.split(":", 1)
+            fields.append((field_name.strip(), field_type.strip()))
+        return fields
+
+    def _populate_column_spec(
+        self,
+        column_name: str,
+        var_info: str,
+        comment: str | None,
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription],
+        prefix: list[str] | None = None,
+    ) -> None:
+        prefix = prefix or []
+        fields = self._extract_struct_fields(var_info)
+        if fields:
+            # handle recursive fields (STRUCT / RECORD)
+            prefix = prefix + [column_name]
+            for _field in fields:
+                self._populate_column_spec(
+                    _field[0], _field[1], comment, column_name_type_map, prefix
+                )
+        else:
+            if prefix and len(prefix) > 0:
+                nested_field_metadata = NestedFieldMetadata(
+                    parent_column_name=prefix[0],
+                    keys=prefix[1:] + [column_name],
+                )
+            else:
+                nested_field_metadata = None
+            dtype = self._convert_to_internal_variable_type(var_info.upper())
+            column_name = NESTED_FIELD_DELIMITER.join(prefix + [column_name])
+            column_name_type_map[column_name] = ColumnSpecWithDescription(
+                name=column_name,
+                dtype=dtype,
+                description=comment or None,
+                nested_field_metadata=nested_field_metadata,
+            )
+
     async def list_table_schema(
         self,
         table_name: str | None,
@@ -307,7 +366,9 @@ class BaseSparkSession(BaseSession, ABC):
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
             timeout=timeout,
         )
-        column_name_type_map = collections.OrderedDict()
+        column_name_type_map: OrderedDict[str, ColumnSpecWithDescription] = (
+            collections.OrderedDict()
+        )
         if schema is not None:
             metadata_section = None
             metadata_data: DefaultDict[str, List[Tuple[str, str, str]]] = collections.defaultdict(
@@ -335,11 +396,8 @@ class BaseSparkSession(BaseSession, ABC):
                         metadata_data[metadata_section].append((column_name, var_info, comment))
                     continue
 
-                dtype = self._convert_to_internal_variable_type(var_info.upper())
-                column_name_type_map[column_name] = ColumnSpecWithDescription(
-                    name=column_name,
-                    dtype=dtype,
-                    description=comment or None,
+                self._populate_column_spec(
+                    column_name, var_info.lower(), comment, column_name_type_map
                 )
 
             # add partition key information

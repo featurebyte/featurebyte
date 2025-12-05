@@ -5,6 +5,7 @@ Test base session
 import asyncio
 import datetime
 import tempfile
+from collections import OrderedDict
 from io import BytesIO
 from uuid import UUID
 
@@ -15,15 +16,18 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+import featurebyte as fb
 from featurebyte import SourceType
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.exception import (
     DataWarehouseOperationError,
     QueryExecutionTimeOut,
 )
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.dtype import NestedFieldMetadata
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import QueryMetadata
-from tests.util.helper import truncate_timestamps
+from tests.util.helper import fb_assert_frame_equal, truncate_timestamps
 
 
 def sample_dataframe():
@@ -43,10 +47,21 @@ def sample_dataframe():
         "int_list": [None] * 10 + [[4, 5, 6], [7, 8, 9]],
         "float_list": [None] * 10 + [[1.4, 2.5, 3.6], [1.7, 2.8, 3.9]],
         "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
-        "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
         "binary": [None] * 10 + [b"abc", b"def"],
     })
     return truncate_timestamps(df)
+
+
+def expected_dataframe():
+    df = sample_dataframe()
+    # create struct column from int and float columns
+    df["dict"] = [
+        {"a": a, "b": b} for (a, b) in list(zip(df["int"].tolist(), df["float"].tolist()))
+    ]
+    df["record"] = [
+        {"a": a, "b": {"c": b}} for (a, b) in list(zip(df["int"].tolist(), df["float"].tolist()))
+    ]
+    return df
 
 
 @pytest_asyncio.fixture(name="test_session", scope="session")
@@ -55,29 +70,217 @@ async def test_session_fixture(session_without_datasets):
     Setup module
     """
     test_df = sample_dataframe()
+    table_fqn = session_without_datasets.get_fully_qualified_table_name("TEST_DATA_TABLE")
     if session_without_datasets.source_type == SourceType.SNOWFLAKE:
         # register table does not work well with binary data for Snowflake, convert to string first
         test_df["binary"] = test_df.binary.apply(lambda x: x.decode("utf-8") if x else x)
         await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
         # add binary column separately
-        table_fqn = session_without_datasets.get_fully_qualified_table_name("TEST_DATA_TABLE")
         await session_without_datasets.execute_query(
-            f'CREATE OR REPLACE TABLE {table_fqn} AS SELECT * EXCLUDE ("binary"), TO_BINARY("binary", \'UTF-8\') AS "binary" FROM {table_fqn}'
+            f"CREATE OR REPLACE TABLE {table_fqn} AS "
+            'SELECT * EXCLUDE ("binary"), '
+            'TO_BINARY("binary", \'UTF-8\') AS "binary", '
+            'OBJECT_CONSTRUCT(\'a\', "int", \'b\', "float") AS "dict", '
+            "OBJECT_CONSTRUCT('a', \"int\", 'b', OBJECT_CONSTRUCT('c', \"float\"))::OBJECT(a INT, b OBJECT(c FLOAT)) AS \"record\" "
+            f"FROM {table_fqn}"
         )
     elif session_without_datasets.source_type == SourceType.BIGQUERY:
         await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
         # register table converts binary data to string for BigQuery, convert to bytes
-        table_fqn = session_without_datasets.get_fully_qualified_table_name("TEST_DATA_TABLE")
         await session_without_datasets.execute_query(
-            f"CREATE OR REPLACE TABLE {table_fqn} AS SELECT * EXCEPT (binary), CAST(binary AS BYTES) AS binary FROM {table_fqn} ORDER BY index"
+            f"CREATE OR REPLACE TABLE {table_fqn} AS "
+            "SELECT * EXCEPT (binary), "
+            "CAST(binary AS BYTES) AS binary, "
+            "TO_JSON(STRUCT(int as a, float as b)) AS dict, "
+            "STRUCT(int as a, STRUCT(float as c) AS b) AS record "
+            f"FROM {table_fqn} ORDER BY index"
         )
     else:
-        await session_without_datasets.register_table("TEST_DATA_TABLE", test_df)
+        table_fqn = session_without_datasets.get_fully_qualified_table_name("_TEST_DATA_TABLE")
+        await session_without_datasets.register_table("_TEST_DATA_TABLE", test_df)
+        await session_without_datasets.register_table_with_query(
+            table_name="TEST_DATA_TABLE",
+            query=(
+                "SELECT *, "
+                "MAP('a', `int`, 'b', `float`) AS dict, "
+                "STRUCT(`int` as a, STRUCT(`float` as c) as b) AS record "
+                f"FROM {table_fqn} ORDER BY index"
+            ),
+            temporary=False,
+        )
 
     await session_without_datasets.register_table(
-        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(10000))})
+        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(100000))})
     )
     yield session_without_datasets
+
+
+@pytest.mark.asyncio
+async def test_list_table_schema(test_session):
+    session = test_session
+    schema = await session.list_table_schema(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="TEST_DATA_TABLE",
+    )
+    assert schema == OrderedDict([
+        (
+            "index",
+            ColumnSpecWithDescription(
+                name="index",
+                dtype="INT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "bool",
+            ColumnSpecWithDescription(
+                name="bool",
+                dtype="BOOL",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "int",
+            ColumnSpecWithDescription(
+                name="int",
+                dtype="INT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "float",
+            ColumnSpecWithDescription(
+                name="float",
+                dtype="FLOAT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "string",
+            ColumnSpecWithDescription(
+                name="string",
+                dtype="VARCHAR",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "date",
+            ColumnSpecWithDescription(
+                name="date",
+                dtype="DATE",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "timestamp",
+            ColumnSpecWithDescription(
+                name="timestamp",
+                dtype="TIMESTAMP",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "int_list",
+            ColumnSpecWithDescription(
+                name="int_list",
+                dtype="ARRAY",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "float_list",
+            ColumnSpecWithDescription(
+                name="float_list",
+                dtype="ARRAY",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "string_list",
+            ColumnSpecWithDescription(
+                name="string_list",
+                dtype="ARRAY",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "binary",
+            ColumnSpecWithDescription(
+                name="binary",
+                dtype="BINARY",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "dict",
+            ColumnSpecWithDescription(
+                name="dict",
+                dtype="DICT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=None,
+                description=None,
+            ),
+        ),
+        (
+            "record_a",
+            ColumnSpecWithDescription(
+                name="record_a",
+                dtype="INT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=NestedFieldMetadata(parent_column_name="record", keys=["a"]),
+                description=None,
+            ),
+        ),
+        (
+            "record_b_c",
+            ColumnSpecWithDescription(
+                name="record_b_c",
+                dtype="FLOAT",
+                dtype_metadata=None,
+                partition_metadata=None,
+                nested_field_metadata=NestedFieldMetadata(
+                    parent_column_name="record", keys=["b", "c"]
+                ),
+                description=None,
+            ),
+        ),
+    ])
 
 
 @pytest.mark.asyncio
@@ -88,7 +291,7 @@ async def test_execute_query(test_session):
     session = test_session
     query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')}"
     df = await session.execute_query(query)
-    expected_df = sample_dataframe()
+    expected_df = expected_dataframe()
     # expect arrays and dicts to be converted to strings
     assert_frame_equal(df, expected_df)
 
@@ -103,8 +306,8 @@ async def test_fetch_empty(test_session):
     df = await session.execute_query(query)
 
     # expect empty dataframe with correct schema
-    assert df.shape == (0, 12)
-    assert df.dtypes.to_dict() == sample_dataframe().dtypes.to_dict()
+    assert df.shape == (0, 13)
+    assert df.dtypes.to_dict() == expected_dataframe().dtypes.to_dict()
 
 
 @pytest.mark.asyncio
@@ -134,8 +337,9 @@ async def test_arrow_schema(test_session):
         pa.field("int_list", pa.string()),
         pa.field("float_list", pa.string()),
         pa.field("string_list", pa.string()),
-        pa.field("dict", pa.string()),
         pa.field("binary", pa.binary()),
+        pa.field("dict", pa.string()),
+        pa.field("record", pa.string()),
     ])
     assert arrow_table.schema == expected_schema
 
@@ -154,8 +358,9 @@ async def test_arrow_schema(test_session):
         "ARRAY",
         "ARRAY",
         "ARRAY",
-        "DICT",
         "BINARY",
+        "DICT",
+        "DICT",
     ]
 
 
@@ -433,3 +638,44 @@ async def test_upload_parquet_as_table(session_without_datasets):
         f"SELECT * FROM {session_without_datasets.get_fully_qualified_table_name(table_name)}"
     )
     assert_frame_equal(result_df, test_df)
+
+
+@pytest.mark.asyncio
+async def test_nested_fields(config, test_session, data_source):
+    _ = config
+    source_table = data_source.get_source_table(
+        "TEST_DATA_TABLE",
+        schema_name=test_session.schema_name,
+        database_name=test_session.database_name,
+    )
+
+    # expect source table preview shows nested fields flattened
+    df = source_table.preview(12)
+    expected_df = expected_dataframe()
+    assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
+    assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
+    assert (df["record_b_c"] == expected_df["record"].apply(lambda x: x["b"]["c"])).all()
+
+    event_table = source_table.create_event_table(
+        name="TEST_DATA_DATA_TABLE_EVENT_TABLE",
+        event_timestamp_column="timestamp",
+        event_id_column="string",
+    )
+    df = event_table.preview(12)
+    # expect nested fields be flattened
+    assert set(["record_a", "record_b_c"]).issubset(set(df.columns))
+    assert (df["record_a"] == expected_df["record"].apply(lambda x: x["a"])).all()
+    assert (df["record_b_c"] == expected_df["record"].apply(lambda x: x["b"]["c"])).all()
+
+    # create feature using nested field
+    event_entity = fb.Entity.create("event_entity", serving_names=["event_id"])
+    event_table["string"].as_entity(event_entity.name)
+    event_view = event_table.get_view()
+    feature = event_view["record_b_c"].as_feature("record_b_c_feature")
+    df_preview = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2020-01-05 10:00:00"), "event_id": "Bob"}
+    ])
+    df_feature = feature.preview(df_preview)
+    df_expected = df_preview.copy()
+    df_expected["record_b_c_feature"] = 2.2
+    fb_assert_frame_equal(df_feature, df_expected)

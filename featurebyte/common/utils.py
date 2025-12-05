@@ -280,6 +280,10 @@ def dataframe_to_json(
     for column in dataframe.select_dtypes(include=[object]).columns:
         dataframe[column] = dataframe[column].apply(_binary_to_str)
 
+    # provide custom index name if not present to avoid "index" being used by default
+    if dataframe.index is not None and dataframe.index.name is None:
+        dataframe.index.name = "__index__"
+
     return {
         "data": dataframe.to_json(orient="table", date_unit="ns", double_precision=15),
         "type_conversions": type_conversions,
@@ -380,6 +384,9 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
         Dataframe object
     """
     dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
+    # reset index name if it was set to custom name during json conversion
+    if dataframe.index.name == "__index__":
+        dataframe.index.name = None
     type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     return apply_type_conversions(dataframe, type_conversions)
 

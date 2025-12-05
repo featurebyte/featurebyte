@@ -12,7 +12,7 @@ from databricks.sdk.service.catalog import CatalogInfo, ColumnInfo, SchemaInfo, 
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.query_graph.model.dtype import PartitionMetadata
+from featurebyte.query_graph.model.dtype import NestedFieldMetadata, PartitionMetadata
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -139,7 +139,7 @@ async def test_databricks_session(mock_workspace_client, databricks_session_dict
             ColumnInfo(name="col_timestamp", type_text="TIMESTAMP", comment="Timestamp Column"),
             ColumnInfo(name="col_array", type_text="ARRAY", comment="Array Column"),
             ColumnInfo(name="col_map", type_text="MAP", comment="Map Column"),
-            ColumnInfo(name="col_struct", type_text="STRUCT", comment="Struct Column"),
+            ColumnInfo(name="col_struct", type_text="STRUCT<a:INT>", comment="Struct Column"),
             ColumnInfo(name="col_string", type_text="STRING", comment="String Column"),
             ColumnInfo(name="col_unknown", type_text="UNKNOWN", comment="Unknown Column"),
         ],
@@ -201,8 +201,11 @@ async def test_databricks_session(mock_workspace_client, databricks_session_dict
         "col_decimal": ColumnSpecWithDescription(
             name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
         ),
-        "col_struct": ColumnSpecWithDescription(
-            name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
+        "col_struct_a": ColumnSpecWithDescription(
+            name="col_struct_a",
+            dtype=DBVarType.INT,
+            description="Struct Column",
+            nested_field_metadata=NestedFieldMetadata(parent_column_name="col_struct", keys=["a"]),
         ),
         "col_string": ColumnSpecWithDescription(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
