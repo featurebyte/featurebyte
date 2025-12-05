@@ -981,36 +981,15 @@ class FeatureExecutionPlanner:
 
         return out
 
-    # def get_specs_from_groupby(self, groupby_node: Node) -> Sequence[TileBasedAggregationSpec]:
-    #     """Update FeatureExecutionPlan with a groupby query node
-    #
-    #     Parameters
-    #     ----------
-    #     groupby_node : Node
-    #         Groupby query node
-    #
-    #     Returns
-    #     -------
-    #     list[AggregationSpec]
-    #     """
-    #     return TileBasedAggregationSpec.from_groupby_query_node(
-    #         self.graph,
-    #         groupby_node,
-    #         self.adapter,
-    #         agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
-    #         serving_names_mapping=self.serving_names_mapping,
-    #         on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
-    #     )
-
     def get_specs(self, spec_cls: Type[AggregationSpec], node: Node) -> Sequence[AggregationSpec]:
         """
-        Update FeatureExecutionPlan with a node that produces NonTileBasedAggregationSpec
+        Update FeatureExecutionPlan with a node that produces AggregationSpec
 
         Parameters
         ----------
         node: Node
             Query graph node
-        spec_cls: Type[NonTileBasedAggregationSpec]
+        spec_cls: Type[AggregationSpec]
             Aggregation specification class
 
         Returns

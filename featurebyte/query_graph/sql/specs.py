@@ -363,7 +363,7 @@ class AggregationSpec(ABC):
         development_datasets: Optional[DevelopmentDatasets] = None,
         on_demand_tile_tables_mapping: Optional[dict[str, str]] = None,
     ) -> list[AggregationSpecT]:
-        """Construct NonTileBasedAggregationSpec objects given a query graph node
+        """Construct AggregationSpec objects given a query graph node
 
         Parameters
         ----------
