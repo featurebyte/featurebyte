@@ -29,14 +29,10 @@ from featurebyte.query_graph.sql.online_serving_util import (
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
-    NonTileBasedAggregationSpec,
     TileBasedAggregationSpec,
 )
 
 AggregationSpecT = TypeVar("AggregationSpecT", bound=AggregationSpec)
-NonTileBasedAggregationSpecT = TypeVar(
-    "NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec
-)
 
 LATEST_VERSION = "LATEST_VERSION"
 
@@ -143,6 +139,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self.is_online_serving = is_online_serving
         self.required_serving_names: set[str] = set()
         self.required_entity_ids: set[ObjectId] = set()
+        self.grouped_specs: dict[str, list[AggregationSpecT]] = {}
+        self.grouped_agg_result_names: dict[str, set[str]] = {}
 
     def get_required_serving_names(self) -> set[str]:
         """
@@ -174,8 +172,23 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Aggregation specification
         """
         self.required_serving_names.update(aggregation_spec.serving_names)
+
         if aggregation_spec.entity_ids is not None:
             self.required_entity_ids.update(aggregation_spec.entity_ids)
+
+        key = aggregation_spec.source_hash
+
+        if key not in self.grouped_specs:
+            self.grouped_agg_result_names[key] = set()
+            self.grouped_specs[key] = []
+
+        if aggregation_spec.agg_result_name in self.grouped_agg_result_names[key]:
+            # Skip updating if the spec produces a result that was seen before.
+            return
+
+        self.grouped_agg_result_names[key].add(aggregation_spec.agg_result_name)
+        self.grouped_specs[key].append(aggregation_spec)
+
         self.additional_update(aggregation_spec)
 
     @abstractmethod
@@ -692,39 +705,3 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                 )
             )
         return out
-
-
-class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):
-    """
-    Inherited by Aggregators that do not use tiles. Responsible for grouping aggregations that can
-    be performed in the same subquery.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.grouped_specs: dict[str, list[NonTileBasedAggregationSpecT]] = {}
-        self.grouped_agg_result_names: dict[str, set[str]] = {}
-
-    def update(self, aggregation_spec: NonTileBasedAggregationSpecT) -> None:
-        """
-        Update internal states to account for aggregation_spec
-
-        Parameters
-        ----------
-        aggregation_spec: NonTileBasedAggregationSpecT
-            Aggregation specification
-        """
-        super().update(aggregation_spec)
-
-        key = aggregation_spec.source_hash
-
-        if key not in self.grouped_specs:
-            self.grouped_agg_result_names[key] = set()
-            self.grouped_specs[key] = []
-
-        if aggregation_spec.agg_result_name in self.grouped_agg_result_names[key]:
-            # Skip updating if the spec produces a result that was seen before.
-            return
-
-        self.grouped_agg_result_names[key].add(aggregation_spec.agg_result_name)
-        self.grouped_specs[key].append(aggregation_spec)

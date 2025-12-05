@@ -11,9 +11,9 @@ from sqlglot.expressions import Select, select
 
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import (
@@ -24,7 +24,7 @@ from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
-class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
+class ItemAggregator(Aggregator[ItemAggregationSpec]):
     """
     ItemAggregator is responsible for SQL generation for aggregation without time windows from
     ItemView

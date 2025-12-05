@@ -13,9 +13,9 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -27,7 +27,7 @@ from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey
 from featurebyte.query_graph.sql.specs import ForwardAggregateSpec
 
 
-class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
+class ForwardAggregator(Aggregator[ForwardAggregateSpec]):
     """
     ForwardAggregator is responsible for generating SQL for forward aggregate targets.
     """

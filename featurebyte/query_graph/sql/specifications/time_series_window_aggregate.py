@@ -23,10 +23,11 @@ from featurebyte.query_graph.node.input import (
     SnapshotsTableInputNodeParameters,
     TimeSeriesTableInputNodeParameters,
 )
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
+    AggregationSpec,
     AggregationType,
-    NonTileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -36,7 +37,7 @@ DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD = 10000
 
 
 @dataclass
-class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
+class TimeSeriesWindowAggregateSpec(AggregationSpec):
     """
     Time series aggregation specification
     """
@@ -113,6 +114,8 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[TimeSeriesWindowAggregateSpec]:
         assert isinstance(node, TimeSeriesWindowAggregateNode)
 

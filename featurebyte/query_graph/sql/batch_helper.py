@@ -17,7 +17,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, FeatureQuery
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
 NUM_FEATURES_PER_QUERY = int(os.getenv("FEATUREBYTE_NUM_FEATURES_PER_QUERY", "20"))
@@ -80,7 +80,6 @@ def split_nodes(
                 tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
             parts.append(tile_compute_signature_mapping[aggregation_id])
         else:
-            assert isinstance(agg_spec, NonTileBasedAggregationSpec)
             # These queries join with source tables directly. Sort by query node name of the source
             # to group nodes that join with the same source table.
             query_node = planner.graph.get_node_by_name(agg_spec.aggregation_source.query_node_name)

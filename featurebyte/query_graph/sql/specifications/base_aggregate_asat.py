@@ -18,11 +18,12 @@ from featurebyte.query_graph.node.generic import (
     AggregateAsAtParameters,
     ForwardAggregateAsAtNode,
 )
-from featurebyte.query_graph.sql.specs import AggregationSource, NonTileBasedAggregationSpec
+from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.specs import AggregationSource, AggregationSpec
 
 
 @dataclass
-class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
+class BaseAggregateAsAtSpec(AggregationSpec):
     """
     As-at aggregation specification
     """
@@ -84,6 +85,8 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[BaseAggregateAsAtSpec]:
         assert isinstance(node, (AggregateAsAtNode, ForwardAggregateAsAtNode))
         return [

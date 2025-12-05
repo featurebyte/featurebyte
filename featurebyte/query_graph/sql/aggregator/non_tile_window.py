@@ -15,9 +15,9 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.helper import (
     join_aggregated_expr_with_distinct_point_in_time,
@@ -248,7 +248,7 @@ class NonTileRequestTablePlan:
         ]
 
 
-class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]):
+class NonTileWindowAggregator(Aggregator[NonTileWindowAggregateSpec]):
     """
     Aggregator responsible for generating SQL for window aggregation without using tiles
     """

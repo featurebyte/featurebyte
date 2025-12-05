@@ -17,11 +17,11 @@ from featurebyte.query_graph.node.generic import (
     SCDLookupParameters,
     SnapshotsLookupParameters,
 )
-from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
 @dataclass
-class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
+class BaseLookupSpec(AggregationSpec, ABC):
     """
     BaseLookupSpec contains the basic information required to generate sql for a lookup feature or target.
     """

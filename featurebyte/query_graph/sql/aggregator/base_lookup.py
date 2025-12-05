@@ -16,9 +16,9 @@ from featurebyte.query_graph.node.generic import SCDLookupParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -95,7 +95,7 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
 LookupSpecT = TypeVar("LookupSpecT", bound=BaseLookupSpec)
 
 
-class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
+class BaseLookupAggregator(Aggregator[LookupSpecT]):
     """
     LookupAggregator is responsible for generating SQL for lookup features
     """

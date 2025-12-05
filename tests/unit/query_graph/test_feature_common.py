@@ -8,7 +8,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Identifier
 
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationSource, TileBasedAggregationSpec
 
 
 @pytest.fixture(name="graph_and_groupby_node")
@@ -28,7 +28,13 @@ def expected_tile_based_aggregation_specs_fixture(
     """
     Expected aggregation specs
     """
+    from sqlglot.expressions import select
+
     _, groupby_node = graph_and_groupby_node
+
+    aggregation_source = AggregationSource(
+        expr=select().from_("dummy_table"), query_node_name="dummy_node"
+    )
     expected_agg_specs = [
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
@@ -65,6 +71,8 @@ def expected_tile_based_aggregation_specs_fixture(
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
+            aggregation_source=aggregation_source,
+            parameters=groupby_node.parameters,
         ),
         TileBasedAggregationSpec(
             node_name=groupby_node.name,
@@ -101,31 +109,40 @@ def expected_tile_based_aggregation_specs_fixture(
             dtype=DBVarType.FLOAT,
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
+            aggregation_source=aggregation_source,
+            parameters=groupby_node.parameters,
         ),
     ]
     return expected_agg_specs
 
 
 def test_aggregation_spec__from_groupby_query_node(
-    graph_and_groupby_node, expected_tile_based_aggregation_specs, adapter
+    graph_and_groupby_node, expected_tile_based_aggregation_specs, adapter, source_info
 ):
     """
     Test constructing list of AggregationSpec from groupby query graph node
     """
     query_graph_with_groupby, groupby_node = graph_and_groupby_node
-    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        query_graph_with_groupby,
-        groupby_node,
-        adapter=adapter,
+    agg_specs = TileBasedAggregationSpec.from_query_graph_node(
+        node=groupby_node,
+        graph=query_graph_with_groupby,
+        source_info=source_info,
         agg_result_name_include_serving_names=True,
     )
-    assert agg_specs == expected_tile_based_aggregation_specs
+    # Compare specs excluding aggregation_source which is dynamically generated
+    for spec, expected_spec in zip(agg_specs, expected_tile_based_aggregation_specs):
+        spec_dict = spec.__dict__.copy()
+        expected_dict = expected_spec.__dict__.copy()
+        spec_dict.pop("aggregation_source")
+        expected_dict.pop("aggregation_source")
+        assert spec_dict == expected_dict
 
 
 def test_aggregation_spec__override_serving_names(
     graph_and_groupby_node,
     expected_tile_based_aggregation_specs,
     adapter,
+    source_info,
 ):
     """
     Test constructing list of AggregationSpec with serving names mapping provided
@@ -134,10 +151,10 @@ def test_aggregation_spec__override_serving_names(
     serving_names_mapping = {
         "CUSTOMER_ID": "NEW_CUST_ID",
     }
-    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        query_graph_with_groupby,
-        groupby_node,
-        adapter=adapter,
+    agg_specs = TileBasedAggregationSpec.from_query_graph_node(
+        node=groupby_node,
+        graph=query_graph_with_groupby,
+        source_info=source_info,
         serving_names_mapping=serving_names_mapping,
         agg_result_name_include_serving_names=True,
     )
@@ -145,11 +162,17 @@ def test_aggregation_spec__override_serving_names(
     for spec in expected_tile_based_aggregation_specs:
         spec.serving_names = ["NEW_CUST_ID"]
         spec.serving_names_mapping = serving_names_mapping
-    assert agg_specs == expected_tile_based_aggregation_specs
+    # Compare specs excluding aggregation_source which is dynamically generated
+    for spec, expected_spec in zip(agg_specs, expected_tile_based_aggregation_specs):
+        spec_dict = spec.__dict__.copy()
+        expected_dict = expected_spec.__dict__.copy()
+        spec_dict.pop("aggregation_source")
+        expected_dict.pop("aggregation_source")
+        assert spec_dict == expected_dict
 
 
 def test_tile_based_aggregation_spec__on_demand_tile_tables(
-    graph_and_groupby_node, expected_tile_based_aggregation_specs, adapter
+    graph_and_groupby_node, expected_tile_based_aggregation_specs, adapter, source_info
 ):
     """
     Test tile_table_id in the specs are updated if on demand tile tables mapping is provided
@@ -158,14 +181,20 @@ def test_tile_based_aggregation_spec__on_demand_tile_tables(
         "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725": "__MY_TEMP_TILE_TABLE"
     }
     query_graph_with_groupby, groupby_node = graph_and_groupby_node
-    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        query_graph_with_groupby,
-        groupby_node,
-        adapter=adapter,
+    agg_specs = TileBasedAggregationSpec.from_query_graph_node(
+        node=groupby_node,
+        graph=query_graph_with_groupby,
+        source_info=source_info,
         agg_result_name_include_serving_names=True,
         on_demand_tile_tables_mapping=on_demand_tile_tables_mapping,
     )
     # Update the expected tile specs since on_demand_tile_tables_mapping is provided
     for agg_spec in expected_tile_based_aggregation_specs:
         agg_spec.tile_table_id = "__MY_TEMP_TILE_TABLE"
-    assert agg_specs == expected_tile_based_aggregation_specs
+    # Compare specs excluding aggregation_source which is dynamically generated
+    for spec, expected_spec in zip(agg_specs, expected_tile_based_aggregation_specs):
+        spec_dict = spec.__dict__.copy()
+        expected_dict = expected_spec.__dict__.copy()
+        spec_dict.pop("aggregation_source")
+        expected_dict.pop("aggregation_source")
+        assert spec_dict == expected_dict

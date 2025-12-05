@@ -75,7 +75,6 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ForwardAggregateSpec,
     ItemAggregationSpec,
-    NonTileBasedAggregationSpec,
     TileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -93,7 +92,6 @@ AggregatorType = Union[
     ForwardAggregator,
     ForwardAsAtAggregator,
 ]
-AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
 
 sys.setrecursionlimit(10000)
 
@@ -900,9 +898,9 @@ class FeatureExecutionPlanner:
         for agg_spec in self.get_aggregation_specs(node):
             self.plan.add_aggregation_spec(agg_spec, original_node_name)
             aggregation_specs[agg_spec.node_name].append(agg_spec)
-        self.update_feature_specs(node, dict(aggregation_specs))  # type: ignore[arg-type]
+        self.update_feature_specs(node, dict(aggregation_specs))
 
-    def get_aggregation_specs(self, node: Node) -> list[AggregationSpecType]:
+    def get_aggregation_specs(self, node: Node) -> list[AggregationSpec]:
         """Get list of aggregation specs for a given query graph node
 
         Parameters
@@ -939,86 +937,59 @@ class FeatureExecutionPlanner:
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
         forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
 
-        out: list[AggregationSpecType] = []
+        out: list[AggregationSpec] = []
         if groupby_nodes:
             for groupby_node in groupby_nodes:
-                out.extend(self.get_specs_from_groupby(groupby_node))
+                out.extend(self.get_specs(TileBasedAggregationSpec, groupby_node))
 
         if item_groupby_nodes:
             # Feature involves non-time-aware aggregations
             for item_groupby_node in item_groupby_nodes:
-                out.extend(self.get_non_tiling_specs(ItemAggregationSpec, item_groupby_node))
+                out.extend(self.get_specs(ItemAggregationSpec, item_groupby_node))
 
         if lookup_nodes:
             for lookup_node in lookup_nodes:
-                out.extend(self.get_non_tiling_specs(LookupSpec, lookup_node))
+                out.extend(self.get_specs(LookupSpec, lookup_node))
 
         if lookup_target_nodes:
             for lookup_node in lookup_target_nodes:
-                out.extend(self.get_non_tiling_specs(LookupTargetSpec, lookup_node))
+                out.extend(self.get_specs(LookupTargetSpec, lookup_node))
 
         if asat_nodes:
             for asat_node in asat_nodes:
-                out.extend(self.get_non_tiling_specs(AggregateAsAtSpec, asat_node))
+                out.extend(self.get_specs(AggregateAsAtSpec, asat_node))
 
         if non_tile_window_aggregate_nodes:
             for non_tile_window_aggregate_node in non_tile_window_aggregate_nodes:
                 out.extend(
-                    self.get_non_tiling_specs(
-                        NonTileWindowAggregateSpec, non_tile_window_aggregate_node
-                    )
+                    self.get_specs(NonTileWindowAggregateSpec, non_tile_window_aggregate_node)
                 )
 
         if time_series_window_aggregate_nodes:
             for time_series_window_aggregate_node in time_series_window_aggregate_nodes:
                 out.extend(
-                    self.get_non_tiling_specs(
-                        TimeSeriesWindowAggregateSpec, time_series_window_aggregate_node
-                    )
+                    self.get_specs(TimeSeriesWindowAggregateSpec, time_series_window_aggregate_node)
                 )
 
         if forward_aggregate_nodes:
             for forward_aggregate_node in forward_aggregate_nodes:
-                out.extend(self.get_non_tiling_specs(ForwardAggregateSpec, forward_aggregate_node))
+                out.extend(self.get_specs(ForwardAggregateSpec, forward_aggregate_node))
 
         if forward_asat_nodes:
             for forward_asat_node in forward_asat_nodes:
-                out.extend(self.get_non_tiling_specs(ForwardAggregateAsAtSpec, forward_asat_node))
+                out.extend(self.get_specs(ForwardAggregateAsAtSpec, forward_asat_node))
 
         return out
 
-    def get_specs_from_groupby(self, groupby_node: Node) -> Sequence[TileBasedAggregationSpec]:
-        """Update FeatureExecutionPlan with a groupby query node
-
-        Parameters
-        ----------
-        groupby_node : Node
-            Groupby query node
-
-        Returns
-        -------
-        list[AggregationSpec]
+    def get_specs(self, spec_cls: Type[AggregationSpec], node: Node) -> Sequence[AggregationSpec]:
         """
-        return TileBasedAggregationSpec.from_groupby_query_node(
-            self.graph,
-            groupby_node,
-            self.adapter,
-            agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
-            serving_names_mapping=self.serving_names_mapping,
-            on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
-        )
-
-    def get_non_tiling_specs(
-        self, spec_cls: Type[NonTileBasedAggregationSpec], node: Node
-    ) -> Sequence[NonTileBasedAggregationSpec]:
-        """
-        Update FeatureExecutionPlan with a node that produces NonTileBasedAggregationSpec
+        Update FeatureExecutionPlan with a node that produces AggregationSpec
 
         Parameters
         ----------
         node: Node
             Query graph node
-        spec_cls: Type[NonTileBasedAggregationSpec]
+        spec_cls: Type[AggregationSpec]
             Aggregation specification class
 
         Returns
@@ -1035,6 +1006,7 @@ class FeatureExecutionPlanner:
             column_statistics_info=self.column_statistics_info,
             partition_column_filters=self.partition_column_filters,
             development_datasets=self.development_datasets,
+            on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
         )
 
     def update_feature_specs(
