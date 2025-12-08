@@ -35,6 +35,8 @@ class FeatureListStatus(OrderedStrEnum):
 class FeatureListRole(StrEnum):
     """Feature List Role. Determines how the list should be used for causal modeling."""
 
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureListRole")
+
     OUTCOME_PREDICTORS = "outcome-predictors"
     CONFOUNDERS = "confounders"
     MODERATORS = "moderators"
