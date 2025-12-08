@@ -541,8 +541,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
           ],
           'default_feature_list_id': ...,
           'status': 'DRAFT',
-          'role': 'outcome-predictors',
           'feature_count': 1,
+          'role': 'outcome-predictors',
           'version': {
             'this': ...,
             'default': ...
