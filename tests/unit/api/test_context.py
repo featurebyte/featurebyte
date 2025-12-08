@@ -4,7 +4,7 @@ Unit test for Context class
 
 import pytest
 
-from featurebyte import Context, TargetNamespace, TargetType, UseCase
+from featurebyte import Context, Propensity, TargetNamespace, TargetType, Treatment, UseCase
 
 
 @pytest.fixture(name="context_1")
@@ -53,6 +53,54 @@ def test_create_context(catalog, cust_id_entity):
     assert retrieved_context2.primary_entity_ids == entity_ids
     assert retrieved_context2.primary_entities == [cust_id_entity]
     assert retrieved_context2.description == "test_description"
+
+
+def test_create_context_with_treatment(catalog, cust_id_entity):
+    """
+    Test Context.create method with treatment
+    """
+    _ = catalog
+
+    entity_ids = [cust_id_entity.id]
+    entity_names = [cust_id_entity.name]
+
+    observational_treatment = Treatment(
+        scale="binary",
+        source="observational",
+        design="business-rule",
+        time="static",
+        time_structure="none",
+        interference="none",
+        treatment_values=[0, 1],
+        control_value=0,
+        propensity=Propensity(
+            granularity="unit",
+            knowledge="estimated",
+        ),
+    )
+
+    context = Context.create(
+        name="test_context_with_treatment",
+        primary_entity=entity_names,
+        description="test_description",
+        treatment=observational_treatment,
+    )
+
+    # Test get context by id and verify attributes
+    retrieved_context = Context.get_by_id(context.id)
+    assert retrieved_context.name == "test_context_with_treatment"
+    assert retrieved_context.primary_entity_ids == entity_ids
+    assert retrieved_context.primary_entities == [cust_id_entity]
+    assert retrieved_context.description == "test_description"
+    assert retrieved_context.treatment == observational_treatment
+
+    # Test get context by name and verify attributes
+    retrieved_context2 = Context.get(context.name)
+    assert retrieved_context2.name == "test_context_with_treatment"
+    assert retrieved_context2.primary_entity_ids == entity_ids
+    assert retrieved_context2.primary_entities == [cust_id_entity]
+    assert retrieved_context2.description == "test_description"
+    assert retrieved_context2.treatment == observational_treatment
 
 
 def test_list_contexts(catalog, context_1, cust_id_entity):
@@ -151,3 +199,4 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     assert context_info["default_eda_table"] == target_table.name
     assert context_info["default_preview_table"] == target_table.name
     assert context_info["associated_use_cases"] == [use_case.name]
+    assert not context_info["treatment"]

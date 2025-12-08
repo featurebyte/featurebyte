@@ -25,7 +25,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.feature_list_namespace import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -462,6 +462,7 @@ def test_info(saved_feature_list):
         "versions_info": None,
         "namespace_description": None,
         "description": None,
+        "role": "outcome-predictors",
     }
     assert info_dict == expected_info, info_dict
 
@@ -588,6 +589,7 @@ def test_list(saved_feature_list):
             "entities": [["customer"]],
             "primary_entity": [["customer"]],
             "created_at": [saved_feature_list_namespace.created_at.isoformat()],
+            "role": "outcome-predictors",
         }),
     )
 
@@ -774,6 +776,18 @@ def _assert_all_features_in_list_with_enabled_status(feature_list, is_enabled):
     for feature_id in feature_list.feature_ids:
         feature = Feature.get_by_id(feature_id)
         assert feature.online_enabled == is_enabled
+
+
+def test_feature_list_update_role(feature_list):
+    """Test update feature list role"""
+    assert feature_list.saved is False
+    feature_list.save()
+    assert feature_list.saved is True
+    assert feature_list.role == FeatureListRole.OUTCOME_PREDICTORS
+    feature_list.update_role("confounders")
+    assert feature_list.role == FeatureListRole.CONFOUNDERS
+    feature_list.update_role("moderators")
+    assert feature_list.role == FeatureListRole.MODERATORS
 
 
 def test_deploy__feature_list_with_already_production_ready_features_doesnt_error(feature_list):

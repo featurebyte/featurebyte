@@ -330,6 +330,46 @@ class TestContextApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{context_id}")
         assert response.json()["detail"] == "Context is referenced by UseCase: test_use_case"
 
+    def test_create_context_with_treatment(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+    ):
+        """
+        Test context with treatment
+        """
+        test_api_client, _ = test_api_client_persistent
+        _ = create_success_response.json()
+
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = f"{payload['name']}_with_treament"
+        payload["treatment"] = {
+            "scale": "binary",
+            "source": "observational",
+            "design": "business-rule",
+            "treatment_values": [0, 1],
+            "control_value": 0,
+            "propensity": {
+                "granularity": "unit",
+                "knowledge": "estimated",
+            },
+        }
+
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["treatment"] == {
+            "scale": "binary",
+            "source": "observational",
+            "design": "business-rule",
+            "time": "static",
+            "time_structure": "none",
+            "interference": "none",
+            "treatment_values": [0, 1],
+            "control_value": 0,
+            "propensity": {"granularity": "unit", "knowledge": "estimated", "p_global": None},
+        }
+
     def test_create_context__not_all_primary_entity_ids(
         self,
         create_success_response,

@@ -77,13 +77,15 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature_list_namespace import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.request_input import DownSamplingInfo, TargetValueSamplingRate
+from featurebyte.models.treatment import Propensity, Treatment
+from featurebyte.models.use_case import UseCaseType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -541,6 +543,7 @@ __all__ = [
     "UsernamePasswordCredential",
     # enums
     "AggFunc",
+    "FeatureListRole",
     "FeatureListStatus",
     "Purpose",
     "SourceType",
@@ -571,6 +574,8 @@ __all__ = [
     "CalendarWindow",
     "TargetValueSamplingRate",
     "DownSamplingInfo",
+    "Propensity",
+    "Treatment",
     # services
     "start",
     "stop",

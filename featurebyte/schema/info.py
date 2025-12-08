@@ -5,7 +5,7 @@ Info related schema
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import Field, RootModel, field_validator, model_validator
 
@@ -18,11 +18,13 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.credential import DatabaseCredentialType, StorageCredentialType
 from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
-from featurebyte.models.feature_list_namespace import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.models.request_input import RequestInputType
+from featurebyte.models.treatment import Treatment
+from featurebyte.models.use_case import UseCaseType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -354,6 +356,7 @@ class BaseFeatureListNamespaceInfo(NamespaceInfo):
     default_feature_list_id: PydanticObjectId
     status: FeatureListStatus
     feature_count: int
+    role: FeatureListRole = Field(default=FeatureListRole.OUTCOME_PREDICTORS)
 
 
 class FeatureListNamespaceInfo(BaseFeatureListNamespaceInfo):
@@ -553,6 +556,9 @@ class UseCaseInfo(BaseInfo):
     target_name: str
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
+    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = Field(
+        default=UseCaseType.PREDICTIVE
+    )
 
 
 class ContextInfo(BaseInfo):
@@ -565,6 +571,7 @@ class ContextInfo(BaseInfo):
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None
+    treatment: Optional[Treatment] = None
 
 
 class OnlineStoreInfo(BaseInfo):

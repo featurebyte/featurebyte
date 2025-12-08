@@ -17,6 +17,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
+from featurebyte.models.treatment import Treatment
 from featurebyte.schema.context import ContextUpdate
 
 
@@ -37,10 +38,12 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         "name",
         "primary_entity_ids",
         "description",
+        "treatment",
     ]
 
     # pydantic instance variable (public)
     primary_entity_ids: List[PydanticObjectId]
+    treatment: Optional[Treatment] = None
 
     @property
     def primary_entities(self) -> List[Entity]:
@@ -71,6 +74,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         name: str,
         primary_entity: List[str],
         description: Optional[str] = None,
+        treatment: Optional[Treatment] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -83,6 +87,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             List of entity names.
         description: Optional[str]
             Description of the Context.
+        treatment: Optional[Treatment]
+            Treatment if this is a causal modeling context.
 
         Returns
         -------
@@ -96,12 +102,40 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ...     primary_entity=primary_entity,
         ... )
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
+
+        >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
+
+        >>> observational_treatment = fb.Treatment(
+        ...     scale="binary",
+        ...     source="observational",
+        ...     design="business-rule",
+        ...     time="static",
+        ...     time_structure="none",
+        ...     interference="none",
+        ...     treatment_values=[0, 1],
+        ...     control_value=0,
+        ...     propensity=fb.Propensity(
+        ...         granularity="unit",
+        ...         knowledge="estimated",  # Requires model-based p(T|X)
+        ...     ),
+        ... )
+        >>> fb.Context.create(  # doctest: +SKIP
+        ...     name="context_with_observational_treatment",
+        ...     primary_entity=primary_entity,
+        ...     treatment=observational_treatment,
+        ... )
+        >>> context_2 = catalog.get_context(
+        ...     "context_with_observational_treatment"
+        ... )  # doctest: +SKIP
+
         """
         entity_ids = []
         for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
-        context = Context(name=name, primary_entity_ids=entity_ids, description=description)
+        context = Context(
+            name=name, primary_entity_ids=entity_ids, description=description, treatment=treatment
+        )
         context.save()
         return context
 
@@ -135,6 +169,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         - `updated_at`: The timestamp indicating when the Context object was last updated.
         - `primary_entities`: List of primary entities of the Context.
         - `description`: Description of the Context.
+        - `treatment`: Treatment associated with the Context.
         - `default_eda_table`: Default eda table of the Context.
         - `default_preview_table`: Default preview table of the Context.
         - `associated_use_cases`: UseCases associated of the Context.

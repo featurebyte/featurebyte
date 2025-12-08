@@ -2,8 +2,9 @@
 Unit test for UseCase class
 """
 
-from featurebyte import ObservationTable, TargetNamespace, UseCase
+from featurebyte import Context, ObservationTable, Propensity, TargetNamespace, Treatment, UseCase
 from featurebyte.enum import DBVarType, TargetType
+from featurebyte.models.use_case import UseCaseType
 
 
 def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, context):
@@ -66,6 +67,55 @@ def test_create_use_case(catalog, float_target, context):
     assert len(use_case_df) == 1
     assert use_case_df.iloc[0]["id"] == str(use_case.id)
     assert use_case_df.iloc[0]["name"] == use_case.name
+
+
+def test_create_use_case_with_treatment(catalog, cust_id_entity):
+    """
+    Test create use case with descriptive target
+    """
+    entity_ids = [cust_id_entity.id]
+    entity_names = [cust_id_entity.name]
+
+    observational_treatment = Treatment(
+        scale="binary",
+        source="observational",
+        design="business-rule",
+        time="static",
+        time_structure="none",
+        interference="none",
+        treatment_values=[0, 1],
+        control_value=0,
+        propensity=Propensity(
+            granularity="unit",
+            knowledge="estimated",
+        ),
+    )
+
+    context = Context.create(
+        name="test_context_with_treatment",
+        primary_entity=entity_names,
+        description="test_description",
+        treatment=observational_treatment,
+    )
+
+    target_name = "target_name"
+    namespace = TargetNamespace.create(
+        name=target_name,
+        window="28d",
+        primary_entity=[cust_id_entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
+    )
+    assert namespace.name == target_name
+    use_case = UseCase.create(
+        name="test_use_case_1",
+        target_name=target_name,
+        context_name=context.name,
+        description="test_use_case_1 description",
+    )
+    assert use_case.target_namespace_id == namespace.id
+    assert use_case.target is None
+    assert use_case.use_case_type == UseCaseType.CAUSAL
 
 
 def test_add_and_remove_observation_table(use_case, target_table):
@@ -173,6 +223,7 @@ def test_info(use_case, target_table, cust_id_entity):
             "catalog_name": "catalog",
         }
     ]
+    assert use_case_info["use_case_type"] == UseCaseType.PREDICTIVE
 
 
 def test_observation_table_with_multiple_use_cases(use_case, target_table, float_target, context):

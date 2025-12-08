@@ -174,6 +174,24 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
             yield
 
     @pytest.mark.asyncio
+    async def test_update_feature_list_namespace_role(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test update feature list namespace role"""
+        _ = user_id
+        assert create_success_response.status_code == HTTPStatus.CREATED
+        result = create_success_response.json()
+
+        test_api_client, _ = test_api_client_persistent
+
+        namespace_response = test_api_client.patch(
+            f"/feature_list_namespace/{result['feature_list_namespace_id']}",
+            json={"role": "confounders"},
+        )
+        namespace_response_dict = namespace_response.json()
+        assert namespace_response_dict["role"] == "confounders"
+
+    @pytest.mark.asyncio
     async def test_create_201__with_existing_feature_list_namespace(
         self, test_api_client_persistent, create_success_response, user_id
     ):
