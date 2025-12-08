@@ -18,9 +18,9 @@ from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.helper import (
     join_aggregated_expr_with_distinct_point_in_time,
@@ -287,7 +287,7 @@ class TimeSeriesRequestTablePlan:
         ]
 
 
-class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregateSpec]):
+class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
     """
     Aggregator responsible for generating SQL for time series window aggregation
     """

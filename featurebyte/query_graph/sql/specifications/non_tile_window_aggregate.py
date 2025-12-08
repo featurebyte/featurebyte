@@ -18,15 +18,16 @@ from featurebyte.query_graph.node.generic import (
     NonTileWindowAggregateNode,
     NonTileWindowAggregateParameters,
 )
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
+    AggregationSpec,
     AggregationType,
-    NonTileBasedAggregationSpec,
 )
 
 
 @dataclass
-class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
+class NonTileWindowAggregateSpec(AggregationSpec):
     """
     Non-tile window aggregation specification
     """
@@ -93,6 +94,8 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
+        on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        adapter: BaseAdapter,
     ) -> list[NonTileWindowAggregateSpec]:
         assert isinstance(node, NonTileWindowAggregateNode)
         specs = []

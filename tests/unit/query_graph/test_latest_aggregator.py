@@ -12,23 +12,27 @@ from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
-def agg_specs_no_window(global_graph, latest_value_without_window_feature_node, adapter):
+def agg_specs_no_window(
+    global_graph, latest_value_without_window_feature_node, adapter, source_info
+):
     """
     Fixture of TileAggregationSpec without window
     """
     parent_nodes = global_graph.get_input_node_names(latest_value_without_window_feature_node)
     assert len(parent_nodes) == 1
     groupby_node = global_graph.get_node_by_name(parent_nodes[0])
-    return TileBasedAggregationSpec.from_groupby_query_node(
-        global_graph,
-        groupby_node,
-        adapter=adapter,
+    return TileBasedAggregationSpec.from_query_graph_node(
+        node=groupby_node,
+        graph=global_graph,
+        source_info=source_info,
         agg_result_name_include_serving_names=True,
     )
 
 
 @pytest.fixture
-def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_node, adapter):
+def agg_specs_offset(
+    global_graph, latest_value_offset_without_window_feature_node, adapter, source_info
+):
     """
     Fixture of TileAggregationSpec with unbounded window and offset
     """
@@ -37,10 +41,10 @@ def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_no
     )
     assert len(parent_nodes) == 1
     groupby_node = global_graph.get_node_by_name(parent_nodes[0])
-    return TileBasedAggregationSpec.from_groupby_query_node(
-        global_graph,
-        groupby_node,
-        adapter=adapter,
+    return TileBasedAggregationSpec.from_query_graph_node(
+        node=groupby_node,
+        graph=global_graph,
+        source_info=source_info,
         agg_result_name_include_serving_names=True,
     )
 

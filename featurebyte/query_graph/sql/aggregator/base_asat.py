@@ -13,9 +13,9 @@ from sqlglot.expressions import Select, select
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    Aggregator,
     CommonTable,
     LeftJoinableSubquery,
-    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.helper import (
     join_aggregated_expr_with_distinct_point_in_time,
@@ -37,7 +37,7 @@ from featurebyte.query_graph.sql.specifications.base_aggregate_asat import BaseA
 AsAtSpecT = TypeVar("AsAtSpecT", bound=BaseAggregateAsAtSpec)
 
 
-class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
+class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
     """
     AsAtAggregation is responsible for generating SQL for as at aggregation
     """
