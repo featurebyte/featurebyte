@@ -219,7 +219,7 @@ class FeatureListNamespace(ApiObject):
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.role
-        'outcome-predictors'
+        'moderators'
         """
         return self.cached_model.role
 
@@ -541,6 +541,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
           ],
           'default_feature_list_id': ...,
           'status': 'DRAFT',
+          'role': 'outcome-predictors',
           'feature_count': 1,
           'version': {
             'this': ...,

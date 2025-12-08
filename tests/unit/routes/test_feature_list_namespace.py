@@ -126,7 +126,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 2,
-            'role': 'outcome-predictors',
+            "role": "outcome-predictors",
             "status": "DRAFT",
             "catalog_name": "grocery",
             "description": None,
