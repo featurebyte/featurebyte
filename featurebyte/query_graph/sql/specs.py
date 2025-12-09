@@ -457,6 +457,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     is_order_dependent: bool
     tile_value_columns: list[str]
     dtype: DBVarType
+    parent_dtype: Optional[DBVarType]
     agg_func: AggFunc
     parameters: GroupByNodeParameters
 
@@ -609,6 +610,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 tile_value_columns=tile_value_columns,
                 entity_ids=groupby_node_params.entity_ids,
                 dtype=dtype,
+                parent_dtype=parent_dtype,
                 agg_func=groupby_node_params.agg_func,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
                 aggregation_source=aggregation_source,
