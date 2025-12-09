@@ -831,6 +831,11 @@ class WindowAggregator(TileBasedAggregator):
     def get_window_aggregations_deployment(self) -> list[LeftJoinableSubquery]:
         """
         Get window aggregation queries for deployment SQL
+
+        Returns
+        -------
+        list[LeftJoinableSubquery]
+            List of window aggregation subqueries for deployment
         """
         queries = []
         existing_columns: set[str] = set()
