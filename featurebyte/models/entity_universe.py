@@ -300,6 +300,24 @@ def filter_aggregation_input_for_time_series(
 ) -> Select:
     """
     Filter the aggregate input expression for time series window aggregation
+
+    Parameters
+    ----------
+    aggregate_input_expr: Select
+        The input SQL expression to filter
+    job_datetime_expr: Expression
+        The datetime expression representing the reference point for the time window
+    window: CalendarWindow
+        The time window specification for aggregation
+    adapter: BaseAdapter
+        SQL adapter for database-specific operations
+    parameters: TimeSeriesWindowAggregateParameters
+        Parameters for time series window aggregation including reference datetime column and offset
+
+    Returns
+    -------
+    Select
+        Filtered SQL expression with time-based constraints applied
     """
     job_datetime_rounded_to_window_unit = adapter.timestamp_truncate(
         job_datetime_expr,
