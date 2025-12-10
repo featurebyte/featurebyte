@@ -1191,6 +1191,9 @@ def _get_treatment_layout() -> List[DocLayoutItem]:
     """
     return [
         DocLayoutItem([TREATMENT, CREATE, "Treatment.create"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.get"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.get_by_id"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.list"]),
         DocLayoutItem([TREATMENT, INFO, "Treatment.created_at"]),
         DocLayoutItem([TREATMENT, INFO, "Treatment.name"]),
         DocLayoutItem([TREATMENT, INFO, "Treatment.dtype"]),

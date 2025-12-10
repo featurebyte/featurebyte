@@ -4,9 +4,11 @@ Feature Namespace module.
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
+from pandas import DataFrame
 from pydantic import Field
+from typeguard import typechecked
 
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -388,6 +390,91 @@ class Treatment(DeletableApiObject, SavableApiObject):
             return self.cached_model.propensity
         except RecordRetrievalException:
             return self.internal_propensity
+
+    @typechecked
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of a Treatment object. The dictionary
+        contains the following keys:
+
+        - `author`: The name of the user who created the Treatment object.
+        - `name`: The name of the Treatment object.
+        - `created_at`: The timestamp indicating when the Treatment object was created.
+        - `updated_at`: The timestamp indicating when the Treatment object was last updated.
+        - `description`: Description of the Treatment.
+        - `dtype`: Data type of the Treatment.
+        - `treatment_type`: Scale of the treatment variable.
+        - `source`: High level source of treatment assignment.
+        - `design`: Specific assignment design within the chosen `source`.
+        - `time`: Time at which treatment is defined.
+        - `time_structure`: Detailed temporal structure of the treatment process.
+        - `interference`: Structure of interference between units (violations of SUTVA).
+        - `treatment_labels`: List of raw treatment values used in the dataset.
+        - `control_label`: Value representing the control or baseline arm.
+        - `propensity`: Describes how treatment assignment probabilities are known or estimated.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> treatment = catalog.get_treatment("treatment_name")  # doctest: +SKIP
+        >>> info = treatment.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
+
+    @classmethod
+    def get(cls, name: str) -> "Treatment":
+        """
+        Gets a Treatment object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the treatment to retrieve.
+
+        Returns
+        -------
+        Context
+            Treatment object.
+
+        Examples
+        --------
+        Get a Treatment object that is already saved.
+
+        >>> treatment = fb.Treatment.get("treatment_name")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+        """
+        Returns a DataFrame that lists the treatments by their names, types and creation dates.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all treatments.
+
+        >>> treatments = fb.Treatement.list()
+        """
+        return super().list(include_id=include_id)
 
     def delete(self) -> None:
         """

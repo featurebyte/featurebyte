@@ -195,7 +195,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> context = catalog.get_target("context")  # doctest: +SKIP
+        >>> context = catalog.get_context("context")  # doctest: +SKIP
         >>> info = context.info()  # doctest: +SKIP
         """
         return super().info(verbose)
@@ -208,7 +208,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         Parameters
         ----------
         name: str
-            Name of the deployment to retrieve.
+            Name of the context to retrieve.
 
         Returns
         -------
@@ -240,7 +240,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        List all context.
+        List all contexts.
 
         >>> contexts = fb.Context.list()
         """
