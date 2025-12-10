@@ -84,6 +84,7 @@ from featurebyte.routes.target_table.controller import TargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.time_series_table.controller import TimeSeriesTableController
+from featurebyte.routes.treatment.controller import TreatmentController
 from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_external_feature_table import BatchExternalFeatureTableService
@@ -226,6 +227,7 @@ from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.time_series_table import TimeSeriesTableService
 from featurebyte.service.time_series_table_validation import TimeSeriesTableValidationService
+from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
@@ -283,6 +285,9 @@ from featurebyte.worker.task.target_namespace_classification_metadata_update imp
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
+from featurebyte.worker.task.treatment_labels_validate import (
+    TreatmentLabelsValidateTask,
+)
 from featurebyte.worker.test_util.random_task import LongRunningTask, RandomTask
 from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
@@ -492,6 +497,9 @@ app_container_config.register_class(TargetService)
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
+app_container_config.register_class(
+    TreatmentController, dependency_override={"service": "treatment_service"}
+)
 app_container_config.register_class(TargetNamespaceService)
 app_container_config.register_class(TargetTableController)
 app_container_config.register_class(TargetTableService)
@@ -508,6 +516,7 @@ app_container_config.register_class(TileSchedulerService)
 app_container_config.register_class(TileTaskExecutor)
 app_container_config.register_class(TimeSeriesTableController)
 app_container_config.register_class(TimeSeriesTableService)
+app_container_config.register_class(TreatmentService)
 app_container_config.register_class(
     UserDefinedFunctionController, dependency_override={"service": "user_defined_function_service"}
 )
@@ -548,6 +557,7 @@ app_container_config.register_class(TestTask)
 app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
 app_container_config.register_class(TargetNamespaceClassificationMetadataUpdateTask)
+app_container_config.register_class(TreatmentLabelsValidateTask)
 app_container_config.register_class(TableValidationTask)
 app_container_config.register_class(CatalogCleanupTask)
 app_container_config.register_class(DevelopmentDatasetCreateTask)

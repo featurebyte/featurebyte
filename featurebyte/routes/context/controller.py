@@ -4,7 +4,7 @@ Context API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from bson import ObjectId
 
@@ -14,7 +14,7 @@ from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
-from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
+from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList, TreatmentInfo
 from featurebyte.schema.observation_table import ObservationTableServiceUpdate
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -22,6 +22,7 @@ from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
@@ -44,6 +45,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         entity_service: EntityService,
         use_case_service: UseCaseService,
         catalog_service: CatalogService,
+        treatment_service: TreatmentService,
         primary_entity_validator: PrimaryEntityValidator,
     ):
         super().__init__(service=context_service)
@@ -55,6 +57,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         self.entity_service = entity_service
         self.use_case_service = use_case_service
         self.catalog_service = catalog_service
+        self.treatment_service = treatment_service
         self.primary_entity_validator = primary_entity_validator
 
     async def create_context(
@@ -227,6 +230,11 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             )
         ]
 
+        treatment_info: Optional[TreatmentInfo] = None
+        if context.treatment_id:
+            treatment = await self.treatment_service.get_document(context.treatment_id)
+            treatment_info = TreatmentInfo(**treatment.model_dump())
+
         return ContextInfo(
             **context.model_dump(),
             author=author,
@@ -234,4 +242,5 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
             associated_use_cases=use_cases,
+            treatment=treatment_info,
         )

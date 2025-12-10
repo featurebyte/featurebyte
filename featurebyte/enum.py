@@ -489,6 +489,29 @@ class TargetType(StrEnum):
         return {cls.CLASSIFICATION, cls.MULTI_CLASSIFICATION}
 
 
+class TreatmentType(StrEnum):
+    """
+    The TreatmentType enum class provides a way to represent different types of treatment.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TreatmentType")
+
+    NUMERIC = "numeric", "Numeric treatment representing a dose, price, spend, or intensity."
+    BINARY = "binary", "Two-level treatment (e.g., exposed vs control, coupon vs no coupon)."
+    MULTI_ARM = "multi_arm", "Discrete treatment with more than two levels (dosage tiers, variants)"
+
+    @classmethod
+    def classification_types(cls) -> set[TreatmentType]:
+        """
+        Classification treatement types
+
+        Returns
+        -------
+        set[TreatmentType]
+        """
+        return {cls.BINARY, cls.MULTI_ARM}
+
+
 class AggFunc(StrEnum):
     """
     The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce
@@ -693,6 +716,7 @@ class WorkerCommand(StrEnum):
     TARGET_NAMESPACE_CLASSIFICATION_METADATA_UPDATE = (
         "TARGET_NAMESPACE_CLASSIFICATION_METADATA_UPDATE"
     )
+    TREATMENT_LABELS_VALIDATE = "TREATMENT_LABELS_VALIDATE"
 
     # Tasks to be deprecated
     FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE = "FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE"

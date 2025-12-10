@@ -2,9 +2,23 @@
 Unit test for UseCase class
 """
 
-from featurebyte import Context, ObservationTable, Propensity, TargetNamespace, Treatment, UseCase
-from featurebyte.enum import DBVarType, TargetType
-from featurebyte.models.use_case import UseCaseType
+from featurebyte import (
+    AssignmentDesign,
+    AssignmentSource,
+    Context,
+    ObservationTable,
+    Propensity,
+    TargetNamespace,
+    TargetType,
+    Treatment,
+    TreatmentInterference,
+    TreatmentTime,
+    TreatmentTimeStructure,
+    TreatmentType,
+    UseCase,
+    UseCaseType,
+)
+from featurebyte.enum import DBVarType
 
 
 def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, context):
@@ -76,18 +90,21 @@ def test_create_use_case_with_treatment(catalog, cust_id_entity):
     entity_ids = [cust_id_entity.id]
     entity_names = [cust_id_entity.name]
 
-    observational_treatment = Treatment(
-        scale="binary",
-        source="observational",
-        design="business-rule",
-        time="static",
-        time_structure="none",
-        interference="none",
-        treatment_values=[0, 1],
-        control_value=0,
+    observational_treatment = Treatment.create(
+        name="test_treatment",
+        dtype=DBVarType.INT,
+        treatment_type=TreatmentType.BINARY,
+        source=AssignmentSource.RANDOMIZED,
+        design=AssignmentDesign.SIMPLE_RANDOMIZATION,
+        time=TreatmentTime.STATIC,
+        time_structure=TreatmentTimeStructure.INSTANTANEOUS,
+        interference=TreatmentInterference.NONE,
+        treatment_labels=[0, 1],
+        control_label=0,
         propensity=Propensity(
-            granularity="unit",
-            knowledge="estimated",
+            granularity="global",
+            knowledge="design-known",
+            p_global=0.5,
         ),
     )
 
@@ -95,7 +112,7 @@ def test_create_use_case_with_treatment(catalog, cust_id_entity):
         name="test_context_with_treatment",
         primary_entity=entity_names,
         description="test_description",
-        treatment=observational_treatment,
+        treatment_name=observational_treatment.name,
     )
 
     target_name = "target_name"

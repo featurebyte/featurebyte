@@ -341,33 +341,39 @@ class TestContextApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         _ = create_success_response.json()
 
+        # create target
+        treatment_payload = self.load_payload("tests/fixtures/request_payloads/treatment.json")
+        response = test_api_client.post("/treatment", json=treatment_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        context_id = str(ObjectId())
         payload = self.payload.copy()
-        payload["_id"] = str(ObjectId())
+        payload["_id"] = context_id
         payload["name"] = f"{payload['name']}_with_treament"
-        payload["treatment"] = {
-            "scale": "binary",
-            "source": "observational",
-            "design": "business-rule",
-            "treatment_values": [0, 1],
-            "control_value": 0,
-            "propensity": {
-                "granularity": "unit",
-                "knowledge": "estimated",
-            },
-        }
+        payload["treatment_id"] = treatment_payload["_id"]
 
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
-        assert response.json()["treatment"] == {
-            "scale": "binary",
-            "source": "observational",
-            "design": "business-rule",
+
+        response = test_api_client.get(f"{self.base_route}/{context_id}/info")
+
+        treatment_in_response = response.json()["treatment"]
+        treatment_in_response.pop("created_at")
+
+        assert treatment_in_response == {
+            "name": "test_treatment",
+            "updated_at": None,
+            "description": None,
+            "dtype": "INT",
+            "treatment_type": "binary",
+            "source": "randomized",
+            "design": "simple-randomization",
             "time": "static",
-            "time_structure": "none",
+            "time_structure": "instantaneous",
             "interference": "none",
-            "treatment_values": [0, 1],
-            "control_value": 0,
-            "propensity": {"granularity": "unit", "knowledge": "estimated", "p_global": None},
+            "treatment_labels": [0, 1],
+            "control_label": 0,
+            "propensity": {"granularity": "global", "knowledge": "design-known", "p_global": 0.5},
         }
 
     def test_create_context__not_all_primary_entity_ids(

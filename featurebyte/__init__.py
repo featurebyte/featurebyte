@@ -49,6 +49,7 @@ from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.time_series_table import TimeSeriesTable
 from featurebyte.api.time_series_view import TimeSeriesView
+from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
@@ -63,7 +64,14 @@ from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
-from featurebyte.enum import AggFunc, SourceType, StorageType, TargetType, TimeIntervalUnit
+from featurebyte.enum import (
+    AggFunc,
+    SourceType,
+    StorageType,
+    TargetType,
+    TimeIntervalUnit,
+    TreatmentType,
+)
 from featurebyte.exception import FeatureByteException, InvalidSettingsError
 from featurebyte.list_utility import list_deployments, list_unsaved_features
 from featurebyte.logging import get_logger
@@ -84,7 +92,14 @@ from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.request_input import DownSamplingInfo, TargetValueSamplingRate
-from featurebyte.models.treatment import Propensity, Treatment
+from featurebyte.models.treatment import (
+    AssignmentDesign,
+    AssignmentSource,
+    Propensity,
+    TreatmentInterference,
+    TreatmentTime,
+    TreatmentTimeStructure,
+)
 from featurebyte.models.use_case import UseCaseType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -526,6 +541,7 @@ __all__ = [
     "TimeSeriesView",
     "UseCase",
     "Context",
+    "Treatment",
     # feature store details
     "BigQueryDetails",
     "DatabricksDetails",
@@ -551,6 +567,7 @@ __all__ = [
     "TableStatus",
     "TargetType",
     "TimeIntervalUnit",
+    "TreatmentType",
     # imputation related classes
     "MissingValueImputation",
     "DisguisedValueImputation",
@@ -574,8 +591,12 @@ __all__ = [
     "CalendarWindow",
     "TargetValueSamplingRate",
     "DownSamplingInfo",
+    "AssignmentDesign",
+    "AssignmentSource",
     "Propensity",
-    "Treatment",
+    "TreatmentInterference",
+    "TreatmentTime",
+    "TreatmentTimeStructure",
     # services
     "start",
     "stop",

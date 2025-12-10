@@ -15,12 +15,12 @@ from featurebyte.common.documentation.constants import (
     CONSTRUCTOR,
     CONTEXT,
     CREATE,
-    CREATE_CONTEXT,
     CREATE_FEATURE,
     CREATE_FEATURE_GROUP,
     CREATE_OBSERVATION_TABLE,
     CREATE_TABLE,
     CREATE_TARGET,
+    CREATE_TREATMENT,
     CREDENTIAL,
     DATA_SOURCE,
     DEPLOY,
@@ -56,6 +56,7 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TARGET,
     TRANSFORM,
+    TREATMENT,
     TYPE,
     USE_CASE,
     USER_DEFINED_FUNCTION,
@@ -872,6 +873,12 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TimeIntervalUnit"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AssignmentSource"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AssignmentDesign"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentTime"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentTimeStructure"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentInterference"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TimeIntervalUnit"]),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
@@ -916,8 +923,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeZoneColumn"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "CalendarWindow"]),
-        DocLayoutItem([UTILITY_CLASSES, CREATE_CONTEXT, "Propensity"]),
-        DocLayoutItem([UTILITY_CLASSES, CREATE_CONTEXT, "Treatment"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TREATMENT, "Propensity"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
         DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),
@@ -1170,6 +1176,32 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_treatment_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Treatment module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Treatment module.
+    """
+    return [
+        DocLayoutItem([TREATMENT, CREATE, "Treatment.create"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.created_at"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.name"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.dtype"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.treatment_type"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.source"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.design"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.time"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.time_structure"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.interference"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.control_label"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.treatment_labels"]),
+        DocLayoutItem([TREATMENT, MANAGE, "Treatment.delete"]),
+    ]
+
+
 def _get_target_layout() -> List[DocLayoutItem]:
     """
     The layout for the Target module.
@@ -1246,7 +1278,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CONTEXT, INFO, "Context.primary_entities"]),
         DocLayoutItem([CONTEXT, INFO, "Context.created_at"]),
         DocLayoutItem([CONTEXT, INFO, "Context.name"]),
-        DocLayoutItem([CONTEXT, INFO, "Context.treatment"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.treatment_id"]),
         DocLayoutItem([CONTEXT, INFO, "Context.updated_at"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.id"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.default_eda_table"]),
@@ -1293,6 +1325,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_historical_feature_table_layout(),
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
+        *_get_treatment_layout(),
         *_get_use_case_layout(),
         *_get_context_layout(),
     ]

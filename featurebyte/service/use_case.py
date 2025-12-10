@@ -110,7 +110,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
             raise DocumentCreationError("Target and context must have the same entities")
 
-        if context.treatment:
+        if context.treatment_id:
             data.use_case_type = UseCaseType.CAUSAL
 
         use_case = await self.create_document(data=data)

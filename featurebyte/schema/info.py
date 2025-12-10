@@ -9,7 +9,7 @@ from typing import Any, List, Literal, Optional
 
 from pydantic import Field, RootModel, field_validator, model_validator
 
-from featurebyte.enum import DBVarType, FeatureType, SourceType
+from featurebyte.enum import DBVarType, FeatureType, SourceType, TreatmentType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     NameStr,
@@ -23,7 +23,15 @@ from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.models.treatment import Treatment
+from featurebyte.models.treatment import (
+    AssignmentDesign,
+    AssignmentSource,
+    Propensity,
+    TreatmentInterference,
+    TreatmentLabelType,
+    TreatmentTime,
+    TreatmentTimeStructure,
+)
 from featurebyte.models.use_case import UseCaseType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -561,6 +569,24 @@ class UseCaseInfo(BaseInfo):
     )
 
 
+class TreatmentInfo(BaseInfo):
+    """
+    Treatment info schema
+    """
+
+    name: str
+    dtype: DBVarType
+    treatment_type: TreatmentType
+    source: AssignmentSource
+    design: AssignmentDesign
+    time: TreatmentTime = TreatmentTime.STATIC
+    time_structure: TreatmentTimeStructure = TreatmentTimeStructure.NONE
+    interference: TreatmentInterference = TreatmentInterference.NONE
+    treatment_labels: Optional[List[TreatmentLabelType]] = None  # e.g. [0, 1] or ["A", "B", "C"]
+    control_label: Optional[TreatmentLabelType] = None
+    propensity: Optional[Propensity] = None
+
+
 class ContextInfo(BaseInfo):
     """
     Context Info schema
@@ -571,7 +597,7 @@ class ContextInfo(BaseInfo):
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None
-    treatment: Optional[Treatment] = None
+    treatment: Optional[TreatmentInfo] = None
 
 
 class OnlineStoreInfo(BaseInfo):

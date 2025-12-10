@@ -12,12 +12,12 @@ from typeguard import typechecked
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
-from featurebyte.models.treatment import Treatment
 from featurebyte.schema.context import ContextUpdate
 
 
@@ -38,12 +38,12 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         "name",
         "primary_entity_ids",
         "description",
-        "treatment",
+        "treatment_id",
     ]
 
     # pydantic instance variable (public)
     primary_entity_ids: List[PydanticObjectId]
-    treatment: Optional[Treatment] = None
+    treatment_id: Optional[PydanticObjectId] = None
 
     @property
     def primary_entities(self) -> List[Entity]:
@@ -74,7 +74,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         name: str,
         primary_entity: List[str],
         description: Optional[str] = None,
-        treatment: Optional[Treatment] = None,
+        treatment_name: Optional[str] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -87,8 +87,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             List of entity names.
         description: Optional[str]
             Description of the Context.
-        treatment: Optional[Treatment]
-            Treatment if this is a causal modeling context.
+        treatment_name: Optional[str]
+            treatment name if this is a causal modeling context.
 
         Returns
         -------
@@ -105,8 +105,10 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
 
-        >>> observational_treatment = fb.Treatment(
-        ...     scale="binary",
+        >>> observational_treatment = fb.Treatment.create(
+        ...     name="Churn Camppaign A/B test",
+        ...     dtype=fb.DBVarType.INT,
+        ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="observational",
         ...     design="business-rule",
         ...     time="static",
@@ -122,7 +124,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> fb.Context.create(  # doctest: +SKIP
         ...     name="context_with_observational_treatment",
         ...     primary_entity=primary_entity,
-        ...     treatment=observational_treatment,
+        ...     treatment_name=observational_treatment.name,
         ... )
         >>> context_2 = catalog.get_context(
         ...     "context_with_observational_treatment"
@@ -133,8 +135,15 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
+        treatment_id: Optional[PydanticObjectId] = None
+        if treatment_name:
+            treatment_id = Treatment.get(treatment_name).id
+
         context = Context(
-            name=name, primary_entity_ids=entity_ids, description=description, treatment=treatment
+            name=name,
+            primary_entity_ids=entity_ids,
+            description=description,
+            treatment_id=treatment_id,
         )
         context.save()
         return context

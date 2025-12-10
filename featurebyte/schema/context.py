@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field, StrictStr, field_validator, model_validat
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
-from featurebyte.models.treatment import Treatment
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -24,7 +23,7 @@ class ContextCreate(FeatureByteBaseModel):
     name: NameStr
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr] = Field(default=None)
-    treatment: Optional[Treatment] = Field(default=None)
+    treatment_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())

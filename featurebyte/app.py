@@ -55,6 +55,7 @@ from featurebyte.routes.target_table.api import TargetTableRouter
 from featurebyte.routes.task.api import TaskRouter
 from featurebyte.routes.temp_data.api import TempDataRouter
 from featurebyte.routes.time_series_table.api import TimeSeriesTableRouter
+from featurebyte.routes.treatment.api import TreatmentRouter
 from featurebyte.routes.use_case.api import UseCaseRouter
 from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRouter
 from featurebyte.schema import APIServiceStatus
@@ -255,6 +256,7 @@ def get_app() -> FastAPI:
         TargetNamespaceRouter(),
         TargetTableRouter(prefix="/target_table"),
         TimeSeriesTableRouter(),
+        TreatmentRouter(),
         UseCaseRouter(),
         UserDefinedFunctionRouter(),
         ManagedViewRouter(),

@@ -4,7 +4,21 @@ Unit test for Context class
 
 import pytest
 
-from featurebyte import Context, Propensity, TargetNamespace, TargetType, Treatment, UseCase
+from featurebyte import (
+    AssignmentDesign,
+    AssignmentSource,
+    Context,
+    Propensity,
+    TargetNamespace,
+    TargetType,
+    Treatment,
+    TreatmentInterference,
+    TreatmentTime,
+    TreatmentTimeStructure,
+    TreatmentType,
+    UseCase,
+)
+from featurebyte.enum import DBVarType
 
 
 @pytest.fixture(name="context_1")
@@ -64,18 +78,21 @@ def test_create_context_with_treatment(catalog, cust_id_entity):
     entity_ids = [cust_id_entity.id]
     entity_names = [cust_id_entity.name]
 
-    observational_treatment = Treatment(
-        scale="binary",
-        source="observational",
-        design="business-rule",
-        time="static",
-        time_structure="none",
-        interference="none",
-        treatment_values=[0, 1],
-        control_value=0,
+    observational_treatment = Treatment.create(
+        name="test_treatment",
+        dtype=DBVarType.INT,
+        treatment_type=TreatmentType.BINARY,
+        source=AssignmentSource.RANDOMIZED,
+        design=AssignmentDesign.SIMPLE_RANDOMIZATION,
+        time=TreatmentTime.STATIC,
+        time_structure=TreatmentTimeStructure.INSTANTANEOUS,
+        interference=TreatmentInterference.NONE,
+        treatment_labels=[0, 1],
+        control_label=0,
         propensity=Propensity(
-            granularity="unit",
-            knowledge="estimated",
+            granularity="global",
+            knowledge="design-known",
+            p_global=0.5,
         ),
     )
 
@@ -83,7 +100,7 @@ def test_create_context_with_treatment(catalog, cust_id_entity):
         name="test_context_with_treatment",
         primary_entity=entity_names,
         description="test_description",
-        treatment=observational_treatment,
+        treatment_name=observational_treatment.name,
     )
 
     # Test get context by id and verify attributes
@@ -92,7 +109,7 @@ def test_create_context_with_treatment(catalog, cust_id_entity):
     assert retrieved_context.primary_entity_ids == entity_ids
     assert retrieved_context.primary_entities == [cust_id_entity]
     assert retrieved_context.description == "test_description"
-    assert retrieved_context.treatment == observational_treatment
+    assert retrieved_context.treatment_id == observational_treatment.id
 
     # Test get context by name and verify attributes
     retrieved_context2 = Context.get(context.name)
@@ -100,7 +117,7 @@ def test_create_context_with_treatment(catalog, cust_id_entity):
     assert retrieved_context2.primary_entity_ids == entity_ids
     assert retrieved_context2.primary_entities == [cust_id_entity]
     assert retrieved_context2.description == "test_description"
-    assert retrieved_context2.treatment == observational_treatment
+    assert retrieved_context.treatment_id == observational_treatment.id
 
 
 def test_list_contexts(catalog, context_1, cust_id_entity):
