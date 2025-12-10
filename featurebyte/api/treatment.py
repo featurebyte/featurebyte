@@ -472,7 +472,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
         --------
         List all treatments.
 
-        >>> treatments = fb.Treatement.list()
+        >>> treatments = fb.Treatment.list()
         """
         return super().list(include_id=include_id)
 
