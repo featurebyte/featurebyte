@@ -20,6 +20,7 @@ TEST_CASES_MAPPING = {
     "float_feature": "deployed_float_feature_list_cust_id_use_case",
     "scd_lookup_feature": "deployed_scd_lookup_feature_list",
     "snapshots_lookup_feature": "deployed_snapshot_feature_list",
+    "time_series_feature": "deployed_time_series_feature_list",
 }
 
 
@@ -98,6 +99,28 @@ async def deployed_snapshot_feature_list(
     feature_list = await deploy_feature(
         app_container,
         snapshots_lookup_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_time_series_feature_list(
+    app_container,
+    ts_window_aggregate_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed snapshots lookup feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_feature(
+        app_container,
+        ts_window_aggregate_feature,
         return_type="feature_list",
         deployment_id=deployment_id,
     )
