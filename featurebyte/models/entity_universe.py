@@ -24,6 +24,7 @@ from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
@@ -35,6 +36,7 @@ from featurebyte.query_graph.node.generic import (
     SCDBaseParameters,
     SnapshotsLookupParameters,
     TimeSeriesWindowAggregateNode,
+    TimeSeriesWindowAggregateParameters,
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
@@ -283,6 +285,74 @@ def filter_aggregate_input_for_window_aggregate(
             expressions.LT(
                 this=timestamp_expr,
                 expression=window_end_timestamp_expr,
+            ),
+        )
+    )
+    return filtered_aggregate_input_expr
+
+
+def filter_aggregation_input_for_time_series(
+    aggregate_input_expr: Select,
+    job_datetime_expr: Expression,
+    window: CalendarWindow,
+    adapter: BaseAdapter,
+    parameters: TimeSeriesWindowAggregateParameters,
+) -> Select:
+    """
+    Filter the aggregate input expression for time series window aggregation
+    """
+    job_datetime_rounded_to_window_unit = adapter.timestamp_truncate(
+        job_datetime_expr,
+        window.unit,
+    )
+    if window.is_fixed_size():
+        window_end_expr = adapter.subtract_seconds(
+            job_datetime_rounded_to_window_unit,
+            window.to_seconds(),
+        )
+        if parameters.offset is not None:
+            assert parameters.offset.is_fixed_size()
+            window_end_expr = adapter.subtract_seconds(
+                window_end_expr,
+                parameters.offset.to_seconds(),
+            )
+        window_start_expr = adapter.subtract_seconds(
+            window_end_expr,
+            window.to_seconds(),
+        )
+    else:
+        window_end_expr = adapter.subtract_months(
+            job_datetime_rounded_to_window_unit,
+            window.to_months(),
+        )
+        if parameters.offset is not None:
+            assert not parameters.offset.is_fixed_size()
+            window_end_expr = adapter.subtract_months(
+                window_end_expr,
+                parameters.offset.to_months(),
+            )
+        window_start_expr = adapter.subtract_months(
+            window_end_expr,
+            window.to_months(),
+        )
+
+    timestamp_expr = quoted_identifier(parameters.reference_datetime_column)
+    if parameters.reference_datetime_schema is not None:
+        timestamp_expr = convert_timestamp_to_local(
+            timestamp_expr,
+            parameters.reference_datetime_schema,
+            adapter,
+        )
+    timestamp_expr = adapter.normalize_timestamp_before_comparison(timestamp_expr)
+    filtered_aggregate_input_expr = aggregate_input_expr.where(
+        expressions.and_(
+            expressions.GTE(
+                this=timestamp_expr,
+                expression=window_start_expr,
+            ),
+            expressions.LT(
+                this=timestamp_expr,
+                expression=window_end_expr,
             ),
         )
     )
@@ -717,60 +787,12 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
 
         universe_exprs: List[Expression] = []
         for window in max_windows.values():
-            job_datetime_rounded_to_window_unit = self.adapter.timestamp_truncate(
-                quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
-                window.unit,
-            )
-            if window.is_fixed_size():
-                window_end_expr = self.adapter.subtract_seconds(
-                    job_datetime_rounded_to_window_unit,
-                    window.to_seconds(),
-                )
-                if node.parameters.offset is not None:
-                    assert node.parameters.offset.is_fixed_size()
-                    window_end_expr = self.adapter.subtract_seconds(
-                        window_end_expr,
-                        node.parameters.offset.to_seconds(),
-                    )
-                window_start_expr = self.adapter.subtract_seconds(
-                    window_end_expr,
-                    window.to_seconds(),
-                )
-            else:
-                window_end_expr = self.adapter.subtract_months(
-                    job_datetime_rounded_to_window_unit,
-                    window.to_months(),
-                )
-                if node.parameters.offset is not None:
-                    assert not node.parameters.offset.is_fixed_size()
-                    window_end_expr = self.adapter.subtract_months(
-                        window_end_expr,
-                        node.parameters.offset.to_months(),
-                    )
-                window_start_expr = self.adapter.subtract_months(
-                    window_end_expr,
-                    window.to_months(),
-                )
-
-            timestamp_expr = quoted_identifier(node.parameters.reference_datetime_column)
-            if node.parameters.reference_datetime_schema is not None:
-                timestamp_expr = convert_timestamp_to_local(
-                    timestamp_expr,
-                    node.parameters.reference_datetime_schema,
-                    self.adapter,
-                )
-            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
-            filtered_aggregate_input_expr = self.aggregate_input_expr.where(
-                expressions.and_(
-                    expressions.GTE(
-                        this=timestamp_expr,
-                        expression=window_start_expr,
-                    ),
-                    expressions.LT(
-                        this=timestamp_expr,
-                        expression=window_end_expr,
-                    ),
-                )
+            filtered_aggregate_input_expr = filter_aggregation_input_for_time_series(
+                aggregate_input_expr=self.aggregate_input_expr,
+                job_datetime_expr=quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+                window=window,
+                adapter=self.adapter,
+                parameters=node.parameters,
             )
             universe_expr = (
                 select(*[
