@@ -24,24 +24,25 @@ class AssignmentSource(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AssignmentSource")
 
-    RANDOMIZED = "randomized"
-    # Treatment assigned by explicit randomization.
+    RANDOMIZED = "randomized", "Treatment assigned by explicit randomization"
     # Safe for uplift modeling; ignorability is guaranteed.
 
-    OBSERVATIONAL = "observational"
-    # Treatment chosen by behavior or business process.
+    OBSERVATIONAL = "observational", "Treatment chosen by behavior or business process"
     # Requires ignorability + overlap; uplift is NOT generally valid.
 
-    INSTRUMENTAL = "instrumental"
-    # Treatment is endogenous but there exists an exogenous instrument Z.
+    INSTRUMENTAL = (
+        "instrumental",
+        "Treatment is endogenous but there exists an exogenous instrument Z",
+    )
     # Identifies LATE, not global uplift. Requires IV estimators.
 
-    QUASI_EXPERIMENTAL = "quasi-experimental"
-    # Identification from natural experiments (RD, DiD, staggered adoption).
+    QUASI_EXPERIMENTAL = (
+        "quasi-experimental",
+        "Identification from natural experiments (RD, DiD, staggered adoption)",
+    )
     # CATE possible, uplift rarely meaningful.
 
-    ADAPTIVE = "adaptive"
-    # Assignment depends on previous outcomes (bandits, RL, dynamic policies).
+    ADAPTIVE = "adaptive", "Assignment depends on previous outcomes (bandits, RL, dynamic policies)"
     # Violates ignorability; requires off-policy evaluation (OPE).
 
 
@@ -50,34 +51,47 @@ class AssignmentDesign(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AssignmentDesign")
 
-    SIMPLE_RANDOMIZATION = "simple-randomization"
-    # Independent randomization of units (standard A/B test).
+    SIMPLE_RANDOMIZATION = (
+        "simple-randomization",
+        "Independent randomization of units (standard A/B test)",
+    )
 
-    BLOCK_RANDOMIZATION = "block-randomization"
-    # Randomization within strata (gender blocks, region blocks).
+    BLOCK_RANDOMIZATION = (
+        "block-randomization",
+        "Randomization within strata (gender blocks, region blocks)",
+    )
     # Requires block-adjusted estimators / FE.
 
-    CLUSTER_RANDOMIZATION = "cluster-randomization"
-    # Clusters (stores, schools, users grouped by geography) are randomized.
+    CLUSTER_RANDOMIZATION = (
+        "cluster-randomization",
+        "Clusters (stores, schools, users grouped by geography) are randomized",
+    )
     # Requires cluster-aware models and SE correction.
 
-    STEPPED_WEDGE = "stepped-wedge"
-    # Clusters switch from control→treatment over time in randomized order.
+    STEPPED_WEDGE = (
+        "stepped-wedge",
+        "Clusters switch from control→treatment over time in randomized order",
+    )
     # Equivalent to STAGGERED_RANDOMIZED_ADOPTION in TreatmentTimeStructure.
 
-    MATCHED_PAIR = "matched-pair"
-    # Paired or matched units randomized within pairs (matched RCT).
+    MATCHED_PAIR = "matched-pair", "Paired or matched units randomized within pairs (matched RCT)"
 
-    ENCOURAGEMENT = "encouragement"
-    # Instrumental variable design where random "encouragement" affects T
-    # but not Y directly. Produces LATE.
+    ENCOURAGEMENT = (
+        "encouragement",
+        "Instrumental variable design where random encouragement affects T but not Y directly",
+    )
+    # Produces LATE.
 
-    ADAPTIVE_BANDIT = "adaptive-bandit"
-    # Allocation probabilities updated over time based on reward estimates.
+    ADAPTIVE_BANDIT = (
+        "adaptive-bandit",
+        "Allocation probabilities updated over time based on reward estimates",
+    )
     # Requires OPE; uplift invalid.
 
-    BUSINESS_RULE = "business-rule"
-    # Deterministic rule-based assignment (tiers, thresholds, rollout order).
+    BUSINESS_RULE = (
+        "business-rule",
+        "Deterministic rule-based assignment (tiers, thresholds, rollout order)",
+    )
     # Used in SEQUENTIAL_ADOPTION Quasi-Experimental settings.
 
     OTHER = "other"
@@ -89,16 +103,19 @@ class TreatmentTime(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TreatmentTime")
 
-    STATIC = "static"
-    # One-shot assignment; each unit receives T once (A/B tests).
+    STATIC = "static", "One-shot assignment; each unit receives T once (A/B tests)"
     # Compatible with standard uplift and CATE.
 
-    TIME_VARYING = "time-varying"
-    # Discrete-time longitudinal exposures (weekly ads, pricing over time).
+    TIME_VARYING = (
+        "time-varying",
+        "Discrete-time longitudinal exposures (weekly ads, pricing over time)",
+    )
     # Requires MSM / g-methods; uplift invalid.
 
-    CONTINUOUS = "continuous"
-    # Treatment is defined in continuous time (hazard rate, intensity, dosage flow).
+    CONTINUOUS = (
+        "continuous",
+        "Treatment is defined in continuous time (hazard rate, intensity, dosage flow)",
+    )
     # Requires survival or continuous-time causal models.
 
 
@@ -107,30 +124,32 @@ class TreatmentTimeStructure(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TreatmentTimeStructure")
 
-    NONE = "none"
-    # No meaningful temporal structure; single snapshot.
+    NONE = "none", "No meaningful temporal structure; single snapshot"
 
-    INSTANTANEOUS = "instantaneous"
-    # Single assignment at a single timepoint (classic A/B test).
+    INSTANTANEOUS = "instantaneous", "Single assignment at a single timepoint (classic A/B test)"
 
-    LONGITUDINAL = "longitudinal"
-    # Multiple treatment decisions per unit over time.
+    LONGITUDINAL = "longitudinal", "Multiple treatment decisions per unit over time"
     # TreatmentTime-varying confounding; requires sequential causal inference.
 
-    SEQUENTIAL_ADOPTION = "sequential-adoption"
-    # Non-random rollout over time (regions launched in fixed order).
+    SEQUENTIAL_ADOPTION = (
+        "sequential-adoption",
+        "Non-random rollout over time (regions launched in fixed order)",
+    )
     # Identified via quasi-experimental DiD / event-study.
 
-    STAGGERED_RANDOMIZED_ADOPTION = "staggered-randomized-adoption"
-    # Randomized adoption time (stepped-wedge RCT).
+    STAGGERED_RANDOMIZED_ADOPTION = (
+        "staggered-randomized-adoption",
+        "Randomized adoption time (stepped-wedge RCT)",
+    )
     # Must model cluster and time fixed effects.
 
-    BANDIT_ADAPTIVE = "bandit-adaptive"
-    # Assignment policy updates based on past outcomes.
+    BANDIT_ADAPTIVE = "bandit-adaptive", "Assignment policy updates based on past outcomes"
     # Requires off-policy evaluation (IPS / DR-OPE).
 
-    CONTINUOUS_TIME = "continuous-time"
-    # Treatment varies continuously with time (process-based exposure).
+    CONTINUOUS_TIME = (
+        "continuous-time",
+        "Treatment varies continuously with time (process-based exposure)",
+    )
 
 
 class TreatmentInterference(StrEnum):
@@ -138,16 +157,13 @@ class TreatmentInterference(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TreatmentInterference")
 
-    NONE = "none"
-    # Each unit’s outcome depends only on its own treatment (SUTVA holds).
+    NONE = "none", "Each unit’s outcome depends only on its own treatment (SUTVA holds)"
     # Standard causal estimators are valid.
 
-    PARTIAL = "partial"
-    # Spillovers exist but within known structure (clusters, networks).
+    PARTIAL = "partial", "Spillovers exist but within known structure (clusters, networks)"
     # Requires cluster / network interference models.
 
-    GENERAL = "general"
-    # Arbitrary interference; standard identification fails.
+    GENERAL = "general", "Arbitrary interference; standard identification fails"
     # Requires specialized causal graph / network methods.
 
 
@@ -156,20 +172,14 @@ class PropensityGranularity(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.PropensityGranularity")
 
-    GLOBAL = "global"
-    # Same p(T | ⋅) for everyone (e.g., 50/50 A/B).
-
-    BLOCK = "block"
-    # p(T | block) constant within blocks/strata, varies across them.
-
-    CLUSTER = "cluster"
-    # p(T | cluster) constant within clusters.
-
-    UNIT = "unit"
-    # p(T | X_i) varies by unit (observational, adaptive policies).
-
-    DETERMINISTIC = "deterministic"
-    # Given X, treatment is essentially 0/1 (threshold rules, hard tiers).
+    GLOBAL = "global", "Same p(T | ⋅) for everyone (e.g., 50/50 A/B)"
+    BLOCK = "block", "p(T | block) constant within blocks/strata, varies across them"
+    CLUSTER = "cluster", "p(T | cluster) constant within clusters"
+    UNIT = "unit", "p(T | X_i) varies by unit (observational, adaptive policies)"
+    DETERMINISTIC = (
+        "deterministic",
+        "Given X, treatment is essentially 0/1 (threshold rules, hard tiers)",
+    )
 
 
 class PropensityKnowledge(StrEnum):
@@ -177,11 +187,8 @@ class PropensityKnowledge(StrEnum):
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.PropensityKnowledge")
 
-    DESIGN_KNOWN = "design-known"
-    # Analytically known from the experiment design or policy spec.
-
-    ESTIMATED = "estimated"
-    # From a model p(T | X) (pscore, ML).
+    DESIGN_KNOWN = "design-known", "Analytically known from the experiment design or policy spec"
+    ESTIMATED = "estimated", "From a model p(T | X)"
 
 
 class Propensity(FeatureByteBaseModel):
