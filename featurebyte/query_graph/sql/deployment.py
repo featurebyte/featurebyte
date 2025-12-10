@@ -66,6 +66,7 @@ def get_deployment_feature_query_plan(
         parent_serving_preparation=parent_serving_preparation,
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
+        is_deployment_sql=True,
     )
     plan = planner.generate_plan(nodes)
 

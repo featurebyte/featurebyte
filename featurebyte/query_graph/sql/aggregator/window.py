@@ -28,10 +28,12 @@ from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
     _split_agg_and_snowflake_vector_aggregation_columns,
+    get_groupby_expr,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 Window = Optional[int]
 Offset = Optional[int]
@@ -661,7 +663,9 @@ class WindowAggregator(TileBasedAggregator):
         inner_agg_expr = select("*").from_(window_based_expr.subquery()).where(filter_condition)
         return inner_agg_expr
 
-    def get_window_aggregations(self, point_in_time_column: str) -> list[LeftJoinableSubquery]:
+    def get_window_aggregations_historical(
+        self, point_in_time_column: str
+    ) -> list[LeftJoinableSubquery]:
         """
         Get window aggregation queries
 
@@ -728,6 +732,119 @@ class WindowAggregator(TileBasedAggregator):
 
         return results
 
+    def _get_window_aggregation_deployment_subquery(
+        self, specs: list[TileBasedAggregationSpec], existing_columns: set[str]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+
+        # Filter source data to only include rows within the window for the fixed point in time
+        point_in_time_expr = self.adapter.to_epoch_seconds(
+            expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
+        )
+        range_end_expr = expressions.Sub(
+            this=point_in_time_expr,
+            expression=make_literal_value(spec.blind_spot),
+        )
+        if spec.offset is not None:
+            range_end_expr = expressions.Sub(
+                this=range_end_expr,
+                expression=make_literal_value(spec.offset),
+            )
+        range_start_expr = expressions.Sub(
+            this=range_end_expr,
+            expression=make_literal_value(spec.window),
+        )
+        window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
+        window_start_timestamp_expr = self.adapter.from_epoch_seconds(range_start_expr)
+        timestamp_expr = quoted_identifier(spec.parameters.timestamp)
+        if spec.parameters.timestamp_schema is not None:
+            timestamp_expr = convert_timestamp_to_utc(
+                column_expr=timestamp_expr,
+                timestamp_schema=spec.parameters.timestamp_schema,
+                adapter=self.adapter,
+            )
+        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
+        filtered_aggregate_input_expr = spec.aggregation_source.expr.where(
+            expressions.and_(
+                expressions.GTE(
+                    this=timestamp_expr,
+                    expression=window_start_timestamp_expr,
+                ),
+                expressions.LT(
+                    this=timestamp_expr,
+                    expression=window_end_timestamp_expr,
+                ),
+            )
+        )
+
+        # Perform groupby aggregation
+        groupby_input_expr = select().from_(filtered_aggregate_input_expr.subquery())
+        groupby_keys = [
+            GroupbyKey(
+                expr=quoted_identifier(serving_name),
+                name=serving_name,
+            )
+            for serving_name in spec.serving_names
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=quoted_identifier(spec.parameters.value_by),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by is not None
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    quoted_identifier(s.parameters.parent) if s.parameters.parent else None
+                ),
+                result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
+                parent_cols=(
+                    [quoted_identifier(s.parameters.parent)] if s.parameters.parent else []
+                ),
+            )
+            for s in specs
+        ]
+        aggregated_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
+        )
+        column_names = set()
+        for _spec in specs:
+            if _spec.agg_result_name not in existing_columns:
+                column_names.add(_spec.agg_result_name)
+
+        # Join keys doesn't include point in time since there's only one fixed value
+        query = LeftJoinableSubquery(
+            expr=aggregated_expr,
+            column_names=sorted(column_names),
+            join_keys=spec.serving_names,
+        )
+        return query
+
+    def get_window_aggregations_deployment(self) -> list[LeftJoinableSubquery]:
+        """
+        Get window aggregation queries for deployment SQL
+
+        Returns
+        -------
+        list[LeftJoinableSubquery]
+            List of window aggregation subqueries for deployment
+        """
+        queries = []
+        existing_columns: set[str] = set()
+        for specs in self.grouped_specs.values():
+            query = self._get_window_aggregation_deployment_subquery(specs, existing_columns)
+            existing_columns.update(query.column_names)
+            queries.append(query)
+        return queries
+
     def update_aggregation_table_expr_offline(
         self,
         table_expr: Select,
@@ -735,11 +852,16 @@ class WindowAggregator(TileBasedAggregator):
         current_columns: list[str],
         current_query_index: int,
     ) -> AggregationResult:
-        queries = self.get_window_aggregations(point_in_time_column)
+        if self.is_deployment_sql:
+            queries = self.get_window_aggregations_deployment()
+        else:
+            queries = self.get_window_aggregations_historical(point_in_time_column)
 
         return self._update_with_left_joins(
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
+        if self.is_deployment_sql:
+            return []
         return self.request_table_plan.construct_request_tile_indices_ctes(request_table_name)

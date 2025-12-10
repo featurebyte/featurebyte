@@ -133,7 +133,12 @@ class Aggregator(Generic[AggregationSpecT], ABC):
     Base class of all aggregators
     """
 
-    def __init__(self, source_info: SourceInfo, is_online_serving: bool = False):
+    def __init__(
+        self,
+        source_info: SourceInfo,
+        is_online_serving: bool = False,
+        is_deployment_sql: bool = False,
+    ):
         self.source_info = source_info
         self.adapter = get_sql_adapter(source_info)
         self.is_online_serving = is_online_serving
@@ -141,6 +146,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self.required_entity_ids: set[ObjectId] = set()
         self.grouped_specs: dict[str, list[AggregationSpecT]] = {}
         self.grouped_agg_result_names: dict[str, set[str]] = {}
+        self.is_deployment_sql = is_deployment_sql
 
     def get_required_serving_names(self) -> set[str]:
         """

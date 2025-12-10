@@ -312,8 +312,13 @@ class FeatureExecutionPlan:
         parent_serving_preparation: ParentServingPreparation | None = None,
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         feature_store_details: Optional[FeatureStoreDetails] = None,
+        is_deployment_sql: bool = False,
     ) -> None:
-        aggregator_kwargs = {"source_info": source_info, "is_online_serving": is_online_serving}
+        aggregator_kwargs = {
+            "source_info": source_info,
+            "is_online_serving": is_online_serving,
+            "is_deployment_sql": is_deployment_sql,
+        }
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
@@ -833,6 +838,7 @@ class FeatureExecutionPlanner:
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
+        is_deployment_sql: bool = False,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -845,6 +851,7 @@ class FeatureExecutionPlanner:
             is_online_serving,
             parent_serving_preparation=parent_serving_preparation,
             job_schedule_table_set=job_schedule_table_set,
+            is_deployment_sql=is_deployment_sql,
         )
         self.source_info = source_info
         self.serving_names_mapping = serving_names_mapping
