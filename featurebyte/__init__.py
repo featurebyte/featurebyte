@@ -597,6 +597,7 @@ __all__ = [
     "TreatmentInterference",
     "TreatmentTime",
     "TreatmentTimeStructure",
+    "UseCaseType",
     # services
     "start",
     "stop",

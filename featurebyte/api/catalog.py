@@ -35,6 +35,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
@@ -646,6 +647,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Target.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_treatments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains various attributes of the registered treatments in the catalog
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of treatments
+
+        Examples
+        --------
+        >>> treatments = catalog.list_treatments()
+        """
+        return Treatment.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_use_cases(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered use cases in the catalog
@@ -1178,6 +1200,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> target = catalog.get_target("target_name")  # doctest: +SKIP
         """
         return Target.get(name=name)
+
+    @update_and_reset_catalog
+    def get_treatment(self, name: str) -> Any:
+        """
+        Gets a Treatment object from the catalog based on its name.
+
+        Parameters
+        ----------
+        name: str
+            Treatment name.
+
+        Returns
+        -------
+        Any
+            Retrieved treatement.
+
+        Examples
+        --------
+        >>> treatment = catalog.get_treatment("treatment_name")  # doctest: +SKIP
+        """
+        return Treatment.get(name=name)
 
     @update_and_reset_catalog
     def get_use_case(self, name: str) -> UseCase:

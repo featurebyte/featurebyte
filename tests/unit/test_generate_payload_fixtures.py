@@ -351,6 +351,7 @@ def test_save_payload_fixtures(
     )
 
     treatment = TreatmentCreate(
+        _id="6939304226d58567047d45bf",
         name="test_treatment",
         dtype=DBVarType.INT,
         treatment_type=TreatmentType.BINARY,

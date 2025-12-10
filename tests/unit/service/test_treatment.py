@@ -28,7 +28,7 @@ async def binary_treatment(treatment_service):
         dtype=DBVarType.VARCHAR,
         treatment_type=TreatmentType.BINARY,
         source=AssignmentSource.RANDOMIZED,
-        design=AssignmentDesign.RANDOMIZED,
+        design=AssignmentDesign.SIMPLE_RANDOMIZATION,
         treatment_labels=["control", "campaign"],
         control_label="control",
         user_id=ObjectId(),
@@ -65,7 +65,7 @@ async def test_treatment_labels_not_found(treatment_service, binary_treatment):
 
             # Call the method and expect it to raise DocumentUpdateError
             with pytest.raises(DocumentUpdateError) as exc_info:
-                await treatment_service.update_treatment_binary_metadata(
+                await treatment_service.validate_treatment_labels(
                     treatment_id=binary_treatment.id,
                     observation_table=observation_table,
                     db_session=db_session,
@@ -73,7 +73,7 @@ async def test_treatment_labels_not_found(treatment_service, binary_treatment):
 
             # Verify the error message
             assert (
-                "Treatment labels ['control', 'campaign' are different from treatment values"
+                "Treatment labels ['control', 'campaign'] are different from treatment values"
                 in str(exc_info.value)
             )
             assert "['negative', 'neutral', 'unknown']" in str(exc_info.value)

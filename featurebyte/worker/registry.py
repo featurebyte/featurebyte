@@ -48,6 +48,7 @@ from featurebyte.worker.task.target_namespace_classification_metadata_update imp
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
+from featurebyte.worker.task.treatment_labels_validate import TreatmentLabelsValidateTask
 
 # TASK_REGISTRY_MAP contains a mapping of the worker command to the task.
 TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-type]
@@ -81,6 +82,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.DEVELOPMENT_DATASET_DELETE: DevelopmentDatasetDeleteTask,
     WorkerCommand.DEVELOPMENT_DATASET_ADD_TABLES: DevelopmentDatasetAddTablesTask,
     WorkerCommand.TARGET_NAMESPACE_CLASSIFICATION_METADATA_UPDATE: TargetNamespaceClassificationMetadataUpdateTask,
+    WorkerCommand.TREATMENT_LABELS_VALIDATE: TreatmentLabelsValidateTask,
     WorkerCommand.DEPLOYMENT_SQL_CREATE: DeploymentSqlCreateTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,

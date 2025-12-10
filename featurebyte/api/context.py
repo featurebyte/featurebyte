@@ -105,9 +105,9 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
 
-        >>> observational_treatment = fb.Treatment.create(
+        >>> observational_treatment = fb.Treatment.create(  # doctest: +SKIP
         ...     name="Churn Camppaign A/B test",
-        ...     dtype=fb.DBVarType.INT,
+        ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="observational",
         ...     design="business-rule",
@@ -126,9 +126,9 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ...     primary_entity=primary_entity,
         ...     treatment_name=observational_treatment.name,
         ... )
-        >>> context_2 = catalog.get_context(
+        >>> context_2 = catalog.get_context(  # doctest: +SKIP
         ...     "context_with_observational_treatment"
-        ... )  # doctest: +SKIP
+        ... )
 
         """
         entity_ids = []

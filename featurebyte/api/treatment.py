@@ -174,7 +174,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
 
         >>> treatment = fb.Treatment.create(  # doctest: +SKIP
         ...     name="Churn Camppaign A/B test",
-        ...     dtype=fb.DBVarType.INT,
+        ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="randomized",
         ...     design="simple-randomization",
@@ -194,7 +194,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
 
         >>> observational_treatment = fb.Treatment.create(  # doctest: +SKIP
         ...     name="Churn Camppaign",
-        ...     dtype=fb.DBVarType.INT,
+        ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="observational",
         ...     design="business-rule",

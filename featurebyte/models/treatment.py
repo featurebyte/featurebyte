@@ -2,7 +2,7 @@
 Treatment and Propensity models
 """
 
-from typing import ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pymongo
 from pydantic import model_validator
@@ -229,7 +229,7 @@ class Propensity(FeatureByteBaseModel):
         **Valid values:**
 
         - ``float`` between 0 and 1 for a binary treatment (probability of the active arm).
-        - ``Dict[str, float]`` mapping each treatment value to its probability for
+        - ``Dict[Any, float]`` mapping each treatment value to its probability for
           multi-arm treatments. The probabilities are expected to sum to 1.
 
     Examples
@@ -267,7 +267,7 @@ class Propensity(FeatureByteBaseModel):
 
     granularity: PropensityGranularity
     knowledge: PropensityKnowledge
-    p_global: Optional[Union[float, Dict[str, float]]] = (
+    p_global: Optional[Union[float, Dict[Any, float]]] = (
         None  # Only meaningful if granularity == "global"
     )
 
