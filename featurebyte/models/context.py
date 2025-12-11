@@ -14,7 +14,6 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.treatment import TreatmentModel
 from featurebyte.query_graph.graph import QueryGraph
 
 
@@ -24,8 +23,8 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     primary_entity_ids: List[PydanticObjectId]
         List of entity ids associated with this context
-    treatment: Optional[TreatmentModel]
-        Treatment model if it is causal modeling context
+    treatment_id: Optional[PydanticObjectId]
+        Treatment_id if it is causal modeling context
     graph: Optional[QueryGraph]
         Graph to store the context view
     """
@@ -33,7 +32,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     # TODO: make graph attribute lazy
 
     primary_entity_ids: List[PydanticObjectId]
-    treatment: Optional[TreatmentModel] = Field(default=None)
+    treatment_id: Optional[PydanticObjectId] = Field(default=None)
     graph: Optional[QueryGraph] = Field(default=None)
     node_name: Optional[str] = Field(default=None)
 

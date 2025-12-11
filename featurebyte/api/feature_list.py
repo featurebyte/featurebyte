@@ -53,7 +53,7 @@ from featurebyte.exception import RecordCreationException, RecordRetrievalExcept
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
-from featurebyte.models.feature_list_namespace import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
@@ -137,6 +137,7 @@ class FeatureListNamespace(ApiObject):
         "entities",
         "primary_entity",
         "created_at",
+        "role",
     ]
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
@@ -204,6 +205,23 @@ class FeatureListNamespace(ApiObject):
         'TEMPLATE'
         """
         return self.cached_model.status
+
+    @property
+    def role(self) -> FeatureListRole:
+        """
+        Feature list role
+
+        Returns
+        -------
+        FeatureListRole
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.role
+        'moderators'
+        """
+        return self.cached_model.role
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
@@ -453,6 +471,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         - `version_count`: The number of versions with the same feature list namespace.
         - `catalog_name`: The catalog name of the FeatureList object.
         - `status`: The status of the FeatureList object.
+        - `role`: The role of the FeatureList object.
         - `feature_count`: The number of features contained in the FeatureList object.
         - `dtype_distribution`: The number of features per data type.
         - `deployed`: Indicates whether the FeatureList object is deployed
@@ -523,6 +542,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
           'default_feature_list_id': ...,
           'status': 'DRAFT',
           'feature_count': 1,
+          'role': 'outcome-predictors',
           'version': {
             'this': ...,
             'default': ...
@@ -926,6 +946,17 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Feature list status
         """
         return self.feature_list_namespace.status
+
+    @property
+    def role(self) -> FeatureListRole:
+        """
+        Retrieve feature list role at persistent
+
+        Returns
+        -------
+        Feature list role
+        """
+        return self.feature_list_namespace.role
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
@@ -1425,6 +1456,30 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         status_value = FeatureListStatus(status).value
         self.feature_list_namespace.update(
             update_payload={"status": status_value}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_role(self, role: Union[FeatureListRole, str]) -> None:
+        """
+        A FeatureList can have one of three roles:
+
+        "outcome-predictors"
+        "confounders"
+        "moderators"
+
+        Parameters
+        ----------
+        role: Union[FeatureListRole, str]
+            Desired feature list role.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.update_role(fb.FeatureListRole.MODERATORS)
+        """
+        role_value = FeatureListRole(role).value
+        self.feature_list_namespace.update(
+            update_payload={"role": role_value}, allow_update_local=False
         )
 
     @typechecked

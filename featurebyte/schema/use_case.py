@@ -2,12 +2,12 @@
 Use Case API payload schema
 """
 
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.use_case import UseCaseModel
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -22,6 +22,9 @@ class UseCaseCreate(FeatureByteBaseModel):
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     context_id: PydanticObjectId
     description: Optional[StrictStr] = Field(default=None)
+    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = Field(
+        default=UseCaseType.PREDICTIVE
+    )
 
     @model_validator(mode="before")
     @classmethod

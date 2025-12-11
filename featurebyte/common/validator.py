@@ -9,7 +9,7 @@ import sqlglot
 from sqlglot import expressions
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
-from featurebyte.enum import DBVarType, SourceType, TargetType
+from featurebyte.enum import DBVarType, SourceType, TargetType, TreatmentType
 from featurebyte.exception import DocumentInconsistencyError, InvalidTableNameError
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.dtype import PartitionMetadata
@@ -373,6 +373,41 @@ def validate_target_type(target_type: Optional[TargetType], dtype: Optional[DBVa
 
     raise DocumentInconsistencyError(
         f"Target type {target_type} is not consistent with dtype {dtype}"
+    )
+
+
+def validate_treatment_type(
+    treatment_type: Optional[TreatmentType], dtype: Optional[DBVarType]
+) -> None:
+    """
+    Validate treatment type and dtype consistency
+
+    Parameters
+    ----------
+    treatment_type: Optional[TreatmentType]
+        Treatment type used to indicate the type of the treatment
+    dtype: Optional[DBVarType]
+        Data type of the Treatment
+
+    Raises
+    ------
+    DocumentInconsistencyError
+        If treatment type is not consistent with dtype
+    """
+    if not treatment_type or not dtype:
+        return
+
+    if treatment_type == TreatmentType.BINARY and dtype in DBVarType.binary_class_target_types():
+        return
+
+    if treatment_type == TreatmentType.NUMERIC and dtype in DBVarType.regression_target_types():
+        return
+
+    if treatment_type == TreatmentType.MULTI_ARM and dtype in DBVarType.multiclass_target_types():
+        return
+
+    raise DocumentInconsistencyError(
+        f"Treatment type {treatment_type} is not consistent with dtype {dtype}"
     )
 
 

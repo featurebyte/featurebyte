@@ -11,7 +11,7 @@ from redis import Redis
 
 from featurebyte.enum import TargetType
 from featurebyte.exception import DocumentCreationError
-from featurebyte.models.use_case import UseCaseModel
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
@@ -110,7 +110,12 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
             raise DocumentCreationError("Target and context must have the same entities")
 
-        return await self.create_document(data=data)
+        if context.treatment_id:
+            data.use_case_type = UseCaseType.CAUSAL
+
+        use_case = await self.create_document(data=data)
+
+        return use_case
 
     async def update_use_case(
         self,

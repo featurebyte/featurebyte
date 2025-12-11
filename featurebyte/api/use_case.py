@@ -24,7 +24,7 @@ from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.use_case import UseCaseModel
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.schema.use_case import UseCaseUpdate
 
 
@@ -48,6 +48,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         "default_preview_table_name",
         "default_eda_table_name",
         "description",
+        "use_case_type",
     ]
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
         ForeignKeyMapping(
@@ -88,6 +89,17 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             The context object of the UseCase.
         """
         return Context.get_by_id(self.context_id)
+
+    @property
+    def use_case_type(self) -> UseCaseType:
+        """
+        Retrieve use case type at persistent
+
+        Returns
+        -------
+        UseCaseType
+        """
+        return self.cached_model.use_case_type
 
     @classmethod
     @typechecked

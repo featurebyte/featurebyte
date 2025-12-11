@@ -26,6 +26,7 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
@@ -519,6 +520,32 @@ class CatalogGetByIdMixin:
         return Target.get_by_id(id=id)
 
     @update_and_reset_catalog
+    def get_treatment_by_id(
+        self,
+        id: ObjectId,
+    ) -> Treatment:
+        """
+        Get treatment by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Treatment id.
+
+        Returns
+        -------
+        Treatment
+            Treatment object.
+
+        Examples
+        --------
+        Get a saved treatment .
+
+        >>> treatment = catalog.get_treatment_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return Treatment.get_by_id(id=id)
+
+    @update_and_reset_catalog
     def get_use_case_by_id(
         self,
         id: ObjectId,
@@ -540,7 +567,7 @@ class CatalogGetByIdMixin:
         --------
         Get a saved UseCase .
 
-        >>> target = catalog.get_use_case_by_id(ObjectId())  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case_by_id(ObjectId())  # doctest: +SKIP
         """
         return UseCase.get_by_id(id=id)
 

@@ -23,6 +23,7 @@ class ContextCreate(FeatureByteBaseModel):
     name: NameStr
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr] = Field(default=None)
+    treatment_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())

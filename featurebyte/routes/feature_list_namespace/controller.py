@@ -16,6 +16,7 @@ from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocu
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
     FeatureListNamespaceModelResponse,
+    FeatureListNamespaceServiceUpdate,
     FeatureListNamespaceUpdate,
 )
 from featurebyte.schema.info import (
@@ -120,6 +121,7 @@ class FeatureListNamespaceController(
                     "table_ids": 1,
                     "readiness_distribution": 1,
                     "dtype_distribution": 1,
+                    "role": 1,
                 },
             )
         }
@@ -166,6 +168,13 @@ class FeatureListNamespaceController(
             await self.feature_list_facade_service.update_status(
                 feature_list_namespace_id=feature_list_namespace_id,
                 status=data.status,
+            )
+
+        if data.role:
+            await self.service.update_document(
+                document_id=feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(role=data.role),
+                return_document=False,
             )
 
         return await self.get(document_id=feature_list_namespace_id)
@@ -227,6 +236,7 @@ class FeatureListNamespaceController(
 
         return FeatureListNamespaceInfo(
             name=namespace.name,
+            role=namespace.role,
             readiness_distribution=feature_list["readiness_distribution"],
             dtype_distribution=feature_list["dtype_distribution"],
             created_at=namespace.created_at,

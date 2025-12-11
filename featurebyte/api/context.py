@@ -12,6 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
@@ -37,10 +38,12 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         "name",
         "primary_entity_ids",
         "description",
+        "treatment_id",
     ]
 
     # pydantic instance variable (public)
     primary_entity_ids: List[PydanticObjectId]
+    treatment_id: Optional[PydanticObjectId] = None
 
     @property
     def primary_entities(self) -> List[Entity]:
@@ -71,6 +74,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         name: str,
         primary_entity: List[str],
         description: Optional[str] = None,
+        treatment_name: Optional[str] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -83,6 +87,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             List of entity names.
         description: Optional[str]
             Description of the Context.
+        treatment_name: Optional[str]
+            treatment name if this is a causal modeling context.
 
         Returns
         -------
@@ -96,12 +102,49 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ...     primary_entity=primary_entity,
         ... )
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
+
+        >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
+
+        >>> observational_treatment = fb.Treatment.create(  # doctest: +SKIP
+        ...     name="Churn Campaign A/B test",
+        ...     dtype=DBVarType.INT,
+        ...     treatment_type=fb.TreatmentType.BINARY,
+        ...     source="observational",
+        ...     design="business-rule",
+        ...     time="static",
+        ...     time_structure="none",
+        ...     interference="none",
+        ...     treatment_labels=[0, 1],
+        ...     control_label=0,
+        ...     propensity=fb.Propensity(
+        ...         granularity="unit",
+        ...         knowledge="estimated",  # Requires model-based p(T|X)
+        ...     ),
+        ... )
+        >>> fb.Context.create(  # doctest: +SKIP
+        ...     name="context_with_observational_treatment",
+        ...     primary_entity=primary_entity,
+        ...     treatment_name=observational_treatment.name,
+        ... )
+        >>> context_2 = catalog.get_context(  # doctest: +SKIP
+        ...     "context_with_observational_treatment"
+        ... )
+
         """
         entity_ids = []
         for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
-        context = Context(name=name, primary_entity_ids=entity_ids, description=description)
+        treatment_id: Optional[PydanticObjectId] = None
+        if treatment_name:
+            treatment_id = Treatment.get(treatment_name).id
+
+        context = Context(
+            name=name,
+            primary_entity_ids=entity_ids,
+            description=description,
+            treatment_id=treatment_id,
+        )
         context.save()
         return context
 
@@ -135,6 +178,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         - `updated_at`: The timestamp indicating when the Context object was last updated.
         - `primary_entities`: List of primary entities of the Context.
         - `description`: Description of the Context.
+        - `treatment`: Treatment associated with the Context.
         - `default_eda_table`: Default eda table of the Context.
         - `default_preview_table`: Default preview table of the Context.
         - `associated_use_cases`: UseCases associated of the Context.
@@ -151,7 +195,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> context = catalog.get_target("context")  # doctest: +SKIP
+        >>> context = catalog.get_context("context")  # doctest: +SKIP
         >>> info = context.info()  # doctest: +SKIP
         """
         return super().info(verbose)
@@ -164,7 +208,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         Parameters
         ----------
         name: str
-            Name of the deployment to retrieve.
+            Name of the context to retrieve.
 
         Returns
         -------
@@ -196,7 +240,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        List all context.
+        List all contexts.
 
         >>> contexts = fb.Context.list()
         """

@@ -2,10 +2,11 @@
 Use Case model
 """
 
-from typing import List, Literal, Optional
+from typing import ClassVar, List, Literal, Optional
 
 import pymongo
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -16,11 +17,19 @@ from featurebyte.models.base import (
 
 
 class UseCaseType(StrEnum):
-    """UseCaseType represents the type of use case"""
+    """
+    UseCaseType defines the primary analytical objective of a use case.
 
-    PREDICTIVE = "predictive"
-    DESCRIPTIVE = "descriptive"
-    CAUSAL = "causal"
+    The enum distinguishes between predictive, descriptive, and causal use cases,
+    each representing a different intent in how data is analyzed, modeled, or
+    interpreted.
+    """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UseCaseType")
+
+    PREDICTIVE = "predictive", "Use case focused on predicting future or unknown outcomes"
+    DESCRIPTIVE = "descriptive", "Use case focused on summarizing and understanding historical data"
+    CAUSAL = "causal", "Use case focused on measuring causal effects and relationships"
 
 
 class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):

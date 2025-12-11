@@ -20,6 +20,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_OBSERVATION_TABLE,
     CREATE_TABLE,
     CREATE_TARGET,
+    CREATE_TREATMENT,
     CREDENTIAL,
     DATA_SOURCE,
     DEPLOY,
@@ -55,6 +56,7 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TARGET,
     TRANSFORM,
+    TREATMENT,
     TYPE,
     USE_CASE,
     USER_DEFINED_FUNCTION,
@@ -426,6 +428,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.name"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.saved"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.status"]),
+        DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.role"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.updated_at"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.is_default"]),
         DocLayoutItem([FEATURE_LIST, INFO, "FeatureList.production_ready_fraction"]),
@@ -442,6 +445,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.create_new_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_role"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_feature_table"]),
     ]
@@ -754,6 +758,8 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_table_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_target"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_target_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_treatment"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_treatment_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_feature"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_entity"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_entity_by_id"]),
@@ -785,6 +791,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, LIST, "Catalog.list_features"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_targets"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_treatments"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_observation_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_historical_feature_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_request_tables"]),
@@ -862,12 +869,20 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TargetType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "enum.DBVarType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListRole"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "Purpose"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TimeIntervalUnit"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AssignmentSource"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "AssignmentDesign"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentTime"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentTimeStructure"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentInterference"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TreatmentType"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "UseCaseType"]),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
@@ -912,6 +927,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeZoneColumn"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "CalendarWindow"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TREATMENT, "Propensity"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
         DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),
@@ -1164,6 +1180,35 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_treatment_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Treatment module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Treatment module.
+    """
+    return [
+        DocLayoutItem([TREATMENT, CREATE, "Treatment.create"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.get"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.get_by_id"]),
+        DocLayoutItem([TREATMENT, CLASS_METHODS, "Treatment.list"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.created_at"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.name"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.dtype"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.treatment_type"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.source"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.design"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.time"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.time_structure"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.interference"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.control_label"]),
+        DocLayoutItem([TREATMENT, INFO, "Treatment.treatment_labels"]),
+        DocLayoutItem([TREATMENT, MANAGE, "Treatment.delete"]),
+    ]
+
+
 def _get_target_layout() -> List[DocLayoutItem]:
     """
     The layout for the Target module.
@@ -1206,6 +1251,7 @@ def _get_use_case_layout() -> List[DocLayoutItem]:
         DocLayoutItem([USE_CASE, INFO, "UseCase.created_at"]),
         DocLayoutItem([USE_CASE, INFO, "UseCase.info"]),
         DocLayoutItem([USE_CASE, INFO, "UseCase.name"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.use_case_type"]),
         DocLayoutItem([USE_CASE, INFO, "UseCase.updated_at"]),
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.id"]),
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.default_eda_table"]),
@@ -1239,6 +1285,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CONTEXT, INFO, "Context.primary_entities"]),
         DocLayoutItem([CONTEXT, INFO, "Context.created_at"]),
         DocLayoutItem([CONTEXT, INFO, "Context.name"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.treatment_id"]),
         DocLayoutItem([CONTEXT, INFO, "Context.updated_at"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.id"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.default_eda_table"]),
@@ -1285,6 +1332,7 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_historical_feature_table_layout(),
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
+        *_get_treatment_layout(),
         *_get_use_case_layout(),
         *_get_context_layout(),
     ]

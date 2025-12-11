@@ -8,7 +8,11 @@ from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
-from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.feature_list_namespace import (
+    FeatureListNamespaceModel,
+    FeatureListRole,
+    FeatureListStatus,
+)
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -38,6 +42,7 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     """
 
     status: Optional[FeatureListStatus] = Field(default=None)
+    role: Optional[FeatureListRole] = Field(default=None)
 
 
 class FeatureListNamespaceServiceUpdate(

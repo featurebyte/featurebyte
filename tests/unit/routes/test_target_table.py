@@ -159,6 +159,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "downsampling_info": None,
             "table_with_missing_data": None,
             "is_valid": True,
+            "treatment_id": None,
         }
 
     @pytest.mark.parametrize(
