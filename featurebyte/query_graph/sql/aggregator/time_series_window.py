@@ -11,6 +11,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import AggFunc, InternalName, SpecialColumnName
+from featurebyte.models.entity_universe import filter_aggregation_input_for_time_series
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -508,7 +509,10 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         queries = []
         existing_columns: set[str] = set()
         for specs in self.grouped_specs.values():
-            query = self._get_aggregation_subquery(specs, existing_columns)
+            if self.is_deployment_sql:
+                query = self._get_aggregation_subquery_deployment(specs, existing_columns)
+            else:
+                query = self._get_aggregation_subquery_historical(specs, existing_columns)
             existing_columns.update(query.column_names)
             queries.append(query)
 
@@ -674,7 +678,7 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         )
         return groupby_input_expr
 
-    def _get_aggregation_subquery(
+    def _get_aggregation_subquery_historical(
         self, specs: list[TimeSeriesWindowAggregateSpec], existing_columns: set[str]
     ) -> LeftJoinableSubquery:
         spec = specs[0]
@@ -757,7 +761,80 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
+    def _get_aggregation_subquery_deployment(
+        self, specs: list[TimeSeriesWindowAggregateSpec], existing_columns: set[str]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+
+        # Filter input for the specific point in time during deployment
+        filtered_aggregation_source_expr = filter_aggregation_input_for_time_series(
+            aggregate_input_expr=spec.aggregation_source.expr,
+            job_datetime_expr=expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}"),
+            window=spec.window,
+            adapter=self.adapter,
+            parameters=spec.parameters,
+        )
+
+        # Aggregation
+        groupby_input_expr = select().from_(filtered_aggregation_source_expr.subquery(copy=False))
+        groupby_keys = [
+            GroupbyKey(
+                expr=quoted_identifier(serving_name),
+                name=serving_name,
+            )
+            for serving_name in spec.serving_names
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=quoted_identifier(spec.parameters.value_by),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    quoted_identifier(s.parameters.parent) if s.parameters.parent else None
+                ),
+                result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
+                parent_cols=(
+                    [quoted_identifier(s.parameters.parent)] if s.parameters.parent else []
+                ),
+            )
+            for s in specs
+        ]
+        aggregated_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            window_order_by=(
+                quoted_identifier(spec.parameters.reference_datetime_column)
+                if AggFunc(spec.parameters.agg_func).is_order_dependent
+                else None
+            ),
+            adapter=self.adapter,
+        )
+
+        # remove existing columns from the new columns
+        column_names = set()
+        for _spec in specs:
+            if _spec.agg_result_name not in existing_columns:
+                column_names.add(_spec.agg_result_name)
+        aggregated_column_names = sorted(column_names)
+
+        return LeftJoinableSubquery(
+            expr=aggregated_expr,
+            column_names=aggregated_column_names,
+            join_keys=spec.serving_names,
+        )
+
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
+        if self.is_deployment_sql:
+            return []
         out: list[CommonTable] = []
         out.extend(self.request_table_plan.construct_request_table_ctes(request_table_name))
         for table_name, view_expr in self.aggregation_source_views.items():
