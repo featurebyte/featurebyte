@@ -236,5 +236,5 @@ def _get_lookup_spec_from_join_step(
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
         agg_result_name_include_serving_names=True,
-        is_deployment_sql=False,  # Default to False for parent lookups
+        is_deployment_sql=False,
     )
