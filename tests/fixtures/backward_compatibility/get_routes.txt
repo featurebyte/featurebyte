@@ -37,5 +37,6 @@
 /target_table
 /task
 /time_series_table
+/treatment
 /use_case
 /user_defined_function
