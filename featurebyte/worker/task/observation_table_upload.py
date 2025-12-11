@@ -112,6 +112,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                         if not payload.context_id and not payload.use_case_id
                         else None,
                         target_column=payload.target_column,
+                        treatment_column=payload.treatment_column,
                         context_id=payload.context_id if not payload.use_case_id else None,
                         use_case_id=payload.use_case_id,
                     ),
@@ -129,6 +130,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                         file_name=payload.uploaded_file_name,
                     ),
                     "target_namespace_id": payload.target_namespace_id,
+                    "treatment_id": payload.treatment_id,
                 },
             )
 

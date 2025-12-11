@@ -495,6 +495,18 @@ class ObservationTableInvalidTargetNameError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidTreatmentNameError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies a treatment name that does not exist
+    """
+
+
+class ObservationTableInvalidTreatmentLabelsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table has unique values different from treatment labels
+    """
+
+
 class ObservationTableInvalidSamplingError(BaseUnprocessableEntityError):
     """
     Raise when observation table specifies an invalid sampling configuration

@@ -25,6 +25,7 @@ from featurebyte.api.templates.entity_doc import (
     PRIMARY_ENTITY_DOC,
     PRIMARY_ENTITY_IDS_DOC,
 )
+from featurebyte.api.treatment import Treatment
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import validate_datetime_input
 from featurebyte.models.base import PydanticObjectId
@@ -135,6 +136,21 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             if target_id:
                 return Target.get_by_id(target_id)
         return None
+
+    @property
+    def treatment(self) -> Optional[Treatment]:
+        """
+        Returns the treatment associated to the observation table.
+
+        Returns
+        -------
+        Optional[Treatment]
+            Treatment of the observation table.
+        """
+        treatment_id = self.cached_model.treatment_id  # type: ignore
+        if not treatment_id:
+            return None
+        return Treatment.get_by_id(treatment_id)
 
     @property
     def context_id(self) -> ObjectId:
@@ -447,6 +463,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         purpose: Optional[Purpose] = None,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        treatment_column: Optional[str] = None,
         context_name: Optional[str] = None,
         use_case_name: Optional[str] = None,
     ) -> ObservationTable:
@@ -467,6 +484,10 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        treatment_column: Optional[str]
+            Name of the column in the observation table that stores the treatment values.
+            The treatment column name must match the treatment name of the associated context.
+            The data type must match the the treatment dtype of the associated context.
         context_name: Optional[str]
             Context name for the observation table.
         use_case_name: Optional[str]
@@ -500,6 +521,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             primary_entity_ids=primary_entity_ids,
             uploaded_file_name=os.path.basename(file_path),
             target_column=target_column,
+            treatment_column=treatment_column,
             context_id=context_id,
             use_case_id=use_case_id,
         )

@@ -45,6 +45,7 @@ from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
@@ -72,6 +73,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         use_case_service: UseCaseService,
         target_service: TargetService,
         target_computer: TargetComputer,
+        treatment_service: TreatmentService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -83,6 +85,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.use_case_service = use_case_service
         self.target_service = target_service
         self.target_computer = target_computer
+        self.treatment_service = treatment_service
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from source table.'
@@ -296,6 +299,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 columns_to_exclude_missing_values.extend(entity.serving_names)
         if payload.target_column is not None:
             columns_to_exclude_missing_values.append(payload.target_column)
+        if payload.treatment_column is not None:
+            columns_to_exclude_missing_values.append(payload.treatment_column)
 
         # limit POINT_IN_TIME to a certain recency to avoid historical request failures
         max_timestamp = datetime.utcnow() - timedelta(
@@ -443,6 +448,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
                     primary_entity_ids=payload.primary_entity_ids,
                     target_namespace_id=target_namespace_id,
+                    treatment_id=payload.treatment_id,
                 )
             )
 
@@ -461,6 +467,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "request_input": payload.request_input,
                 "purpose": payload.purpose,
                 "primary_entity_ids": primary_entity_ids,
+                "treatment_id": payload.treatment_id,
                 "has_row_index": True,
                 "has_row_weights": output_table_has_row_weights,
                 "target_namespace_id": target_namespace_id,
@@ -480,6 +487,14 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 # update the target namespace with the unique target values if applicable
                 await self.target_namespace_service.update_target_namespace_classification_metadata(
                     target_namespace_id=target_namespace_id,
+                    observation_table=observation_table,
+                    db_session=db_session,
+                )
+
+            if payload.treatment_id:
+                # validate the treatment with the unique treatment values if applicable
+                await self.treatment_service.validate_treatment_labels(
+                    treatment_id=payload.treatment_id,
                     observation_table=observation_table,
                     db_session=db_session,
                 )

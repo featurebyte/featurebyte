@@ -381,7 +381,9 @@ class TreatmentModel(FeatureByteCatalogBaseDocumentModel):
         **Example 1: Binary observational treatment (supports DR-Learner)**
 
         ```python
-        observational_treatment = fb.Treatment(
+        observational_treatment = fb.Treatment.create(
+            name="observational treatment",
+            dtype=DBVarType.INT,
             treatment_type=TreatmentType.BINARY,
             source="observational",
             design="business-rule",
@@ -400,23 +402,18 @@ class TreatmentModel(FeatureByteCatalogBaseDocumentModel):
         # e.g. ["s-learner", "t-learner", "x-learner", "r-learner", "dr-learner", "dml"]
         ```
 
-        **Example 2: Continuous dose (price / spend / dosage) with static exposure**
+        **Example 2: Dose (price / spend / dosage) with static exposure**
 
         ```python
-        continuous_treatment = fb.Treatment(
+        numeric_treatment = fb.Treatment.create(
+            name="observational dose",
+            dtype=DBVarType.FLOAT,
             treatment_type=TreatmentType.NUMERIC,
             source="observational",
             design="other",
-            time="static",
-            time_structure="none",
-            interference="none",
-            # For continuous treatments:
-            #   - treatment_labels must be None
-            #   - control_label must be None
-            #   - propensity must be None
         )
 
-        compatible_methods = continuous_treatment.recommended_methods()
+        compatible_methods = numeric_treatment.recommended_methods()
         # e.g. ["dr-learner", "dml"]
         ```
 
@@ -449,12 +446,12 @@ class TreatmentModel(FeatureByteCatalogBaseDocumentModel):
                     ]
 
         # --------------------- CONTINUOUS TREATMENT EFFECTS ----------------------
-        # Static continuous dose-response / CATE:
+        # Static dose-response / CATE:
         #   - treatment_type == TreatmentType.NUMERIC
         #   - static (no longitudinal structure)
         #   - no interference
         #
-        # Propensity object is not used for continuous treatments in this schema;
+        # Propensity object is not used for numeric treatments in this schema;
         # nuisance models (m(X,T), e(T|X)) are expected to be estimated internally.
         if (
             self.treatment_type == TreatmentType.NUMERIC
@@ -462,8 +459,8 @@ class TreatmentModel(FeatureByteCatalogBaseDocumentModel):
             and self.interference == TreatmentInterference.NONE
         ):
             methods += [
-                "dr-learner",  # continuous dose-response DR-Learner
-                "dml",  # continuous treatment DML / orthogonal ML
+                "dr-learner",  # dose-response DR-Learner
+                "dml",  # treatment DML / orthogonal ML
             ]
 
         # ------------------------ UPLIFT MODELS ----------------------------

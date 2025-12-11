@@ -35,6 +35,7 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
 
 logger = get_logger(__name__)
@@ -63,6 +64,7 @@ class ObservationTableController(
         task_manager: TaskManager,
         use_case_service: UseCaseService,
         target_namespace_service: TargetNamespaceService,
+        treatment_service: TreatmentService,
     ):
         super().__init__(
             service=observation_table_service,
@@ -77,6 +79,7 @@ class ObservationTableController(
         self.task_manager = task_manager
         self.use_case_service = use_case_service
         self.target_namespace_service = target_namespace_service
+        self.treatment_service = treatment_service
 
     async def create_observation_table(
         self,
@@ -219,12 +222,22 @@ class ObservationTableController(
             target_name = target_namespace.name
         else:
             target_name = None
+
+        if observation_table.treatment_id is not None:
+            treatment = await self.treatment_service.get_document(
+                document_id=observation_table.treatment_id
+            )
+            treatment_name = treatment.name
+        else:
+            treatment_name = None
+
         return ObservationTableInfo(
             name=observation_table.name,
             type=observation_table.request_input.type,
             feature_store_name=feature_store.name,
             table_details=observation_table.location.table_details,
             target_name=target_name,
+            treatment_name=treatment_name,
             created_at=observation_table.created_at,
             updated_at=observation_table.updated_at,
             description=observation_table.description,

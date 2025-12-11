@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -27,12 +27,14 @@ from featurebyte.exception import (
     ObservationTableInvalidContextError,
     ObservationTableInvalidSamplingError,
     ObservationTableInvalidTargetNameError,
+    ObservationTableInvalidTreatmentNameError,
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
     ObservationTableTargetDefinitionExistsError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
+from featurebyte.models.context import ContextModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import (
@@ -45,6 +47,7 @@ from featurebyte.models.observation_table import (
 )
 from featurebyte.models.request_input import BaseRequestInput
 from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.models.treatment import TreatmentModel
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
@@ -80,6 +83,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
+from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.storage import Storage
@@ -171,6 +175,7 @@ def validate_columns_info(
     primary_entity_ids: Optional[List[PydanticObjectId]] = None,
     skip_entity_validation_checks: bool = False,
     target_namespace: Optional[TargetNamespaceModel] = None,
+    treatment: Optional[TreatmentModel] = None,
 ) -> None:
     """
     Validate column info.
@@ -185,6 +190,8 @@ def validate_columns_info(
         Whether to skip entity validation checks
     target_namespace: Optional[TargetNamespaceModel]
         Target namespace document
+    treatment: Optional[TreatmentModel]
+        Treatment document
 
     Raises
     ------
@@ -239,6 +246,18 @@ def validate_columns_info(
                     f'Target column "{target_namespace.name}" should have dtype "{target_namespace.dtype}"'
                 )
 
+        # Check that treatment is present in the column info
+        if treatment is not None:
+            if treatment.name not in columns_info_mapping:
+                raise ValueError(f'Treatment column "{treatment.name}" not found.')
+            if (
+                treatment.dtype is not None
+                and columns_info_mapping[treatment.name].dtype != treatment.dtype
+            ):
+                raise ValueError(
+                    f'Treatment column "{treatment.name}" should have dtype "{treatment.dtype}"'
+                )
+
 
 class ObservationTableService(
     BaseMaterializedTableService[ObservationTableModel, ObservationTableModel]
@@ -268,6 +287,7 @@ class ObservationTableService(
         redis: Redis[Any],
         target_namespace_service: TargetNamespaceService,
         target_service: TargetService,
+        treatment_service: TreatmentService,
         managed_view_service: ManagedViewService,
     ):
         super().__init__(
@@ -288,6 +308,7 @@ class ObservationTableService(
         self.use_case_service = use_case_service
         self.target_namespace_service = target_namespace_service
         self.target_service = target_service
+        self.treatment_service = treatment_service
         self.managed_view_service = managed_view_service
 
     @property
@@ -303,7 +324,10 @@ class ObservationTableService(
                 document_id=observation_table.context_id
             )
             if observation_table.purpose == Purpose.EDA:
-                if context.default_eda_table_id is None:
+                if (
+                    context.default_eda_table_id is None
+                    and observation_table.treatment_id == context.treatment_id
+                ):
                     # context does not have default EDA table set, set it to this table
                     await self.context_service.update_document(
                         document_id=context.id,
@@ -323,6 +347,12 @@ class ObservationTableService(
                 use_case = await self.use_case_service.get_document(document_id=use_case_id)
                 if use_case.default_eda_table_id is None:
                     # use case does not have default EDA table set, set it to this table
+                    if observation_table.treatment_id:
+                        context = await self.context_service.get_document(
+                            document_id=use_case.context_id
+                        )
+                        if observation_table.treatment_id != context.treatment_id:
+                            continue
                     if observation_table.target_namespace_id == use_case.target_namespace_id:
                         await self.use_case_service.update_use_case(
                             document_id=use_case_id,
@@ -344,6 +374,7 @@ class ObservationTableService(
         self,
         data: Union[ObservationTableCreate, ObservationTableUpload],
         target_namespace_id: Optional[ObjectId] = None,
+        treatment_id: Optional[ObjectId] = None,
     ) -> None:
         """
         Validate that the context and use case are compatible.
@@ -354,6 +385,8 @@ class ObservationTableService(
             Data to validate
         target_namespace_id: Optional[ObjectId]
             Target namespace ID, if applicable
+        treatment_id: Optional[ObjectId]
+            Treatment ID, if applicable
 
         Raises
         ------
@@ -385,6 +418,7 @@ class ObservationTableService(
                 )
             data.context_id = use_case.context_id
 
+        context: Optional[ContextModel] = None
         if data.context_id is not None:
             # Check if the context document exists when provided. This should perform additional
             # validation once additional information such as request schema are available in the
@@ -396,6 +430,23 @@ class ObservationTableService(
                     f"context primary entity ({_get_entity_names(context.primary_entity_ids)})."
                 )
             data.primary_entity_ids = context.primary_entity_ids
+
+        if treatment_id and context:
+            # Check if the treatment matches the context
+            if treatment_id != context.treatment_id:
+                treatment = await self.treatment_service.get_document(document_id=treatment_id)
+                if context.treatment_id:
+                    context_treatment = await self.treatment_service.get_document(
+                        document_id=context.treatment_id
+                    )
+                    raise ObservationTableInvalidContextError(
+                        f'Treatment "{treatment.name}" does not match context treatment "{context_treatment.name}".'
+                    )
+                else:
+                    raise ObservationTableInvalidContextError(
+                        f'Context "{context.name}" is not associated with any treatment. '
+                        f'Ensure it is associated with "{treatment.name}".'
+                    )
 
         if target_namespace_id and use_case:
             # Check if the target namespace matches the use case
@@ -415,7 +466,8 @@ class ObservationTableService(
         available_columns: List[str],
         primary_entity_ids: Optional[List[PydanticObjectId]],
         target_column: Optional[str],
-    ) -> Optional[ObjectId]:
+        treatment_column: Optional[str],
+    ) -> Tuple[Optional[ObjectId], Optional[ObjectId]]:
         # Check if required column names are provided
         missing_columns = []
 
@@ -460,12 +512,28 @@ class ObservationTableService(
         else:
             target_namespace_id = None
 
+        # Check if treatment column is present
+        if treatment_column:
+            if treatment_column not in available_columns:
+                missing_columns.append(treatment_column)
+            treatments = await self.treatment_service.list_documents_as_dict(
+                query_filter={"name": treatment_column}
+            )
+            if treatments["total"] == 0:
+                raise ObservationTableInvalidTreatmentNameError(
+                    f"Treatment name not found: {treatment_column}"
+                )
+            treatment = treatments["data"][0]
+            treatment_id = ObjectId(treatment["_id"])
+        else:
+            treatment_id = None
+
         if missing_columns:
             raise ObservationTableMissingColumnsError(
                 f"Required column(s) not found: {', '.join(missing_columns)}"
             )
 
-        return target_namespace_id
+        return target_namespace_id, treatment_id
 
     async def get_observation_table_task_payload(
         self, data: ObservationTableCreate, to_add_row_index: bool = True
@@ -505,6 +573,7 @@ class ObservationTableService(
             # set primary entity and target namespace ids in the payload using values from source observation table
             data.primary_entity_ids = source_observation_table.primary_entity_ids
             target_namespace_id = source_observation_table.target_namespace_id
+            treatment_id = source_observation_table.treatment_id
             # context and use case ids will be populated in the task and can be set to None in the payload
             data.context_id = None
             data.use_case_id = None
@@ -561,10 +630,11 @@ class ObservationTableService(
                 available_columns = [
                     columns_rename_mapping.get(col, col) for col in available_columns
                 ]
-            target_namespace_id = await self._validate_columns(
+            target_namespace_id, treatment_id = await self._validate_columns(
                 available_columns=available_columns,
                 primary_entity_ids=data.primary_entity_ids,
                 target_column=data.target_column,
+                treatment_column=data.treatment_column,
             )
         elif (
             isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None
@@ -573,11 +643,19 @@ class ObservationTableService(
                 document_id=data.request_input.target_id
             )
             target_namespace_id = target.target_namespace_id
+            if data.request_input.observation_table_id is not None:
+                observation_table_input = await self.get_document(
+                    data.request_input.observation_table_id
+                )
+                treatment_id = observation_table_input.treatment_id
+            else:
+                treatment_id = None
         else:
             target_namespace_id = None
+            treatment_id = None
 
         # Validate context and use case
-        await self._validate_context_use_case(data, target_namespace_id)
+        await self._validate_context_use_case(data, target_namespace_id, treatment_id)
 
         return ObservationTableTaskPayload(
             **data.model_dump(by_alias=True),
@@ -586,6 +664,7 @@ class ObservationTableService(
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
             target_namespace_id=target_namespace_id,
+            treatment_id=treatment_id,
         )
 
     async def get_observation_table_upload_task_payload(
@@ -621,14 +700,15 @@ class ObservationTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
         # Check if required column names are provided
-        target_namespace_id = await self._validate_columns(
+        target_namespace_id, treatment_id = await self._validate_columns(
             available_columns=observation_set_dataframe.columns.tolist(),
             primary_entity_ids=data.primary_entity_ids,
             target_column=data.target_column,
+            treatment_column=data.treatment_column,
         )
 
         # Validate context and use case
-        await self._validate_context_use_case(data, target_namespace_id)
+        await self._validate_context_use_case(data, target_namespace_id, treatment_id)
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
@@ -645,6 +725,7 @@ class ObservationTableService(
             file_format=file_format,
             uploaded_file_name=uploaded_file_name,
             target_namespace_id=target_namespace_id,
+            treatment_id=treatment_id,
         )
 
     @staticmethod
@@ -835,6 +916,7 @@ class ObservationTableService(
         skip_entity_validation_checks: bool = False,
         primary_entity_ids: Optional[List[PydanticObjectId]] = None,
         target_namespace_id: Optional[PydanticObjectId] = None,
+        treatment_id: Optional[PydanticObjectId] = None,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -855,6 +937,8 @@ class ObservationTableService(
             List of primary entity IDs
         target_namespace_id: Optional[PydanticObjectId]
             Target namespace ID
+        treatment_id: Optional[PydanticObjectId]
+            Treatment ID
 
         Returns
         -------
@@ -884,11 +968,18 @@ class ObservationTableService(
             )
         else:
             target_namespace = None
+
+        if treatment_id is not None:
+            treatment = await self.treatment_service.get_document(document_id=treatment_id)
+        else:
+            treatment = None
+
         validate_columns_info(
             columns_info,
             primary_entity_ids=primary_entity_ids,
             skip_entity_validation_checks=skip_entity_validation_checks,
             target_namespace=target_namespace,
+            treatment=treatment,
         )
         # Get entity column name to minimum interval mapping
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
@@ -979,13 +1070,14 @@ class ObservationTableService(
                         f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched targets."
                     )
 
-                if (
-                    observation_table.target_namespace_id
-                    and use_case.target_namespace_id != observation_table.target_namespace_id
-                ):
-                    raise ObservationTableInvalidUseCaseError(
-                        f"Cannot add UseCase {data.use_case_id_to_add} as its target_namespace_id is different from the existing target_namespace_id."
+                if observation_table.treatment_id:
+                    context = await self.context_service.get_document(
+                        document_id=use_case.context_id
                     )
+                    if context.treatment_id != observation_table.treatment_id:
+                        raise ObservationTableInvalidUseCaseError(
+                            f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched treatments."
+                        )
 
                 use_case_ids.append(data.use_case_id_to_add)
 
@@ -1013,11 +1105,14 @@ class ObservationTableService(
                         raise ObservationTableInvalidContextError(
                             "Cannot update Context as the entities are different from the existing Context."
                         )
-            else:
-                if new_context.primary_entity_ids != observation_table.primary_entity_ids:
-                    raise ObservationTableInvalidContextError(
-                        "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
-                    )
+            elif new_context.primary_entity_ids != observation_table.primary_entity_ids:
+                raise ObservationTableInvalidContextError(
+                    "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
+                )
+            elif new_context.treatment_id != observation_table.treatment_id:
+                raise ObservationTableInvalidContextError(
+                    "Cannot update Context as the treatments are different."
+                )
 
         if data.context_id_to_remove:
             # validate and replace context_id

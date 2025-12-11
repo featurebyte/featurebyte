@@ -1843,6 +1843,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        treatment_column: Optional[str] = None,
         sample_from_timestamp: Optional[Union[datetime, str]] = None,
         sample_to_timestamp: Optional[Union[datetime, str]] = None,
     ) -> ObservationTable:
@@ -1880,6 +1881,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        treatment_column: Optional[str]
+            Name of the column in the observation table that stores the treatment values.
+            The treatment column name must match the treatment name of the associated context.
+            The data type must match the the treatment dtype of the associated context.
         sample_from_timestamp: Optional[Union[datetime, str]]
             Start of date range to sample from.
         sample_to_timestamp: Optional[Union[datetime, str]]
@@ -1969,6 +1974,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids if not context_id and not use_case_id else None,
             target_column=target_column,
+            treatment_column=treatment_column,
             sample_from_timestamp=sample_from_timestamp,
             sample_to_timestamp=sample_to_timestamp,
         )

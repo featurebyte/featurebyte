@@ -451,6 +451,7 @@ class ObservationTableInfo(BaseInfo):
     feature_store_name: str
     table_details: TableDetails
     target_name: Optional[str]
+    treatment_name: Optional[str]
 
 
 class BaseFeatureOrTargetTableInfo(BaseInfo):
