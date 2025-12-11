@@ -175,7 +175,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
         **Example 1: Simple A/B Test With Known Global Propensity**
 
         >>> treatment = fb.Treatment.create(  # doctest: +SKIP
-        ...     name="Churn Camppaign A/B test",
+        ...     name="Churn Campaign A/B test",
         ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="randomized",
@@ -195,7 +195,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
         **Example 2: Observational Treatment With Estimated Unit-Level Propensity**
 
         >>> observational_treatment = fb.Treatment.create(  # doctest: +SKIP
-        ...     name="Churn Camppaign",
+        ...     name="Churn Campaign",
         ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="observational",
@@ -442,7 +442,7 @@ class Treatment(DeletableApiObject, SavableApiObject):
 
         Returns
         -------
-        Context
+        Treatment
             Treatment object.
 
         Examples

@@ -106,7 +106,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
 
         >>> observational_treatment = fb.Treatment.create(  # doctest: +SKIP
-        ...     name="Churn Camppaign A/B test",
+        ...     name="Churn Campaign A/B test",
         ...     dtype=DBVarType.INT,
         ...     treatment_type=fb.TreatmentType.BINARY,
         ...     source="observational",
@@ -114,8 +114,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ...     time="static",
         ...     time_structure="none",
         ...     interference="none",
-        ...     treatment_values=[0, 1],
-        ...     control_value=0,
+        ...     treatment_labels=[0, 1],
+        ...     control_label=0,
         ...     propensity=fb.Propensity(
         ...         granularity="unit",
         ...         knowledge="estimated",  # Requires model-based p(T|X)
