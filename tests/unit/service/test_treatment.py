@@ -9,7 +9,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType, TreatmentType
-from featurebyte.exception import DocumentUpdateError
+from featurebyte.exception import ObservationTableInvalidTreatmentLabelsError
 from featurebyte.models.treatment import AssignmentDesign, AssignmentSource, TreatmentModel
 
 
@@ -64,7 +64,7 @@ async def test_treatment_labels_not_found(treatment_service, binary_treatment):
             mock_get_unique.return_value = ["negative", "neutral", "unknown"]
 
             # Call the method and expect it to raise DocumentUpdateError
-            with pytest.raises(DocumentUpdateError) as exc_info:
+            with pytest.raises(ObservationTableInvalidTreatmentLabelsError) as exc_info:
                 await treatment_service.validate_treatment_labels(
                     treatment_id=binary_treatment.id,
                     observation_table=observation_table,
