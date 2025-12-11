@@ -80,6 +80,7 @@ def agg_spec_template_fixture():
         agg_func=AggFunc.SUM,
         agg_result_name_include_serving_names=True,
         aggregation_source=dummy_aggregation_source,
+        is_deployment_sql=False,
         parameters=dummy_parameters,
     )
     return agg_spec
@@ -132,6 +133,7 @@ def item_agg_spec_fixture():
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
     return agg_spec
 
@@ -335,6 +337,7 @@ def test_feature_execution_planner(
                 "parameters": None,
                 "original_serving_names": ["CUSTOMER_ID"],
                 "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}",
+                "is_deployment_sql": False,
             }
         ],
         [
@@ -378,6 +381,7 @@ def test_feature_execution_planner(
                 "parameters": None,
                 "original_serving_names": ["CUSTOMER_ID"],
                 "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}",
+                "is_deployment_sql": False,
             }
         ],
     ]
@@ -472,6 +476,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 "parameters": None,
                 "original_serving_names": ["CUSTOMER_ID"],
                 "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}",
+                "is_deployment_sql": False,
             }
         ],
         [
@@ -515,6 +520,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 "parameters": None,
                 "original_serving_names": ["CUSTOMER_ID"],
                 "original_agg_result_name": f"_fb_internal_CUSTOMER_ID_window_w172800_avg_{groupby_node_aggregation_id}",
+                "is_deployment_sql": False,
             }
         ],
     ]

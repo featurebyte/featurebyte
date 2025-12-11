@@ -72,7 +72,8 @@ class TimeSeriesWindowAggregateSpec(AggregationSpec):
             args.append("O" + self.parameters.offset.to_string())
         if self.blind_spot is not None:
             args.append("BS" + self.blind_spot.to_string())
-        args.append(self.parameters.feature_job_setting.get_cron_expression_with_timezone())
+        if not self.is_deployment_sql:
+            args.append(self.parameters.feature_job_setting.get_cron_expression_with_timezone())
         return args
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
@@ -115,6 +116,7 @@ class TimeSeriesWindowAggregateSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[TimeSeriesWindowAggregateSpec]:
         assert isinstance(node, TimeSeriesWindowAggregateNode)
@@ -163,6 +165,7 @@ class TimeSeriesWindowAggregateSpec(AggregationSpec):
                     serving_names=node.parameters.serving_names,
                     serving_names_mapping=serving_names_mapping,
                     agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                    is_deployment_sql=is_deployment_sql,
                     window=window,
                     offset=node.parameters.offset,
                     blind_spot=node.parameters.feature_job_setting.get_blind_spot_calendar_window(),

@@ -54,6 +54,7 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -74,6 +75,7 @@ def forward_spec_with_offset_fixture(forward_node_parameters_with_offset, entity
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 

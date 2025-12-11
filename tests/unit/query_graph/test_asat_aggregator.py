@@ -67,6 +67,7 @@ def aggregation_spec_without_end_timestamp(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -84,6 +85,7 @@ def aggregation_spec_with_end_timestamp(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -101,6 +103,7 @@ def aggregation_spec_with_serving_names_mapping(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -131,6 +134,7 @@ def aggregation_specs_same_source_different_agg_funcs(
                 entity_ids=[entity_id],
                 parent_dtype=DBVarType.FLOAT,
                 agg_result_name_include_serving_names=True,
+                is_deployment_sql=False,
             )
         )
 
@@ -164,6 +168,7 @@ def aggregation_specs_same_source_different_keys(
                 entity_ids=[entity_id],
                 parent_dtype=DBVarType.FLOAT,
                 agg_result_name_include_serving_names=True,
+                is_deployment_sql=False,
             )
         )
 
@@ -186,6 +191,7 @@ def aggregation_spec_with_category(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -205,6 +211,7 @@ def aggregation_spec_with_offset(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -224,6 +231,7 @@ def forward_aggregation_spec_with_offset(
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 
@@ -253,6 +261,7 @@ def aggregation_spec_with_snapshots_parameters(entity_id):
         entity_ids=[entity_id],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
+        is_deployment_sql=False,
     )
 
 

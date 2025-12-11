@@ -86,6 +86,7 @@ class BaseAggregateAsAtSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[BaseAggregateAsAtSpec]:
         assert isinstance(node, (AggregateAsAtNode, ForwardAggregateAsAtNode))
@@ -100,5 +101,6 @@ class BaseAggregateAsAtSpec(AggregationSpec):
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                is_deployment_sql=is_deployment_sql,
             )
         ]
