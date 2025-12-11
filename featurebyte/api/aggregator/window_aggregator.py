@@ -208,7 +208,7 @@ class WindowAggregator(BaseAggregator):
                 feature_job_setting, FeatureJobSetting
             ):
                 # Try to convert the provided CronFeatureJobSetting to FeatureJobSetting
-                _ = self._convert_cron_feature_job_setting(feature_job_setting)
+                feature_job_setting = self._convert_cron_feature_job_setting(feature_job_setting)
 
             parsed_feature_job_setting = FeatureJobSetting(
                 **self._get_job_setting_params(feature_job_setting, windows=windows)
