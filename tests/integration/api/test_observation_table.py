@@ -9,7 +9,20 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import Context, TargetNamespace, TargetValueSamplingRate, UseCase
+from featurebyte import (
+    AssignmentDesign,
+    AssignmentSource,
+    Context,
+    Propensity,
+    TargetNamespace,
+    TargetValueSamplingRate,
+    Treatment,
+    TreatmentInterference,
+    TreatmentTime,
+    TreatmentTimeStructure,
+    TreatmentType,
+    UseCase,
+)
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, SpecialColumnName, TargetType
@@ -171,6 +184,8 @@ async def test_observation_table_min_interval_between_entities(
     df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
         df[SpecialColumnName.POINT_IN_TIME].astype(str)
     )
+    df["treatment_test"] = np.tile([0, 1], len(df) // 2 + 1)[: len(df)]
+
     table_name = "observation_table_time_interval"
     await session.register_table(table_name, df)
 
@@ -191,11 +206,35 @@ async def test_observation_table_min_interval_between_entities(
         target_type=TargetType.CLASSIFICATION,
     )
 
+    treatment_name = "treatment_test"
+    treatment = Treatment.create(
+        name=treatment_name,
+        dtype=DBVarType.INT,
+        treatment_type=TreatmentType.BINARY,
+        source=AssignmentSource.RANDOMIZED,
+        design=AssignmentDesign.SIMPLE_RANDOMIZATION,
+        time=TreatmentTime.STATIC,
+        time_structure=TreatmentTimeStructure.INSTANTANEOUS,
+        interference=TreatmentInterference.NONE,
+        treatment_labels=[0, 1],
+        control_label=0,
+        propensity=Propensity(
+            granularity="global",
+            knowledge="design-known",
+            p_global=0.5,
+        ),
+    )
+
     # create the observation table with target column
     observation_table = database_table.create_observation_table(
-        "MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows, target_column=target_name
+        "MY_OBSERVATION_TABLE_FOR_INTERVALS",
+        sample_rows=sample_rows,
+        target_column=target_name,
+        treatment_column=treatment_name,
     )
     assert observation_table.min_interval_secs_between_entities == 3600
+    assert observation_table.target_namespace.id == target_namespace.id
+    assert observation_table.treatment.id == treatment.id
 
     # check missing data table
     table_with_missing_data = observation_table.cached_model.table_with_missing_data
@@ -212,6 +251,7 @@ async def test_observation_table_min_interval_between_entities(
             "POINT_IN_TIME": [pd.Timestamp("2022-06-23 00:58:00")],
             "User ID": [2],
             "Target": [np.nan],
+            "treatment_test": [1],
         }),
     )
 
@@ -229,6 +269,7 @@ async def test_observation_table_min_interval_between_entities(
     # delete the observation table & target
     observation_table.delete()
     target_namespace.delete()
+    treatment.delete()
 
     # attempt to preview the missing data table should raise an error
     with pytest.raises(RecordRetrievalException):
