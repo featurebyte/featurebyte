@@ -4,12 +4,12 @@ TreatmentService class
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import Any, List, Set, Union
 
 from sqlglot import expressions
 
 from featurebyte.enum import TreatmentType
-from featurebyte.exception import DocumentUpdateError
+from featurebyte.exception import ObservationTableInvalidTreatmentLabelsError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.treatment import TreatmentModel
@@ -95,8 +95,8 @@ class TreatmentService(
 
         Raises
         ------
-        DocumentUpdateError
-            If the control label is not found in the treatment values
+        ObservationTableInvalidTreatmentLabelsError
+            If the treatment labels are different from treatment values
         """
         treatment = await self.get_document(document_id=treatment_id)
         assert isinstance(treatment, TreatmentModel)
@@ -110,8 +110,11 @@ class TreatmentService(
                 db_session=db_session,
             )
 
-            if set(treatment.treatment_labels) != set(unique_treatments):
-                raise DocumentUpdateError(
+            def strict_equal(a: Set[Any], b: Set[Any]) -> bool:
+                return {(type(v), v) for v in a} == {(type(v), v) for v in b}
+
+            if not strict_equal(set(treatment.treatment_labels), set(unique_treatments)):
+                raise ObservationTableInvalidTreatmentLabelsError(
                     f"Treatment labels {treatment.treatment_labels} are different from treatment values "
-                    f"{unique_treatments}. Ensure the control label exists in the observation table."
+                    f"{unique_treatments}. Ensure the treatment labels match the observation table values."
                 )

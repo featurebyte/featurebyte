@@ -121,6 +121,7 @@ def create_observation_table_fixture(
         context_empty=False,
         entity_id=None,
         table_with_missing_data=None,
+        treatment_id=None,
     ):
         ob_table_id = ObjectId(ob_table_id)
 
@@ -162,7 +163,7 @@ def create_observation_table_fixture(
             collection_name="observation_table",
             document={
                 "_id": ob_table_id,
-                "name": "observation_table_from_target_input",
+                "name": "new_observation_table",
                 "request_input": request_input,
                 "location": location,
                 "columns_info": [
@@ -178,6 +179,7 @@ def create_observation_table_fixture(
                 "primary_entity_ids": primary_entity_ids,
                 "catalog_id": ObjectId(default_catalog_id),
                 "user_id": user_id,
+                "treatment_id": treatment_id,
             },
             user_id=user_id,
         )

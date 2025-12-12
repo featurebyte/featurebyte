@@ -74,6 +74,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("treatment_id"),
             [
                 ("name", pymongo.TEXT),
                 ("description", pymongo.TEXT),

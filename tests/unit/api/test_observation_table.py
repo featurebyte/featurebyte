@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import TargetNamespace
+from featurebyte import TargetNamespace, Treatment, TreatmentType
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import RecordCreationException
@@ -40,6 +40,7 @@ class TestObservationTable(BaseMaterializedTableApiTest):
             "updated_at": None,
             "description": None,
             "target_name": None,
+            "treatment_name": None,
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")
@@ -176,6 +177,7 @@ def test_entity_related_properties(observation_table_from_view, cust_id_entity, 
     assert observation_table_from_view.entities == []
     assert observation_table_from_view.target_namespace is None
     assert observation_table_from_view.target is None
+    assert observation_table_from_view.treatment is None
 
 
 def test_create_observation_table_with_target_column_from_view(snowflake_event_view_with_entity):
@@ -225,6 +227,43 @@ def test_create_observation_table_with_target_definition(
     )
     assert observation_table.target_namespace == float_target.target_namespace
     assert observation_table.target == float_target
+
+
+def test_create_observation_table_with_treatment_column_from_view(snowflake_event_view_with_entity):
+    """Test create observation table with treatment column"""
+    expected_error = "Treatment name not found: treatment"
+    with pytest.raises(RecordCreationException, match=expected_error):
+        return snowflake_event_view_with_entity.create_observation_table(
+            "observation_table_from_event_view",
+            columns_rename_mapping={
+                "col_int": "transaction_id",
+                "event_timestamp": "POINT_IN_TIME",
+            },
+            treatment_column="treatment",
+        )
+
+
+def test_create_observation_table_with_treatment_column_from_source_table(
+    catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+):
+    """Test create observation table with treatment column"""
+    _ = catalog
+    _ = patched_observation_table_service
+
+    treatment = Treatment.create(
+        name="dose",
+        dtype=DBVarType.FLOAT,
+        treatment_type=TreatmentType.NUMERIC,
+        source="observational",
+        design="other",
+    )
+    observation_table = snowflake_database_table.create_observation_table(
+        "observation_table_from_source_table",
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "dose"},
+        treatment_column="dose",
+        primary_entities=[cust_id_entity.name],
+    )
+    assert observation_table.treatment == treatment
 
 
 def test_create_observation_table_with_context(
@@ -303,20 +342,36 @@ def test_create_observation_table_from_observation_table(
         "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.INT
     )
     target_namespace.update_target_type(TargetType.CLASSIFICATION)
+
+    treatment = Treatment.create(
+        name="dose",
+        dtype=DBVarType.FLOAT,
+        treatment_type=TreatmentType.NUMERIC,
+        source="observational",
+        design="other",
+    )
+
     observation_table = snowflake_database_table.create_observation_table(
         "observation_table_from_source_table",
-        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_int": "target"},
+        columns_rename_mapping={
+            "event_timestamp": "POINT_IN_TIME",
+            "col_int": "target",
+            "col_float": "dose",
+        },
         target_column="target",
+        treatment_column="dose",
         primary_entities=[cust_id_entity.name],
     )
     assert observation_table.target_namespace == target_namespace
     assert observation_table.target is None
+    assert observation_table.treatment == treatment
 
     new_observation_table = observation_table.create_observation_table(
         "new_observation_table",
     )
     assert new_observation_table.target_namespace == observation_table.target_namespace
     assert new_observation_table.target == observation_table.target
+    assert new_observation_table.treatment == observation_table.treatment
     assert new_observation_table.context_id == observation_table.context_id
     assert new_observation_table.use_case_ids == observation_table.use_case_ids
     assert new_observation_table.primary_entity_ids == observation_table.primary_entity_ids

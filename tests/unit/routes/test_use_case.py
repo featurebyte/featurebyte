@@ -221,8 +221,8 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         ]
         assert data["context_name"] == "transaction_context"
         assert data["target_name"] == "float_target"
-        assert data["default_eda_table"] == "observation_table_from_target_input"
-        assert data["default_preview_table"] == "observation_table_from_target_input"
+        assert data["default_eda_table"] == "new_observation_table"
+        assert data["default_preview_table"] == "new_observation_table"
 
     @pytest.mark.asyncio
     async def test_delete_use_case__success(
@@ -555,7 +555,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
-            "UseCase is referenced by ObservationTable: observation_table_from_target_input"
+            "UseCase is referenced by ObservationTable: new_observation_table"
         )
 
     @pytest.mark.asyncio

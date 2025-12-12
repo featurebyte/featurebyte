@@ -1018,7 +1018,6 @@ def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
-        print(query)
         return None
 
     with mock.patch(
@@ -2187,6 +2186,12 @@ def snowflake_execute_query_for_materialized_table_fixture(
             if query.endswith('"sf_table_with_target"'):
                 res.append({
                     "column_name": "target",
+                    "data_type": json.dumps({"type": "REAL", "scale": 0}),
+                    "comment": None,
+                })
+            if query.endswith('"sf_table_with_treatment"'):
+                res.append({
+                    "column_name": "treatment",
                     "data_type": json.dumps({"type": "REAL", "scale": 0}),
                     "comment": None,
                 })

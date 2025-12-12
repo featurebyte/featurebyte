@@ -65,6 +65,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             ("context", "context"),
             ("target", "target"),
             ("use_case", "use_case"),
+            ("treatment", "treatment"),
+            ("context", "context_with_treatment"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -173,6 +175,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "description": None,
             "target_name": None,
+            "treatment_name": None,
         }
 
     def test_get_purpose(self, test_api_client_persistent, create_success_response):
@@ -470,7 +473,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
             response.json()["detail"]
-            == "Target is referenced by ObservationTable: observation_table_from_target_input"
+            == "Target is referenced by ObservationTable: new_observation_table"
         )
 
     def test_upload_observation_validates_columns(self, test_api_client_persistent):
@@ -926,7 +929,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         with patch(
             "featurebyte.service.observation_table.ObservationTableService._validate_columns"
         ) as mock__validate_columns:
-            mock__validate_columns.return_value = ObjectId()
+            mock__validate_columns.return_value = ObjectId(), None
             response = self.post(test_api_client, payload)
 
         response_dict = response.json()
@@ -1462,3 +1465,236 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             response_dict["detail"]
             == "Downsampling by both target value and sample rows is not supported."
         )
+
+    @pytest.mark.asyncio
+    async def test_create_with_treatment_column_no_treatment_422(self, test_api_client_persistent):
+        """Test create with treatment column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = copy.deepcopy(self.payload)
+        payload["treatment_column"] = "treatment"
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == "Treatment name not found: treatment"
+
+    @pytest.mark.asyncio
+    async def test_create_with_treatment_column_missing_column_422(
+        self, test_api_client_persistent
+    ):
+        """Test create with treatment column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        treatment_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        treatment_name = treatment_payload["name"]
+
+        payload = copy.deepcopy(self.payload)
+        payload["treatment_column"] = treatment_name
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == f"Required column(s) not found: {treatment_name}"
+
+    @pytest.mark.asyncio
+    @patch(
+        "featurebyte.models.observation_table.SourceTableObservationInput.get_column_names_and_dtypes"
+    )
+    async def test_treatment_labels_invalid_task(
+        self, patch_get_column_names_and_dtypes, test_api_client_persistent
+    ):
+        """Test check if treatment labels is valid"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        treatment_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        treatment_id = treatment_payload["_id"]
+
+        patch_get_column_names_and_dtypes.return_value = {
+            "cust_id": "INT",
+            "POINT_IN_TIME": "TIMESTAMP",
+            treatment_payload["name"]: "INT",
+            "transaction_id": "INT",
+        }
+        payload = copy.deepcopy(self.payload)
+        payload["treatment_column"] = treatment_payload["name"]
+        payload["context_id"] = None
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        observation_table_id = payload["_id"]
+
+        response = test_api_client.patch(
+            f"/treatment/{treatment_id}/treatment_labels",
+            json={"observation_table_id": observation_table_id},
+        )
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "FAILURE"
+        assert (
+            "Treatment labels [0, 1] are different from treatment values []. "
+            "Ensure the treatment labels match the observation table values."
+        ) in response_dict["traceback"]
+
+    @pytest.mark.asyncio
+    async def test_create_with_wrong_treatment_values(self, test_api_client_persistent):
+        """Test create with wrong treatment values"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create treatment
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        payload["name"] = "treatment"
+        payload["_id"] = str(ObjectId("693a5511712c9d05fb3203da"))
+        response = test_api_client.post("/treatment", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        treatment_id = response_dict["_id"]
+        assert response_dict["treatment_type"] == "binary"
+
+        with patch(
+            "featurebyte.service.treatment.TreatmentService._get_unique_treatment_values"
+        ) as mock_get_unique_treatment_values:
+            mock_get_unique_treatment_values.return_value = [False, True]
+            payload = copy.deepcopy(self.payload)
+            payload["treatment_column"] = "treatment"
+            payload["request_input"]["source"]["table_details"]["table_name"] = (
+                "sf_table_with_treatment"
+            )
+            response = self.post(test_api_client, payload)
+            response = self.wait_for_results(test_api_client, response)
+            response_dict = response.json()
+            assert response_dict["status"] == "FAILURE"
+            assert (
+                "Treatment labels [0, 1] are different from treatment values [False, True]. "
+                "Ensure the treatment labels match the observation table values."
+            ) in response_dict["traceback"]
+
+    @pytest.mark.asyncio
+    async def test_create_with_treatment_column_201(self, test_api_client_persistent):
+        """Test create with treatment column"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create treatment
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        payload["name"] = "treatment"
+        payload["_id"] = str(ObjectId("693a5511712c9d05fb3203da"))
+        response = test_api_client.post("/treatment", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        treatment_id = response_dict["_id"]
+        assert response_dict["treatment_type"] == "binary"
+
+        with patch(
+            "featurebyte.service.treatment.TreatmentService._get_unique_treatment_values"
+        ) as mock_get_unique_treatment_values:
+            mock_get_unique_treatment_values.return_value = [0, 1]
+            payload = copy.deepcopy(self.payload)
+            payload["treatment_column"] = "treatment"
+            payload["request_input"]["source"]["table_details"]["table_name"] = (
+                "sf_table_with_treatment"
+            )
+            response = self.post(test_api_client, payload)
+            response = self.wait_for_results(test_api_client, response)
+            response_dict = response.json()
+            assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        # Get observation table
+        response = test_api_client.get(
+            f"{self.base_route}/{response_dict['payload']['output_document_id']}"
+        )
+        assert response.status_code == HTTPStatus.OK, response_dict
+        response_dict = response.json()
+        observation_table_id = response_dict["_id"]
+        assert response_dict["treatment_id"] == treatment_id
+
+        # test delete treatment
+        response = test_api_client.delete(f"/treatment/{treatment_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Treatment is referenced by ObservationTable: observation_table"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_treatment_context_mismatch_422(self, test_api_client_persistent):
+        """Test create with treatment column that does not match context"""
+
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # create treatment
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        payload["name"] = "treatment"
+        payload["_id"] = str(ObjectId("693a5511712c9d05fb3203da"))
+        response = test_api_client.post("/treatment", json=payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        treatment_id = response_dict["_id"]
+        assert response_dict["treatment_type"] == "binary"
+
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context_with_treatment.json"
+        )
+
+        with patch(
+            "featurebyte.service.treatment.TreatmentService._get_unique_treatment_values"
+        ) as mock_get_unique_treatment_values:
+            mock_get_unique_treatment_values.return_value = [0, 1]
+            payload = copy.deepcopy(self.payload)
+            payload["treatment_column"] = "treatment"
+            payload["context_id"] = context_payload["_id"]
+            payload["request_input"]["source"]["table_details"]["table_name"] = (
+                "sf_table_with_treatment"
+            )
+            response = self.post(test_api_client, payload)
+            response_dict = response.json()
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+            assert (
+                response_dict["detail"]
+                == 'Treatment "treatment" does not match context treatment "test_treatment".'
+            )
+
+    @pytest.mark.asyncio
+    async def test_create_with_treatment_mapping(self, test_api_client_persistent):
+        """Test create with treatment column that requires mapping"""
+
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        treatmemt_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/treatment.json"
+        )
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context_with_treatment.json"
+        )
+
+        with patch(
+            "featurebyte.service.treatment.TreatmentService._get_unique_treatment_values"
+        ) as mock_get_unique_treatment_values:
+            mock_get_unique_treatment_values.return_value = [0, 1]
+            payload = copy.deepcopy(self.payload)
+            payload["treatment_column"] = treatmemt_payload["name"]
+            payload["request_input"]["columns_rename_mapping"] = {
+                "treatment": treatmemt_payload["name"]
+            }
+            payload["context_id"] = context_payload["_id"]
+            payload["request_input"]["source"]["table_details"]["table_name"] = (
+                "sf_table_with_treatment"
+            )
+            response = self.post(test_api_client, payload)
+            response = self.wait_for_results(test_api_client, response)
+            response_dict = response.json()
+            assert response_dict["status"] == "SUCCESS", response_dict["traceback"]

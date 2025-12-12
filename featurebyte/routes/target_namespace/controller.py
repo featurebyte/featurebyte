@@ -126,6 +126,7 @@ class TargetNamespaceController(
                 observation_table_id=observation_table.id,
             )
         )
+
         task_id = await self.task_manager.submit(payload=task_payload)
         task = await self.task_manager.get_task(task_id=task_id)
         assert task is not None, "Task should not be None"

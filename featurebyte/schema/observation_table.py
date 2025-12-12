@@ -38,6 +38,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     target_column: Optional[StrictStr] = Field(default=None)
+    treatment_column: Optional[StrictStr] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
@@ -54,6 +55,7 @@ class ObservationTableUpload(FeatureByteBaseModel):
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: Optional[List[PydanticObjectId]]
     target_column: Optional[StrictStr] = Field(default=None)
+    treatment_column: Optional[StrictStr] = Field(default=None)
     context_id: Optional[PydanticObjectId] = Field(default=None)
     use_case_id: Optional[PydanticObjectId] = Field(default=None)
 
