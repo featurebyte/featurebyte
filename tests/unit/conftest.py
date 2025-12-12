@@ -3027,6 +3027,13 @@ def snapshots_aggregate_asat_feature_fixture(snowflake_snapshots_table_with_enti
     """
     Fixture to get an aggregate asat feature from Snapshots table
     """
+    snowflake_snapshots_table_with_entity.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            timezone="Etc/UTC",
+            blind_spot="3d",
+        )
+    )
     snapshots_view = snowflake_snapshots_table_with_entity.get_view()
     feature = snapshots_view.groupby("col_binary").aggregate_asat(
         value_column="col_float",
