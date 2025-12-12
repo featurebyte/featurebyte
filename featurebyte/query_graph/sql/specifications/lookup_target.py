@@ -42,6 +42,7 @@ class LookupTargetSpec(BaseLookupSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[LookupTargetSpec]:
         assert isinstance(node, LookupTargetNode)
@@ -62,6 +63,7 @@ class LookupTargetSpec(BaseLookupSpec):
                 snapshots_parameters=params.snapshots_parameters,
                 offset=params.offset,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                is_deployment_sql=is_deployment_sql,
             )
             specs.append(spec)
         return specs

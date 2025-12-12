@@ -239,6 +239,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         },
         {
             "node_name": lookup_node.name,
@@ -253,6 +254,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         },
     ]
 
@@ -298,6 +300,7 @@ def test_lookup_aggregator__offline_scd_only(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         }
     ]
 
@@ -341,6 +344,7 @@ def test_lookup_aggregator__online_with_current_flag(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         }
     ]
 
@@ -421,6 +425,7 @@ def test_lookup_aggregator__online_without_current_flag(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         }
     ]
 
@@ -467,6 +472,7 @@ def test_lookup_aggregator__online_with_offset(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         }
     ]
 
@@ -499,6 +505,7 @@ def test_lookup_aggregator__event_table(
             "snapshots_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
         }
     ]
 

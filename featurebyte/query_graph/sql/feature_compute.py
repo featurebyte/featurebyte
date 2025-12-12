@@ -871,6 +871,7 @@ class FeatureExecutionPlanner:
         self.column_statistics_info = column_statistics_info
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
+        self.is_deployment_sql = is_deployment_sql
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -1014,6 +1015,7 @@ class FeatureExecutionPlanner:
             partition_column_filters=self.partition_column_filters,
             development_datasets=self.development_datasets,
             on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
+            is_deployment_sql=self.is_deployment_sql,
         )
 
     def update_feature_specs(

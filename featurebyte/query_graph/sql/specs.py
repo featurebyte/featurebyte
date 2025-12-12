@@ -88,6 +88,7 @@ class AggregationSpec(ABC):
     serving_names_mapping: Optional[dict[str, str]]
     agg_result_name_include_serving_names: bool
     aggregation_source: AggregationSource
+    is_deployment_sql: bool
 
     def __post_init__(self) -> None:
         self.original_serving_names = self.serving_names[:]
@@ -305,6 +306,7 @@ class AggregationSpec(ABC):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[AggregationSpecT]:
         """
@@ -326,6 +328,8 @@ class AggregationSpec(ABC):
             Column statistics information
         on_demand_tile_tables_mapping: Optional[dict[str, str]]
             Optional mapping from tile table id to on-demand tile table name
+        is_deployment_sql: bool
+            Whether the generated SQL will be used for external deployment
         adapter: BaseAdapter
             Instance of BaseAdapter
 
@@ -374,6 +378,7 @@ class AggregationSpec(ABC):
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
         on_demand_tile_tables_mapping: Optional[dict[str, str]] = None,
+        is_deployment_sql: bool = False,
     ) -> list[AggregationSpecT]:
         """Construct AggregationSpec objects given a query graph node
 
@@ -403,6 +408,8 @@ class AggregationSpec(ABC):
             Development datasets to apply if applicable
         on_demand_tile_tables_mapping: dict[str, str]
             Optional mapping from tile table id to on-demand tile table name
+        is_deployment_sql: bool
+            Whether the generated SQL will be used for external deployment
 
         Returns
         -------
@@ -433,6 +440,7 @@ class AggregationSpec(ABC):
             agg_result_name_include_serving_names=agg_result_name_include_serving_names,
             column_statistics_info=column_statistics_info,
             on_demand_tile_tables_mapping=on_demand_tile_tables_mapping,
+            is_deployment_sql=is_deployment_sql,
             adapter=get_sql_adapter(source_info),
         )
 
@@ -525,6 +533,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
@@ -545,6 +554,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Column statistics information
         on_demand_tile_tables_mapping: Optional[dict[str, str]]
             Optional mapping from tile table id to on-demand tile table name
+        is_deployment_sql: bool
+            Whether the generated SQL will be used for external deployment
         adapter: BaseAdapter
             Instance of BaseAdapter
 
@@ -614,6 +625,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 agg_func=groupby_node_params.agg_func,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
                 aggregation_source=aggregation_source,
+                is_deployment_sql=is_deployment_sql,
                 parameters=groupby_node_params,
             )
             aggregation_specs.append(agg_spec)
@@ -708,6 +720,7 @@ class ItemAggregationSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
@@ -722,6 +735,7 @@ class ItemAggregationSpec(AggregationSpec):
                 aggregation_source=aggregation_source,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                is_deployment_sql=is_deployment_sql,
             )
         ]
 
@@ -768,6 +782,7 @@ class ForwardAggregateSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
@@ -782,6 +797,7 @@ class ForwardAggregateSpec(AggregationSpec):
                 serving_names_mapping=serving_names_mapping,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                is_deployment_sql=is_deployment_sql,
             )
         ]
 

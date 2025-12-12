@@ -95,6 +95,7 @@ class NonTileWindowAggregateSpec(AggregationSpec):
         agg_result_name_include_serving_names: bool,
         column_statistics_info: Optional[ColumnStatisticsInfo],
         on_demand_tile_tables_mapping: Optional[dict[str, str]],
+        is_deployment_sql: bool,
         adapter: BaseAdapter,
     ) -> list[NonTileWindowAggregateSpec]:
         assert isinstance(node, NonTileWindowAggregateNode)
@@ -114,6 +115,7 @@ class NonTileWindowAggregateSpec(AggregationSpec):
                     serving_names=node.parameters.serving_names,
                     serving_names_mapping=serving_names_mapping,
                     agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+                    is_deployment_sql=is_deployment_sql,
                     window=parse_duration_string(window),
                     offset=(
                         parse_duration_string(node.parameters.offset)

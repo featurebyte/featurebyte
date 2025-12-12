@@ -73,6 +73,7 @@ def expected_tile_based_aggregation_specs_fixture(
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
             aggregation_source=aggregation_source,
+            is_deployment_sql=False,
             parameters=groupby_node.parameters,
         ),
         TileBasedAggregationSpec(
@@ -112,6 +113,7 @@ def expected_tile_based_aggregation_specs_fixture(
             agg_func=AggFunc.AVG,
             agg_result_name_include_serving_names=True,
             aggregation_source=aggregation_source,
+            is_deployment_sql=False,
             parameters=groupby_node.parameters,
         ),
     ]
