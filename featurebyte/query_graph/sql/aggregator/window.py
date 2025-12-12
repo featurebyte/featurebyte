@@ -781,10 +781,10 @@ class WindowAggregator(TileBasedAggregator):
         groupby_input_expr = select().from_(filtered_aggregate_input_expr.subquery())
         groupby_keys = [
             GroupbyKey(
-                expr=quoted_identifier(serving_name),
+                expr=quoted_identifier(key),
                 name=serving_name,
             )
-            for serving_name in spec.serving_names
+            for key, serving_name in zip(spec.keys, spec.serving_names)
         ]
         value_by = (
             GroupbyKey(

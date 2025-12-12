@@ -269,7 +269,10 @@ def test_snapshots_lookup_feature(catalog, snapshots_lookup_graph_and_node, sour
           FROM "sf_database"."sf_schema"."snapshots_table"
           WHERE
             (
-              "date" >= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, -1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+              "date" >= TO_CHAR(
+                DATE_ADD(DATE_ADD(__fb_current_feature_timestamp, -4320, 'MINUTE'), -1, 'MONTH'),
+                'YYYY-MM-DD HH24:MI:SS'
+              )
               AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
             )
             AND (
@@ -346,7 +349,10 @@ def test_snapshots_aggregate_asat_universe(
           FROM "sf_database"."sf_schema"."snapshots_table"
           WHERE
             (
-              "date" >= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, -1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
+              "date" >= TO_CHAR(
+                DATE_ADD(DATE_ADD(__fb_current_feature_timestamp, -4320, 'MINUTE'), -1, 'MONTH'),
+                'YYYY-MM-DD HH24:MI:SS'
+              )
               AND "date" <= TO_CHAR(DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH'), 'YYYY-MM-DD HH24:MI:SS')
             )
             AND (

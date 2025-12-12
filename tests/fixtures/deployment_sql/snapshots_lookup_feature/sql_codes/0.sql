@@ -19,7 +19,10 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
       FROM "sf_database"."sf_schema"."snapshots_table"
       WHERE
         (
-          "date" >= TO_CHAR(DATEADD(MONTH, -1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
+          "date" >= TO_CHAR(
+            DATEADD(MONTH, -1, DATEADD(MINUTE, -4320, {{ CURRENT_TIMESTAMP }})),
+            'YYYY-MM-DD HH24:MI:SS'
+          )
           AND "date" <= TO_CHAR(DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
         )
         AND (
@@ -62,7 +65,10 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
           "another_timestamp_col" AS "another_timestamp_col"
         FROM "sf_database"."sf_schema"."snapshots_table"
         WHERE
-          "date" >= TO_CHAR(DATEADD(MONTH, -1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
+          "date" >= TO_CHAR(
+            DATEADD(MONTH, -1, DATEADD(MINUTE, -4320, {{ CURRENT_TIMESTAMP }})),
+            'YYYY-MM-DD HH24:MI:SS'
+          )
           AND "date" <= TO_CHAR(DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
       )
     )
@@ -71,7 +77,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
       "transaction_id"
   ) AS T0
     ON TO_CHAR(
-      DATEADD(SECOND, -86400, DATE_TRUNC('day', REQ."POINT_IN_TIME")),
+      DATEADD(SECOND, -259200, DATEADD(SECOND, -86400, DATE_TRUNC('day', REQ."POINT_IN_TIME"))),
       'YYYY-MM-DD HH24:MI:SS'
     ) = T0."date"
     AND REQ."transaction_id" = T0."transaction_id"
