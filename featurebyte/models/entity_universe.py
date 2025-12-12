@@ -323,11 +323,8 @@ def filter_aggregation_input_for_time_series(
         job_datetime_expr,
         window.unit,
     )
+    window_end_expr = job_datetime_rounded_to_window_unit
     if window.is_fixed_size():
-        window_end_expr = adapter.subtract_seconds(
-            job_datetime_rounded_to_window_unit,
-            window.to_seconds(),
-        )
         if parameters.offset is not None:
             assert parameters.offset.is_fixed_size()
             window_end_expr = adapter.subtract_seconds(
@@ -339,10 +336,6 @@ def filter_aggregation_input_for_time_series(
             window.to_seconds(),
         )
     else:
-        window_end_expr = adapter.subtract_months(
-            job_datetime_rounded_to_window_unit,
-            window.to_months(),
-        )
         if parameters.offset is not None:
             assert not parameters.offset.is_fixed_size()
             window_end_expr = adapter.subtract_months(

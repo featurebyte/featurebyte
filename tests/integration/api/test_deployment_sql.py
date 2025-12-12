@@ -73,6 +73,35 @@ def event_table_feature_test_case(client, event_table):
     )
 
 
+@pytest.fixture
+def time_series_table_feature_test_case(client, time_series_table):
+    """
+    Simple time series table feature
+    """
+    view = time_series_table.get_view()
+    feature_name = make_unique("value_col_sum_7d_offset_1d")
+    feature = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[fb.CalendarWindow(unit="DAY", size=7)],
+        offset=fb.CalendarWindow(unit="DAY", size=1),
+        feature_names=[feature_name],
+        feature_job_setting=fb.CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )[feature_name]
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-10 10:00:00",
+    )
+
+
 def process_sql(session, sql_code, point_in_time):
     """
     Replace placeholders in SQL code to make it executable
@@ -122,9 +151,17 @@ async def check_deployment_sql(session, test_case):
         fb_assert_frame_equal(df, df_historical, sort_by_columns=non_feature_columns)
 
 
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "event_table_feature_test_case",
+        "time_series_table_feature_test_case",
+    ]
+)
 @pytest.mark.asyncio
-async def test_deployment_sql(session, event_table_feature_test_case):
+async def test_deployment_sql(session, test_case_name, request):
     """
     Test deployment SQL for simple event table feature
     """
-    await check_deployment_sql(session, event_table_feature_test_case)
+    test_case = request.getfixturevalue(test_case_name)
+    await check_deployment_sql(session, test_case)
