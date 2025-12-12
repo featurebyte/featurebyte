@@ -102,6 +102,25 @@ def time_series_table_feature_test_case(client, time_series_table):
     )
 
 
+@pytest.fixture
+def snapshots_lookup_feature_test_case(client, snapshots_table):
+    """
+    Simple snapshots table lookup feature
+    """
+    view = snapshots_table.get_view()
+    feature_name = make_unique("snapshot_lookup_feature")
+    feature = view["value_col"].as_feature(feature_name)
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-10 10:00:00",
+    )
+
+
 def process_sql(session, sql_code, point_in_time):
     """
     Replace placeholders in SQL code to make it executable
@@ -156,6 +175,7 @@ async def check_deployment_sql(session, test_case):
     [
         "event_table_feature_test_case",
         "time_series_table_feature_test_case",
+        "snapshots_lookup_feature_test_case",
     ]
 )
 @pytest.mark.asyncio

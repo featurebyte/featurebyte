@@ -1681,6 +1681,13 @@ def snowflake_snapshots_table_fixture(
             timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
         ),
     )
+    snapshots_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            timezone="Etc/UTC",
+            blind_spot="3d",
+        )
+    )
     assert snapshots_table.frame.node.parameters.id == snapshots_table.id
     assert snapshots_table.id == snowflake_snapshots_table_id
     yield snapshots_table
