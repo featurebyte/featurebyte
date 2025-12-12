@@ -176,7 +176,7 @@ async def check_deployment_sql(session, test_case):
         "event_table_feature_test_case",
         "time_series_table_feature_test_case",
         "snapshots_lookup_feature_test_case",
-    ]
+    ],
 )
 @pytest.mark.asyncio
 async def test_deployment_sql(session, test_case_name, request):

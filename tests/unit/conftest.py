@@ -1681,13 +1681,6 @@ def snowflake_snapshots_table_fixture(
             timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
         ),
     )
-    snapshots_table.update_default_feature_job_setting(
-        CronFeatureJobSetting(
-            crontab="0 0 * * *",
-            timezone="Etc/UTC",
-            blind_spot="3d",
-        )
-    )
     assert snapshots_table.frame.node.parameters.id == snapshots_table.id
     assert snapshots_table.id == snowflake_snapshots_table_id
     yield snapshots_table
@@ -3017,6 +3010,13 @@ def snapshots_lookup_feature_fixture(snowflake_snapshots_table_with_entity):
     """
     Fixture to get a lookup feature from Snapshots table
     """
+    snowflake_snapshots_table_with_entity.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            timezone="Etc/UTC",
+            blind_spot="3d",
+        )
+    )
     snapshots_view = snowflake_snapshots_table_with_entity.get_view()
     feature = snapshots_view["col_float"].as_feature("snapshots_lookup_feature")
     return feature
