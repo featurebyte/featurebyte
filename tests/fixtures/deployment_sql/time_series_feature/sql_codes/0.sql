@@ -26,8 +26,8 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
           AND "date" <= TO_CHAR(DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
         )
         AND (
-          TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') >= DATEADD(MONTH, -3, DATEADD(MONTH, -3, DATE_TRUNC('MONTH', {{ CURRENT_TIMESTAMP }})))
-          AND TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') < DATEADD(MONTH, -3, DATE_TRUNC('MONTH', {{ CURRENT_TIMESTAMP }}))
+          TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') >= DATEADD(MONTH, -3, DATE_TRUNC('MONTH', {{ CURRENT_TIMESTAMP }}))
+          AND TO_TIMESTAMP("date", 'yyyy-mm-DD hh24:mi:ss') < DATE_TRUNC('MONTH', {{ CURRENT_TIMESTAMP }})
         )
     )
     WHERE
@@ -41,7 +41,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
   FROM DEPLOYMENT_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "cust_id",
+      "store_id" AS "cust_id",
       SUM("col_float") AS "_fb_internal_cust_id_time_series_sum_col_float_store_id_None_W3_MONTH_BS1_MONTH_project_1"
     FROM (
       SELECT
@@ -64,12 +64,12 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
           AND "date" <= TO_CHAR(DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }}), 'YYYY-MM-DD HH24:MI:SS')
         )
         AND (
-          TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') >= DATEADD(MONTH, -3, DATEADD(MONTH, -3, DATE_TRUNC('month', {{ CURRENT_TIMESTAMP }})))
-          AND TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') < DATEADD(MONTH, -3, DATE_TRUNC('month', {{ CURRENT_TIMESTAMP }}))
+          TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') >= DATEADD(MONTH, -3, DATE_TRUNC('month', {{ CURRENT_TIMESTAMP }}))
+          AND TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') < DATE_TRUNC('month', {{ CURRENT_TIMESTAMP }})
         )
     )
     GROUP BY
-      "cust_id"
+      "store_id"
   ) AS T0
     ON REQ."cust_id" = T0."cust_id"
 )
