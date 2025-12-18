@@ -4,6 +4,7 @@ Test preview service module
 
 import textwrap
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import patch
 
 import numpy as np
@@ -1143,3 +1144,39 @@ async def test_scd_join_with_partition_column_filters(
         "tests/fixtures/preview_service/expected_scd_join_with_partition_column_filters.sql"
     )
     assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
+
+
+@pytest.mark.asyncio
+async def test_decimal_columns_in_preview(
+    preview_service, feature_store_preview, mock_snowflake_session
+):
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "col_decimal_int": [Decimal(1), Decimal(2), np.nan],
+        "col_decimal_float": [Decimal(1.23), Decimal(4.56), np.nan],
+    })
+    df = await preview_service.preview(feature_store_preview, 10)
+    assert df.col_decimal_int.dtype == float
+    assert df.col_decimal_float.dtype == float
+    assert np.isclose(df.col_decimal_int.iloc[0], 1.0)
+    assert np.isclose(df.col_decimal_float.iloc[0], 1.23)
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.service.preview.PreviewService._describe")
+async def test_decimal_columns_in_describe(mock_describe, preview_service, feature_store_sample):
+    mock_describe.return_value = (
+        pd.DataFrame(
+            {
+                "column": ["a", Decimal(1), Decimal(1.23)],
+            },
+            index=["top", "min", "max"],
+        ),
+        None,
+    )
+    df = await preview_service.describe(
+        feature_store_sample,
+        size=5000,
+        seed=0,
+    )
+    assert np.isclose(df.column["min"], 1.0)
+    assert np.isclose(df.column["max"], 1.23)

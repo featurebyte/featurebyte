@@ -202,6 +202,22 @@ def literal_eval(value: Any) -> Any:
     return ast.literal_eval(value)
 
 
+def convert_decimal_columns_in_dataframe(dataframe: pd.DataFrame) -> None:
+    """
+    Process pandas dataframe in-place to convert decimal columns to integer or float columns
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe object
+    """
+    for name in dataframe.columns:
+        if dataframe[name].dtype == object:
+            dataframe[name] = dataframe[name].apply(
+                lambda x: float(x) if isinstance(x, Decimal) else x
+            )
+
+
 def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
     """
     Process pandas dataframe in-place before converting to json

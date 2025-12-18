@@ -14,7 +14,12 @@ from bson import ObjectId
 from redis import Redis
 from sqlglot.expressions import Select
 
-from featurebyte.common.utils import apply_type_conversions, dataframe_to_json, timer
+from featurebyte.common.utils import (
+    apply_type_conversions,
+    convert_decimal_columns_in_dataframe,
+    dataframe_to_json,
+    timer,
+)
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
@@ -347,6 +352,7 @@ class NonCatalogSpecificPreviewService:
             Dataframe of preview results
         """
         result, type_conversions = await self._preview(preview, limit, allow_long_running)
+        convert_decimal_columns_in_dataframe(result)
         return apply_type_conversions(result, type_conversions)
 
     async def preview_as_json(
@@ -711,6 +717,7 @@ class NonCatalogSpecificPreviewService:
             allow_long_running=allow_long_running,
             sample_on_primary_table=sample_on_primary_table,
         )
+        convert_decimal_columns_in_dataframe(result)
         return apply_type_conversions(result, type_conversions)
 
     async def describe_as_json(  # pylint: disable=too-many-locals
