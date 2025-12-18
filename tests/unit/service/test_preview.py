@@ -1157,8 +1157,8 @@ async def test_decimal_columns_in_preview(
     df = await preview_service.preview(feature_store_preview, 10)
     assert df.col_decimal_int.dtype == float
     assert df.col_decimal_float.dtype == float
-    assert np.isclose(df.col_decimal_int.iloc[0], 1.0) == True
-    assert np.isclose(df.col_decimal_float.iloc[0], 1.23) == True
+    assert np.isclose(df.col_decimal_int.iloc[0], 1.0)
+    assert np.isclose(df.col_decimal_float.iloc[0], 1.23)
 
 
 @pytest.mark.asyncio
@@ -1178,5 +1178,5 @@ async def test_decimal_columns_in_describe(mock_describe, preview_service, featu
         size=5000,
         seed=0,
     )
-    assert np.isclose(df.column["min"], 1.0) == True
-    assert np.isclose(df.column["max"], 1.23) == True
+    assert np.isclose(df.column["min"], 1.0)
+    assert np.isclose(df.column["max"], 1.23)
