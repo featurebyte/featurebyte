@@ -24,7 +24,7 @@ from tests.util.helper import assert_sql_equal, get_sql_adapter_from_source_type
         ),
         (
             SourceType.DATABRICKS,
-            "CREATE TABLE `db1`.`schema1`.`table1` USING DELTA TBLPROPERTIES ('delta.columnMapping.mode'='name', 'delta.minReaderVersion'='2', 'delta.minWriterVersion'='5') AS SELECT * FROM A",
+            "CREATE TABLE `db1`.`schema1`.`table1` USING DELTA TBLPROPERTIES ('delta.columnMapping.mode'='name', 'delta.minReaderVersion'='2', 'delta.minWriterVersion'='5', 'delta.feature.allowColumnDefaults'='supported') AS SELECT * FROM A",
         ),
     ],
 )

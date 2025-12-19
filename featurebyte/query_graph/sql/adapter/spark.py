@@ -22,6 +22,20 @@ class SparkAdapter(DatabricksAdapter):
     source_type = SourceType.SPARK
 
     @classmethod
+    def additional_delta_table_properties(cls) -> list[expressions.Property]:
+        """
+        Get additional delta table properties specific to Spark
+
+        Spark does not support delta.feature.allowColumnDefaults, so return empty list.
+
+        Returns
+        -------
+        list[expressions.Property]
+            Empty list of delta table properties for Spark
+        """
+        return []
+
+    @classmethod
     def is_qualify_clause_supported(cls) -> bool:
         """
         Spark does not support the `QUALIFY` clause though DataBricks does.

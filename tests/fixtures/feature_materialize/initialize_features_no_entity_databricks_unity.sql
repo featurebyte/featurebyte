@@ -7,7 +7,8 @@ USING DELTA
 TBLPROPERTIES (
   'delta.columnMapping.mode'='name',
   'delta.minReaderVersion'='2',
-  'delta.minWriterVersion'='5'
+  'delta.minWriterVersion'='5',
+  'delta.feature.allowColumnDefaults'='supported'
 ) AS
 SELECT
   1 AS `dummy_entity`
@@ -18,7 +19,8 @@ USING DELTA
 TBLPROPERTIES (
   'delta.columnMapping.mode'='name',
   'delta.minReaderVersion'='2',
-  'delta.minWriterVersion'='5'
+  'delta.minWriterVersion'='5',
+  'delta.feature.allowColumnDefaults'='supported'
 ) AS
 SELECT
   ROW_NUMBER() OVER (ORDER BY 1) AS `__FB_TABLE_ROW_INDEX`,
@@ -30,7 +32,8 @@ USING DELTA
 TBLPROPERTIES (
   'delta.columnMapping.mode'='name',
   'delta.minReaderVersion'='2',
-  'delta.minWriterVersion'='5'
+  'delta.minWriterVersion'='5',
+  'delta.feature.allowColumnDefaults'='supported'
 ) AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
@@ -97,7 +100,8 @@ USING DELTA
 TBLPROPERTIES (
   'delta.columnMapping.mode'='name',
   'delta.minReaderVersion'='2',
-  'delta.minWriterVersion'='5'
+  'delta.minWriterVersion'='5',
+  'delta.feature.allowColumnDefaults'='supported'
 ) AS
 SELECT
   T0.`count_1d_V220101`,
@@ -115,7 +119,8 @@ USING DELTA
 TBLPROPERTIES (
   'delta.columnMapping.mode'='name',
   'delta.minReaderVersion'='2',
-  'delta.minWriterVersion'='5'
+  'delta.minWriterVersion'='5',
+  'delta.feature.allowColumnDefaults'='supported'
 ) AS
 SELECT
   CAST('2022-01-01T00:00:00' AS TIMESTAMP) AS `__feature_timestamp`,

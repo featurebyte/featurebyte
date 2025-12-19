@@ -237,6 +237,23 @@ class DatabricksAdapter(BaseAdapter):
         return re.sub(r"(?<!\\)'", "\\'", query)
 
     @classmethod
+    def additional_delta_table_properties(cls) -> list[expressions.Property]:
+        """
+        Get additional delta table properties specific to this adapter
+
+        Returns
+        -------
+        list[expressions.Property]
+            List of additional delta table properties
+        """
+        return [
+            expressions.Property(
+                this=expressions.Literal(this="delta.feature.allowColumnDefaults"),
+                value="'supported'",
+            ),
+        ]
+
+    @classmethod
     def create_table_as(
         cls,
         table_details: TableDetails,
@@ -283,6 +300,7 @@ class DatabricksAdapter(BaseAdapter):
                     this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
                 ),
             ]
+            table_properties.extend(cls.additional_delta_table_properties())
             if partition_keys:
                 table_properties.append(
                     expressions.PartitionedByProperty(
