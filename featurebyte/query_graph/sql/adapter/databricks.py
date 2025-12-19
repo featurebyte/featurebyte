@@ -282,6 +282,10 @@ class DatabricksAdapter(BaseAdapter):
                 expressions.Property(
                     this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
                 ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.feature.allowColumnDefaults"),
+                    value="'supported'",
+                ),
             ]
             if partition_keys:
                 table_properties.append(
