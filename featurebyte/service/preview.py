@@ -4,6 +4,7 @@ PreviewService class
 
 from __future__ import annotations
 
+import tempfile
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +12,7 @@ from typing import Any, Callable, Coroutine, Optional, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
+from pyarrow.parquet import ParquetWriter, read_table
 from redis import Redis
 from sqlglot.expressions import Select
 
@@ -53,7 +55,6 @@ from featurebyte.session.base import (
     NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     BaseSession,
 )
-from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
 DEFAULT_COLUMNS_BATCH_SIZE = 15
@@ -965,127 +966,86 @@ class NonCatalogSpecificPreviewService:
             query_graph=graph_info.graph if graph_info else sample.graph,
             source_info=feature_store.get_source_info(),
         )
-        op_struct = interpreter.extract_operation_structure_for_node(sample.node_name)
-        column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
-
-        value_counts_queries = interpreter.construct_value_counts_sql(
+        sample_sql, _ = interpreter.construct_sample_sql(
             node_name=sample.node_name,
-            column_names=column_names,
             num_rows=num_rows,
-            num_categories_limit=num_categories_limit,
             seed=seed,
-            total_num_rows=total_num_rows,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
+            total_num_rows=total_num_rows,
             sample_on_primary_table=sample_on_primary_table,
         )
-        input_table_name, is_table_cached = await self._get_or_cache_table(
-            session=session,
-            params=sample,
-            table_expr=value_counts_queries.data.expr,
-        )
+        op_struct = interpreter.extract_operation_structure_for_node(sample.node_name)
+        column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
+
         try:
-            processed = 0
+            with tempfile.NamedTemporaryFile(suffix=".parquet") as temp_file:
+                # write sampled data to parquet file
+                parquet_file_path = temp_file.name
+                batch_generator = session.get_async_query_generator(sample_sql)
+                writer = None
+                async for record_batch in batch_generator:
+                    if not writer:
+                        writer = ParquetWriter(temp_file.name, record_batch.schema)
+                    writer.write_batch(record_batch)
+                if writer:
+                    writer.close()
 
-            async def _callback() -> None:
-                nonlocal processed
-                processed += 1
-                if completion_callback:
-                    await completion_callback(processed)
-
-            coroutines = []
-            for column_query in value_counts_queries.queries:
-                column_dtype = column_dtype_mapping[column_query.column_name]
-                query = cast(
-                    str,
-                    SqlExpressionTemplate(
-                        column_query.expr, source_type=session.source_type
-                    ).render(
-                        data={
-                            InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
-                                input_table_name
-                            )
-                        },
-                        as_str=True,
-                    ),
-                )
-                coroutines.append(
-                    self._process_value_counts_column(
-                        session=session,
-                        feature_store_id=sample.feature_store_id,
-                        enable_query_cache=sample.enable_query_cache,
-                        query=query,
-                        column_name=column_query.column_name,
-                        column_dtype=column_dtype,
-                        done_callback=_callback,
+                async def _process_column(
+                    column_values: pd.Series,
+                    column_dtype: DBVarType,
+                ) -> dict[Any, int]:
+                    # ensure names is set for series
+                    if column_values.name:
+                        column_values.name = "index"
+                    counts_df = column_values.value_counts(dropna=False).reset_index()
+                    # sort by count desc, then by value asc and take top N
+                    counts_df.sort_values(
+                        ["count", column_values.name], ascending=[False, True], inplace=True
                     )
-                )
-            results = await run_coroutines(
-                coroutines,
-                self.redis,
-                str(sample.feature_store_id),
-                feature_store.max_query_concurrency,
-            )
+                    output = (
+                        counts_df.iloc[:num_categories_limit]
+                        .set_index(column_values.name)["count"]
+                        .to_dict()
+                    )
+
+                    # Cast int and float to native types
+                    cast_type: Optional[Type[int] | Type[float]]
+                    if column_dtype == DBVarType.INT:
+                        cast_type = int
+                    elif column_dtype == DBVarType.FLOAT:
+                        cast_type = float
+                    else:
+                        cast_type = None
+
+                    def _cast_key(key: Any) -> Any:
+                        if pd.isna(key):
+                            return None
+                        if cast_type is not None:
+                            return cast_type(key)
+                        return key
+
+                    return {_cast_key(key): value for (key, value) in output.items()}
+
+                result = {}
+                for i, column_name in enumerate(column_names):
+                    table = read_table(parquet_file_path, columns=[column_name])
+                    result[column_name] = await _process_column(
+                        column_values=table.to_pandas()[column_name],
+                        column_dtype=column_dtype_mapping[column_name],
+                    )
+                    if completion_callback:
+                        await completion_callback(i + 1)
+                return result
         finally:
-            # Need to cleanup as the table is not managed by query cache
-            table_names_to_drop = []
-            if not is_table_cached:
-                table_names_to_drop.append(input_table_name)
-
             if graph_info and not graph_info.is_table_cached:
-                table_names_to_drop.append(graph_info.sampled_table_name)
-
-            if table_names_to_drop:
-                await session.drop_tables(
-                    table_names=table_names_to_drop,
+                # Need to cleanup as the table is not managed by query cache
+                await session.drop_table(
+                    table_name=graph_info.sampled_table_name,
                     schema_name=session.schema_name,
                     database_name=session.database_name,
                 )
-
-        return dict(results)
-
-    async def _process_value_counts_column(
-        self,
-        session: BaseSession,
-        query: str,
-        column_name: str,
-        column_dtype: DBVarType,
-        feature_store_id: Optional[ObjectId],
-        enable_query_cache: bool,
-        done_callback: Callable[[], Coroutine[Any, Any, None]],
-    ) -> Tuple[str, dict[Any, int]]:
-        session = await session.clone_if_not_threadsafe()
-        df_result = await self._get_or_cache_dataframe(
-            session,
-            feature_store_id=feature_store_id,
-            enable_query_cache=enable_query_cache,
-            query=query,
-            allow_long_running=True,
-        )
-        assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
-        df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
-        output = df_result.set_index("key")["count"].to_dict()  # type: ignore
-
-        # Cast int and float to native types
-        cast_type: Optional[Type[int] | Type[float]]
-        if column_dtype == DBVarType.INT:
-            cast_type = int
-        elif column_dtype == DBVarType.FLOAT:
-            cast_type = float
-        else:
-            cast_type = None
-
-        def _cast_key(key: Any) -> Any:
-            if pd.isna(key):
-                return None
-            if cast_type is not None:
-                return cast_type(key)
-            return key
-
-        output = {_cast_key(key): value for (key, value) in output.items()}
-        await done_callback()
-        return column_name, output
 
     async def _get_row_count(
         self,

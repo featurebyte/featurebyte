@@ -5,10 +5,12 @@ Test preview service module
 import textwrap
 from datetime import datetime
 from decimal import Decimal
+from typing import AsyncGenerator
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -649,9 +651,21 @@ async def test_value_counts(
     Test value counts
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "key": ["1", "2", None],
-        "count": [100, 50, 3],
+        "count": [100],
     })
+
+    async def mock_get_async_query_generator(
+        self, *args, **kwargs
+    ) -> AsyncGenerator[pa.RecordBatch, None]:
+        yield pa.RecordBatch.from_pandas(
+            pd.DataFrame({
+                "col_int": [1] * 100 + [2] * 50 + [None] * 3,
+                "col_float": [1.0] * 100 + [2.0] * 50 + [None] * 3,
+                "col_char": ["a"] * 100 + ["b"] * 50 + [None] * 3,
+            })
+        )
+
+    mock_snowflake_session.get_async_query_generator.side_effect = mock_get_async_query_generator
 
     callback_call_args = []
 
@@ -668,7 +682,7 @@ async def test_value_counts(
     assert result == {
         "col_int": {1: 100, 2: 50, None: 3},
         "col_float": {1.0: 100, 2.0: 50, None: 3},
-        "col_char": {"1": 100, "2": 50, None: 3},
+        "col_char": {"a": 100, "b": 50, None: 3},
     }
     assert callback_call_args == [1, 2, 3]
 
@@ -706,9 +720,21 @@ async def test_value_counts_not_convert_keys_to_string(
     Test value counts
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "key": keys,
-        "count": [100, 50, 3],
+        "count": [100],
     })
+
+    async def mock_get_async_query_generator(
+        self, *args, **kwargs
+    ) -> AsyncGenerator[pa.RecordBatch, None]:
+        yield pa.RecordBatch.from_pandas(
+            pd.DataFrame({
+                "col_int": [1] * 100 + [2] * 50 + [None] * 3,
+                "col_float": [1.0] * 100 + [2.0] * 50 + [None] * 3,
+                "col_text": ["a"] * 100 + ["b"] * 50 + [None] * 3,
+            })
+        )
+
+    mock_snowflake_session.get_async_query_generator.side_effect = mock_get_async_query_generator
     result = await preview_service.value_counts(
         feature_store_preview_project_column,
         num_rows=100000,
@@ -958,11 +984,22 @@ async def test_value_counts_with_sample_on_primary_table_enable(
     expected_create_sample_table_sql,
 ):
     """Test describe with sample_on_primary_table enabled"""
-    mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "key": ["1", "2", None],
-        "count": [100, 50, 3],
+        "count": [100],
     })
+
+    async def mock_get_async_query_generator(
+        self, *args, **kwargs
+    ) -> AsyncGenerator[pa.RecordBatch, None]:
+        yield pa.RecordBatch.from_pandas(
+            pd.DataFrame({
+                "col_int": [1] * 100 + [2] * 50 + [None] * 3,
+                "col_float": [1.0] * 100 + [2.0] * 50 + [None] * 3,
+                "col_char": ["a"] * 100 + ["b"] * 50 + [None] * 3,
+            })
+        )
+
+    mock_snowflake_session.get_async_query_generator.side_effect = mock_get_async_query_generator
     seed = 1234
 
     await preview_service.value_counts(
@@ -980,53 +1017,6 @@ async def test_value_counts_with_sample_on_primary_table_enable(
     cached_table_name = mock_snowflake_session.create_table_as.call_args_list[0][1]["table_details"]
     assert cached_table_name == "__FB_TEMPORARY_TABLE_000000000000000000000000"
     assert create_sample_table_sql == expected_create_sample_table_sql
-
-    # check another create table SQL
-    expected_another_create_sample_table_sql = textwrap.dedent(
-        """
-        CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000001" AS
-        SELECT
-          "col_int" AS "col_int",
-          "col_float" AS "col_float",
-          "col_char" AS "col_char",
-          CAST("col_text" AS VARCHAR) AS "col_text",
-          "col_binary" AS "col_binary",
-          "col_boolean" AS "col_boolean",
-          "event_timestamp" AS "event_timestamp",
-          "created_at" AS "created_at",
-          CAST("cust_id" AS VARCHAR) AS "cust_id"
-        FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
-        LIMIT 10
-        """
-    ).strip()
-    assert (
-        mock_snowflake_session.execute_query_long_running.call_args_list[-2][0][0]
-        == expected_another_create_sample_table_sql
-    )
-
-    # check value counts SQL
-    expected_value_count_sql = textwrap.dedent(
-        """
-        SELECT
-          "col_char" AS "key",
-          "__FB_COUNTS" AS "count"
-        FROM (
-          SELECT
-            "col_char",
-            COUNT(*) AS "__FB_COUNTS"
-          FROM "__FB_TEMPORARY_TABLE_000000000000000000000001"
-          GROUP BY
-            "col_char"
-          ORDER BY
-            "__FB_COUNTS" DESC NULLS LAST
-          LIMIT 5
-        )
-        """
-    ).strip()
-    assert (
-        mock_snowflake_session.execute_query_long_running.call_args_list[-1][0][0]
-        == expected_value_count_sql
-    )
 
     # check filtered graph
     sample_size_equal_pair = [(10, True), (11, False)]
@@ -1101,12 +1091,22 @@ async def test_describe_with_partition_column_filters(
 async def test_value_counts_with_partition_column_filters(
     preview_service, feature_store_sample_with_time_range, mock_snowflake_session, update_fixtures
 ):
-    """Test describe with sample_on_primary_table and partition column filtering enabled"""
+    """Test value_counts with sample_on_primary_table and partition column filtering enabled"""
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
-        "key": ["1", "2", None],
-        "count": [100, 50, 3],
+        "count": [100],
     })
+
+    async def mock_get_async_query_generator(
+        self, *args, **kwargs
+    ) -> AsyncGenerator[pa.RecordBatch, None]:
+        yield pa.RecordBatch.from_pandas(
+            pd.DataFrame({
+                "col_char": ["A", "B", "C", "D", "E"],
+            })
+        )
+
+    mock_snowflake_session.get_async_query_generator.side_effect = mock_get_async_query_generator
     seed = 1234
 
     await preview_service.value_counts(
