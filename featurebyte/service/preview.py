@@ -966,7 +966,7 @@ class NonCatalogSpecificPreviewService:
             query_graph=graph_info.graph if graph_info else sample.graph,
             source_info=feature_store.get_source_info(),
         )
-        sample_sql, type_conversions = interpreter.construct_sample_sql(
+        sample_sql, _ = interpreter.construct_sample_sql(
             node_name=sample.node_name,
             num_rows=num_rows,
             seed=seed,
@@ -996,7 +996,19 @@ class NonCatalogSpecificPreviewService:
                     column_values: pd.Series,
                     column_dtype: DBVarType,
                 ) -> dict[Any, int]:
-                    output = column_values.value_counts(dropna=False).to_dict()
+                    # ensure names is set for series
+                    if column_values.name:
+                        column_values.name = "index"
+                    counts_df = column_values.value_counts(dropna=False).reset_index()
+                    # sort by count desc, then by value asc and take top N
+                    counts_df.sort_values(
+                        ["count", column_values.name], ascending=[False, True], inplace=True
+                    )
+                    output = (
+                        counts_df.iloc[:num_categories_limit]
+                        .set_index(column_values.name)["count"]
+                        .to_dict()
+                    )
 
                     # Cast int and float to native types
                     cast_type: Optional[Type[int] | Type[float]]
