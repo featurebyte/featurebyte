@@ -4,6 +4,7 @@ This module contains models used to store node output operation info
 
 import dataclasses
 from collections import defaultdict
+from functools import cached_property
 from typing import (
     Any,
     DefaultDict,
@@ -490,7 +491,7 @@ class OperationStructure:
         elif self.output_category == NodeOutputCategory.FEATURE:
             assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
 
-    @property
+    @cached_property
     def series_output_dtype_info(self) -> DBVarTypeInfo:
         """
         Retrieve the series output variable type
@@ -521,7 +522,7 @@ class OperationStructure:
             return self.columns[0].dtype_info
         return self.aggregations[0].dtype_info
 
-    @property
+    @cached_property
     def all_node_names(self) -> Set[str]:
         """
         Retrieve all node names in the operation structure
@@ -537,7 +538,7 @@ class OperationStructure:
             node_names.update(aggregation.node_names)
         return node_names
 
-    @property
+    @cached_property
     def source_columns(self) -> List[SourceDataColumn]:
         """
         List of source columns used in the operation structure
@@ -548,7 +549,7 @@ class OperationStructure:
         """
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
-    @property
+    @cached_property
     def output_column_names(self) -> List[str]:
         """
         List of output column names
