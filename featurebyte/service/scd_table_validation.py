@@ -41,8 +41,12 @@ class SCDTableValidationService(
     """
 
     @classmethod
-    def table_needs_validation(cls, table_model: SCDTableModel) -> bool:
-        needs_validation = BaseTableValidationService.table_needs_validation(table_model)
+    def table_needs_validation(
+        cls, table_model: SCDTableModel, only_check_columns: Optional[list[str]] = None
+    ) -> bool:
+        needs_validation = BaseTableValidationService.table_needs_validation(
+            table_model, only_check_columns=only_check_columns
+        )
         if not needs_validation and table_model.natural_key_column is None:
             return False
         return True

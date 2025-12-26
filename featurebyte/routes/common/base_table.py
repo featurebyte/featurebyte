@@ -214,8 +214,12 @@ class BaseTableDocumentController(
             )
         return document
 
-    async def _start_table_validation_task(self, table_document: TableDocumentT) -> None:
-        if self.table_facade_service.table_needs_validation(table_document):
+    async def _start_table_validation_task(
+        self, table_document: TableDocumentT, only_check_columns: Optional[list[str]] = None
+    ) -> None:
+        if self.table_facade_service.table_needs_validation(
+            table_document, only_check_columns=only_check_columns
+        ):
             payload = TableValidationTaskPayload(
                 user_id=self.service.user.id,
                 catalog_id=self.service.catalog_id,
@@ -240,14 +244,16 @@ class BaseTableDocumentController(
                     ),
                 )
         else:
-            await self.service.update_document(
-                document_id=table_document.id,
-                data=self.document_update_schema_class(  # type: ignore
-                    validation=TableValidation(
-                        status=TableValidationStatus.PASSED,
-                        updated_at=get_utc_now(),
-                    )
-                ),
+            await self.service.update_documents(
+                query_filter={"_id": table_document.id},
+                update={
+                    "$set": {
+                        "validation": {
+                            "status": TableValidationStatus.PASSED.value,
+                            "updated_at": get_utc_now(),
+                        }
+                    }
+                },
             )
 
     async def create_table(self, data: DocumentCreate) -> TableDocumentT:
@@ -455,7 +461,7 @@ class BaseTableDocumentController(
             data=critical_data_info,
             skip_semantic_check=True,
         )
-        await self._start_table_validation_task(table)
+        await self._start_table_validation_task(table, only_check_columns=[column_name])
         return await self.get(document_id=document_id)
 
     async def update_column_description(

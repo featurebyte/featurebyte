@@ -292,7 +292,9 @@ class TableFacadeService:
                 f"Default feature job setting not supported for table type {table.type}"
             )
 
-    def table_needs_validation(self, table_model: TableModel) -> bool:
+    def table_needs_validation(
+        self, table_model: TableModel, only_check_columns: Optional[list[str]] = None
+    ) -> bool:
         """
         Check if a table needs validation
 
@@ -300,10 +302,14 @@ class TableFacadeService:
         ----------
         table_model: TableModel
             Table model
+        only_check_columns: Optional[list[str]]
+            List of column names to only check for validation. If None, check all columns.
 
         Returns
         -------
         bool
         """
         service = self.get_specific_table_validation_service(table_model.type)
-        return service.table_needs_validation(table_model)  # type: ignore[arg-type]
+        return service.table_needs_validation(  # type: ignore[arg-type]
+            table_model, only_check_columns=only_check_columns
+        )
