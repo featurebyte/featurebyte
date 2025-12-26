@@ -5,7 +5,7 @@ BaseTableValidationService class
 from __future__ import annotations
 
 import os
-from typing import Generic
+from typing import Generic, Optional
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -113,7 +113,9 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         await self.compute_column_statistics(session, table_model)  # type: ignore
 
     @classmethod
-    def table_needs_validation(cls, table_model: Document) -> bool:
+    def table_needs_validation(
+        cls, table_model: Document, only_check_columns: Optional[list[str]] = None
+    ) -> bool:
         """
         Check if a table needs validation
 
@@ -121,6 +123,8 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         ----------
         table_model: Document
             Table model
+        only_check_columns: Optional[list[str]]
+            List of column names to only check for validation. If None, check all columns.
 
         Returns
         -------
@@ -130,6 +134,10 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             return True
         assert isinstance(table_model, TableModel)
         for col_info in table_model.columns_info:
+            if only_check_columns is not None and col_info.name not in only_check_columns:
+                # skip columns not in only_check_columns if provided
+                continue
+
             if (
                 col_info.dtype == DBVarType.VARCHAR
                 and col_info.dtype_metadata
