@@ -310,6 +310,7 @@ class TableFacadeService:
         bool
         """
         service = self.get_specific_table_validation_service(table_model.type)
-        return service.table_needs_validation(  # type: ignore[arg-type]
-            table_model, only_check_columns=only_check_columns
+        return service.table_needs_validation(
+            table_model,  # type: ignore
+            only_check_columns=only_check_columns,
         )

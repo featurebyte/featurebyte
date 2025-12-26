@@ -167,7 +167,7 @@ class BaseColumn:
             # update node_name if it points to proxy input node
             # as proxy input node name will be removed from node_names
             op_struct = proxy_node_name_map[self.node_name]
-            column = op_struct.column_name_map[self.name]
+            column = op_struct.column_name_map[self.name]  # type: ignore
             node_kwargs["node_name"] = column.node_name
 
         # if any of the node name are not from the proxy input names, that means the nested graph's node
@@ -573,7 +573,7 @@ class OperationStructure:
         """
         column_map: Dict[str, ViewDataColumn] = {}
         for col in self.columns:
-            column_map[col.name] = col
+            column_map[col.name] = col  # type: ignore
         return column_map
 
     @overload
