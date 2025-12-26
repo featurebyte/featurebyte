@@ -167,7 +167,7 @@ class BaseColumn:
             # update node_name if it points to proxy input node
             # as proxy input node name will be removed from node_names
             op_struct = proxy_node_name_map[self.node_name]
-            column = next(col for col in op_struct.columns if col.name == self.name)
+            column = op_struct.column_name_map[self.name]
             node_kwargs["node_name"] = column.node_name
 
         # if any of the node name are not from the proxy input names, that means the nested graph's node
@@ -561,6 +561,20 @@ class OperationStructure:
         if self.output_category == NodeOutputCategory.VIEW:
             return [col.name for col in self.columns if col.name]
         return [agg.name for agg in self.aggregations if agg.name]
+
+    @cached_property
+    def column_name_map(self) -> Dict[str, ViewDataColumn]:
+        """
+        Map of column name to ViewDataColumn
+
+        Returns
+        -------
+        Dict[str, ViewDataColumn]
+        """
+        column_map: Dict[str, ViewDataColumn] = {}
+        for col in self.columns:
+            column_map[col.name] = col
+        return column_map
 
     @overload
     def _split_column_by_type(
