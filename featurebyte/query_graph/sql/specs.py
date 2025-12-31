@@ -27,6 +27,7 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     ItemGroupbyParameters,
 )
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import (
@@ -165,6 +166,7 @@ class AggregationSpec(ABC):
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
         partition_column_filters: Optional[PartitionColumnFilters],
         development_datasets: Optional[DevelopmentDatasets],
+        operation_structure: Optional[OperationStructure] = None,
     ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
@@ -185,6 +187,8 @@ class AggregationSpec(ABC):
             Partition column filters to apply if applicable
         development_datasets: Optional[DevelopmentDatasets]
             Development datasets to apply if applicable
+        operation_structure: Optional[OperationStructure]
+            Operation structure of the node
 
         Returns
         -------
@@ -204,6 +208,7 @@ class AggregationSpec(ABC):
             event_table_timestamp_filter=event_table_timestamp_filter,
             partition_column_filters=partition_column_filters,
             development_datasets=development_datasets,
+            operation_structure=operation_structure,
         ).build(node)
 
         sql_node = cast(Aggregate, sql_node)
@@ -379,6 +384,7 @@ class AggregationSpec(ABC):
         development_datasets: Optional[DevelopmentDatasets] = None,
         on_demand_tile_tables_mapping: Optional[dict[str, str]] = None,
         is_deployment_sql: bool = False,
+        operation_structure: Optional[OperationStructure] = None,
     ) -> list[AggregationSpecT]:
         """Construct AggregationSpec objects given a query graph node
 
@@ -410,6 +416,8 @@ class AggregationSpec(ABC):
             Optional mapping from tile table id to on-demand tile table name
         is_deployment_sql: bool
             Whether the generated SQL will be used for external deployment
+        operation_structure: Optional[OperationStructure]
+            Operation structure of the node
 
         Returns
         -------
@@ -430,6 +438,7 @@ class AggregationSpec(ABC):
                 event_table_timestamp_filter=event_table_timestamp_filter,
                 partition_column_filters=partition_column_filters,
                 development_datasets=development_datasets,
+                operation_structure=operation_structure,
             )
 
         return cls.construct_specs(

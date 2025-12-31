@@ -17,6 +17,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     BaseWindowAggregateParameters,
 )
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import (
     handle_filter_node,
@@ -147,6 +148,7 @@ class SQLOperationGraph:
         on_demand_entity_filters: Optional[OnDemandEntityFilters] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
+        operation_structure: Optional[OperationStructure] = None,
     ) -> None:
         self.sql_nodes: dict[SQLNodeKey, SQLNode | TableNode] = {}
         self.query_graph = query_graph
@@ -159,12 +161,12 @@ class SQLOperationGraph:
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
         self.aggregate_node_to_primary_table_ids = self._get_aggregate_node_to_primary_table_ids(
-            query_graph
+            query_graph, operation_structure
         )
 
     @classmethod
     def _get_aggregate_node_to_primary_table_ids(
-        cls, query_graph: QueryGraphModel
+        cls, query_graph: QueryGraphModel, operation_structure: Optional[OperationStructure] = None
     ) -> dict[str, list[ObjectId]]:
         """
         Helper to initialize aggregate_node_to_primary_table_ids
@@ -173,6 +175,8 @@ class SQLOperationGraph:
         ----------
         query_graph : QueryGraphModel
             Query Graph to extract aggregate nodes and their primary table ids
+        operation_structure : Optional[OperationStructure]
+            Operation structure that may contain pre-computed primary table ids for aggregate nodes
 
         Returns
         -------
@@ -183,7 +187,7 @@ class SQLOperationGraph:
             if isinstance(node.parameters, BaseWindowAggregateParameters):
                 aggregate_node = node
                 primary_input_nodes = QueryGraph.get_primary_input_nodes_from_graph_model(
-                    query_graph, aggregate_node.name
+                    query_graph, aggregate_node.name, target_op_struct=operation_structure
                 )
                 for input_node in primary_input_nodes:
                     parameters_dict = input_node.parameters.model_dump()

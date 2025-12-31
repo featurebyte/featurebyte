@@ -27,6 +27,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
@@ -846,6 +847,7 @@ class FeatureExecutionPlanner:
             )
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         self.op_struct_extractor = OperationStructureExtractor(graph=self.graph)
+        self.operation_structure_cache: dict[str, OperationStructure] = {}
         self.plan = FeatureExecutionPlan(
             source_info,
             is_online_serving,
@@ -872,6 +874,28 @@ class FeatureExecutionPlanner:
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
         self.is_deployment_sql = is_deployment_sql
+
+    def get_operation_structure(self, node: Node) -> OperationStructure:
+        """Get operation structure for a node, using cache if available
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+
+        Returns
+        -------
+        OperationStructure
+            Operation structure for the node
+        """
+        if node.name in self.operation_structure_cache:
+            return self.operation_structure_cache[node.name]
+
+        # Extract and cache
+        op_struct_map = self.op_struct_extractor.extract(node=node).operation_structure_map
+        operation_structure = op_struct_map[node.name]
+        self.operation_structure_cache[node.name] = operation_structure
+        return operation_structure
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -902,11 +926,14 @@ class FeatureExecutionPlanner:
             Name of the query graph node before flattening. This is used to retrieve the
             corresponding FeatureNodeRelationshipsInfo object.
         """
+        operation_structure = self.get_operation_structure(node)
         aggregation_specs = defaultdict(list)
         for agg_spec in self.get_aggregation_specs(node):
             self.plan.add_aggregation_spec(agg_spec, original_node_name)
             aggregation_specs[agg_spec.node_name].append(agg_spec)
-        self.update_feature_specs(node, dict(aggregation_specs))
+        self.update_feature_specs(
+            node, dict(aggregation_specs), operation_structure=operation_structure
+        )
 
     def get_aggregation_specs(self, node: Node) -> list[AggregationSpec]:
         """Get list of aggregation specs for a given query graph node
@@ -1004,6 +1031,7 @@ class FeatureExecutionPlanner:
         -------
         list[AggregationSpec]
         """
+        operation_structure = self.get_operation_structure(node)
         return spec_cls.from_query_graph_node(
             node,
             graph=self.graph,
@@ -1016,10 +1044,14 @@ class FeatureExecutionPlanner:
             development_datasets=self.development_datasets,
             on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
             is_deployment_sql=self.is_deployment_sql,
+            operation_structure=operation_structure,
         )
 
     def update_feature_specs(
-        self, node: Node, aggregation_specs: dict[str, list[AggregationSpec]]
+        self,
+        node: Node,
+        aggregation_specs: dict[str, list[AggregationSpec]],
+        operation_structure: OperationStructure,
     ) -> None:
         """Update FeatureExecutionPlan with a query graph node
 
@@ -1029,17 +1061,19 @@ class FeatureExecutionPlanner:
             Query graph node
         aggregation_specs: dict[str, list[AggregationSpec]]
             Aggregation specs to use when constructing SQLOperationGraph
+        operation_structure: OperationStructure
+            Operation structure to use. If None, it will be extracted from the node.
         """
         sql_graph = SQLOperationGraph(
             self.graph,
             SQLType.POST_AGGREGATION,
             source_info=self.source_info,
             aggregation_specs=aggregation_specs,
+            operation_structure=operation_structure,
         )
         sql_node = sql_graph.build(node)
-        op_struct = self.op_struct_extractor.extract(node=node).operation_structure_map[node.name]
         name_to_dtype = {
-            aggregation.name: aggregation.dtype for aggregation in op_struct.aggregations
+            aggregation.name: aggregation.dtype for aggregation in operation_structure.aggregations
         }
 
         if isinstance(sql_node, TableNode):
