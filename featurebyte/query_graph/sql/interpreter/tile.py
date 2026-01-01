@@ -407,6 +407,12 @@ class TileSQLGenerator:
             sql_type = SQLType.BUILD_TILE_ON_DEMAND
         else:
             sql_type = SQLType.BUILD_TILE
+
+        op_struct = (
+            OperationStructureExtractor(graph=self.query_graph)
+            .extract(groupby_node)
+            .operation_structure_map[groupby_node.name]
+        )
         groupby_sql_node = SQLOperationGraph(
             query_graph=self.query_graph,
             sql_type=sql_type,
@@ -415,6 +421,7 @@ class TileSQLGenerator:
             on_demand_entity_filters=on_demand_entity_filters,
             partition_column_filters=partition_column_filters,
             development_datasets=development_datasets,
+            operation_structure=op_struct,
         ).build(groupby_node)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id

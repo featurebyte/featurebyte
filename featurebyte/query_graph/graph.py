@@ -69,7 +69,10 @@ class QueryGraph(QueryGraphModel):
 
     @classmethod
     def get_primary_input_nodes_from_graph_model(
-        cls, graph: QueryGraphModel, node_name: str
+        cls,
+        graph: QueryGraphModel,
+        node_name: str,
+        target_op_struct: Optional[OperationStructure] = None,
     ) -> List[InputNode]:
         """
         Get primary input nodes from the query graph given the target node name
@@ -80,17 +83,21 @@ class QueryGraph(QueryGraphModel):
             Query graph model to get primary input nodes from
         node_name: str
             Name of the node to get primary input nodes for
+        target_op_struct: Optional[OperationStructure]
+            Operation structure of the target node. If not provided, it will be extracted from the graph
 
         Returns
         -------
         List[InputNode]
         """
         target_node = graph.get_node_by_name(node_name)
-        operation_structure_info = OperationStructureExtractor(graph=graph).extract(
-            node=target_node,
-            keep_all_source_columns=True,
-        )
-        target_op_struct = operation_structure_info.operation_structure_map[node_name]
+        if target_op_struct is None:
+            operation_structure_info = OperationStructureExtractor(graph=graph).extract(
+                node=target_node,
+                keep_all_source_columns=True,
+            )
+            target_op_struct = operation_structure_info.operation_structure_map[node_name]
+
         node_name_to_input_node = OrderedDict()
         for column in target_op_struct.iterate_source_columns_or_aggregations():
             if graph.get_node_by_name(column.node_name).type == NodeType.REQUEST_COLUMN:
