@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any, Iterable, Optional, Type
 
 from bson import ObjectId
+from cachetools import LRUCache
 
 from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.enum import NodeType
@@ -140,11 +141,11 @@ class SQLOperationGraph:
     -----
     Class-level cache for node parameter dictionaries to avoid redundant model_dump()
     calls across instances. Cache is keyed by content-based node reference hash.
+    Uses LRU cache to prevent unbounded memory growth.
     """
 
-    # Class-level cache: shared across all instances for performance optimization
-    # Key: node reference (content-based hash), Value: parameters dictionary
-    _input_node_params_cache: dict[str, dict[str, Any]] = {}
+    # Use LRU cache to prevent unbounded memory growth
+    _input_node_params_cache: LRUCache[str, dict[str, Any]] = LRUCache(maxsize=4096)
 
     def __init__(
         self,
@@ -175,9 +176,11 @@ class SQLOperationGraph:
 
     @classmethod
     def clear_cache(cls) -> None:
-        """Clear the class-level input node parameters cache.
+        """Clear the class-level input node parameters LRU cache.
 
-        Useful for testing and memory management in long-running processes.
+        Useful for testing and when you need to ensure fresh cache state.
+        Note that the LRU cache automatically evicts least-recently-used entries
+        when it reaches maximum capacity.
         """
         cls._input_node_params_cache.clear()
 

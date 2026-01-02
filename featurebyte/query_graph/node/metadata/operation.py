@@ -122,6 +122,25 @@ class BaseColumn:
         """
         return dataclasses.replace(self, **kwargs)
 
+    def remap_node_names(self: BaseColumnT, node_name_map: Dict[str, str]) -> BaseColumnT:
+        """
+        Create a new column with node names remapped according to the mapping
+
+        Parameters
+        ----------
+        node_name_map: Dict[str, str]
+            Mapping from old node names to new node names
+
+        Returns
+        -------
+        BaseColumnT
+            New column with remapped node names
+        """
+        return self.clone(
+            node_names={node_name_map[name] for name in self.node_names},
+            node_name=node_name_map[self.node_name],
+        )
+
     def clone_without_internal_nodes(
         self: BaseColumnT,
         proxy_node_name_map: Dict[str, "OperationStructure"],
@@ -306,6 +325,28 @@ class BaseDerivedColumn(BaseColumn):
             filter=any(col.filter for col in columns),
         )
 
+    def remap_node_names(
+        self: BaseDerivedColumnT, node_name_map: Dict[str, str]
+    ) -> BaseDerivedColumnT:
+        """
+        Create a new column with node names remapped according to the mapping
+
+        Parameters
+        ----------
+        node_name_map: Dict[str, str]
+            Mapping from old node names to new node names
+
+        Returns
+        -------
+        BaseDerivedColumnT
+            New column with remapped node names
+        """
+        return self.clone(
+            node_names={node_name_map[name] for name in self.node_names},
+            node_name=node_name_map[self.node_name],
+            columns=[col.remap_node_names(node_name_map) for col in self.columns],
+        )
+
     def clone_without_internal_nodes(
         self,
         proxy_node_name_map: Dict[str, "OperationStructure"],
@@ -394,6 +435,29 @@ class AggregationColumn(BaseDataColumn):
             self.aggregation_type,
         )
         return hash(key)
+
+    def remap_node_names(self, node_name_map: Dict[str, str]) -> "AggregationColumn":
+        """
+        Create a new aggregation with node names remapped according to the mapping
+
+        Parameters
+        ----------
+        node_name_map: Dict[str, str]
+            Mapping from old node names to new node names
+
+        Returns
+        -------
+        AggregationColumn
+            New aggregation with remapped node names
+        """
+        new_column: Optional[ViewDataColumn] = None
+        if self.column:
+            new_column = self.column.remap_node_names(node_name_map)
+        return self.clone(
+            node_names={node_name_map[name] for name in self.node_names},
+            node_name=node_name_map[self.node_name],
+            column=new_column,
+        )
 
     def clone_without_internal_nodes(
         self,
@@ -491,6 +555,29 @@ class OperationStructure:
             assert len(self.columns) == len(set(col.name for col in self.columns))
         elif self.output_category == NodeOutputCategory.FEATURE:
             assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
+
+    def remap_node_names(self, node_name_map: Dict[str, str]) -> "OperationStructure":
+        """
+        Remap node names in the operation structure according to the given mapping
+
+        Parameters
+        ----------
+        node_name_map: Dict[str, str]
+            Node name mapping
+
+        Returns
+        -------
+        OperationStructure
+        """
+        return OperationStructure(
+            output_type=self.output_type,
+            output_category=self.output_category,
+            row_index_lineage=tuple(node_name_map[name] for name in self.row_index_lineage),
+            node_name=node_name_map[self.node_name],
+            columns=[col.remap_node_names(node_name_map) for col in self.columns],
+            aggregations=[agg.remap_node_names(node_name_map) for agg in self.aggregations],
+            is_time_based=self.is_time_based,
+        )
 
     @cached_property
     def series_output_dtype_info(self) -> DBVarTypeInfo:
