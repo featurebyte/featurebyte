@@ -470,6 +470,7 @@ class OperationStructure:
     output_type: NodeOutputType
     output_category: NodeOutputCategory
     row_index_lineage: Tuple[str, ...]
+    node_name: str
     columns: List[ViewDataColumn] = dataclasses.field(default_factory=list)
     aggregations: List[FeatureDataColumn] = dataclasses.field(default_factory=list)
     is_time_based: bool = False

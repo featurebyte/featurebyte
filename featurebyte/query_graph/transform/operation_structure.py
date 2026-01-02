@@ -78,6 +78,7 @@ class OperationStructureExtractor(
             output_category=operation_structure.output_category,
             row_index_lineage=operation_structure.row_index_lineage,
             is_time_based=operation_structure.is_time_based,
+            node_name=operation_structure.node_name,
         )
 
     def _derive_nested_graph_operation_structure(

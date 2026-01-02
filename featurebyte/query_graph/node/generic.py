@@ -140,6 +140,7 @@ class ProjectNode(BaseNode):
             output_type=self.output_type,
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
+            node_name=self.name,
         )
 
     def _derive_sdk_code(
@@ -259,6 +260,7 @@ class FilterNode(BaseNode):
             output_type=input_operation_info.output_type,
             output_category=output_category,
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
+            node_name=self.name,
         )
 
     def _derive_python_code(
@@ -405,6 +407,7 @@ class AssignColumnMixin:
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=input_operation_info.row_index_lineage,
+            node_name=node_name,
         )
 
 
@@ -1642,6 +1645,7 @@ class JoinNode(BasePrunableNode):
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,
+            node_name=self.name,
         )
 
     def _derive_sdk_code(
@@ -1972,6 +1976,7 @@ class TrackChangesNode(BaseNode):
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
+            node_name=self.name,
         )
 
     def _derive_sdk_code(
@@ -2428,6 +2433,7 @@ class AliasNode(BaseNode):
             output_type=self.output_type,
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
+            node_name=self.name,
         )
 
     def _derive_sdk_code(

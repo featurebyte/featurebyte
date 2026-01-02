@@ -109,6 +109,7 @@ class RequestColumnNode(BaseNode):
             output_type=NodeOutputType.SERIES,
             output_category=NodeOutputCategory.FEATURE,
             row_index_lineage=(self.name,),
+            node_name=self.name,
         )
 
     def _derive_sdk_code(

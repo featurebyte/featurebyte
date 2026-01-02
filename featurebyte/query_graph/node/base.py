@@ -292,6 +292,9 @@ class BaseNode(FeatureByteBaseModel):
         operation_info.is_time_based = (
             any(input_.is_time_based for input_ in inputs) or operation_info.is_time_based
         )
+
+        # sanity check for the name name attribute
+        assert operation_info.node_name == self.name
         return operation_info
 
     def _handle_statement_line_width(
@@ -942,6 +945,7 @@ class SeriesOutputNodeOpStructMixin:
 
         return OperationStructure(
             **node_kwargs,
+            node_name=self.name,
             output_type=self.output_type,
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
