@@ -111,7 +111,6 @@ def node_code_gen_output_factory_fixture():
                 output_type=NodeOutputType.SERIES,
                 output_category=NodeOutputCategory.VIEW,
                 row_index_lineage=tuple(),
-                node_name="node_name",
             ),
         )
 

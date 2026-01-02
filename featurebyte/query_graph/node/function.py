@@ -218,7 +218,6 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             output_type=NodeOutputType.SERIES,
             output_category=input_category,
             row_index_lineage=row_index_lineage,
-            node_name=self.name,
         )
 
     def _derive_sdk_code(

@@ -184,7 +184,6 @@ def test_data_column_clone_with_replacement(source_col1):
         output_type=NodeOutputType.FRAME,
         output_category=NodeOutputCategory.VIEW,
         row_index_lineage=(source_col1.node_name,),
-        node_name=source_col1.node_name,
     )
     output = source_col1.clone_without_internal_nodes(
         proxy_node_name_map={"input_1": op_struct},
@@ -230,7 +229,6 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
         output_type=NodeOutputType.SERIES,
         output_category=NodeOutputCategory.VIEW,
         row_index_lineage=("input_2",),
-        node_name="input_2",
     )
     output = source_col1.clone_without_internal_nodes(
         proxy_node_name_map={"input_1": op_struct},

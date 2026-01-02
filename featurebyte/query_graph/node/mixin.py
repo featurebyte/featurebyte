@@ -201,5 +201,4 @@ class AggregationOpStructMixin(BaseNode, ABC):
             output_category=output_category,
             row_index_lineage=(self.name,),
             is_time_based=self._is_time_based(),
-            node_name=self.name,
         )

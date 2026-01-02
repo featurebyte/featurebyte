@@ -515,7 +515,6 @@ class InputNode(BaseNode):
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=(self.name,),
-            node_name=self.name,
         )
 
     def _derive_sdk_code(

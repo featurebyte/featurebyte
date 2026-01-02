@@ -2,14 +2,10 @@
 This module contains operation structure extraction related classes.
 """
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-
-from cachetools import LRUCache
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
@@ -19,116 +15,10 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
 
-@dataclass
-class OperationStructureCacheEntry:
-    """
-    Cache entry for operation structures.
-
-    Stores an operation structure along with mappings from node names to their content-based
-    references. This enables reusing cached operation structures across different graph instances
-    by remapping node names while maintaining structural equivalence.
-
-    Attributes
-    ----------
-    operation_structure: OperationStructure
-        The cached operation structure
-    node_name_to_ref: Dict[str, str]
-        Mapping from node names in the cached structure to their content-based reference identifiers
-    """
-
-    operation_structure: OperationStructure
-    node_name_to_ref: Dict[str, str]
-
-    @classmethod
-    def create(
-        cls,
-        operation_structure: OperationStructure,
-        query_graph: QueryGraphModel,
-    ) -> "OperationStructureCacheEntry":
-        # Collect all node names referenced by the operation structure
-        all_names = {
-            *operation_structure.all_node_names,
-            operation_structure.node_name,
-            *operation_structure.row_index_lineage,
-        }
-
-        # Map each node name to its content-based reference identifier
-        node_name_to_ref = {
-            node_name: query_graph.node_name_to_ref[node_name] for node_name in all_names
-        }
-
-        return cls(operation_structure=operation_structure, node_name_to_ref=node_name_to_ref)
-
-
 class OperationStructureExtractor(
     BaseGraphExtractor[OperationStructureInfo, FeatureByteBaseModel, OperationStructureInfo],
 ):
     """OperationStructureExtractor class"""
-
-    # Cache operation structures for INPUT nodes to improve performance when processing
-    # multiple features that reference the same input tables
-    # Use LRU cache to prevent unbounded memory growth
-    use_cache = True
-    _operation_structure_cache: LRUCache[Tuple[str, bool], OperationStructureCacheEntry] = LRUCache(
-        maxsize=4096
-    )
-
-    @classmethod
-    def get_node_operation_structure(
-        cls,
-        query_graph: QueryGraphModel,
-        node: Node,
-        inputs: List[OperationStructure],
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        """
-        Get operation structure for a node, using cache when available.
-
-        For INPUT nodes, operation structures are cached by content reference and configuration.
-        When retrieving from cache, node names are remapped from the cached structure to match
-        the current graph's node naming.
-
-        Parameters
-        ----------
-        query_graph: QueryGraphModel
-            The query graph containing the node
-        node: Node
-            The node to get operation structure for
-        inputs: List[OperationStructure]
-            Operation structures from input nodes
-        global_state: OperationStructureInfo
-            Global extraction state
-
-        Returns
-        -------
-        OperationStructure
-            Operation structure for the node
-        """
-        node_ref = query_graph.node_name_to_ref[node.name]
-        cache_key = (node_ref, global_state.keep_all_source_columns)
-
-        cached_entry = cls._operation_structure_cache.get(cache_key)
-        if cached_entry is None:
-            # Cache miss - derive operation structure from the node
-            operation_structure = node.derive_node_operation_info(
-                inputs=inputs,
-                global_state=global_state,
-            )
-            # Cache operation structure for INPUT nodes to improve performance
-            if cls.use_cache and node.type == NodeType.INPUT:
-                cache_entry = OperationStructureCacheEntry.create(
-                    operation_structure=operation_structure,
-                    query_graph=query_graph,
-                )
-                cls._operation_structure_cache[cache_key] = cache_entry
-            return operation_structure
-
-        # Cache hit - remap cached node names to current graph node names
-        cached_to_current_node_names = {
-            cached_name: query_graph.ref_to_node_name[node_ref]
-            for cached_name, node_ref in cached_entry.node_name_to_ref.items()
-        }
-        return cached_entry.operation_structure.remap_node_names(cached_to_current_node_names)
 
     def _pre_compute(
         self,
@@ -188,7 +78,6 @@ class OperationStructureExtractor(
             output_category=operation_structure.output_category,
             row_index_lineage=operation_structure.row_index_lineage,
             is_time_based=operation_structure.is_time_based,
-            node_name=operation_structure.node_name,
         )
 
     def _derive_nested_graph_operation_structure(
@@ -236,9 +125,7 @@ class OperationStructureExtractor(
                 global_state=global_state,
             )
         else:
-            operation_structure = self.get_node_operation_structure(
-                query_graph=self.graph,
-                node=node,
+            operation_structure = node.derive_node_operation_info(
                 inputs=inputs,
                 global_state=global_state,
             )

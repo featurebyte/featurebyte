@@ -143,9 +143,6 @@ class NodeParametersPruningExtractor(
     it uses target nodes & input operation structures to prune the node parameters.
     """
 
-    # Disable caching for pruning operations since they modify node parameters
-    use_cache = False
-
     def _post_compute(  # type: ignore[override]
         self,
         branch_state: FeatureByteBaseModel,
