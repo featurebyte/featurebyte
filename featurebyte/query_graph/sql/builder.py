@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any, Iterable, Optional, Type
 
 from bson import ObjectId
+from cachetools import LRUCache
 
 from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.enum import NodeType
@@ -135,7 +136,16 @@ class SQLOperationGraph:
         Query Graph representing user's intention
     sql_type : SQLType
         Type of SQL to generate
+
+    Notes
+    -----
+    Class-level cache for node parameter dictionaries to avoid redundant model_dump()
+    calls across instances. Cache is keyed by content-based node reference hash.
+    Uses LRU cache to prevent unbounded memory growth.
     """
+
+    # Use LRU cache to prevent unbounded memory growth
+    _input_node_params_cache: LRUCache[str, dict[str, Any]] = LRUCache(maxsize=4096)
 
     def __init__(
         self,
@@ -165,11 +175,55 @@ class SQLOperationGraph:
         )
 
     @classmethod
+    def clear_cache(cls) -> None:
+        """Clear the class-level input node parameters LRU cache.
+
+        Useful for testing and when you need to ensure fresh cache state.
+        Note that the LRU cache automatically evicts least-recently-used entries
+        when it reaches maximum capacity.
+        """
+        cls._input_node_params_cache.clear()
+
+    @classmethod
+    def _get_input_node_parameters(
+        cls, query_graph: QueryGraphModel, input_node: Node
+    ) -> dict[str, Any]:
+        """Get input node parameters dictionary with caching.
+
+        Parameters
+        ----------
+        query_graph : QueryGraphModel
+            Query graph containing the node
+        input_node : Node
+            Node to extract parameters from
+
+        Returns
+        -------
+        dict[str, Any]
+            A copy of the parameters dictionary (safe to modify)
+
+        Notes
+        -----
+        Node reference (content-based hash) is used as cache key to ensure that
+        identical nodes share the same cached parameters.
+        """
+        # Use content-based node reference as cache key
+        # Note that node_name does not contribute to the content-based hash
+        node_ref = query_graph.node_name_to_ref[input_node.name]
+
+        if node_ref not in cls._input_node_params_cache:
+            # Cache miss: compute and store parameters
+            params_dict = input_node.parameters.model_dump()
+            cls._input_node_params_cache[node_ref] = params_dict
+
+        # Return a copy to prevent callers from mutating the cached value
+        return cls._input_node_params_cache[node_ref].copy()
+
+    @classmethod
     def _get_aggregate_node_to_primary_table_ids(
         cls, query_graph: QueryGraphModel, operation_structure: Optional[OperationStructure] = None
     ) -> dict[str, list[ObjectId]]:
-        """
-        Helper to initialize aggregate_node_to_primary_table_ids
+        """Helper to initialize aggregate_node_to_primary_table_ids.
 
         Parameters
         ----------
@@ -181,8 +235,10 @@ class SQLOperationGraph:
         Returns
         -------
         dict[str, list[ObjectId]]
+            Mapping from aggregate node name to sorted list of primary table IDs
         """
         aggregate_node_to_primary_table_ids: dict[str, list[ObjectId]] = {}
+
         for node in query_graph.nodes:
             if isinstance(node.parameters, BaseWindowAggregateParameters):
                 aggregate_node = node
@@ -190,7 +246,7 @@ class SQLOperationGraph:
                     query_graph, aggregate_node.name, target_op_struct=operation_structure
                 )
                 for input_node in primary_input_nodes:
-                    parameters_dict = input_node.parameters.model_dump()
+                    parameters_dict = cls._get_input_node_parameters(query_graph, input_node)
                     if "id" in parameters_dict:
                         table_id = ObjectId(parameters_dict["id"])
                         if aggregate_node.name not in aggregate_node_to_primary_table_ids:
