@@ -160,16 +160,12 @@ class AggregationSpec(ABC):
         # Clip name length to avoid SQL issues while maintaining uniqueness
         max_length = 200
         if len(full_name) > max_length:
-            # Keep meaningful prefix and append hash for uniqueness
-            # Reserve space for hash (64 chars) + separator (1 char)
+            # Keep meaningful prefix and append hash for uniqueness. Reserve space for hash (64
+            # chars) + separator (1 char)
             hash_space = 65
             prefix_length = max_length - hash_space
-
-            # Generate deterministic hash of full name
             hash_obj = hashlib.sha256(full_name.encode("utf-8"))
             name_hash = hash_obj.hexdigest()
-
-            # Construct clipped name: prefix + "_" + hash
             clipped_name = full_name[:prefix_length] + "_" + name_hash
             return clipped_name
 
