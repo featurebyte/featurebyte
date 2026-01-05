@@ -100,7 +100,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "event_timestamp_column": "event_date",
         "event_timestamp_schema": None,
         "event_id_column": "event_id",
-        "id": event_table.id,
+        "_id": event_table.id,
         "name": "my_event_table",
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
@@ -123,7 +123,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "datetime_partition_column": None,
         "datetime_partition_schema": None,
     }
-    assert event_table.model_dump() == expected_event_table_dict
+    assert event_table.model_dump(by_alias=True) == expected_event_table_dict
     event_table_json = event_table.model_dump_json(by_alias=True)
     event_table_loaded = EventTableModel.model_validate_json(event_table_json)
     assert event_table_loaded == event_table

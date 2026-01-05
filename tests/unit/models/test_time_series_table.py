@@ -119,7 +119,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "is_utc_time": None,
         },
         "time_interval": {"value": 1, "unit": "DAY"},
-        "id": time_series_table.id,
+        "_id": time_series_table.id,
         "name": "my_time_series_table",
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLISHED",
@@ -140,7 +140,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
         "datetime_partition_column": None,
         "datetime_partition_schema": None,
     }
-    assert time_series_table.model_dump() == expected_time_series_table_dict
+    assert time_series_table.model_dump(by_alias=True) == expected_time_series_table_dict
     time_series_table_json = time_series_table.model_dump_json(by_alias=True)
     time_series_table_loaded = TimeSeriesTableModel.model_validate_json(time_series_table_json)
     assert time_series_table_loaded == time_series_table

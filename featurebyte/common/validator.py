@@ -241,7 +241,7 @@ def columns_info_validator(
     cls: Any
         Class handle
     values: List[ColumnInfo]
-        Input columns info list
+        Input columns info list (can be dicts or ColumnInfo objects)
 
     Returns
     -------
@@ -257,12 +257,18 @@ def columns_info_validator(
         # check column name uniqueness
         column_names = set()
         for column_info in values:
-            if column_info.name in column_names:
-                raise ValueError(f'Column name "{column_info.name}" is duplicated.')
-            column_names.add(column_info.name)
+            # Handle both dict and ColumnInfo objects
+            name = column_info.get("name") if isinstance(column_info, dict) else column_info.name
+            if name in column_names:
+                raise ValueError(f'Column name "{name}" is duplicated.')
+            column_names.add(name)
 
         # check timestamp_schema timezone column name
         for column_info in values:
+            # Skip validation for raw dicts - they will be validated when converted to ColumnInfo
+            if isinstance(column_info, dict):
+                continue
+
             if (
                 column_info.timestamp_schema
                 and column_info.timestamp_schema.has_timezone_offset_column

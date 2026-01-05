@@ -411,6 +411,7 @@ def snowflake_query_map_fixture():
         ): [
             {"TABLE_NAME": "sf_table", "COMMENT": ""},
             {"TABLE_NAME": "sf_table_no_tz", "COMMENT": None},
+            {"TABLE_NAME": "sf_table_5k_columns", "COMMENT": "Table with 5000 columns"},
             {"TABLE_NAME": "items_table", "COMMENT": "Item table"},
             {"TABLE_NAME": "items_table_same_event_id", "COMMENT": None},
             {"TABLE_NAME": "fixed_table", "COMMENT": None},
@@ -975,6 +976,39 @@ def snowflake_query_map_fixture():
             },
         ],
     }
+
+    # Add 5000-column table schema
+    columns_5k = [
+        {
+            "column_name": "col_int",
+            "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            "comment": None,
+        },
+        {
+            "column_name": "event_timestamp",
+            "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            "comment": None,
+        },
+        {
+            "column_name": "created_at",
+            "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            "comment": None,
+        },
+        {
+            "column_name": "cust_id",
+            "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            "comment": None,
+        },
+    ]
+    # Add 4996 additional columns (col_0 to col_4995)
+    for i in range(4996):
+        columns_5k.append({
+            "column_name": f"col_{i}",
+            "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            "comment": None,
+        })
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_5k_columns"'] = columns_5k
+
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
     ]
@@ -1352,6 +1386,47 @@ def snowflake_event_table_fixture(
     )
     assert event_table.frame.node.parameters.id == event_table.id
     assert event_table.id == snowflake_event_table_id
+    yield event_table
+
+
+@pytest.fixture(name="snowflake_event_table_5k_columns_id")
+def snowflake_event_table_5k_columns_id_fixture():
+    """Snowflake event table with 5k columns ID"""
+    return ObjectId("6337f9651050ee7d59806610")
+
+
+@pytest.fixture(name="snowflake_database_table_5k_columns")
+def snowflake_database_table_5k_columns_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture with 5000 columns
+    """
+    snowflake_table = snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="sf_table_5k_columns",
+    )
+    yield snowflake_table
+
+
+@pytest.fixture(name="snowflake_event_table_5k_columns")
+def snowflake_event_table_5k_columns_fixture(
+    snowflake_database_table_5k_columns,
+    snowflake_event_table_5k_columns_id,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """EventTable object fixture with 5000 columns"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    event_table = snowflake_database_table_5k_columns.create_event_table(
+        name="sf_event_table_5k_columns",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="test event table with 5000 columns",
+        _id=snowflake_event_table_5k_columns_id,
+    )
+    assert event_table.frame.node.parameters.id == event_table.id
+    assert event_table.id == snowflake_event_table_5k_columns_id
     yield event_table
 
 

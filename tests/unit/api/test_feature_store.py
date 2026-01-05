@@ -106,6 +106,7 @@ def test_list_tables(
         "scd_table",
         "scd_table_state_map",
         "sf_table",
+        "sf_table_5k_columns",
         "sf_table_no_tz",
         "sf_view",
     ]

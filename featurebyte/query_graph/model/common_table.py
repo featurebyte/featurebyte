@@ -3,14 +3,16 @@ This module contains common table related models.
 """
 
 from abc import abstractmethod
+from functools import cached_property
 from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_serializer, field_validator
 from typing_extensions import Literal
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.utils import serialize_obj
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -55,14 +57,27 @@ class BaseTableData(FeatureByteBaseModel):
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table"
     )
 
-    columns_info: List[ColumnInfo]
     tabular_source: TabularSource
     managed_view_id: Optional[PydanticObjectId] = Field(default=None)
     datetime_partition_column: Optional[StrictStr] = Field(default=None)
     datetime_partition_schema: Optional[TimestampSchema] = Field(default=None)
 
-    # pydantic validators
-    _validator = field_validator("columns_info")(columns_info_validator)
+    # special handling for those attributes that are expensive to deserialize
+    # internal_* is used to store the raw data from persistence, _* is used as a cache
+    internal_columns_info: List[Any] = Field(default=None, frozen=True, alias="columns_info")
+
+    _validator = field_validator("internal_columns_info")(columns_info_validator)
+
+    @field_serializer("internal_columns_info", when_used="json")
+    def _serialize_columns_info(self, value: List[Any], _info: Any) -> List[Dict[str, Any]]:
+        """
+        Serialize internal_columns_info to JSON.
+        Temporarily convert dicts to ColumnInfo objects to properly serialize ObjectIds.
+        """
+        if value:
+            cols_info = [col_info.model_dump(by_alias=True) for col_info in self.columns_info]
+            return serialize_obj(cols_info)
+        return value
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
@@ -72,6 +87,21 @@ class BaseTableData(FeatureByteBaseModel):
             DATA_TABLES.append(cls)
         if table_type.default != TableDataType.SOURCE_TABLE:
             SPECIFIC_DATA_TABLES.append(cls)
+
+    @cached_property
+    def columns_info(self) -> List[ColumnInfo]:
+        """
+        Get the columns info. If the columns info is not loaded, load it first.
+
+        Returns
+        -------
+        List[ColumnInfo]
+            List of column info
+        """
+        if self.internal_columns_info and isinstance(self.internal_columns_info[0], ColumnInfo):
+            return self.internal_columns_info
+        else:
+            return [ColumnInfo(**col_dict) for col_dict in self.internal_columns_info]
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
