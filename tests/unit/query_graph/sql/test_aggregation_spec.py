@@ -71,9 +71,9 @@ def test_construct_agg_result_name_long_clipped():
     # Should be clipped to exactly 200 characters
     assert len(result) == 200
 
-    # Should end with 64-character hash
-    assert result[-64:].isalnum()  # SHA256 hex digest
-    assert result[-65] == "_"  # Separator before hash
+    # Should end with 8-character hash
+    assert result[-8:].isalnum()  # SHA256 hex digest (first 8 chars)
+    assert result[-9] == "_"  # Separator before hash
 
 
 def test_construct_agg_result_name_deterministic():
