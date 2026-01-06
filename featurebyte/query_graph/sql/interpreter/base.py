@@ -8,6 +8,7 @@ from typing import Tuple, cast
 
 from sqlglot import expressions
 
+from featurebyte.common.utils import timer_log
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -51,6 +52,7 @@ class BaseGraphInterpreter:
         """
         return self.query_graph.get_node_by_name(self.node_name_map[node_name])
 
+    @timer_log
     def construct_shape_sql(self, node_name: str) -> Tuple[str, int]:
         """Construct SQL to get row count from a given node
 

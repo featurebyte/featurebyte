@@ -550,3 +550,56 @@ def timer(
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"{message}: {duration} seconds", **logger_kwargs)
+
+
+def timer_log(func: Any) -> Any:
+    """
+    Decorator to log execution time of a function or method using the timer context manager.
+
+    Automatically extracts the class and method name for logging. For instance methods,
+    logs as "ClassName.method_name", for functions logs as "module.function_name".
+
+    Parameters
+    ----------
+    func : Any
+        The function or method to decorate
+
+    Returns
+    -------
+    Any
+        Wrapped function that logs execution time
+
+    Examples
+    --------
+    >>> @timer_log
+    ... def my_function():
+    ...     # function body
+    ...     pass
+
+    >>> class MyClass:
+    ...     @timer_log
+    ...     def my_method(self):
+    ...         # method body
+    ...         pass
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Import here to avoid circular dependency
+        from featurebyte.logging import get_logger
+
+        # Extract class name if it's a method (first arg is self/cls)
+        if args and hasattr(args[0].__class__, func.__name__):
+            class_name = args[0].__class__.__name__
+            method_name = f"{class_name}.{func.__name__}"
+        else:
+            # For standalone functions, use qualified name
+            method_name = func.__qualname__
+
+        # Get logger for the module where the function is defined
+        module_logger = get_logger(func.__module__)
+
+        with timer(method_name, module_logger):
+            return func(*args, **kwargs)
+
+    return wrapper

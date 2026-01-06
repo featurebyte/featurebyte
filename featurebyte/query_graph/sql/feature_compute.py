@@ -14,6 +14,7 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.common.string import sanitize_identifier
+from featurebyte.common.utils import timer_log
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import (
@@ -563,6 +564,7 @@ class FeatureExecutionPlan:
         )
         return parent_serving_result.table_expr, parent_serving_result.parent_entity_columns
 
+    @timer_log
     def construct_combined_aggregation_cte(
         self,
         request_table_name: str,
@@ -707,6 +709,7 @@ class FeatureExecutionPlan:
         out.extend(self.feature_entity_lookup_steps.values())
         return out
 
+    @timer_log
     def construct_combined_sql(
         self,
         request_table_name: str,
@@ -897,6 +900,7 @@ class FeatureExecutionPlanner:
         self.operation_structure_cache[node.name] = operation_structure
         return operation_structure
 
+    @timer_log
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
 

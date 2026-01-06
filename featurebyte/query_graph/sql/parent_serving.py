@@ -10,6 +10,7 @@ from typing import List, Optional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
+from featurebyte.common.utils import timer_log
 from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.entity_lookup_feature_table import (
     get_scd_parameters_from_scd_relation_table,
@@ -58,6 +59,7 @@ class ParentEntityLookupResult:
     new_request_table_columns: List[str]
 
 
+@timer_log
 def construct_request_table_with_parent_entities(
     request_table_name: Optional[str],
     request_table_columns: list[str],
