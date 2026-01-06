@@ -16,7 +16,7 @@ from decimal import Decimal
 from importlib import metadata as importlib_metadata
 from io import StringIO
 from json import JSONDecodeError
-from typing import Any, Generator, Iterator, List, Optional, Union
+from typing import Any, Callable, Generator, Iterator, List, Optional, ParamSpec, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -552,7 +552,11 @@ def timer(
         logger.info(f"{message}: {duration} seconds", **logger_kwargs)
 
 
-def timer_log(func: Any) -> Any:
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def timer_log(func: Callable[P, R]) -> Callable[P, R]:
     """
     Decorator to log execution time of a function or method using the timer context manager.
 
@@ -561,12 +565,12 @@ def timer_log(func: Any) -> Any:
 
     Parameters
     ----------
-    func : Any
+    func : Callable[P, R]
         The function or method to decorate
 
     Returns
     -------
-    Any
+    Callable[P, R]
         Wrapped function that logs execution time
 
     Examples
@@ -584,7 +588,7 @@ def timer_log(func: Any) -> Any:
     """
 
     @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         # Import here to avoid circular dependency
         from featurebyte.logging import get_logger
 
