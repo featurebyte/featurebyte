@@ -12,6 +12,7 @@ from typing import OrderedDict as OrderedDictT
 
 from sqlglot import expressions
 
+from featurebyte.common.utils import timer_log
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
@@ -294,6 +295,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, type_conversions
 
+    @timer_log
     def construct_preview_sql(
         self, node_name: str, num_rows: int = 10, clip_timestamp_columns: bool = False
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:

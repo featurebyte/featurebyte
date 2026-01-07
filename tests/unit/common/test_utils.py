@@ -2,6 +2,7 @@
 Test helper functions in featurebyte.common.utils
 """
 
+import logging
 import pickle
 
 import numpy as np
@@ -20,8 +21,10 @@ from featurebyte.common.utils import (
     dataframe_to_arrow_bytes,
     dataframe_to_json,
     get_version,
+    timer_log,
 )
 from featurebyte.enum import DBVarType
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureItem
 from featurebyte.schema.feature_list import FeatureListCreateWithBatchFeatureCreation
@@ -57,6 +60,60 @@ def test_dataframe_to_arrow_bytes(data_to_convert):
     data = dataframe_to_arrow_bytes(original_df)
     output_df = dataframe_from_arrow_stream(data)
     assert_frame_equal(output_df, original_df)
+
+
+def test_timer_log_standalone_function(mock_log_handler):
+    """
+    timer_log: logs execution time for standalone function
+    """
+
+    logger = get_logger(__name__)
+    # ensure clean handlers to avoid duplicates across tests
+    logger.handlers.clear()
+    logger.addHandler(mock_log_handler)
+    logger.setLevel(logging.INFO)
+
+    @timer_log
+    def sample_func():
+        return "ok"
+
+    assert sample_func() == "ok"
+
+    # One log line expected with message like: "sample_func: <duration> seconds"
+    assert len(mock_log_handler.records) == 1
+    parts = mock_log_handler.records[0].split("|")
+    # logger name matches this module
+    assert parts[2].strip() == __name__
+    message_text = parts[4].strip()
+    assert "sample_func:" in message_text
+    assert message_text.endswith("seconds")
+
+
+def test_timer_log_instance_method(mock_log_handler):
+    """
+    timer_log: logs execution time for instance method with ClassName.method
+    """
+
+    logger = get_logger(__name__)
+    # ensure clean handlers to avoid duplicates across tests
+    logger.handlers.clear()
+    logger.addHandler(mock_log_handler)
+    logger.setLevel(logging.INFO)
+
+    class Demo:
+        @timer_log
+        def method(self):
+            return 42
+
+    assert Demo().method() == 42
+
+    # One log line expected with message like: "Demo.method: <duration> seconds"
+    assert len(mock_log_handler.records) == 1
+    parts = mock_log_handler.records[0].split("|")
+    assert parts[2].strip() == __name__
+    message_text = parts[4].strip()
+    assert "Demo.method:" in message_text
+    assert message_text.endswith("seconds")
 
 
 def test_dataframe_to_json(data_to_convert):

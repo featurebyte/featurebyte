@@ -10,6 +10,7 @@ from typing import Optional, Set, Tuple, cast
 
 from bson import ObjectId
 
+from featurebyte.common.utils import timer_log
 from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
@@ -199,6 +200,7 @@ class TileSQLGenerator:
         self.is_on_demand = is_on_demand
         self.source_info = source_info
 
+    @timer_log
     def construct_tile_gen_sql(
         self,
         starting_node: Node,
@@ -464,6 +466,7 @@ class TileGenMixin(BaseGraphInterpreter):
         Data source type information
     """
 
+    @timer_log
     def construct_tile_gen_sql(
         self,
         starting_node: Node,
