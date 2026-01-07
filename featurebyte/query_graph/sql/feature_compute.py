@@ -564,7 +564,6 @@ class FeatureExecutionPlan:
         )
         return parent_serving_result.table_expr, parent_serving_result.parent_entity_columns
 
-    @timer_log
     def construct_combined_aggregation_cte(
         self,
         request_table_name: str,
