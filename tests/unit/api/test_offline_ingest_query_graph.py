@@ -55,8 +55,11 @@ def check_ingest_query_graph(ingest_query_graph):
         agg_node = graph.get_node_by_name(aggregation_node_info.node_name)
         assert agg_node.type == aggregation_node_info.node_type
         input_node_names = graph.get_input_node_names(agg_node)
-        assert len(input_node_names) == 1
-        assert input_node_names[0] == aggregation_node_info.input_node_name
+        if agg_node.type == NodeType.REQUEST_COLUMN:
+            assert len(input_node_names) == 0
+        else:
+            assert len(input_node_names) == 1
+            assert input_node_names[0] == aggregation_node_info.input_node_name
 
     # check consistency of entity info
     assert len(ingest_query_graph.primary_entity_ids) == len(
@@ -163,13 +166,19 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         non_ttl_component_graph = ingest_query_graphs[0]
 
     assert ttl_component_graph.feature_job_setting == feature_group_feature_job_setting
-    assert ttl_component_graph.node_name == "project_1"
+    assert ttl_component_graph.node_name == "timedelta_extract_1"
     assert ttl_component_graph.has_ttl is True
-    assert ttl_component_graph.aggregation_nodes_info == [
+    expected_nodes_info = [
         AggregationNodeInfo(
             node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
         ),
+        AggregationNodeInfo(
+            node_type=NodeType.REQUEST_COLUMN, input_node_name=None, node_name="request_column_1"
+        ),
     ]
+    assert set(repr(node_info) for node_info in ttl_component_graph.aggregation_nodes_info) == set(
+        repr(node_info) for node_info in expected_nodes_info
+    )
     check_ingest_query_graph(ttl_component_graph)
 
     assert non_ttl_component_graph.feature_job_setting == default_feature_job_setting
@@ -207,11 +216,6 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
-            request_col, utc=True
-        )
-        feat_1 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat)
 
         # TTL handling for __feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -221,18 +225,17 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
-        feat_2 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
-        feat_3 = pd.to_datetime(feat_1, utc=True) - pd.to_datetime(feat_2, utc=True)
-        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() / 86400
-        feat_5 = pd.Series(
+        feat = pd.Series(
             np.where(
-                pd.isna(feat_4) | pd.isna(inputs["__feature_V231227__part1"]),
+                pd.isna(inputs["__feature_V231227__part0"])
+                | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                feat_4 + inputs["__feature_V231227__part1"],
+                inputs["__feature_V231227__part0"]
+                + inputs["__feature_V231227__part1"],
             ),
-            index=feat_4.index,
+            index=inputs["__feature_V231227__part0"].index,
         )
-        df["feature_V231227"] = feat_5
+        df["feature_V231227"] = feat
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -313,7 +316,6 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
 
         # TTL handling for __composite_feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -323,37 +325,35 @@ def test_feature__ttl_item_aggregate_request_column(
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__composite_feature_V231227__part0"] = np.nan
-        feat = pd.to_datetime(
-            inputs["__composite_feature_V231227__part0"], utc=True
+        feat = pd.Series(
+            np.where(
+                pd.isna(inputs["__composite_feature_V231227__part0"])
+                | pd.isna(inputs["__composite_feature_V231227__part1"]),
+                np.nan,
+                inputs["__composite_feature_V231227__part0"]
+                + inputs["__composite_feature_V231227__part1"],
+            ),
+            index=inputs["__composite_feature_V231227__part0"].index,
         )
-        feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
-            feat, utc=True
-        )
-        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() / 86400
 
-        # TTL handling for __composite_feature_V231227__part1 column
+        # TTL handling for __composite_feature_V231227__part2 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
-            inputs["__composite_feature_V231227__part1__ts"], utc=True, unit="s"
+            inputs["__composite_feature_V231227__part2__ts"], utc=True, unit="s"
         )
         mask_1 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
-        inputs.loc[~mask_1, "__composite_feature_V231227__part1"] = np.nan
-        feat_3 = pd.Series(
+        inputs.loc[~mask_1, "__composite_feature_V231227__part2"] = np.nan
+        feat_1 = pd.Series(
             np.where(
-                pd.isna(inputs["__composite_feature_V231227__part1"])
+                pd.isna(feat)
                 | pd.isna(inputs["__composite_feature_V231227__part2"]),
                 np.nan,
-                inputs["__composite_feature_V231227__part1"]
-                + inputs["__composite_feature_V231227__part2"],
+                feat + inputs["__composite_feature_V231227__part2"],
             ),
-            index=inputs["__composite_feature_V231227__part1"].index,
+            index=feat.index,
         )
-        feat_4 = pd.Series(
-            np.where(pd.isna(feat_3) | pd.isna(feat_2), np.nan, feat_3 + feat_2),
-            index=feat_3.index,
-        )
-        df["composite_feature_V231227"] = feat_4
+        df["composite_feature_V231227"] = feat_1
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -875,7 +875,7 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
 
     # check composite feature
     offline_store_info = complex_feature.cached_model.offline_store_info
-    assert offline_store_info.is_decomposed is True
+    assert offline_store_info.is_decomposed is False
     version_name = complex_feature.cached_model.versioned_name
 
     expected = f"""
@@ -893,34 +893,21 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
-            request_col, utc=True
-        )
-        feat_1 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat)
 
-        # TTL handling for __{version_name}__part0 column with cron expression 0 8 1 * *
+        # Time-to-live (TTL) handling to clean up expired data
         cron = croniter.croniter("0 8 1 * *")
         prev_time = cron.timestamp_to_datetime(cron.get_prev())
         prev_time = prev_time.replace(tzinfo=ZoneInfo("Etc/UTC")).astimezone(
             pytz.utc
         )
-        feat_ts = pd.to_datetime(
-            inputs["__{version_name}__part0__ts"], utc=True, unit="s"
+        feature_timestamp = pd.to_datetime(
+            inputs["{version_name}__ts"], unit="s", utc=True
         )
-        mask = feat_ts <= prev_time
-        inputs.loc[mask, "__{version_name}__part0"] = np.nan
-        feat_2 = pd.Series(
-            np.where(
-                pd.isna(inputs["__{version_name}__part0"])
-                | pd.isna((pd.to_datetime(feat_1, utc=True).dt.day)),
-                np.nan,
-                inputs["__{version_name}__part0"]
-                + (pd.to_datetime(feat_1, utc=True).dt.day),
-            ),
-            index=inputs["__{version_name}__part0"].index,
-        )
-        df["{version_name}"] = feat_2
+        mask = feature_timestamp <= prev_time
+        inputs.loc[mask, "{version_name}"] = np.nan
+        df["{version_name}"] = inputs["{version_name}"]
+        df.fillna(np.nan, inplace=True)
+
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()

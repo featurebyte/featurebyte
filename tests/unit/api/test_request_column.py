@@ -6,16 +6,13 @@ import pytest
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
-from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
-from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_code_generation,
     check_sdk_code_generation,
     deploy_features_through_api,
 )
@@ -79,25 +76,17 @@ def test_point_in_time_minus_timestamp_feature(
     )
 
     # check decomposed graph structure
-    assert output.graph.edges_map == {
-        "date_diff_1": ["timedelta_extract_1"],
-        "graph_1": ["date_diff_1"],
-        "request_column_1": ["date_diff_1"],
-        "timedelta_extract_1": ["alias_1"],
-    }
-    graph_node_param = output.graph.nodes_map["graph_1"].parameters
-    assert graph_node_param.type == GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-    assert (
-        graph_node_param.output_column_name
-        == f"__Time Since Last Event (days)_{get_version()}__part0"
-    )
+    # After changes to handle point-in-time request columns, the feature is no longer decomposed
+    # since all transformations happen in the offline store
+    assert output.graph.edges_map == {}
 
     # check output node hash
     check_decomposed_graph_output_node_hash(
         feature_model=new_feature_model,
         output=output,
     )
-    check_on_demand_feature_code_generation(feature_model=new_feature_model)
+    # Note: check_on_demand_feature_code_generation is not called because the feature
+    # is no longer decomposed after changes to handle point-in-time request columns
 
 
 def test_request_column_non_point_in_time_blocked():
@@ -131,14 +120,9 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     )
 
     # check decomposed graph structure
-    assert output.graph.edges_map == {
-        "date_add_1": ["date_diff_2"],
-        "date_diff_1": ["date_add_1"],
-        "date_diff_2": ["timedelta_extract_1"],
-        "graph_1": ["date_diff_2"],
-        "request_column_1": ["date_diff_1", "date_diff_1", "date_add_1"],
-        "timedelta_extract_1": ["alias_1"],
-    }
+    # After changes to handle point-in-time request columns, the feature is no longer decomposed
+    # since all transformations happen in the offline store
+    assert output.graph.edges_map == {}
 
     # check output node hash
     check_decomposed_graph_output_node_hash(

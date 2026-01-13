@@ -37,6 +37,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
@@ -309,6 +310,8 @@ class OfflineStoreFeatureTableConstructionService:
             node_entity_ids = node.parameters.entity_ids
         elif isinstance(node, LookupNode):
             node_entity_ids = [node.parameters.entity_id]
+        elif isinstance(node, RequestColumnNode):
+            node_entity_ids = []
         assert node_entity_ids is not None
         return [
             entity_id

@@ -277,16 +277,8 @@ def test_databricks_specs(
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
-            feature_names=["__req_col_feature_V240103__part0"],
-            rename_outputs={},
-        ),
-        FeatureFunction(
-            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
-            input_bindings={
-                "x_1": "__req_col_feature_V240103__part0",
-                "r_1": "POINT_IN_TIME",
-            },
-            output_name="req_col_feature",
+            feature_names=["req_col_feature_V240103"],
+            rename_outputs={"req_col_feature_V240103": "req_col_feature"},
         ),
         FeatureLookup(
             table_name="feature_engineering.some_schema.cat1__no_entity_30m",
@@ -334,7 +326,6 @@ def test_databricks_specs(
         "__featurebyte_dummy_entity",
         "__relative_frequency_V240103__part0",
         "__relative_frequency_V240103__part1",
-        "__req_col_feature_V240103__part0",
         "transaction_id",
     ]
 
@@ -394,7 +385,6 @@ def test_databricks_specs(
         "__featurebyte_dummy_entity",
         "__relative_frequency_V240103__part0",
         "__relative_frequency_V240103__part1",
-        "__req_col_feature_V240103__part0",
     ]
     """
     assert textwrap.dedent(expected_sub_string).strip() in feat_specs

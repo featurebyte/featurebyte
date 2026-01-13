@@ -452,7 +452,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         output = []
         for agg in operation_structure.iterate_aggregations():
             node = self.graph.get_node_by_name(agg.node_name)
-            input_node_names = self.graph.backward_edges_map[node.name]
+            input_node_names = self.graph.backward_edges_map.get(node.name, [])
             assert len(input_node_names) <= 1, "Aggregation node should have at most one input node"
             output.append(
                 AggregationNodeInfo(

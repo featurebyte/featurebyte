@@ -201,21 +201,23 @@ class OfflineStoreIngestQueryGraphTransformer(
         agg_nodes_info = []
         feature_job_settings = []
         agg_node_names = [agg.node_name for agg in operation_structure.iterate_aggregations()]
-        for node_name in aggregation_node_names:
+        # Sort aggregation_node_names to ensure deterministic ordering
+        for node_name in sorted(aggregation_node_names):
             if node_name in agg_node_names:
                 # if the aggregation node is in the subgraph, that means the aggregation node
                 # is used to create the offline store ingest query
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
-                assert len(input_node_names) == 1, (
-                    "All non-request column agg. nodes expect only 1 input node"
-                )
+                input_node_name = None
+                if input_node_names:
+                    input_node_name = input_node_names[0]
+
                 agg_nodes_info.append(
                     AggregationNodeInfo(
                         node_type=subgraph_agg_node.type,
                         node_name=subgraph_agg_node_name,
-                        input_node_name=input_node_names[0],
+                        input_node_name=input_node_name,
                     )
                 )
 

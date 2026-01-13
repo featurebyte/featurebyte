@@ -5,7 +5,7 @@ This module contains
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, SpecialColumnName, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_relationship_info import (
@@ -319,7 +319,9 @@ class DecomposePointState:
 
         if isinstance(node, RequestColumnNode):
             # request columns introduced by request column node
-            aggregation_info.has_request_column = True
+            # Skip point-in-time columns as they will be auto-generated without user input
+            if node.parameters.column_name != SpecialColumnName.POINT_IN_TIME:
+                aggregation_info.has_request_column = True
 
         feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
             node=node
@@ -477,9 +479,11 @@ class DecomposePointState:
         input_node_names: List[str]
             List of input node names
         """
+        # Sort input node names to ensure deterministic ordering
+        sorted_input_node_names = sorted(input_node_names)
         input_aggregations_info = [
             self.node_name_to_aggregation_info[input_node_name]
-            for input_node_name in input_node_names
+            for input_node_name in sorted_input_node_names
         ]
         any_input_has_request_column = False
         any_input_has_ingest_graph_node = False
@@ -487,7 +491,9 @@ class DecomposePointState:
             any_input_has_request_column |= input_agg_info.has_request_column
             any_input_has_ingest_graph_node |= input_agg_info.has_ingest_graph_node
 
-        for input_node_name, input_agg_info in zip(input_node_names, input_aggregations_info):
+        for input_node_name, input_agg_info in zip(
+            sorted_input_node_names, input_aggregations_info
+        ):
             if input_agg_info.has_request_column:
                 # if the input node has request column, it must not be an offline store ingest query graph
                 continue

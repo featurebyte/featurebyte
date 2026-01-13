@@ -128,23 +128,16 @@ def test_date_diff_with_varchar_timestamp(
             inputs: pd.DataFrame,
         ) -> pd.DataFrame:
             df = pd.DataFrame()
-            request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-
-            # TTL handling for __diff_in_day_V250101__part0 column
+            # Time-to-live (TTL) handling to clean up expired data
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=1800)
-            feat_ts = pd.to_datetime(
-                inputs["__diff_in_day_V250101__part0__ts"], utc=True, unit="s"
+            feature_timestamp = pd.to_datetime(
+                inputs["diff_in_day_V250101__ts"], unit="s", utc=True
             )
-            mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
-            inputs.loc[~mask, "__diff_in_day_V250101__part0"] = np.nan
-            feat = pd.to_datetime(
-                inputs["__diff_in_day_V250101__part0"], format="%y-%m-%d %H:%M"
-            ).dt.tz_localize("Asia/Singapore").dt.tz_convert("UTC") - pd.to_datetime(
-                request_col, utc=True
-            )
-            feat_1 = pd.to_timedelta(feat).dt.total_seconds() / 86400
-            df["diff_in_day_V250101"] = feat_1
+            mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+            inputs.loc[~mask, "diff_in_day_V250101"] = np.nan
+            df["diff_in_day_V250101"] = inputs["diff_in_day_V250101"]
+            df.fillna(np.nan, inplace=True)
             return df
         """
     ).strip()
