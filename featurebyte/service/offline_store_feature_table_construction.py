@@ -37,6 +37,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
@@ -260,6 +261,10 @@ class OfflineStoreFeatureTableConstructionService:
             ]
             for info in offline_ingest_graph.aggregation_nodes_info:
                 node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
+                if isinstance(node, RequestColumnNode):
+                    # Request column nodes do not contribute to entity universe
+                    continue
+
                 # The entity universe has to be described in terms of the primary entity. If the
                 # aggregation is based on a parent entity, we need to map it back to the primary
                 # entity (a child).
