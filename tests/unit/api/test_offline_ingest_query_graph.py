@@ -168,12 +168,10 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     assert ttl_component_graph.feature_job_setting == feature_group_feature_job_setting
     assert ttl_component_graph.node_name == "timedelta_extract_1"
     assert ttl_component_graph.has_ttl is True
+    # Point-in-time REQUEST_COLUMN nodes are auto-generated and not treated as aggregation nodes
     expected_nodes_info = [
         AggregationNodeInfo(
             node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
-        ),
-        AggregationNodeInfo(
-            node_type=NodeType.REQUEST_COLUMN, input_node_name=None, node_name="request_column_1"
         ),
     ]
     assert set(repr(node_info) for node_info in ttl_component_graph.aggregation_nodes_info) == set(

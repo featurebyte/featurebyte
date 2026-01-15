@@ -52,6 +52,7 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_info_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
+from featurebyte.query_graph.util import is_point_in_time_request_column_aggregation
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -448,9 +449,15 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         -------
         List[AggregationNodeInfo]
         """
+
         operation_structure = self.graph.extract_operation_structure(self.node)
         output = []
         for agg in operation_structure.iterate_aggregations():
+            # Skip point-in-time REQUEST_COLUMN nodes as they are auto-generated
+            # and should not be treated as aggregation nodes
+            if is_point_in_time_request_column_aggregation(agg, self.graph):
+                continue
+
             node = self.graph.get_node_by_name(agg.node_name)
             input_node_names = self.graph.backward_edges_map.get(node.name, [])
             assert len(input_node_names) <= 1, "Aggregation node should have at most one input node"

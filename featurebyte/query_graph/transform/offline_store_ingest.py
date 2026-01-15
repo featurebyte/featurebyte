@@ -24,6 +24,7 @@ from featurebyte.query_graph.transform.decompose_point import (
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+from featurebyte.query_graph.util import is_point_in_time_request_column_aggregation
 
 
 def extract_dtype_info_from_graph(
@@ -200,12 +201,20 @@ class OfflineStoreIngestQueryGraphTransformer(
     ) -> Dict[str, Any]:
         agg_nodes_info = []
         feature_job_settings = []
-        agg_node_names = [agg.node_name for agg in operation_structure.iterate_aggregations()]
+        # Create a mapping from node_name to aggregation for quick lookup
+        agg_map = {agg.node_name: agg for agg in operation_structure.iterate_aggregations()}
         # Sort aggregation_node_names to ensure deterministic ordering
         for node_name in sorted(aggregation_node_names):
-            if node_name in agg_node_names:
+            if node_name in agg_map:
                 # if the aggregation node is in the subgraph, that means the aggregation node
                 # is used to create the offline store ingest query
+                agg = agg_map[node_name]
+
+                # Skip point-in-time REQUEST_COLUMN nodes as they are auto-generated
+                # and should not be treated as aggregation nodes
+                if is_point_in_time_request_column_aggregation(agg, subgraph):
+                    continue
+
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)

@@ -821,21 +821,6 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
         return universe_exprs
 
 
-class RequestColumnNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
-    """
-    Construct the entity universe expression for request column node
-
-    Request columns don't contribute to the entity universe since they are provided
-    as request inputs. Returns a dummy entity universe.
-    """
-
-    def get_serving_names(self) -> List[str]:
-        return []
-
-    def get_entity_universe_template(self) -> List[Expression]:
-        return [DUMMY_ENTITY_UNIVERSE]
-
-
 def get_entity_universe_constructor(
     graph: QueryGraphModel, node: Node, source_info: SourceInfo
 ) -> BaseEntityUniverseConstructor:
@@ -867,7 +852,6 @@ def get_entity_universe_constructor(
         NodeType.GROUPBY: TileBasedAggregateNodeEntityUniverseConstructor,
         NodeType.NON_TILE_WINDOW_AGGREGATE: NonTileWindowAggregateNodeEntityUniverseConstructor,
         NodeType.TIME_SERIES_WINDOW_AGGREGATE: TimeSeriesWindowAggregateNodeEntityUniverseConstructor,
-        NodeType.REQUEST_COLUMN: RequestColumnNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
         return node_type_to_constructor[node.type](graph, node, source_info)  # type: ignore

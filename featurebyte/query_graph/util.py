@@ -6,12 +6,16 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+
+if TYPE_CHECKING:
+    from featurebyte.query_graph.model.graph import QueryGraphModel
+    from featurebyte.query_graph.node.metadata.operation import AggregationColumn
 
 
 def hash_node(
@@ -252,3 +256,39 @@ def sort_lists_by_first_list(by_list: List[Any], *lists: List[Any]) -> List[List
     """
     sorted_lists = [list(t) for t in zip(*sorted(zip(by_list, *lists)))]
     return sorted_lists
+
+
+def is_point_in_time_request_column_aggregation(
+    aggregation: AggregationColumn, graph: QueryGraphModel
+) -> bool:
+    """
+    Check if an aggregation is from a point-in-time REQUEST_COLUMN node.
+
+    Point-in-time REQUEST_COLUMN nodes are auto-generated and should not be
+    treated as aggregation nodes in graph decomposition and entity universe construction.
+
+    Parameters
+    ----------
+    aggregation : AggregationColumn
+        The aggregation to check
+    graph : QueryGraphModel
+        The query graph containing the node
+
+    Returns
+    -------
+    bool
+        True if this is a point-in-time REQUEST_COLUMN aggregation
+    """
+    # Fast path: check aggregation type first
+    if aggregation.aggregation_type != NodeType.REQUEST_COLUMN:
+        return False
+
+    # Import at runtime to avoid circular dependencies
+    from featurebyte.enum import SpecialColumnName
+    from featurebyte.query_graph.node.request import RequestColumnNode
+
+    node = graph.get_node_by_name(aggregation.node_name)
+    if not isinstance(node, RequestColumnNode):
+        return False
+
+    return node.parameters.column_name == SpecialColumnName.POINT_IN_TIME
