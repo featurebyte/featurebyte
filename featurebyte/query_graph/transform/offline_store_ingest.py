@@ -345,6 +345,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
         feature_version: Optional[str],
+        deployment_sql_generation: bool = False,
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -360,6 +361,8 @@ class OfflineStoreIngestQueryGraphTransformer(
         feature_version: Optional[str]
             Feature version (used to create the offline store table column name). If None,
             the version is excluded from the column name.
+        deployment_sql_generation: bool
+            Whether the transformation is for deployment SQL generation.
 
         Returns
         -------
@@ -367,7 +370,9 @@ class OfflineStoreIngestQueryGraphTransformer(
         """
         # extract decompose point info
         decompose_point_info = DecomposePointExtractor(graph=self.graph).extract(
-            node=target_node, relationships_info=relationships_info
+            node=target_node,
+            relationships_info=relationships_info,
+            deployment_sql_generation=deployment_sql_generation,
         )
 
         # create global state
