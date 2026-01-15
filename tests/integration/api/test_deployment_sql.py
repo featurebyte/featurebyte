@@ -6,6 +6,7 @@ import pytest
 from bson import ObjectId
 
 import featurebyte as fb
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.models.deployment_sql import DeploymentSqlModel
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -21,6 +22,7 @@ class DeploymentSqlTestCase:
     feature_list: fb.FeatureList
     deployment_sql: DeploymentSqlModel
     point_in_time: str
+    expected_column_names: list[str]
 
 
 def make_unique(name):
@@ -51,7 +53,7 @@ def get_deployment_sql(client, deployment: fb.Deployment) -> DeploymentSqlModel:
 
 
 @pytest.fixture
-def event_table_feature_test_case(client, event_table):
+def event_table_feature_test_case(client, event_table, user_entity):
     """
     Simple event table feature
     """
@@ -76,11 +78,56 @@ def event_table_feature_test_case(client, event_table):
         feature_list=feature_list,
         deployment_sql=deployment_sql,
         point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
     )
 
 
 @pytest.fixture
-def time_series_table_feature_test_case(client, time_series_table):
+def user_feature_served_via_transaction_test_case(client, event_table, order_entity):
+    """
+    User feature as a parent feature served via transaction entity
+    """
+    event_view = event_table.get_view()
+    feature_name = make_unique("event_count_7d")
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["7d"],
+        feature_names=[feature_name],
+        feature_job_setting=fb.CronFeatureJobSetting(
+            crontab="0 10 * * *",
+            timezone="UTC",
+            blind_spot="1h",
+        ),
+    )[feature_name]
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    target = fb.TargetNamespace.create(
+        name=make_unique("transaction_target"),
+        primary_entity=[order_entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
+    )
+    context = fb.Context.create(
+        name=make_unique("transaction_context"), primary_entity=[order_entity.name]
+    )
+    use_case = fb.UseCase.create(
+        name=make_unique("transaction_use_case"),
+        target_name=target.name,
+        context_name=context.name,
+    )
+    deployment = feature_list.deploy(use_case_name=use_case.name)
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", order_entity.serving_names[0], feature_name],
+    )
+
+
+@pytest.fixture
+def time_series_table_feature_test_case(client, time_series_table, series_entity):
     """
     Simple time series table feature
     """
@@ -105,11 +152,12 @@ def time_series_table_feature_test_case(client, time_series_table):
         feature_list=feature_list,
         deployment_sql=deployment_sql,
         point_in_time="2001-01-10 10:00:00",
+        expected_column_names=["POINT_IN_TIME", series_entity.serving_names[0], feature_name],
     )
 
 
 @pytest.fixture
-def snapshots_lookup_feature_test_case(client, snapshots_table):
+def snapshots_lookup_feature_test_case(client, snapshots_table, series_entity):
     """
     Simple snapshots table lookup feature
     """
@@ -124,6 +172,39 @@ def snapshots_lookup_feature_test_case(client, snapshots_table):
         feature_list=feature_list,
         deployment_sql=deployment_sql,
         point_in_time="2001-01-10 10:00:00",
+        expected_column_names=["POINT_IN_TIME", series_entity.serving_names[0], feature_name],
+    )
+
+
+@pytest.fixture
+def time_since_last_event_feature_test_case(client, event_table, user_entity):
+    """
+    Time since last event feature
+    """
+    event_view = event_table.get_view()
+    feature_name = make_unique("event_count_7d")
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ËVENT_TIMESTAMP",
+        method="latest",
+        windows=["7d"],
+        feature_names=[feature_name],
+        feature_job_setting=fb.CronFeatureJobSetting(
+            crontab="0 10 * * *",
+            timezone="UTC",
+            blind_spot="1h",
+        ),
+    )[feature_name]
+    feature = (fb.RequestColumn.point_in_time() - feature).dt.day
+    feature.name = feature_name
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
     )
 
 
@@ -187,6 +268,9 @@ async def check_deployment_sql(session, test_case):
 
         assert df.shape[0] > 0, "No data returned from deployment SQL"
 
+        # Check expected columns
+        assert sorted(test_case.expected_column_names) == sorted(df.columns)
+
         # Compute expected values using a temporary feature list via historical features
         non_feature_columns = [
             col for col in df.columns if col not in feature_table_sql.feature_names
@@ -214,6 +298,7 @@ async def check_deployment_sql(session, test_case):
         "time_series_table_feature_test_case",
         "snapshots_lookup_feature_test_case",
         "time_since_last_event_feature_test_case",
+        "user_feature_served_via_transaction_test_case",
     ],
 )
 @pytest.mark.asyncio

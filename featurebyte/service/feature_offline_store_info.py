@@ -269,11 +269,12 @@ class OfflineStoreInfoInitializationService:
                 catalog.default_feature_store_ids[0]
             )
             source_type = feature_store.get_source_info().source_type
-            null_filling_value = (
-                NullFillingValueExtractor(graph=feature.graph)
-                .extract(node=feature.node, source_type=source_type)
-                .fill_value
-            )
+            if not deployment_sql_generation:
+                null_filling_value = (
+                    NullFillingValueExtractor(graph=feature.graph)
+                    .extract(node=feature.node, source_type=source_type)
+                    .fill_value
+                )
 
         has_ttl = feature.has_bounded_window_aggregated_node
         if result.is_decomposed:

@@ -1,0 +1,10 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_names": [
+                "sum_1d"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        }
+    ]
+}
