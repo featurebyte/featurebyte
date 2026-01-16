@@ -2941,6 +2941,18 @@ def latest_event_timestamp_overall_feature_fixture(
     return feature
 
 
+@pytest.fixture(name="time_since_latest_event_timestamp_feature")
+def time_since_latest_event_timestamp_feature_fixture(
+    latest_event_timestamp_feature,
+):
+    """
+    Fixture for a time since latest event timestamp feature
+    """
+    feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+    feature.name = "time_since_latest_event_timestamp"
+    return feature
+
+
 @pytest.fixture(name="latest_event_timestamp_unbounded_feature")
 def latest_event_timestamp_unbounded_feature_fixture(
     snowflake_event_view_with_entity, feature_group_feature_job_setting
