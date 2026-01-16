@@ -208,37 +208,6 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     )
 
 
-@pytest.fixture
-def time_since_last_event_feature_test_case(client, event_table):
-    """
-    Time since last event feature
-    """
-    event_view = event_table.get_view()
-    feature_name = make_unique("event_count_7d")
-    feature = event_view.groupby("ÜSER ID").aggregate_over(
-        value_column="ËVENT_TIMESTAMP",
-        method="latest",
-        windows=["7d"],
-        feature_names=[feature_name],
-        feature_job_setting=fb.CronFeatureJobSetting(
-            crontab="0 10 * * *",
-            timezone="UTC",
-            blind_spot="1h",
-        ),
-    )[feature_name]
-    feature = (fb.RequestColumn.point_in_time() - feature).dt.day
-    feature.name = feature_name
-    feature_list = fb.FeatureList([feature], name=feature_name)
-    feature_list.save()
-    deployment = feature_list.deploy()
-    deployment_sql = get_deployment_sql(client, deployment)
-    return DeploymentSqlTestCase(
-        feature_list=feature_list,
-        deployment_sql=deployment_sql,
-        point_in_time="2001-01-15 10:00:00",
-    )
-
-
 def process_sql(session, sql_code, point_in_time):
     """
     Replace placeholders in SQL code to make it executable
