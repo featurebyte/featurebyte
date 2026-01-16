@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
 )
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
@@ -208,6 +209,9 @@ class OfflineStoreIngestQueryGraphTransformer(
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
+                if isinstance(subgraph_agg_node, RequestColumnNode):
+                    continue  # skip request column node
+
                 assert len(input_node_names) == 1, (
                     "All non-request column agg. nodes expect only 1 input node"
                 )
