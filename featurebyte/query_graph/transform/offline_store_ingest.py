@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
 )
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
@@ -208,6 +209,9 @@ class OfflineStoreIngestQueryGraphTransformer(
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
+                if isinstance(subgraph_agg_node, RequestColumnNode):
+                    continue  # skip request column node
+
                 assert len(input_node_names) == 1, (
                     "All non-request column agg. nodes expect only 1 input node"
                 )
@@ -345,6 +349,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
         feature_version: Optional[str],
+        deployment_sql_generation: bool = False,
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -360,6 +365,8 @@ class OfflineStoreIngestQueryGraphTransformer(
         feature_version: Optional[str]
             Feature version (used to create the offline store table column name). If None,
             the version is excluded from the column name.
+        deployment_sql_generation: bool
+            Whether the transformation is for deployment SQL generation.
 
         Returns
         -------
@@ -367,7 +374,9 @@ class OfflineStoreIngestQueryGraphTransformer(
         """
         # extract decompose point info
         decompose_point_info = DecomposePointExtractor(graph=self.graph).extract(
-            node=target_node, relationships_info=relationships_info
+            node=target_node,
+            relationships_info=relationships_info,
+            deployment_sql_generation=deployment_sql_generation,
         )
 
         # create global state

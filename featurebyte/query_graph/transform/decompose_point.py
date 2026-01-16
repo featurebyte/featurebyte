@@ -5,7 +5,7 @@ This module contains
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, SpecialColumnName, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_relationship_info import (
@@ -201,6 +201,8 @@ class DecomposePointState:
     operation_structure_map: Dict[str, OperationStructure]
     # extract primary entity ids only
     extract_primary_entity_ids_only: bool
+    # deployment sql generation flag
+    deployment_sql_generation: bool = False
 
     @property
     def should_decompose(self) -> bool:
@@ -248,6 +250,7 @@ class DecomposePointState:
         aggregation_node_names: Set[str],
         operation_structure_map: Dict[str, OperationStructure],
         extract_primary_entity_ids_only: bool,
+        deployment_sql_generation: bool = False,
     ) -> "DecomposePointState":
         """
         Create DecomposePointState object
@@ -262,6 +265,8 @@ class DecomposePointState:
             Operation structure map
         extract_primary_entity_ids_only: bool
             Extract primary entity ids only without extracting other information to speed up the process
+        deployment_sql_generation: bool
+            Deployment SQL generation flag
 
         Returns
         -------
@@ -278,6 +283,7 @@ class DecomposePointState:
             ingest_graph_output_node_names=set(),
             operation_structure_map=operation_structure_map,
             extract_primary_entity_ids_only=extract_primary_entity_ids_only,
+            deployment_sql_generation=deployment_sql_generation,
         )
 
     def _update_more_aggregation_info(
@@ -290,7 +296,9 @@ class DecomposePointState:
 
         if node.name in self.aggregation_node_names:
             aggregation_info.agg_node_types = [node.type]
-            aggregation_info.has_ttl_agg_type = is_ttl_handling_required(node=node)
+            if not self.deployment_sql_generation:
+                # ttl handling is not required during deployment SQL generation
+                aggregation_info.has_ttl_agg_type = is_ttl_handling_required(node=node)
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys
@@ -319,7 +327,14 @@ class DecomposePointState:
 
         if isinstance(node, RequestColumnNode):
             # request columns introduced by request column node
-            aggregation_info.has_request_column = True
+            if self.deployment_sql_generation:
+                # for deployment SQL generation, only consider request columns that are not
+                # point-in-time columns
+                aggregation_info.has_request_column = (
+                    node.parameters.column_name != SpecialColumnName.POINT_IN_TIME
+                )
+            else:
+                aggregation_info.has_request_column = True
 
         feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
             node=node
@@ -567,6 +582,7 @@ class DecomposePointExtractor(
         node: Node,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
         extract_primary_entity_ids_only: bool = False,
+        deployment_sql_generation: bool = False,
         **kwargs: Any,
     ) -> DecomposePointState:
         aggregation_node_names = set()
@@ -584,6 +600,7 @@ class DecomposePointExtractor(
             aggregation_node_names=aggregation_node_names,
             operation_structure_map=operation_structure_map,
             extract_primary_entity_ids_only=extract_primary_entity_ids_only,
+            deployment_sql_generation=deployment_sql_generation,
         )
         self._extract(
             node=node,

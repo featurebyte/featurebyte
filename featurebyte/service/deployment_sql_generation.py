@@ -108,6 +108,7 @@ class DeploymentSqlGenerationService:
                     table_name_prefix="temp",
                     dry_run=False,
                     include_feature_version_suffix=False,
+                    deployment_sql_generation=True,
                 )
             )
             if info.is_decomposed:

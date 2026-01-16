@@ -210,6 +210,7 @@ class OfflineStoreInfoInitializationService:
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
         include_feature_version_suffix: bool = True,
+        deployment_sql_generation: bool = False,
     ) -> OfflineStoreInfo:
         """
         Initialize feature offline store info
@@ -227,6 +228,8 @@ class OfflineStoreInfoInitializationService:
             of dummy feature table names.
         include_feature_version_suffix: bool
             Whether to include feature version suffix in the offline store table name
+        deployment_sql_generation: bool
+            Whether the initialization is for deployment SQL generation purpose
 
         Returns
         -------
@@ -254,6 +257,7 @@ class OfflineStoreInfoInitializationService:
             relationships_info=feature.relationships_info or [],
             feature_name=feature.name,
             feature_version=feature_version,
+            deployment_sql_generation=deployment_sql_generation,
         )
 
         null_filling_value = None
