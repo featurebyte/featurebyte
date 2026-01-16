@@ -37,6 +37,12 @@ def get_deployment_sql(client, deployment: fb.Deployment) -> DeploymentSqlModel:
     task_response = client.post("/deployment_sql", json={"deployment_id": str(deployment.id)})
     assert task_response.status_code == HTTPStatus.CREATED, task_response.text
     task_response_dict = task_response.json()
+    if task_response_dict["status"] != "SUCCESS":
+        traceback = task_response_dict.get("traceback")
+        raise AssertionError(
+            f"Deployment SQL generation task did not succeed, traceback:\n{traceback}"
+        )
+    task_response_dict = task_response.json()
     output_path = task_response_dict["payload"]["task_output_path"]
     response = client.get(output_path)
     assert response.status_code == HTTPStatus.OK, response.text
@@ -121,6 +127,37 @@ def snapshots_lookup_feature_test_case(client, snapshots_table):
     )
 
 
+@pytest.fixture
+def time_since_last_event_feature_test_case(client, event_table):
+    """
+    Time since last event feature
+    """
+    event_view = event_table.get_view()
+    feature_name = make_unique("event_count_7d")
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ËVENT_TIMESTAMP",
+        method="latest",
+        windows=["7d"],
+        feature_names=[feature_name],
+        feature_job_setting=fb.CronFeatureJobSetting(
+            crontab="0 10 * * *",
+            timezone="UTC",
+            blind_spot="1h",
+        ),
+    )[feature_name]
+    feature = (fb.RequestColumn.point_in_time() - feature).dt.day
+    feature.name = feature_name
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+    )
+
+
 def process_sql(session, sql_code, point_in_time):
     """
     Replace placeholders in SQL code to make it executable
@@ -176,6 +213,7 @@ async def check_deployment_sql(session, test_case):
         "event_table_feature_test_case",
         "time_series_table_feature_test_case",
         "snapshots_lookup_feature_test_case",
+        "time_since_last_event_feature_test_case",
     ],
 )
 @pytest.mark.asyncio
