@@ -9,7 +9,7 @@ from typing import Any, Iterable, Optional, Tuple
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import AggFunc, InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -814,6 +814,7 @@ class WindowAggregator(TileBasedAggregator):
             groupby_columns=groupby_columns,
             value_by=value_by,
             adapter=self.adapter,
+            window_order_by=timestamp_expr if AggFunc(spec.agg_func).is_order_dependent else None,
         )
         column_names = set()
         for _spec in specs:
