@@ -13,13 +13,14 @@ from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
 from featurebyte.models.offline_store_feature_table import get_combined_ingest_graph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -49,6 +50,7 @@ class DeploymentSqlGenerationService:
         entity_service: EntityService,
         entity_validation_service: EntityValidationService,
         column_statistics_service: ColumnStatisticsService,
+        entity_lookup_feature_table_service: EntityLookupFeatureTableService,
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
@@ -63,6 +65,7 @@ class DeploymentSqlGenerationService:
         self.entity_service = entity_service
         self.entity_validation_service = entity_validation_service
         self.column_statistics_service = column_statistics_service
+        self.entity_lookup_feature_table_service = entity_lookup_feature_table_service
 
     async def generate_deployment_sql(
         self,
@@ -102,11 +105,13 @@ class DeploymentSqlGenerationService:
 
         feature_infos = []
         for feature_model in feature_mapping.values():
+            # dry_run should be False to set up the table names which is required for
+            # OfflineIngestGraphContainer to work correctly.
             info = (
                 await self.offline_store_info_initialization_service.initialize_offline_store_info(
                     feature_model,
                     table_name_prefix="temp",
-                    dry_run=True,
+                    dry_run=False,
                     include_feature_version_suffix=False,
                     deployment_sql_generation=True,
                 )
@@ -125,12 +130,42 @@ class DeploymentSqlGenerationService:
         entity_mapping: dict[ObjectId, EntityModel] = {}
         feature_table_sqls = []
 
+        point_in_time_placeholder = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
+
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
             features = graph_container.offline_store_table_name_to_features[table_name]
             ingest_graph = ingest_graphs[0]
             primary_entities = await self._get_entities(
                 entity_mapping, ingest_graph.primary_entity_ids
             )
+
+            # Information required for serving parent features
+            lookup_entity_universe_expr = None
+            lookup_info = None
+            if deployment.serving_entity_ids is not None and sorted(ingest_graph.primary_entity_ids) != sorted(deployment.serving_entity_ids):
+                await self._retrieve_all_entities(entity_mapping)
+                lookup_feature_table = await self.entity_lookup_feature_table_service.get_precomputed_lookup_feature_table(
+                    primary_entity_ids=ingest_graph.primary_entity_ids,
+                    feature_ids=[feature.id for feature in features],
+                    feature_list=feature_list,
+                    full_serving_entity_ids=deployment.serving_entity_ids,
+                    feature_table_name="temp",
+                    feature_table_has_ttl=False,
+                    entity_id_to_serving_name={
+                        entity.id: entity.serving_names[0] for entity in entity_mapping.values()
+                    },
+                    feature_store_model=feature_store_model,
+                    feature_table_id=None,
+                )
+                if lookup_feature_table is not None:
+                    lookup_entity_universe_expr = (
+                        lookup_feature_table.entity_universe.get_entity_universe_expr(
+                            current_feature_timestamp=point_in_time_placeholder,
+                            last_materialized_timestamp=None,
+                        )
+                    )
+                    lookup_info = lookup_feature_table.precomputed_lookup_feature_table_info
+
             ingest_graph_metadata = get_combined_ingest_graph(
                 feature_infos=feature_infos,
                 primary_entity_ids=ingest_graph.primary_entity_ids,
@@ -154,7 +189,6 @@ class DeploymentSqlGenerationService:
                 request_column_names=set(request_column_names),
                 feature_store=feature_store_model,
             )
-            point_in_time_placeholder = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
             request_table_expr = entity_universe.get_entity_universe_expr(
                 current_feature_timestamp=point_in_time_placeholder,
                 last_materialized_timestamp=None,
@@ -180,6 +214,54 @@ class DeploymentSqlGenerationService:
                 column_statistics_info=column_statistics_info,
             )
             feature_query_expr = feature_query_plan.get_standalone_expr()
+
+            # Perform an additional join if the features need to be served using child entities
+            if lookup_entity_universe_expr is not None:
+                assert lookup_info is not None
+                serving_name_exprs = {}
+                join_conditions = []
+                for source_entity_id in ingest_graph.primary_entity_ids:
+                    source_serving_name = entity_mapping[source_entity_id].serving_names[0]
+                    lookup_serving_name = lookup_info.get_lookup_feature_table_serving_name(
+                        source_serving_name
+                    )
+                    if lookup_serving_name is None:
+                        serving_name_exprs[source_serving_name] = get_qualified_column_identifier(
+                            source_serving_name, "R"
+                        )
+                    else:
+                        serving_name_exprs[lookup_serving_name] = get_qualified_column_identifier(
+                            lookup_serving_name, "L"
+                        )
+                        join_conditions.append(
+                            expressions.EQ(
+                                this=get_qualified_column_identifier(source_serving_name, "L"),
+                                expression=get_qualified_column_identifier(
+                                    source_serving_name, "R"
+                                ),
+                            )
+                        )
+                column_names = [ingest_graph.output_column_name for ingest_graph in ingest_graphs]
+                feature_query_expr = (
+                    expressions.select(
+                        *(
+                            list(serving_name_exprs.values())
+                            + [
+                                get_qualified_column_identifier(column_name, "R")
+                                for column_name in column_names
+                            ]
+                        )
+                    )
+                    .from_(
+                        lookup_entity_universe_expr.subquery(alias="L"),
+                    )
+                    .join(
+                        feature_query_expr.subquery(alias="R"),
+                        join_type="left",
+                        on=expressions.and_(*join_conditions),
+                    )
+                )
+
             feature_query_expr = feature_query_expr.select(
                 expressions.alias_(
                     point_in_time_placeholder,
@@ -215,3 +297,7 @@ class DeploymentSqlGenerationService:
                 entity_mapping[entity_id] = entity_model
             entities.append(entity_mapping[entity_id])
         return entities
+
+    async def _retrieve_all_entities(self, entity_mapping: dict[ObjectId, EntityModel]) -> None:
+        async for entity_model in self.entity_service.list_documents_iterator(query_filter={}):
+            entity_mapping[entity_model.id] = entity_model
