@@ -44,7 +44,6 @@ def get_deployment_sql(client, deployment: fb.Deployment) -> DeploymentSqlModel:
         raise AssertionError(
             f"Deployment SQL generation task did not succeed, traceback:\n{traceback}"
         )
-    task_response_dict = task_response.json()
     output_path = task_response_dict["payload"]["task_output_path"]
     response = client.get(output_path)
     assert response.status_code == HTTPStatus.OK, response.text
@@ -182,7 +181,7 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     Time since last event feature
     """
     event_view = event_table.get_view()
-    feature_name = make_unique("event_count_7d")
+    feature_name = make_unique("days_since_last_event_7d")
     feature = event_view.groupby("ÜSER ID").aggregate_over(
         value_column="ËVENT_TIMESTAMP",
         method="latest",

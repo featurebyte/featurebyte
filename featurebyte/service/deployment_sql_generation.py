@@ -142,7 +142,9 @@ class DeploymentSqlGenerationService:
             # Information required for serving parent features
             lookup_entity_universe_expr = None
             lookup_info = None
-            if deployment.serving_entity_ids is not None and sorted(ingest_graph.primary_entity_ids) != sorted(deployment.serving_entity_ids):
+            if deployment.serving_entity_ids is not None and sorted(
+                ingest_graph.primary_entity_ids
+            ) != sorted(deployment.serving_entity_ids):
                 await self._retrieve_all_entities(entity_mapping)
                 lookup_feature_table = await self.entity_lookup_feature_table_service.get_precomputed_lookup_feature_table(
                     primary_entity_ids=ingest_graph.primary_entity_ids,
@@ -241,6 +243,12 @@ class DeploymentSqlGenerationService:
                                 ),
                             )
                         )
+
+                assert join_conditions, (
+                    "No join conditions found for parent serving. "
+                    "All source entities have lookup_serving_name = None."
+                )
+
                 column_names = [ingest_graph.output_column_name for ingest_graph in ingest_graphs]
                 feature_query_expr = (
                     expressions.select(
