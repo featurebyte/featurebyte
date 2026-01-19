@@ -1161,8 +1161,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Gets a Table object from the catalog based on its name.
 
         A Table object represents a source table within the data warehouse and provides metadata to support feature
-        engineering. There are four distinct types of Table objects: EventTable, ItemTable, DimensionTable,
-        and SCDTable.
+        engineering. There are six distinct types of Table objects: EventTable, ItemTable, DimensionTable,
+        SCDTable, TimeSeriesTable and SnapshotsTable.
 
         Parameters
         ----------

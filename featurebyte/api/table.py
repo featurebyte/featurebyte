@@ -32,14 +32,15 @@ class Table(TableListMixin):
     about the semantics of the table columns, specifying default cleaning operations, or furnishing descriptions of
     both the table and its columns.
 
-    At present, FeatureByte recognizes four table types:
+    FeatureByte recognizes six table types:
 
     - Event Table
     - Item Table
     - Slowly Changing Dimension Table
-    - Dimension Table.
+    - Dimension Table
+    - Time Series Table
+    - Snapshots Table
 
-    Two additional table types, Regular Time Series and Sensor data, will be supported in the near future.
     """
 
     # class variables
