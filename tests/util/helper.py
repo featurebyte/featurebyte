@@ -936,6 +936,32 @@ async def deploy_feature(
     return await app_container.feature_list_service.get_document(feature_list_model.id)
 
 
+async def deploy_features(
+    app_container,
+    features,
+    feature_list_name,
+    context_primary_entity_ids=None,
+    deployment_id=None,
+):
+    """
+    Helper function to create deploy a single feature using services
+    """
+    # Create feature
+    for feature in features:
+        if not feature.saved:
+            feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
+            await app_container.feature_service.create_document(data=feature_create_payload)
+
+    feature_list_model = await deploy_feature_ids(
+        app_container,
+        feature_list_name,
+        [feature.id for feature in features],
+        context_primary_entity_ids=context_primary_entity_ids,
+        deployment_id=deployment_id,
+    )
+    return await app_container.feature_list_service.get_document(feature_list_model.id)
+
+
 def undeploy_feature(feature):
     """Helper function to undeploy a single feature"""
     deployment: Deployment = Deployment.get(f"{feature.name}_list")

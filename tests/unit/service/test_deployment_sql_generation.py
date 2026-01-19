@@ -14,6 +14,7 @@ from featurebyte.models.deployment_sql import DeploymentSqlModel
 from tests.util.helper import (
     assert_equal_json_fixture,
     deploy_feature,
+    deploy_features,
 )
 
 TEST_CASES_MAPPING = {
@@ -24,6 +25,8 @@ TEST_CASES_MAPPING = {
     "time_since_latest_event_timestamp_feature": (
         "deployed_time_since_latest_event_timestamp_feature_list"
     ),
+    "float_feature_via_transaction": "deployed_float_feature_list_transaction_use_case",
+    "multiple_feature_tables": "deployed_multiple_feature_tables_feature_list",
 }
 
 
@@ -60,6 +63,29 @@ async def deployed_float_feature_list_cust_id_use_case(
         float_feature,
         return_type="feature_list",
         deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_float_feature_list_transaction_use_case(
+    app_container,
+    float_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+    transaction_entity,
+):
+    """
+    Fixture for deployed float feature for transaction use case
+    """
+    _ = mock_update_data_warehouse
+    feature_list = await deploy_feature(
+        app_container,
+        float_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+        context_primary_entity_ids=[transaction_entity.id],
     )
     return feature_list
 
@@ -147,6 +173,29 @@ async def deployed_time_since_latest_event_timestamp_feature_list(
         app_container,
         time_since_latest_event_timestamp_feature,
         return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_multiple_feature_tables_feature_list(
+    app_container,
+    time_since_latest_event_timestamp_feature,
+    ts_window_aggregate_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list that requires multiple feature tables
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_features(
+        app_container,
+        [time_since_latest_event_timestamp_feature, ts_window_aggregate_feature],
+        feature_list_name=f"feature_list_{ObjectId()}",
         deployment_id=deployment_id,
     )
     return feature_list

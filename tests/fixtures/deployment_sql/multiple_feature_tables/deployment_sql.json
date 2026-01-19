@@ -1,0 +1,16 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_names": [
+                "col_float_sum_3month"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        },
+        {
+            "feature_names": [
+                "time_since_latest_event_timestamp"
+            ],
+            "sql_code": "<redacted: see 1.sql>"
+        }
+    ]
+}
