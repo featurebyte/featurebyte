@@ -11,7 +11,10 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
-from featurebyte.models.offline_store_feature_table import get_combined_ingest_graph
+from featurebyte.models.offline_store_feature_table import (
+    OfflineStoreFeatureTableModel,
+    get_combined_ingest_graph,
+)
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
@@ -184,10 +187,25 @@ class DeploymentSqlGenerationService:
             ]
             graph = ingest_graph_metadata.feature_cluster.graph
             nodes = ingest_graph_metadata.feature_cluster.nodes
+            offline_store_feature_table = OfflineStoreFeatureTableModel(
+                name=table_name,
+                feature_ids=[feature.id for feature in features],
+                primary_entity_ids=[entity.id for entity in primary_entities],
+                serving_names=[entity.serving_names[0] for entity in primary_entities],
+                feature_cluster=ingest_graph_metadata.feature_cluster,
+                output_column_names=ingest_graph_metadata.output_column_names,
+                output_dtypes=ingest_graph_metadata.output_dtypes,
+                entity_universe=entity_universe.model_dump(by_alias=True),
+                has_ttl=ingest_graph.has_ttl,
+                feature_job_setting=ingest_graph.feature_job_setting,
+                aggregation_ids=ingest_graph_metadata.aggregation_ids,
+            )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph_nodes=(graph, nodes),
                 feature_list_model=None,
-                offline_store_feature_table_primary_entity_ids=ingest_graph.primary_entity_ids,
+                # TODO: remove this param?
+                # offline_store_feature_table_primary_entity_ids=ingest_graph.primary_entity_ids,
+                offline_store_feature_table_model=offline_store_feature_table,
                 request_column_names=set(request_column_names),
                 feature_store=feature_store_model,
             )

@@ -207,6 +207,34 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     )
 
 
+@pytest.fixture
+def internal_parent_child_relationship_feature_test_case(client, scd_table, user_entity):
+    """
+    Time since last event feature
+    """
+    feature_name = make_unique("complex_parent_child_feature")
+    scd_view = scd_table.get_view()
+    feature_user_id = scd_view["ID"].as_feature("some_lookup_feature")
+    feature_user_id_parent = scd_view.groupby("User Status").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count",
+    )
+    feature = feature_user_id + feature_user_id_parent
+    feature.name = feature_name
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
+    )
+
+
 def process_sql(session, sql_code, point_in_time):
     """
     Replace placeholders in SQL code to make it executable
@@ -267,6 +295,7 @@ async def check_deployment_sql(session, test_case):
         "snapshots_lookup_feature_test_case",
         "time_since_last_event_feature_test_case",
         "user_feature_served_via_transaction_test_case",
+        "internal_parent_child_relationship_feature_test_case",
     ],
 )
 @pytest.mark.asyncio
