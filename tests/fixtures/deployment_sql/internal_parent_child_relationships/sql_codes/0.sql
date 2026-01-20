@@ -174,7 +174,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
     REQ."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1",
-    "T0"."_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1"
+    "T0"."_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
   FROM (
     SELECT
       L."cust_id" AS "cust_id",
@@ -287,7 +287,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
     SELECT
       REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
       REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
-      COUNT(*) AS "_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1"
+      COUNT(*) AS "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
     FROM "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS REQ
     INNER JOIN (
       SELECT
@@ -324,7 +324,7 @@ SELECT
       (
         CONCAT(CAST("_fb_internal_cust_id_lookup_col_boolean_project_1" AS VARCHAR), '_')
       ),
-      CAST("_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1" AS VARCHAR)
+      CAST("_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" AS VARCHAR)
     )
   ) AS "complex_parent_child_feature",
   {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"

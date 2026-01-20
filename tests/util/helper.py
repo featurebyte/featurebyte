@@ -424,9 +424,10 @@ def replace_objectid_suffix(text):
     """
     Replace dynamic ObjectId suffixes in a string with a dummy value.
 
-    ObjectIds are 24-character hexadecimal strings that appear as suffixes in column names
+    ObjectIds are 24-character hexadecimal strings that appear in column names
     and other identifiers (e.g., "cust_id_696f1750905213405cc2cedf" becomes
-    "cust_id_000000000000000000000000").
+    "cust_id_000000000000000000000000"). This also handles ObjectIds in the middle
+    of identifiers like "_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count".
 
     Parameters
     ----------
@@ -438,7 +439,7 @@ def replace_objectid_suffix(text):
     str
         The string with ObjectId suffixes replaced with zeros
     """
-    return re.sub(r"_[a-f0-9]{24}\b", "_000000000000000000000000", text)
+    return re.sub(r"_[a-f0-9]{24}(?![a-f0-9])", "_000000000000000000000000", text)
 
 
 def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
