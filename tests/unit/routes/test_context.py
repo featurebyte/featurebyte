@@ -376,6 +376,12 @@ class TestContextApi(BaseCatalogApiTestSuite):
             "propensity": {"granularity": "global", "knowledge": "design-known", "p_global": 0.5},
         }
 
+        response = test_api_client.delete(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        response = test_api_client.get(f"/treatment/{treatment_payload['_id']}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
     def test_create_context__not_all_primary_entity_ids(
         self,
         create_success_response,

@@ -244,3 +244,17 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             associated_use_cases=use_cases,
             treatment=treatment_info,
         )
+
+    async def delete(self, document_id: ObjectId) -> None:
+        context = await self.service.get_document(document_id=document_id)
+        treatment_id = context.treatment_id
+        await super().delete(document_id=document_id)
+
+        if treatment_id:
+            has_another_context = False
+            async for doc in self.service.list_documents_iterator(
+                query_filter={"treatment_id": treatment_id}
+            ):
+                has_another_context = True
+            if not has_another_context:
+                await self.treatment_service.delete_document(document_id=treatment_id)
