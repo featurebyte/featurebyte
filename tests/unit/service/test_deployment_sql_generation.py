@@ -15,6 +15,7 @@ from tests.util.helper import (
     assert_equal_json_fixture,
     deploy_feature,
     deploy_features,
+    replace_objectid_suffix,
 )
 
 TEST_CASES_MAPPING = {
@@ -261,7 +262,7 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
     actual_sql_codes = []
     for idx, feature_table_sql in enumerate(actual_dict["feature_table_sqls"]):
         feature_table_sql.pop("feature_ids")
-        actual_sql_codes.append(feature_table_sql["sql_code"])
+        actual_sql_codes.append(replace_objectid_suffix(feature_table_sql["sql_code"]))
         expected_sql_filename = f"{idx}.sql"
         feature_table_sql["sql_code"] = f"<redacted: see {expected_sql_filename}>"
 

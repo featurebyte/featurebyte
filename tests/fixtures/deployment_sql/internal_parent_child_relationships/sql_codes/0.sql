@@ -57,12 +57,12 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
   SELECT
     REQ."cust_id" AS "cust_id",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-    REQ."cust_id_696f1750905213405cc2cedf" AS "cust_id_696f1750905213405cc2cedf"
+    REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000"
   FROM (
     SELECT
       L."cust_id" AS "cust_id",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
-      R."col_boolean" AS "cust_id_696f1750905213405cc2cedf"
+      R."col_boolean" AS "cust_id_000000000000000000000000"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -163,23 +163,23 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         OR R."end_timestamp" IS NULL
       )
   ) AS REQ
-), "REQUEST_TABLE_POINT_IN_TIME_cust_id_696f1750905213405cc2cedf" AS (
+), "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS (
   SELECT DISTINCT
     "POINT_IN_TIME",
-    "cust_id_696f1750905213405cc2cedf"
+    "cust_id_000000000000000000000000"
   FROM JOINED_PARENTS_DEPLOYMENT_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."cust_id" AS "cust_id",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-    REQ."cust_id_696f1750905213405cc2cedf" AS "cust_id_696f1750905213405cc2cedf",
+    REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
     REQ."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1",
-    "T0"."_fb_internal_cust_id_696f1750905213405cc2cedf_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_696f1750905213405cc2cedf_as_at_count_None_col_boolean_None_project_1"
+    "T0"."_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1"
   FROM (
     SELECT
       L."cust_id" AS "cust_id",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
-      L."cust_id_696f1750905213405cc2cedf" AS "cust_id_696f1750905213405cc2cedf",
+      L."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
       R."col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
     FROM (
       SELECT
@@ -188,7 +188,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         "__FB_TS_COL",
         "cust_id",
         "POINT_IN_TIME",
-        "cust_id_696f1750905213405cc2cedf"
+        "cust_id_000000000000000000000000"
       FROM (
         SELECT
           "__FB_KEY_COL_0",
@@ -196,7 +196,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
           "__FB_TS_COL",
           "cust_id",
           "POINT_IN_TIME",
-          "cust_id_696f1750905213405cc2cedf",
+          "cust_id_000000000000000000000000",
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
@@ -206,12 +206,12 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
             2 AS "__FB_TS_TIE_BREAKER_COL",
             "cust_id" AS "cust_id",
             "POINT_IN_TIME" AS "POINT_IN_TIME",
-            "cust_id_696f1750905213405cc2cedf" AS "cust_id_696f1750905213405cc2cedf"
+            "cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000"
           FROM (
             SELECT
               REQ."cust_id",
               REQ."POINT_IN_TIME",
-              REQ."cust_id_696f1750905213405cc2cedf"
+              REQ."cust_id_000000000000000000000000"
             FROM JOINED_PARENTS_DEPLOYMENT_REQUEST_TABLE AS REQ
           )
           UNION ALL
@@ -222,7 +222,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
             1 AS "__FB_TS_TIE_BREAKER_COL",
             NULL AS "cust_id",
             NULL AS "POINT_IN_TIME",
-            NULL AS "cust_id_696f1750905213405cc2cedf"
+            NULL AS "cust_id_000000000000000000000000"
           FROM (
             SELECT
               "col_int" AS "col_int",
@@ -286,9 +286,9 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."cust_id_696f1750905213405cc2cedf" AS "cust_id_696f1750905213405cc2cedf",
-      COUNT(*) AS "_fb_internal_cust_id_696f1750905213405cc2cedf_as_at_count_None_col_boolean_None_project_1"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_cust_id_696f1750905213405cc2cedf" AS REQ
+      REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
+      COUNT(*) AS "_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1"
+    FROM "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS REQ
     INNER JOIN (
       SELECT
         "col_int" AS "col_int",
@@ -303,7 +303,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."scd_table"
     ) AS SCD
-      ON REQ."cust_id_696f1750905213405cc2cedf" = SCD."col_boolean"
+      ON REQ."cust_id_000000000000000000000000" = SCD."col_boolean"
       AND (
         SCD."effective_timestamp" <= REQ."POINT_IN_TIME"
         AND (
@@ -312,10 +312,10 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
       )
     GROUP BY
       REQ."POINT_IN_TIME",
-      REQ."cust_id_696f1750905213405cc2cedf"
+      REQ."cust_id_000000000000000000000000"
   ) AS T0
     ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
-    AND REQ."cust_id_696f1750905213405cc2cedf" = T0."cust_id_696f1750905213405cc2cedf"
+    AND REQ."cust_id_000000000000000000000000" = T0."cust_id_000000000000000000000000"
 )
 SELECT
   AGG."cust_id",
@@ -324,7 +324,7 @@ SELECT
       (
         CONCAT(CAST("_fb_internal_cust_id_lookup_col_boolean_project_1" AS VARCHAR), '_')
       ),
-      CAST("_fb_internal_cust_id_696f1750905213405cc2cedf_as_at_count_None_col_boolean_None_project_1" AS VARCHAR)
+      CAST("_fb_internal_cust_id_696f19f172a991f49c6a0eb7_as_at_count_None_col_boolean_None_project_1" AS VARCHAR)
     )
   ) AS "complex_parent_child_feature",
   {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"

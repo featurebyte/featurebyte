@@ -420,6 +420,27 @@ def assert_sql_equal(actual, expected):
     assert actual == expected
 
 
+def replace_objectid_suffix(text):
+    """
+    Replace dynamic ObjectId suffixes in a string with a dummy value.
+
+    ObjectIds are 24-character hexadecimal strings that appear as suffixes in column names
+    and other identifiers (e.g., "cust_id_696f1750905213405cc2cedf" becomes
+    "cust_id_000000000000000000000000").
+
+    Parameters
+    ----------
+    text : str
+        The string to process, typically a SQL query
+
+    Returns
+    -------
+    str
+        The string with ObjectId suffixes replaced with zeros
+    """
+    return re.sub(r"_[a-f0-9]{24}\b", "_000000000000000000000000", text)
+
+
 def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
     """
     Create feature to capture the entropy of inter-event interval time,
