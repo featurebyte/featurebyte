@@ -11,7 +11,10 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
-from featurebyte.models.offline_store_feature_table import get_combined_ingest_graph
+from featurebyte.models.offline_store_feature_table import (
+    OfflineStoreFeatureTableModel,
+    get_combined_ingest_graph,
+)
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
@@ -142,7 +145,9 @@ class DeploymentSqlGenerationService:
             # Information required for serving parent features
             lookup_entity_universe_expr = None
             lookup_info = None
-            if deployment.serving_entity_ids is not None and sorted(ingest_graph.primary_entity_ids) != sorted(deployment.serving_entity_ids):
+            if deployment.serving_entity_ids is not None and sorted(
+                ingest_graph.primary_entity_ids
+            ) != sorted(deployment.serving_entity_ids):
                 await self._retrieve_all_entities(entity_mapping)
                 lookup_feature_table = await self.entity_lookup_feature_table_service.get_precomputed_lookup_feature_table(
                     primary_entity_ids=ingest_graph.primary_entity_ids,
@@ -182,10 +187,23 @@ class DeploymentSqlGenerationService:
             ]
             graph = ingest_graph_metadata.feature_cluster.graph
             nodes = ingest_graph_metadata.feature_cluster.nodes
+            offline_store_feature_table = OfflineStoreFeatureTableModel(
+                name=table_name,
+                feature_ids=[feature.id for feature in features],
+                primary_entity_ids=ingest_graph.primary_entity_ids,
+                serving_names=[entity.serving_names[0] for entity in primary_entities],
+                feature_cluster=ingest_graph_metadata.feature_cluster,
+                output_column_names=ingest_graph_metadata.output_column_names,
+                output_dtypes=ingest_graph_metadata.output_dtypes,
+                entity_universe=entity_universe.model_dump(by_alias=True),
+                has_ttl=ingest_graph.has_ttl,
+                feature_job_setting=ingest_graph.feature_job_setting,
+                aggregation_ids=ingest_graph_metadata.aggregation_ids,
+            )
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph_nodes=(graph, nodes),
                 feature_list_model=None,
-                offline_store_feature_table_primary_entity_ids=ingest_graph.primary_entity_ids,
+                offline_store_feature_table_model=offline_store_feature_table,
                 request_column_names=set(request_column_names),
                 feature_store=feature_store_model,
             )
@@ -241,6 +259,12 @@ class DeploymentSqlGenerationService:
                                 ),
                             )
                         )
+
+                assert join_conditions, (
+                    "No join conditions found for parent serving. "
+                    "All source entities have lookup_serving_name = None."
+                )
+
                 column_names = [ingest_graph.output_column_name for ingest_graph in ingest_graphs]
                 feature_query_expr = (
                     expressions.select(

@@ -1,0 +1,10 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_names": [
+                "complex_parent_child_feature"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        }
+    ]
+}

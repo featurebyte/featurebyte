@@ -44,7 +44,6 @@ def get_deployment_sql(client, deployment: fb.Deployment) -> DeploymentSqlModel:
         raise AssertionError(
             f"Deployment SQL generation task did not succeed, traceback:\n{traceback}"
         )
-    task_response_dict = task_response.json()
     output_path = task_response_dict["payload"]["task_output_path"]
     response = client.get(output_path)
     assert response.status_code == HTTPStatus.OK, response.text
@@ -182,7 +181,7 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     Time since last event feature
     """
     event_view = event_table.get_view()
-    feature_name = make_unique("event_count_7d")
+    feature_name = make_unique("days_since_last_event_7d")
     feature = event_view.groupby("ÜSER ID").aggregate_over(
         value_column="ËVENT_TIMESTAMP",
         method="latest",
@@ -199,6 +198,34 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     feature_list = fb.FeatureList([feature], name=feature_name)
     feature_list.save()
     deployment = feature_list.deploy()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
+    )
+
+
+@pytest.fixture
+def internal_parent_child_relationship_feature_test_case(client, scd_table, user_entity):
+    """
+    Time since last event feature
+    """
+    feature_name = make_unique("complex_parent_child_feature")
+    scd_view = scd_table.get_view()
+    feature_user_id = scd_view["ID"].as_feature("some_lookup_feature")
+    feature_user_id_parent = scd_view.groupby("User Status").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count",
+    )
+    feature = feature_user_id + feature_user_id_parent
+    feature.name = feature_name
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
     deployment_sql = get_deployment_sql(client, deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
@@ -268,6 +295,7 @@ async def check_deployment_sql(session, test_case):
         "snapshots_lookup_feature_test_case",
         "time_since_last_event_feature_test_case",
         "user_feature_served_via_transaction_test_case",
+        "internal_parent_child_relationship_feature_test_case",
     ],
 )
 @pytest.mark.asyncio

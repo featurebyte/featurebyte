@@ -15,6 +15,7 @@ from tests.util.helper import (
     assert_equal_json_fixture,
     deploy_feature,
     deploy_features,
+    replace_objectid_suffix,
 )
 
 TEST_CASES_MAPPING = {
@@ -27,6 +28,9 @@ TEST_CASES_MAPPING = {
     ),
     "float_feature_via_transaction": "deployed_float_feature_list_transaction_use_case",
     "multiple_feature_tables": "deployed_multiple_feature_tables_feature_list",
+    "internal_parent_child_relationships": (
+        "deployed_feature_with_internal_parent_child_relationships"
+    ),
 }
 
 
@@ -202,6 +206,28 @@ async def deployed_multiple_feature_tables_feature_list(
 
 
 @pytest_asyncio.fixture
+async def deployed_feature_with_internal_parent_child_relationships(
+    app_container,
+    feature_with_internal_parent_child_relationships,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list that requires multiple feature tables
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_features(
+        app_container,
+        [feature_with_internal_parent_child_relationships],
+        feature_list_name=f"feature_list_{ObjectId()}",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
 async def deployed_not_supported_feature_list(
     app_container,
     snapshots_lookup_feature,
@@ -236,7 +262,7 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
     actual_sql_codes = []
     for idx, feature_table_sql in enumerate(actual_dict["feature_table_sqls"]):
         feature_table_sql.pop("feature_ids")
-        actual_sql_codes.append(feature_table_sql["sql_code"])
+        actual_sql_codes.append(replace_objectid_suffix(feature_table_sql["sql_code"]))
         expected_sql_filename = f"{idx}.sql"
         feature_table_sql["sql_code"] = f"<redacted: see {expected_sql_filename}>"
 
