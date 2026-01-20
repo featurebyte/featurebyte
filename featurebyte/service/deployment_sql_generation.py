@@ -190,7 +190,7 @@ class DeploymentSqlGenerationService:
             offline_store_feature_table = OfflineStoreFeatureTableModel(
                 name=table_name,
                 feature_ids=[feature.id for feature in features],
-                primary_entity_ids=[entity.id for entity in primary_entities],
+                primary_entity_ids=ingest_graph.primary_entity_ids,
                 serving_names=[entity.serving_names[0] for entity in primary_entities],
                 feature_cluster=ingest_graph_metadata.feature_cluster,
                 output_column_names=ingest_graph_metadata.output_column_names,
@@ -203,8 +203,6 @@ class DeploymentSqlGenerationService:
             parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph_nodes=(graph, nodes),
                 feature_list_model=None,
-                # TODO: remove this param?
-                # offline_store_feature_table_primary_entity_ids=ingest_graph.primary_entity_ids,
                 offline_store_feature_table_model=offline_store_feature_table,
                 request_column_names=set(request_column_names),
                 feature_store=feature_store_model,
