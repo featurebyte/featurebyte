@@ -27,6 +27,9 @@ TEST_CASES_MAPPING = {
     ),
     "float_feature_via_transaction": "deployed_float_feature_list_transaction_use_case",
     "multiple_feature_tables": "deployed_multiple_feature_tables_feature_list",
+    "internal_parent_child_relationships": (
+        "deployed_feature_with_internal_parent_child_relationships"
+    ),
 }
 
 
@@ -195,6 +198,28 @@ async def deployed_multiple_feature_tables_feature_list(
     feature_list = await deploy_features(
         app_container,
         [time_since_latest_event_timestamp_feature, ts_window_aggregate_feature],
+        feature_list_name=f"feature_list_{ObjectId()}",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_feature_with_internal_parent_child_relationships(
+    app_container,
+    feature_with_internal_parent_child_relationships,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list that requires multiple feature tables
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_features(
+        app_container,
+        [feature_with_internal_parent_child_relationships],
         feature_list_name=f"feature_list_{ObjectId()}",
         deployment_id=deployment_id,
     )
