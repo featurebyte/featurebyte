@@ -176,6 +176,27 @@ def snapshots_lookup_feature_test_case(client, snapshots_table, series_entity):
 
 
 @pytest.fixture
+def scd_lookup_feature_test_case(client, scd_table, user_entity):
+    """
+    SCD lookup feature test case
+    """
+    scd_view = scd_table.get_view()
+    feature_name = make_unique("some_lookup_feature")
+    feature = scd_view["ID"].as_feature(feature_name)
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
+    )
+
+
+@pytest.fixture
 def time_since_last_event_feature_test_case(client, event_table, user_entity):
     """
     Time since last event feature
@@ -293,6 +314,7 @@ async def check_deployment_sql(session, test_case):
         "event_table_feature_test_case",
         "time_series_table_feature_test_case",
         "snapshots_lookup_feature_test_case",
+        "scd_lookup_feature_test_case",
         "time_since_last_event_feature_test_case",
         "user_feature_served_via_transaction_test_case",
         "internal_parent_child_relationship_feature_test_case",
