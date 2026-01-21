@@ -63,8 +63,10 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         self.table_service = table_service
         self.session_manager_service = session_manager_service
 
+    @property
+    def table_to_delete_action(self) -> dict[MaterializedTableCollectionName, Any]:
         # table to delete action mapping
-        self.table_to_delete_action = {
+        return {
             MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
             MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
             MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
