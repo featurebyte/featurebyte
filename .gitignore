@@ -581,3 +581,7 @@ training_data.parquet
 # sublime
 *.sublime-project
 *.sublime-workspace
+
+# Claude code
+CLAUDE.md
+.claude

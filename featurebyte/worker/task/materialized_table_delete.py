@@ -63,6 +63,15 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         self.table_service = table_service
         self.session_manager_service = session_manager_service
 
+        # table to delete action mapping
+        self.table_to_delete_action = {
+            MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
+            MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
+            MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
+            MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
+            MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
+        }
+
     async def get_task_description(self, payload: MaterializedTableDeleteTaskPayload) -> str:
         service_map = {
             MaterializedTableCollectionName.BATCH_REQUEST: self.batch_request_table_service,
@@ -148,14 +157,5 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
             )
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
-        # table to delete action mapping
-        table_to_delete_action = {
-            MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
-            MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
-            MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
-            MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
-            MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
-        }
-
         # delete document stored at mongo
-        await table_to_delete_action[payload.collection_name](payload)
+        await self.table_to_delete_action[payload.collection_name](payload)
