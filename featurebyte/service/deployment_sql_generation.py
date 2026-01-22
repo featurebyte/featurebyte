@@ -226,7 +226,7 @@ class DeploymentSqlGenerationService:
                 graph=graph,
                 nodes=nodes,
                 source_info=feature_store_model.get_source_info(),
-                CURRENT_TIMESTAMP_PLACEHOLDER=CURRENT_TIMESTAMP_PLACEHOLDER,
+                point_in_time_placeholder=CURRENT_TIMESTAMP_PLACEHOLDER,
                 request_table_columns=request_column_names,
                 request_table_expr=request_table_expr,
                 parent_serving_preparation=parent_serving_preparation,
