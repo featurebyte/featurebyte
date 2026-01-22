@@ -220,6 +220,31 @@ def aggregate_asat_feature_test_case(client, scd_table, status_entity):
 
 
 @pytest.fixture
+def snapshots_aggregate_asat_feature_test_case(client, snapshots_table, user_entity):
+    """
+    Aggregate asat feature from snapshots table test case
+    """
+    view = snapshots_table.get_view()
+    feature_name = make_unique("value_col_by_user_id_asat")
+    feature = view.groupby("user_id_col").aggregate_asat(
+        method="sum",
+        value_column="value_col",
+        feature_name=feature_name,
+    )
+    feature_list = fb.FeatureList([feature], name=feature_name)
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    deployment.enable()
+    deployment_sql = get_deployment_sql(client, deployment)
+    return DeploymentSqlTestCase(
+        feature_list=feature_list,
+        deployment_sql=deployment_sql,
+        point_in_time="2001-01-15 10:00:00",
+        expected_column_names=["POINT_IN_TIME", user_entity.serving_names[0], feature_name],
+    )
+
+
+@pytest.fixture
 def time_since_last_event_feature_test_case(client, event_table, user_entity):
     """
     Time since last event feature
@@ -339,6 +364,7 @@ async def check_deployment_sql(session, test_case):
         "snapshots_lookup_feature_test_case",
         "scd_lookup_feature_test_case",
         "aggregate_asat_feature_test_case",
+        "snapshots_aggregate_asat_feature_test_case",
         "time_since_last_event_feature_test_case",
         "user_feature_served_via_transaction_test_case",
         "internal_parent_child_relationship_feature_test_case",

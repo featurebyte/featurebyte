@@ -1,0 +1,10 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_names": [
+                "snapshots_asat_col_int_sum"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        }
+    ]
+}

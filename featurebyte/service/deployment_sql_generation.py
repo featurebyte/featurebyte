@@ -16,7 +16,11 @@ from featurebyte.models.offline_store_feature_table import (
     get_combined_ingest_graph,
 )
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
+    get_qualified_column_identifier,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.service.catalog import CatalogService
@@ -133,8 +137,6 @@ class DeploymentSqlGenerationService:
         entity_mapping: dict[ObjectId, EntityModel] = {}
         feature_table_sqls = []
 
-        point_in_time_placeholder = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
-
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
             features = graph_container.offline_store_table_name_to_features[table_name]
             ingest_graph = ingest_graphs[0]
@@ -165,7 +167,7 @@ class DeploymentSqlGenerationService:
                 if lookup_feature_table is not None:
                     lookup_entity_universe_expr = (
                         lookup_feature_table.entity_universe.get_entity_universe_expr(
-                            current_feature_timestamp=point_in_time_placeholder,
+                            current_feature_timestamp=CURRENT_TIMESTAMP_PLACEHOLDER,
                             last_materialized_timestamp=None,
                         )
                     )
@@ -208,13 +210,13 @@ class DeploymentSqlGenerationService:
                 feature_store=feature_store_model,
             )
             request_table_expr = entity_universe.get_entity_universe_expr(
-                current_feature_timestamp=point_in_time_placeholder,
+                current_feature_timestamp=CURRENT_TIMESTAMP_PLACEHOLDER,
                 last_materialized_timestamp=None,
             )
             partition_column_filters = get_partition_filters_from_graph(
                 query_graph=graph,
-                min_point_in_time=point_in_time_placeholder,
-                max_point_in_time=point_in_time_placeholder,
+                min_point_in_time=CURRENT_TIMESTAMP_PLACEHOLDER,
+                max_point_in_time=CURRENT_TIMESTAMP_PLACEHOLDER,
                 adapter=get_sql_adapter(feature_store_model.get_source_info()),
             )
             column_statistics_info = (
@@ -224,7 +226,7 @@ class DeploymentSqlGenerationService:
                 graph=graph,
                 nodes=nodes,
                 source_info=feature_store_model.get_source_info(),
-                point_in_time_placeholder=point_in_time_placeholder,
+                point_in_time_placeholder=CURRENT_TIMESTAMP_PLACEHOLDER,
                 request_table_columns=request_column_names,
                 request_table_expr=request_table_expr,
                 parent_serving_preparation=parent_serving_preparation,
@@ -288,7 +290,7 @@ class DeploymentSqlGenerationService:
 
             feature_query_expr = feature_query_expr.select(
                 expressions.alias_(
-                    point_in_time_placeholder,
+                    CURRENT_TIMESTAMP_PLACEHOLDER,
                     alias=SpecialColumnName.POINT_IN_TIME,
                     quoted=True,
                 )

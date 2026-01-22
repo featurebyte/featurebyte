@@ -27,12 +27,14 @@ from featurebyte.query_graph.sql.asat_helper import (
     get_record_validity_condition,
 )
 from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
     get_qualified_column_identifier,
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
 from featurebyte.query_graph.sql.specifications.base_aggregate_asat import BaseAggregateAsAtSpec
+from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 
 AsAtSpecT = TypeVar("AsAtSpecT", bound=BaseAggregateAsAtSpec)
 
@@ -65,7 +67,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         """
         if aggregation_spec.parameters.snapshots_parameters is None:
             self.request_table_plan.add_aggregation_spec(aggregation_spec)
-        else:
+        elif not self.is_deployment_sql:
             self.snapshots_request_table_plan.add_snapshots_parameters(
                 aggregation_spec.parameters.snapshots_parameters, aggregation_spec.serving_names
             )
@@ -222,6 +224,13 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
     def _get_aggregation_subquery_from_snapshots(
         self, specs: list[AsAtSpecT]
     ) -> LeftJoinableSubquery:
+        if self.is_deployment_sql:
+            return self._get_aggregation_subquery_from_snapshots_deployment(specs)
+        return self._get_aggregation_subquery_from_snapshots_historical(specs)
+
+    def _get_aggregation_subquery_from_snapshots_historical(
+        self, specs: list[AsAtSpecT]
+    ) -> LeftJoinableSubquery:
         spec = specs[0]
         snapshots_parameters = spec.parameters.snapshots_parameters
         assert snapshots_parameters is not None
@@ -330,6 +339,86 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             expr=aggregated_expr,
             column_names=aggregated_column_names,
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+        )
+
+    def _get_aggregation_subquery_from_snapshots_deployment(
+        self, specs: list[AsAtSpecT]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+        snapshots_parameters = spec.parameters.snapshots_parameters
+        assert snapshots_parameters is not None
+
+        # Lookup the current snapshots for the adjusted point in time and perform as-at aggregation
+        adjusted_point_in_time_expr = apply_snapshot_adjustment(
+            datetime_expr=CURRENT_TIMESTAMP_PLACEHOLDER,
+            time_interval=snapshots_parameters.time_interval,
+            feature_job_setting=snapshots_parameters.feature_job_setting,
+            format_string=snapshots_parameters.snapshot_timestamp_format_string,
+            offset_size=snapshots_parameters.offset_size,
+            adapter=self.adapter,
+        )
+        groupby_input_expr = (
+            select()
+            .from_(spec.source_expr.subquery(alias="SNAPSHOTS"))
+            .where(
+                expressions.EQ(
+                    this=adjusted_point_in_time_expr,
+                    expression=get_qualified_column_identifier(
+                        snapshots_parameters.snapshot_datetime_column, "SNAPSHOTS"
+                    ),
+                )
+            )
+        )
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(key, "SNAPSHOTS"),
+                name=serving_name,
+            )
+            for key, serving_name in zip(spec.parameters.keys, spec.serving_names)
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "SNAPSHOTS"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "SNAPSHOTS")
+                    if s.parameters.parent
+                    else None
+                ),
+                result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
+                parent_cols=(
+                    [get_qualified_column_identifier(s.parameters.parent, "SNAPSHOTS")]
+                    if s.parameters.parent
+                    else []
+                ),
+            )
+            for s in specs
+        ]
+        aggregated_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
+        )
+
+        column_names = set()
+        for _spec in specs:
+            column_names.add(_spec.agg_result_name)
+        aggregated_column_names = sorted(column_names)
+
+        return LeftJoinableSubquery(
+            expr=aggregated_expr,
+            column_names=aggregated_column_names,
+            join_keys=spec.serving_names,
         )
 
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
