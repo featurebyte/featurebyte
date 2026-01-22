@@ -16,7 +16,11 @@ from featurebyte.models.offline_store_feature_table import (
     get_combined_ingest_graph,
 )
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
+    get_qualified_column_identifier,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
 from featurebyte.service.catalog import CatalogService
@@ -133,7 +137,7 @@ class DeploymentSqlGenerationService:
         entity_mapping: dict[ObjectId, EntityModel] = {}
         feature_table_sqls = []
 
-        point_in_time_placeholder = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
+        point_in_time_placeholder = CURRENT_TIMESTAMP_PLACEHOLDER
 
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
             features = graph_container.offline_store_table_name_to_features[table_name]

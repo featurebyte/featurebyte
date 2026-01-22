@@ -23,7 +23,7 @@ from featurebyte.query_graph.sql.aggregator.range_join import (
     range_join_tables,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import CURRENT_TIMESTAMP_PLACEHOLDER, quoted_identifier
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
@@ -738,9 +738,7 @@ class WindowAggregator(TileBasedAggregator):
         spec = specs[0]
 
         # Filter source data to only include rows within the window for the fixed point in time
-        point_in_time_expr = self.adapter.to_epoch_seconds(
-            expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
-        )
+        point_in_time_expr = self.adapter.to_epoch_seconds(CURRENT_TIMESTAMP_PLACEHOLDER)
         range_end_expr = expressions.Sub(
             this=point_in_time_expr,
             expression=make_literal_value(spec.blind_spot),

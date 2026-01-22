@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.asat_helper import (
     get_record_validity_condition,
 )
 from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -349,7 +350,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
 
         # Lookup the current snapshots for the adjusted point in time and perform as-at aggregation
         adjusted_point_in_time_expr = apply_snapshot_adjustment(
-            datetime_expr=expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}"),
+            datetime_expr=CURRENT_TIMESTAMP_PLACEHOLDER,
             time_interval=snapshots_parameters.time_interval,
             feature_job_setting=snapshots_parameters.feature_job_setting,
             format_string=snapshots_parameters.snapshot_timestamp_format_string,

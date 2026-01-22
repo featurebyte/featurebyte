@@ -24,6 +24,9 @@ REQUEST_TABLE_NAME = "REQUEST_TABLE"
 # related operations which discard missing keys by default.
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
 
+# Placeholder for the current timestamp in deployment SQL, to be replaced at query time
+CURRENT_TIMESTAMP_PLACEHOLDER = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
+
 CteStatement = Tuple[Union[str, Expression], Expression]
 CteStatements = Sequence[CteStatement]
 

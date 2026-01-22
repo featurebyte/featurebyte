@@ -33,6 +33,7 @@ from featurebyte.query_graph.sql.aggregator.range_join import (
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -769,7 +770,7 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         # Filter input for the specific point in time during deployment
         filtered_aggregation_source_expr = filter_aggregation_input_for_time_series(
             aggregate_input_expr=spec.aggregation_source.expr,
-            job_datetime_expr=expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}"),
+            job_datetime_expr=CURRENT_TIMESTAMP_PLACEHOLDER,
             window=spec.window,
             adapter=self.adapter,
             parameters=spec.parameters,
