@@ -38,11 +38,9 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
   FROM DEPLOYMENT_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."gender" AS "gender",
+      SCD."col_boolean" AS "gender",
       COUNT(*) AS "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_gender" AS REQ
-    INNER JOIN (
+    FROM (
       SELECT
         "col_int" AS "col_int",
         "col_float" AS "col_float",
@@ -56,18 +54,15 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."scd_table"
     ) AS SCD
-      ON REQ."gender" = SCD."col_boolean"
+    WHERE
+      SCD."effective_timestamp" <= {{ CURRENT_TIMESTAMP }}
       AND (
-        SCD."effective_timestamp" <= REQ."POINT_IN_TIME"
-        AND (
-          SCD."end_timestamp" > REQ."POINT_IN_TIME" OR SCD."end_timestamp" IS NULL
-        )
+        SCD."end_timestamp" > {{ CURRENT_TIMESTAMP }} OR SCD."end_timestamp" IS NULL
       )
     GROUP BY
-      REQ."POINT_IN_TIME",
-      REQ."gender"
+      SCD."col_boolean"
   ) AS T0
-    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."gender" = T0."gender"
+    ON REQ."gender" = T0."gender"
 )
 SELECT
   AGG."gender",
