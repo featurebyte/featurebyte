@@ -14,14 +14,16 @@ Allow users to specify features that are provided as part of the request (in the
 
 1. **Context provides Features, not RequestColumns**: Users access user-provided columns only as Feature objects through `context.get_user_provided_feature(column_name)`. There is no `get_request_column()` method - users cannot get raw RequestColumn objects for user-provided columns.
 
-2. **Cleaning operations support**: User-provided columns can have `column_cleaning_operations` defined, just like regular table columns. These are applied when the feature is materialized.
+2. **Reuse `ColumnInfo` class**: User-provided columns use the existing `ColumnInfo` class which already has `name`, `dtype`, `description`, and `critical_data_info` (with `cleaning_operations`). This provides consistency with regular table columns and reuses existing validation logic.
 
-3. **context_id tracking**: Features and FeatureLists that use user-provided columns store a `context_id` field, enabling:
+3. **Cleaning operations support**: User-provided columns can have cleaning operations defined via `critical_data_info.cleaning_operations`, just like regular table columns. These are applied by adding graph nodes (CONDITIONAL, CAST, etc.) when creating the feature.
+
+4. **context_id tracking**: Features and FeatureLists that use user-provided columns store a `context_id` field, enabling:
    - Filtering features/feature lists by context during listing
    - Validation that all features in a FeatureList use the same context (or no context)
    - Traceability of which context defined the user-provided columns
 
-4. **Automatic context_id derivation for FeatureLists**: When a FeatureList is created, its `context_id` is automatically derived from its constituent features.
+5. **Automatic context_id derivation for FeatureLists**: When a FeatureList is created, its `context_id` is automatically derived from its constituent features.
 
 ---
 
@@ -51,20 +53,20 @@ Features require a `tabular_source` (table details from a data warehouse). User-
 
 ```python
 # featurebyte/models/context.py
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
-
-class UserProvidedColumnDefinition(FeatureByteBaseModel):
-    """Definition of a user-provided column in observation/request data"""
-    column_name: str
-    dtype: DBVarType
-    description: Optional[str] = None
-    # Cleaning operations to apply to the column during materialization
-    column_cleaning_operations: List[ColumnCleaningOperation] = Field(default_factory=list)
+# Reuse existing ColumnInfo class instead of defining a new class
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 class ContextModel(FeatureByteCatalogBaseDocumentModel):
     # ... existing fields ...
-    user_provided_columns: List[UserProvidedColumnDefinition] = Field(default_factory=list)
+    # Use ColumnInfo which already has: name, dtype, description, critical_data_info (with cleaning_operations)
+    user_provided_columns: List[ColumnInfo] = Field(default_factory=list)
 ```
+
+**Why reuse `ColumnInfo`:**
+- Already has `name`, `dtype`, `description`, and `critical_data_info.cleaning_operations`
+- Has built-in validation that cleaning operations support the column's dtype
+- Consistent with how regular table columns are defined
+- `entity_id` and `semantic_id` fields may be useful for user-provided columns in the future
 
 ```python
 # featurebyte/api/context.py
@@ -78,6 +80,124 @@ def create(
     user_provided_columns: Optional[List[Dict[str, Any]]] = None,  # New parameter
 ) -> "Context":
     ...
+```
+
+---
+
+### Phase 1b: Routes for Updating User-Provided Columns
+
+**Files to modify:**
+- `featurebyte/schema/context.py` (add update schema)
+- `featurebyte/routes/context/api.py` (add update endpoint)
+- `featurebyte/service/context.py` (add update validation logic)
+- `featurebyte/api/context.py` (add SDK methods)
+
+**Constraints:**
+1. **Adding new columns**: Allowed
+2. **Removing existing columns**: NOT allowed (would break existing features)
+3. **Editing cleaning operations**: Allowed (similar to table column critical_data_info updates)
+4. **Changing dtype of existing columns**: NOT allowed (would break existing features)
+
+**Changes:**
+
+```python
+# featurebyte/schema/context.py
+class ContextUpdate(FeatureByteBaseModel):
+    """Schema for updating a Context"""
+    # Only allow updating user_provided_columns with constraints
+    user_provided_columns: Optional[List[ColumnInfo]] = Field(default=None)
+
+# featurebyte/service/context.py
+class ContextService:
+    async def update_user_provided_columns(
+        self,
+        document_id: ObjectId,
+        user_provided_columns: List[ColumnInfo],
+    ) -> ContextModel:
+        """
+        Update user_provided_columns with validation.
+
+        Rules:
+        - New columns can be added
+        - Existing columns cannot be removed
+        - Existing column dtypes cannot be changed
+        - Cleaning operations (critical_data_info) can be updated
+        """
+        existing = await self.get_document(document_id)
+        existing_cols = {col.name: col for col in existing.user_provided_columns}
+        new_cols = {col.name: col for col in user_provided_columns}
+
+        # Check no columns are removed
+        removed = set(existing_cols.keys()) - set(new_cols.keys())
+        if removed:
+            raise ValueError(f"Cannot remove existing columns: {removed}")
+
+        # Check dtypes not changed for existing columns
+        for name, existing_col in existing_cols.items():
+            if name in new_cols and new_cols[name].dtype != existing_col.dtype:
+                raise ValueError(
+                    f"Cannot change dtype of existing column '{name}' "
+                    f"from {existing_col.dtype} to {new_cols[name].dtype}"
+                )
+
+        # Update is valid - proceed
+        return await self.update_document(
+            document_id, {"user_provided_columns": user_provided_columns}
+        )
+```
+
+```python
+# featurebyte/api/context.py
+class Context:
+    def add_user_provided_column(
+        self,
+        name: str,
+        dtype: DBVarType,
+        description: Optional[str] = None,
+        cleaning_operations: Optional[List[CleaningOperation]] = None,
+    ) -> None:
+        """
+        Add a new user-provided column to this context.
+
+        Parameters
+        ----------
+        name : str
+            Name of the column
+        dtype : DBVarType
+            Data type of the column
+        description : Optional[str]
+            Description of the column
+        cleaning_operations : Optional[List[CleaningOperation]]
+            Cleaning operations to apply
+
+        Raises
+        ------
+        ValueError
+            If column with same name already exists
+        """
+        ...
+
+    def update_user_provided_column_cleaning_operations(
+        self,
+        column_name: str,
+        cleaning_operations: List[CleaningOperation],
+    ) -> None:
+        """
+        Update cleaning operations for an existing user-provided column.
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column to update
+        cleaning_operations : List[CleaningOperation]
+            New cleaning operations to apply
+
+        Raises
+        ------
+        ValueError
+            If column does not exist
+        """
+        ...
 ```
 
 ---
@@ -223,22 +343,19 @@ class Context:
         >>> income_feature = context.get_user_provided_feature("annual_income")
         >>> income_feature.save()
         """
-        col_def = self._get_user_provided_column_definition(column_name)
-        if col_def is None:
+        col_info = self._get_user_provided_column_info(column_name)
+        if col_info is None:
             raise ValueError(f"Column '{column_name}' not defined in context user_provided_columns")
 
         # Create RequestColumn internally
-        request_col = RequestColumn._create_request_column(column_name, col_def.dtype)
+        request_col = RequestColumn._create_request_column(column_name, col_info.dtype)
 
-        # Apply cleaning operations by adding graph nodes (similar to how table columns work)
-        # Each CleaningOperation.add_cleaning_operation() adds nodes like CONDITIONAL, CAST, etc.
-        if col_def.column_cleaning_operations:
-            for cleaning_op in col_def.column_cleaning_operations:
-                request_col = cleaning_op.add_cleaning_operation(
-                    graph_node=request_col.graph,
-                    input_node=request_col.node,
-                    dtype=col_def.dtype,
-                )
+        # Apply cleaning operations using BaseGraphNode pattern (same as Views)
+        if col_info.critical_data_info and col_info.critical_data_info.cleaning_operations:
+            request_col = self._apply_cleaning_operations_to_request_column(
+                request_col=request_col,
+                col_info=col_info,
+            )
 
         # Convert to Feature with context_id set
         feature = Feature.from_request_column(
@@ -247,16 +364,65 @@ class Context:
             context_id=self.id,
         )
         return feature
+
+    def _apply_cleaning_operations_to_request_column(
+        self,
+        request_col: RequestColumn,
+        col_info: ColumnInfo,
+    ) -> RequestColumn:
+        """
+        Apply cleaning operations using BaseGraphNode pattern (same as Views).
+
+        This creates a nested GraphNode with GraphNodeType.CLEANING that wraps
+        the RequestColumn and applies cleaning operations inside the nested graph.
+        This is consistent with how table columns handle cleaning in Views.
+        """
+        from featurebyte.query_graph.graph_node.base import GraphNode
+
+        # Create a cleaning GraphNode wrapping the RequestColumn
+        # Similar to construct_cleaning_recipe_node in common_table.py
+        cleaning_graph_node, proxy_input_nodes = GraphNode.create(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [col_info.name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[request_col.node],
+            graph_node_type=GraphNodeType.CLEANING,
+        )
+
+        # Project the column inside the nested graph
+        proj_node = cleaning_graph_node.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [col_info.name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=proxy_input_nodes,
+        )
+
+        # Apply each cleaning operation inside the nested graph
+        input_node = proj_node
+        for cleaning_op in col_info.critical_data_info.cleaning_operations:
+            input_node = cleaning_op.add_cleaning_operation(
+                graph_node=cleaning_graph_node,
+                input_node=input_node,
+                dtype=col_info.dtype,
+            )
+
+        # Return updated RequestColumn pointing to the cleaning graph node
+        return RequestColumn(
+            feature_store=None,
+            tabular_source=None,
+            node_name=cleaning_graph_node.name,
+            name=col_info.name,
+            dtype=col_info.dtype,
+        )
 ```
 
 **Note on Cleaning Operations Implementation:**
 
-Cleaning operations work by adding nodes to the query graph:
-- `MissingValueImputation` → adds CONDITIONAL node to replace NULL with imputed_value
-- `ValueBeyondEndpointImputation` → adds comparison + CONDITIONAL nodes
-- `CastToNumeric` → adds TRY_CAST node
-
-The existing `CleaningOperation.add_cleaning_operation()` method in `featurebyte/query_graph/node/cleaning_operation.py` handles this. For user-provided features, we reuse this same mechanism to build cleaning nodes on top of the RequestColumn graph node.
+Using `BaseGraphNode` with `GraphNodeType.CLEANING` provides:
+- **Consistency**: Same pattern as Views for handling cleaning operations
+- **SDK Code Generation**: Existing code gen infrastructure handles nested graphs
+- **Graph Flattening**: `GraphFlatteningTransformer` inlines nested graphs during SQL generation
+- **Pruning**: Cleaning graph nodes are prunable (can be optimized away if not needed)
 
 ---
 
@@ -458,24 +624,27 @@ User-provided features are simple SELECT statements from the request/observation
 ```python
 import featurebyte as fb
 
-# 1. Create context with user-provided column definitions (including cleaning operations)
+# 1. Create context with user-provided column definitions (using ColumnInfo format)
+# Same structure as regular table columns - uses critical_data_info for cleaning operations
 context = fb.Context.create(
     name="loan_approval_context",
     primary_entity=["customer"],
     user_provided_columns=[
         {
-            "column_name": "annual_income",
+            "name": "annual_income",
             "dtype": fb.DBVarType.FLOAT,
             "description": "Customer's annual income",
-            "column_cleaning_operations": [
-                fb.MissingValueImputation(imputed_value=0.0),
-                fb.ValueBeyondEndpointImputation(
-                    type="less_than", end_point=0, imputed_value=0.0
-                ),
-            ],
+            "critical_data_info": {
+                "cleaning_operations": [
+                    fb.MissingValueImputation(imputed_value=0.0),
+                    fb.ValueBeyondEndpointImputation(
+                        type="less_than", end_point=0, imputed_value=0.0
+                    ),
+                ]
+            },
         },
         {
-            "column_name": "credit_score",
+            "name": "credit_score",
             "dtype": fb.DBVarType.INT,
             "description": "Customer's credit score",
         },
@@ -530,9 +699,13 @@ deployment.enable()
 
 | Phase | File | Changes |
 |-------|------|---------|
-| 1 | `featurebyte/models/context.py` | Add `UserProvidedColumnDefinition` with `column_cleaning_operations`, `user_provided_columns` field |
-| 1 | `featurebyte/schema/context.py` | Update create/update schemas |
+| 1 | `featurebyte/models/context.py` | Add `user_provided_columns: List[ColumnInfo]` field (reuses existing ColumnInfo class) |
+| 1 | `featurebyte/schema/context.py` | Update create schema to include `user_provided_columns` |
 | 1 | `featurebyte/api/context.py` | Add `user_provided_columns` param to `create()` |
+| 1b | `featurebyte/schema/context.py` | Add `ContextUpdate` schema for updating user_provided_columns |
+| 1b | `featurebyte/routes/context/api.py` | Add PATCH endpoint for updating user_provided_columns |
+| 1b | `featurebyte/service/context.py` | Add `update_user_provided_columns()` with validation (no remove, no dtype change) |
+| 1b | `featurebyte/api/context.py` | Add `add_user_provided_column()`, `update_user_provided_column_cleaning_operations()` |
 | 2 | `featurebyte/api/request_column.py` | Make `_create_request_column()` internal (remove public restriction) |
 | 2 | `featurebyte/query_graph/node/request.py` | Update SDK code generation for context-based feature access |
 | 3 | `featurebyte/models/feature.py` | Add `context_id` field |
@@ -565,7 +738,12 @@ deployment.enable()
 ## Verification Plan
 
 1. **Unit Tests:**
-   - Context creation with `user_provided_columns` (including `column_cleaning_operations`)
+   - Context creation with `user_provided_columns` (using `ColumnInfo` format with `critical_data_info`)
+   - `context.add_user_provided_column()` adds new column successfully
+   - `context.add_user_provided_column()` raises error if column name already exists
+   - `context.update_user_provided_column_cleaning_operations()` updates cleaning ops
+   - Update validation: cannot remove existing columns
+   - Update validation: cannot change dtype of existing columns
    - `context.get_user_provided_feature()` returns Feature with `context_id` set
    - `context.get_user_provided_feature()` raises error for undefined columns
    - `context.get_user_provided_feature()` applies cleaning operations to the feature
