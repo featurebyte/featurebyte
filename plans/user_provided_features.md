@@ -2,10 +2,28 @@
 
 ## Problem Statement
 Allow users to specify features that are provided as part of the request (in the observation table) during feature materialization. These "user-provided features" should:
-1. Be definable in a Context object
+1. Be definable in a Context object (with optional cleaning operations)
 2. Be first-class Feature objects that can be added to FeatureLists
 3. Be usable as inputs for creating derived computed features
 4. Work in both historical materialization and online serving
+5. **Only be accessible as Features through the Context** - users must use `context.get_user_provided_feature()` to ensure only predefined columns are used (no raw RequestColumn access)
+6. **Store context_id** on Features and FeatureLists that use user-provided columns, enabling filtering during listing based on Context or UseCase
+7. **Support column_cleaning_operations** - cleaning operations can be defined per user-provided column and are applied during materialization
+
+## Key Design Decisions
+
+1. **Context provides Features, not RequestColumns**: Users access user-provided columns only as Feature objects through `context.get_user_provided_feature(column_name)`. There is no `get_request_column()` method - users cannot get raw RequestColumn objects for user-provided columns.
+
+2. **Cleaning operations support**: User-provided columns can have `column_cleaning_operations` defined, just like regular table columns. These are applied when the feature is materialized.
+
+3. **context_id tracking**: Features and FeatureLists that use user-provided columns store a `context_id` field, enabling:
+   - Filtering features/feature lists by context during listing
+   - Validation that all features in a FeatureList use the same context (or no context)
+   - Traceability of which context defined the user-provided columns
+
+4. **Automatic context_id derivation for FeatureLists**: When a FeatureList is created, its `context_id` is automatically derived from its constituent features.
+
+---
 
 ## Current State Analysis
 
@@ -33,11 +51,15 @@ Features require a `tabular_source` (table details from a data warehouse). User-
 
 ```python
 # featurebyte/models/context.py
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+
 class UserProvidedColumnDefinition(FeatureByteBaseModel):
     """Definition of a user-provided column in observation/request data"""
     column_name: str
     dtype: DBVarType
     description: Optional[str] = None
+    # Cleaning operations to apply to the column during materialization
+    column_cleaning_operations: List[ColumnCleaningOperation] = Field(default_factory=list)
 
 class ContextModel(FeatureByteCatalogBaseDocumentModel):
     # ... existing fields ...
@@ -60,7 +82,9 @@ def create(
 
 ---
 
-### Phase 2: Extend RequestColumn to Support Arbitrary Columns
+### Phase 2: Internal RequestColumn Support
+
+**Key Design:** The `RequestColumn` class is modified internally to support arbitrary columns, but this is NOT exposed publicly. Users can only access user-provided columns as Feature objects through `context.get_user_provided_feature()`.
 
 **Files to modify:**
 - `featurebyte/api/request_column.py`
@@ -70,36 +94,15 @@ def create(
 
 ```python
 # featurebyte/api/request_column.py
+# Make create_request_column internal (remove NotImplementedError restriction)
+# This is used internally by Context.get_user_provided_feature()
 @classmethod
-def column(cls, name: str, dtype: DBVarType) -> "RequestColumn":
+def _create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
     """
-    Get a RequestColumn representing a user-provided column in the request data.
+    Internal method to create a RequestColumn.
 
-    Parameters
-    ----------
-    name : str
-        Name of the column in the observation table / request data
-    dtype : DBVarType
-        Data type of the column
-
-    Returns
-    -------
-    RequestColumn
-        A RequestColumn object that can be used in feature expressions
-
-    Examples
-    --------
-    >>> income = fb.RequestColumn.column("annual_income", fb.DBVarType.FLOAT)
-    >>> debt_to_income = total_debt_feature / income
-    >>> debt_to_income.name = "debt_to_income_ratio"
+    This is not exposed publicly - users should use Context.get_user_provided_feature() instead.
     """
-    # Remove the NotImplementedError restriction in create_request_column
-    return cls.create_request_column(name, dtype)
-
-# Update create_request_column to remove the restriction
-@classmethod
-def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
-    # Remove the NotImplementedError check - allow any column
     node = GlobalQueryGraph().add_operation(
         node_type=NodeType.REQUEST_COLUMN,
         node_params={"column_name": column_name, "dtype": column_dtype},
@@ -121,33 +124,26 @@ def _derive_sdk_code(self, ...):
     if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
         obj = ClassEnum.REQUEST_COLUMN(_method_name="point_in_time")
     else:
-        # Generate code for user-provided columns
-        obj = ClassEnum.REQUEST_COLUMN(
-            _method_name="column",
-            name=ValueStr.create(self.parameters.column_name),
-            dtype=self.parameters.dtype,
+        # Generate code showing context-based feature access for user-provided columns
+        obj = ClassEnum.CONTEXT(
+            _method_name="get_user_provided_feature",
+            column_name=ValueStr.create(self.parameters.column_name),
         )
 ```
 
 ---
 
-### Phase 3: Create UserProvidedFeature API for First-Class Features
+### Phase 3: Context ID Tracking for Features and FeatureLists
 
-**New file:** `featurebyte/api/user_provided_feature.py`
+**Key Design:** Features and FeatureLists that use user-provided columns must store `context_id` to enable filtering during listing.
 
 **Files to modify:**
-- `featurebyte/api/__init__.py` (export new class)
+- `featurebyte/models/feature.py` (add `context_id` field)
+- `featurebyte/models/feature_list.py` (add `context_id` field)
 - `featurebyte/api/context.py` (add method to get features)
-- `featurebyte/models/feature.py` (add flag for user-provided features)
 - `featurebyte/query_graph/model/common_table.py` (add request source type)
 
-**Key Design:**
-
-User-provided features need a `tabular_source`. Options:
-1. **Create a special "REQUEST_DATA" source type** - cleanest approach
-2. Use None and special-case throughout - messy
-
-**Recommended approach: Add a new source type**
+**Changes:**
 
 ```python
 # featurebyte/query_graph/model/common_table.py
@@ -165,14 +161,33 @@ class TabularSource(FeatureByteBaseModel):
 # featurebyte/models/feature.py
 class FeatureModel(BaseFeatureModel):
     # ... existing fields ...
-    is_user_provided: bool = Field(default=False, frozen=True)
+
+    # Context ID for features that use user-provided columns
+    # This enables filtering features by context during listing
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
     @model_validator(mode="after")
     def _add_tile_derived_attributes(self) -> "FeatureModel":
-        # Skip tile derivation for user-provided features
-        if self.is_user_provided:
+        # Skip tile derivation for features that only use user-provided columns
+        if self._is_pure_user_provided_feature():
+            self.__dict__["aggregation_ids"] = []
             return self
         # ... existing logic ...
+
+    def _is_pure_user_provided_feature(self) -> bool:
+        """Check if feature only uses user-provided columns (no warehouse data)"""
+        # A feature is pure user-provided if it has no input nodes from tables
+        return not self.table_ids
+```
+
+```python
+# featurebyte/models/feature_list.py
+class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
+    # ... existing fields ...
+
+    # Context ID for feature lists that contain features using user-provided columns
+    # Derived from the features in the list
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 ```
 
 ```python
@@ -186,6 +201,10 @@ class Context:
         """
         Get a Feature object for a user-provided column defined in this context.
 
+        The returned feature will have context_id set, linking it to this context.
+        Any column_cleaning_operations defined for this column will be applied
+        during feature materialization by adding cleaning nodes to the query graph.
+
         Parameters
         ----------
         column_name : str
@@ -197,16 +216,31 @@ class Context:
         -------
         Feature
             A Feature object representing the user-provided column
+
+        Examples
+        --------
+        >>> context = fb.Context.get("loan_approval_context")
+        >>> income_feature = context.get_user_provided_feature("annual_income")
+        >>> income_feature.save()
         """
-        # Validate column is defined in context
         col_def = self._get_user_provided_column_definition(column_name)
         if col_def is None:
             raise ValueError(f"Column '{column_name}' not defined in context user_provided_columns")
 
-        # Create feature using RequestColumn
-        request_col = RequestColumn.column(column_name, col_def.dtype)
+        # Create RequestColumn internally
+        request_col = RequestColumn._create_request_column(column_name, col_def.dtype)
 
-        # Convert to Feature with special handling
+        # Apply cleaning operations by adding graph nodes (similar to how table columns work)
+        # Each CleaningOperation.add_cleaning_operation() adds nodes like CONDITIONAL, CAST, etc.
+        if col_def.column_cleaning_operations:
+            for cleaning_op in col_def.column_cleaning_operations:
+                request_col = cleaning_op.add_cleaning_operation(
+                    graph_node=request_col.graph,
+                    input_node=request_col.node,
+                    dtype=col_def.dtype,
+                )
+
+        # Convert to Feature with context_id set
         feature = Feature.from_request_column(
             request_col,
             name=feature_name or column_name,
@@ -215,36 +249,112 @@ class Context:
         return feature
 ```
 
+**Note on Cleaning Operations Implementation:**
+
+Cleaning operations work by adding nodes to the query graph:
+- `MissingValueImputation` → adds CONDITIONAL node to replace NULL with imputed_value
+- `ValueBeyondEndpointImputation` → adds comparison + CONDITIONAL nodes
+- `CastToNumeric` → adds TRY_CAST node
+
+The existing `CleaningOperation.add_cleaning_operation()` method in `featurebyte/query_graph/node/cleaning_operation.py` handles this. For user-provided features, we reuse this same mechanism to build cleaning nodes on top of the RequestColumn graph node.
+
 ---
 
-### Phase 4: Feature Model and Service Updates
+### Phase 4: Feature/FeatureList Service Updates and Listing Filters
 
 **Files to modify:**
-- `featurebyte/models/feature.py`
 - `featurebyte/service/feature.py`
 - `featurebyte/service/feature_list.py`
-- `featurebyte/schema/feature.py`
+- `featurebyte/routes/feature/api.py`
+- `featurebyte/routes/feature_list/api.py`
+- `featurebyte/api/feature.py`
+- `featurebyte/api/feature_list.py`
 
 **Key Changes:**
 
-1. **Add `is_user_provided` flag** to distinguish user-provided features
-2. **Skip tile derivation** for user-provided features (no aggregations)
-3. **Update validation** to allow empty `aggregation_ids` for user-provided features
-4. **Update FeatureList cluster derivation** to handle features without complex graphs
+1. **Propagate context_id** when saving features that use user-provided columns
+2. **Derive context_id for FeatureLists** from their constituent features
+3. **Add context_id filter to listing APIs** so users can filter features/feature lists by context
+4. **Add use_case filter** (since UseCase links to Context, can filter transitively)
 
 ```python
-# featurebyte/models/feature.py
-class FeatureModel(BaseFeatureModel):
-    is_user_provided: bool = Field(default=False, frozen=True)
-    context_id: Optional[PydanticObjectId] = Field(default=None)  # Link to defining context
-
-    @model_validator(mode="after")
-    def _add_tile_derived_attributes(self) -> "FeatureModel":
-        if self.is_user_provided:
-            # User-provided features have no tiles
-            self.__dict__["aggregation_ids"] = []
-            return self
+# featurebyte/service/feature.py
+class FeatureService:
+    async def create_document(self, data: FeatureCreate) -> FeatureModel:
         # ... existing logic ...
+
+        # If feature uses user-provided columns, ensure context_id is set
+        if self._uses_user_provided_columns(data.graph, data.node_name):
+            if data.context_id is None:
+                raise ValueError(
+                    "Features using user-provided columns must specify a context_id"
+                )
+        # ... save feature ...
+```
+
+```python
+# featurebyte/service/feature_list.py
+class FeatureListService:
+    async def create_document(self, data: FeatureListCreate) -> FeatureListModel:
+        # ... existing logic ...
+
+        # Derive context_id from features
+        context_ids = set()
+        for feature in features:
+            if feature.context_id:
+                context_ids.add(feature.context_id)
+
+        if len(context_ids) > 1:
+            raise ValueError(
+                "All features in a FeatureList must use the same context or no context"
+            )
+
+        data.context_id = context_ids.pop() if context_ids else None
+        # ... save feature list ...
+```
+
+```python
+# featurebyte/api/feature.py - Add context filter to listing
+@classmethod
+def list(
+    cls,
+    include_id: Optional[bool] = False,
+    primary_entity: Optional[Union[str, List[str]]] = None,
+    primary_table: Optional[Union[str, List[str]]] = None,
+    context_name: Optional[str] = None,  # NEW: Filter by context
+) -> pd.DataFrame:
+    """
+    List saved features
+
+    Parameters
+    ----------
+    context_name: Optional[str]
+        Name of context to filter features. Only features associated with
+        this context (via user-provided columns) will be returned.
+    """
+    ...
+```
+
+```python
+# featurebyte/api/feature_list.py - Add context filter to listing
+@classmethod
+def list(
+    cls,
+    include_id: Optional[bool] = False,
+    context_name: Optional[str] = None,  # NEW: Filter by context
+    use_case_name: Optional[str] = None,  # NEW: Filter by use case
+) -> pd.DataFrame:
+    """
+    List saved feature lists
+
+    Parameters
+    ----------
+    context_name: Optional[str]
+        Name of context to filter feature lists.
+    use_case_name: Optional[str]
+        Name of use case to filter feature lists (filters by associated context).
+    """
+    ...
 ```
 
 ---
@@ -348,37 +458,59 @@ User-provided features are simple SELECT statements from the request/observation
 ```python
 import featurebyte as fb
 
-# 1. Create context with user-provided column definitions
+# 1. Create context with user-provided column definitions (including cleaning operations)
 context = fb.Context.create(
     name="loan_approval_context",
     primary_entity=["customer"],
     user_provided_columns=[
-        {"column_name": "annual_income", "dtype": fb.DBVarType.FLOAT,
-         "description": "Customer's annual income"},
-        {"column_name": "credit_score", "dtype": fb.DBVarType.INT,
-         "description": "Customer's credit score"},
+        {
+            "column_name": "annual_income",
+            "dtype": fb.DBVarType.FLOAT,
+            "description": "Customer's annual income",
+            "column_cleaning_operations": [
+                fb.MissingValueImputation(imputed_value=0.0),
+                fb.ValueBeyondEndpointImputation(
+                    type="less_than", end_point=0, imputed_value=0.0
+                ),
+            ],
+        },
+        {
+            "column_name": "credit_score",
+            "dtype": fb.DBVarType.INT,
+            "description": "Customer's credit score",
+        },
     ]
 )
 
-# 2a. Get user-provided features directly from context (passthrough)
+# 2. Get user-provided features from context
+# These features will have context_id set automatically
+# Cleaning operations are applied during materialization
 income_feature = context.get_user_provided_feature("annual_income")
 income_feature.save()
 
-# 2b. Use user-provided columns in derived feature expressions
-annual_income = fb.RequestColumn.column("annual_income", fb.DBVarType.FLOAT)
+credit_score_feature = context.get_user_provided_feature("credit_score")
+credit_score_feature.save()
+
+# 3. Use user-provided features in derived feature expressions
 total_debt = catalog.get_feature("customer_total_debt")
-debt_to_income = total_debt / annual_income
+debt_to_income = total_debt / income_feature
 debt_to_income.name = "debt_to_income_ratio"
 debt_to_income.save()
 
-# 3. Create feature list with both types
+# 4. Create feature list with both types
+# context_id is automatically derived from constituent features
 feature_list = fb.FeatureList(
-    [income_feature, debt_to_income, other_computed_features...],
+    [income_feature, credit_score_feature, debt_to_income, other_computed_features],
     name="loan_features"
 )
 feature_list.save()
 
-# 4. Historical materialization
+# 5. List features/feature lists filtered by context
+# Only features associated with this context will be shown
+context_features = fb.Feature.list(context_name="loan_approval_context")
+context_feature_lists = fb.FeatureList.list(context_name="loan_approval_context")
+
+# 6. Historical materialization
 # Observation table must have: POINT_IN_TIME, customer_id, annual_income, credit_score
 observation_table = fb.ObservationTable.upload(df, context_id=context.id)
 historical_table = feature_list.compute_historical_feature_table(
@@ -386,7 +518,7 @@ historical_table = feature_list.compute_historical_feature_table(
     historical_feature_table_name="loan_training_data"
 )
 
-# 5. Online serving - request must include user-provided column values
+# 7. Online serving - request must include user-provided column values
 deployment = feature_list.deploy(name="loan_deployment", context_id=context.id)
 deployment.enable()
 # Online request: {"customer_id": "123", "annual_income": 75000, "credit_score": 720}
@@ -398,16 +530,21 @@ deployment.enable()
 
 | Phase | File | Changes |
 |-------|------|---------|
-| 1 | `featurebyte/models/context.py` | Add `UserProvidedColumnDefinition`, `user_provided_columns` field |
+| 1 | `featurebyte/models/context.py` | Add `UserProvidedColumnDefinition` with `column_cleaning_operations`, `user_provided_columns` field |
 | 1 | `featurebyte/schema/context.py` | Update create/update schemas |
-| 1 | `featurebyte/api/context.py` | Add `user_provided_columns` param, `get_user_provided_feature()` method |
-| 2 | `featurebyte/api/request_column.py` | Remove restriction, add `column()` method |
-| 2 | `featurebyte/query_graph/node/request.py` | Update SDK code generation |
+| 1 | `featurebyte/api/context.py` | Add `user_provided_columns` param to `create()` |
+| 2 | `featurebyte/api/request_column.py` | Make `_create_request_column()` internal (remove public restriction) |
+| 2 | `featurebyte/query_graph/node/request.py` | Update SDK code generation for context-based feature access |
+| 3 | `featurebyte/models/feature.py` | Add `context_id` field |
+| 3 | `featurebyte/models/feature_list.py` | Add `context_id` field |
+| 3 | `featurebyte/api/context.py` | Add `get_user_provided_feature()` method with cleaning ops support |
 | 3 | `featurebyte/query_graph/model/common_table.py` | Add `REQUEST_DATA` source type |
-| 3 | `featurebyte/api/feature.py` | Add `from_request_column()` class method |
-| 4 | `featurebyte/models/feature.py` | Add `is_user_provided`, `context_id` fields, skip tile derivation |
-| 4 | `featurebyte/service/feature.py` | Handle user-provided feature creation |
-| 4 | `featurebyte/service/feature_list.py` | Handle mixed feature types in clusters |
+| 4 | `featurebyte/service/feature.py` | Propagate `context_id`, validate user-provided column usage |
+| 4 | `featurebyte/service/feature_list.py` | Derive `context_id` from features, validate consistency |
+| 4 | `featurebyte/routes/feature/api.py` | Add `context_id` filter parameter |
+| 4 | `featurebyte/routes/feature_list/api.py` | Add `context_id` and `use_case_id` filter parameters |
+| 4 | `featurebyte/api/feature.py` | Add `context_name` to `list()`, add `from_request_column()` |
+| 4 | `featurebyte/api/feature_list.py` | Add `context_name`, `use_case_name` to `list()` |
 | 5 | `featurebyte/exception.py` | Add `MissingUserProvidedColumnsError` |
 | 5 | `featurebyte/query_graph/graph.py` | Add `get_user_provided_column_requirements()` |
 | 5 | `featurebyte/service/historical_features_and_target.py` | Add validation for required columns |
@@ -419,24 +556,40 @@ deployment.enable()
 
 - Existing Contexts without `user_provided_columns` have empty list (default)
 - Existing features using only `POINT_IN_TIME` work unchanged
-- New `is_user_provided` flag defaults to `False` for existing features
+- New `context_id` field defaults to `None` for existing features and feature lists
 - No changes to stored feature graphs - `RequestColumnNode` already supports arbitrary columns
+- Listing APIs continue to work without context filter (returns all features/feature lists)
 
 ---
 
 ## Verification Plan
 
 1. **Unit Tests:**
-   - Context creation with user_provided_columns
-   - RequestColumn.column() with various dtypes
-   - Feature creation from user-provided column
+   - Context creation with `user_provided_columns` (including `column_cleaning_operations`)
+   - `context.get_user_provided_feature()` returns Feature with `context_id` set
+   - `context.get_user_provided_feature()` raises error for undefined columns
+   - `context.get_user_provided_feature()` applies cleaning operations to the feature
+   - Feature creation from user-provided column sets `context_id`
+   - FeatureList derives `context_id` from constituent features
+   - Validation error when features in FeatureList have different `context_id`
    - Validation error when observation table missing columns
 
-2. **Integration Tests:**
-   - End-to-end: define context → create features → materialize historical
-   - Online serving with user-provided columns in request
-   - Mixed feature list (computed + user-provided)
+2. **Cleaning Operations Tests:**
+   - User-provided feature with `MissingValueImputation` applies correctly
+   - User-provided feature with `ValueBeyondEndpointImputation` applies correctly
+   - Multiple cleaning operations chain correctly
 
-3. **Manual Testing:**
+3. **Listing Filter Tests:**
+   - `Feature.list(context_name=...)` filters correctly
+   - `FeatureList.list(context_name=...)` filters correctly
+   - `FeatureList.list(use_case_name=...)` filters by associated context
+
+4. **Integration Tests:**
+   - End-to-end: define context → get user-provided feature → create derived features → materialize historical
+   - Online serving with user-provided columns in request
+   - Mixed feature list (computed + user-provided from same context)
+   - Cleaning operations applied during historical materialization
+
+5. **Manual Testing:**
    - Run `task test-unit` after changes
    - Test with local feature store if available
