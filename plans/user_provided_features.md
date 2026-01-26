@@ -424,6 +424,15 @@ Using `BaseGraphNode` with `GraphNodeType.CLEANING` provides:
 - **Graph Flattening**: `GraphFlatteningTransformer` inlines nested graphs during SQL generation
 - **Pruning**: Cleaning graph nodes are prunable (can be optimized away if not needed)
 
+**Operation Structure Derivation - No Concerns:**
+
+The existing infrastructure handles operation structure correctly:
+- `OperationStructureExtractor` recursively extracts operation structure from nested graphs
+- `SeriesOutputNodeOpStructMixin._derive_node_operation_info` preserves aggregations via `PostAggregationColumn.columns`
+- `aggregation_type=NodeType.REQUEST_COLUMN` is preserved through cleaning operations
+- `row_index_lineage` and `output_category=FEATURE` are preserved
+- For validation (finding required request columns), traverse through `GraphNode.parameters.graph` to find `RequestColumnNode` nodes
+
 ---
 
 ### Phase 4: Feature/FeatureList Service Updates and Listing Filters
