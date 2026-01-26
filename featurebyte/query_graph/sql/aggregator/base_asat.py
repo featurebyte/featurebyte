@@ -108,6 +108,27 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         return self._get_aggregation_subquery_from_snapshots(specs)
 
     def _get_aggregation_subquery_from_scd(self, specs: list[AsAtSpecT]) -> LeftJoinableSubquery:
+        if self.is_deployment_sql:
+            return self._get_aggregation_subquery_from_scd_deployment(specs)
+        return self._get_aggregation_subquery_from_scd_historical(specs)
+
+    def _adjust_scd_point_in_time_for_offset(
+        self, point_in_time_expr: expressions.Expression, spec: AsAtSpecT
+    ) -> expressions.Expression:
+        # Use offset adjusted point in time to join with SCD table if any
+        if spec.parameters.offset is not None:
+            point_in_time_expr = add_offset_to_timestamp(
+                adapter=self.adapter,
+                timestamp_expr=point_in_time_expr,
+                offset=spec.parameters.offset,
+                offset_direction=self.get_offset_direction(),
+            )
+        point_in_time_expr = self.adapter.normalize_timestamp_before_comparison(point_in_time_expr)
+        return point_in_time_expr
+
+    def _get_aggregation_subquery_from_scd_historical(
+        self, specs: list[AsAtSpecT]
+    ) -> LeftJoinableSubquery:
         spec = specs[0]
         end_timestamp_column, scd_expr = ensure_end_timestamp_column(
             adapter=self.adapter,
@@ -130,20 +151,10 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             join_key_condition = expressions.true()
 
         # Use offset adjusted point in time to join with SCD table if any
-        if spec.parameters.offset is None:
-            point_in_time_expr = get_qualified_column_identifier(
-                SpecialColumnName.POINT_IN_TIME, "REQ"
-            )
-        else:
-            point_in_time_expr = add_offset_to_timestamp(
-                adapter=self.adapter,
-                timestamp_expr=get_qualified_column_identifier(
-                    SpecialColumnName.POINT_IN_TIME, "REQ"
-                ),
-                offset=spec.parameters.offset,
-                offset_direction=self.get_offset_direction(),
-            )
-        point_in_time_expr = self.adapter.normalize_timestamp_before_comparison(point_in_time_expr)
+        point_in_time_expr = self._adjust_scd_point_in_time_for_offset(
+            get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
+            spec,
+        )
 
         # Only join records from the SCD table that are valid as at point in time
         record_validity_condition = get_record_validity_condition(
@@ -219,6 +230,84 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             expr=aggregate_asat_expr,
             column_names=[s.agg_result_name for s in specs],
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+        )
+
+    def _get_aggregation_subquery_from_scd_deployment(
+        self, specs: list[AsAtSpecT]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+        end_timestamp_column, scd_expr = ensure_end_timestamp_column(
+            adapter=self.adapter,
+            effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            effective_timestamp_schema=spec.parameters.effective_timestamp_schema,
+            natural_key_column=cast(str, spec.parameters.natural_key_column),
+            end_timestamp_column=spec.parameters.end_timestamp_column,
+            source_expr=spec.source_expr,
+        )
+
+        # Use offset adjusted point in time to join with SCD table if any
+        point_in_time_expr = self._adjust_scd_point_in_time_for_offset(
+            CURRENT_TIMESTAMP_PLACEHOLDER,
+            spec,
+        )
+
+        # Only use records from the SCD table that are valid as at point in time
+        record_validity_condition = get_record_validity_condition(
+            adapter=self.adapter,
+            effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            effective_timestamp_schema=spec.parameters.effective_timestamp_schema,
+            end_timestamp_column=end_timestamp_column,
+            end_timestamp_schema=spec.parameters.end_timestamp_schema,
+            point_in_time_expr=point_in_time_expr,
+        )
+
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(key, "SCD"),
+                name=serving_name,
+            )
+            for key, serving_name in zip(spec.parameters.keys, spec.serving_names)
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "SCD"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "SCD")
+                    if s.parameters.parent
+                    else None
+                ),
+                result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
+                parent_cols=(
+                    [get_qualified_column_identifier(s.parameters.parent, "SCD")]
+                    if s.parameters.parent
+                    else []
+                ),
+            )
+            for s in specs
+        ]
+        groupby_input_expr = (
+            select().from_(scd_expr.subquery(alias="SCD")).where(record_validity_condition)
+        )
+        aggregate_asat_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
+        )
+        return LeftJoinableSubquery(
+            expr=aggregate_asat_expr,
+            column_names=[s.agg_result_name for s in specs],
+            join_keys=spec.serving_names,
         )
 
     def _get_aggregation_subquery_from_snapshots(

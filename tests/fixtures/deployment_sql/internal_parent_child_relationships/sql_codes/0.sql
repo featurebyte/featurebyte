@@ -285,11 +285,9 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
   ) AS REQ
   LEFT JOIN (
     SELECT
-      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
+      SCD."col_boolean" AS "cust_id_000000000000000000000000",
       COUNT(*) AS "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS REQ
-    INNER JOIN (
+    FROM (
       SELECT
         "col_int" AS "col_int",
         "col_float" AS "col_float",
@@ -303,19 +301,15 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."scd_table"
     ) AS SCD
-      ON REQ."cust_id_000000000000000000000000" = SCD."col_boolean"
+    WHERE
+      SCD."effective_timestamp" <= {{ CURRENT_TIMESTAMP }}
       AND (
-        SCD."effective_timestamp" <= REQ."POINT_IN_TIME"
-        AND (
-          SCD."end_timestamp" > REQ."POINT_IN_TIME" OR SCD."end_timestamp" IS NULL
-        )
+        SCD."end_timestamp" > {{ CURRENT_TIMESTAMP }} OR SCD."end_timestamp" IS NULL
       )
     GROUP BY
-      REQ."POINT_IN_TIME",
-      REQ."cust_id_000000000000000000000000"
+      SCD."col_boolean"
   ) AS T0
-    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
-    AND REQ."cust_id_000000000000000000000000" = T0."cust_id_000000000000000000000000"
+    ON REQ."cust_id_000000000000000000000000" = T0."cust_id_000000000000000000000000"
 )
 SELECT
   AGG."cust_id",

@@ -2836,6 +2836,21 @@ def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity):
     return feature
 
 
+@pytest.fixture(name="aggregate_asat_offset_feature")
+def aggregate_asat_offset_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get an aggregate asat feature from SCD table
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby("col_boolean").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count_7d_ago",
+        offset="7d",
+    )
+    return feature
+
+
 @pytest.fixture(name="aggregate_asat_no_entity_feature")
 def aggregate_asat_no_entity_feature_fixture(snowflake_scd_table_with_entity):
     """

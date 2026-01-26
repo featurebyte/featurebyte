@@ -28,6 +28,7 @@ TEST_CASES_MAPPING = {
     ),
     "float_feature_via_transaction": "deployed_float_feature_list_transaction_use_case",
     "aggregate_asat_feature": "deployed_aggregate_asat_feature_list",
+    "aggregate_asat_offset_feature": "deployed_aggregate_asat_offset_feature_list",
     "snapshots_aggregate_asat_feature": "deployed_snapshots_aggregate_asat_feature_list",
     "multiple_feature_tables": "deployed_multiple_feature_tables_feature_list",
     "internal_parent_child_relationships": (
@@ -193,13 +194,35 @@ async def deployed_aggregate_asat_feature_list(
     mock_offline_store_feature_manager_dependencies,
 ):
     """
-    Fixture for deployed scd lookup feature
+    Fixture for deployed aggregate asat feature
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
     feature_list = await deploy_feature(
         app_container,
         aggregate_asat_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_aggregate_asat_offset_feature_list(
+    app_container,
+    aggregate_asat_offset_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed aggregate asat feature with offset
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    feature_list = await deploy_feature(
+        app_container,
+        aggregate_asat_offset_feature,
         return_type="feature_list",
         deployment_id=deployment_id,
     )
