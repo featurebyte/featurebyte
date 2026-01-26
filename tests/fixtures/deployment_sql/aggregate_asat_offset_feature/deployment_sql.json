@@ -1,0 +1,10 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_names": [
+                "asat_gender_count_7d_ago"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        }
+    ]
+}
