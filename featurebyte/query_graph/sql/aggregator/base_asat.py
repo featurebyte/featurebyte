@@ -119,9 +119,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         if spec.parameters.offset is not None:
             point_in_time_expr = add_offset_to_timestamp(
                 adapter=self.adapter,
-                timestamp_expr=get_qualified_column_identifier(
-                    SpecialColumnName.POINT_IN_TIME, "REQ"
-                ),
+                timestamp_expr=point_in_time_expr,
                 offset=spec.parameters.offset,
                 offset_direction=self.get_offset_direction(),
             )

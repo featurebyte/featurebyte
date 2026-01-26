@@ -55,9 +55,9 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
       FROM "sf_database"."sf_schema"."scd_table"
     ) AS SCD
     WHERE
-      SCD."effective_timestamp" <= DATEADD(MICROSECOND, -604800000000.0, REQ."POINT_IN_TIME")
+      SCD."effective_timestamp" <= DATEADD(MICROSECOND, -604800000000.0, {{ CURRENT_TIMESTAMP }})
       AND (
-        SCD."end_timestamp" > DATEADD(MICROSECOND, -604800000000.0, REQ."POINT_IN_TIME")
+        SCD."end_timestamp" > DATEADD(MICROSECOND, -604800000000.0, {{ CURRENT_TIMESTAMP }})
         OR SCD."end_timestamp" IS NULL
       )
     GROUP BY
