@@ -157,7 +157,7 @@ def get_aggregation_expression(
     """
     # Normalize string to enum if needed (Pydantic deserialization may return plain string)
     if isinstance(agg_func, str) and not isinstance(agg_func, (AggFunc, InternalAggFunc)):
-        try:
+        try:  # type: ignore[unreachable]
             agg_func = AggFunc(agg_func)
         except ValueError:
             agg_func = InternalAggFunc(agg_func)
