@@ -585,3 +585,4 @@ training_data.parquet
 # Claude code
 CLAUDE.md
 .claude
+*.local.*

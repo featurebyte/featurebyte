@@ -32,7 +32,10 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
-from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
+from featurebyte.query_graph.sql.offset import (
+    OffsetDirection,
+    adjust_point_in_time_for_offset,
+)
 from featurebyte.query_graph.sql.specifications.base_aggregate_asat import BaseAggregateAsAtSpec
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 
@@ -112,20 +115,6 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             return self._get_aggregation_subquery_from_scd_deployment(specs)
         return self._get_aggregation_subquery_from_scd_historical(specs)
 
-    def _adjust_scd_point_in_time_for_offset(
-        self, point_in_time_expr: expressions.Expression, spec: AsAtSpecT
-    ) -> expressions.Expression:
-        # Use offset adjusted point in time to join with SCD table if any
-        if spec.parameters.offset is not None:
-            point_in_time_expr = add_offset_to_timestamp(
-                adapter=self.adapter,
-                timestamp_expr=point_in_time_expr,
-                offset=spec.parameters.offset,
-                offset_direction=self.get_offset_direction(),
-            )
-        point_in_time_expr = self.adapter.normalize_timestamp_before_comparison(point_in_time_expr)
-        return point_in_time_expr
-
     def _get_aggregation_subquery_from_scd_historical(
         self, specs: list[AsAtSpecT]
     ) -> LeftJoinableSubquery:
@@ -151,9 +140,13 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             join_key_condition = expressions.true()
 
         # Use offset adjusted point in time to join with SCD table if any
-        point_in_time_expr = self._adjust_scd_point_in_time_for_offset(
-            get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
-            spec,
+        point_in_time_expr = adjust_point_in_time_for_offset(
+            adapter=self.adapter,
+            point_in_time_expr=get_qualified_column_identifier(
+                SpecialColumnName.POINT_IN_TIME, "REQ"
+            ),
+            offset=spec.parameters.offset,
+            offset_direction=self.get_offset_direction(),
         )
 
         # Only join records from the SCD table that are valid as at point in time
@@ -246,9 +239,11 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         )
 
         # Use offset adjusted point in time to join with SCD table if any
-        point_in_time_expr = self._adjust_scd_point_in_time_for_offset(
-            CURRENT_TIMESTAMP_PLACEHOLDER,
-            spec,
+        point_in_time_expr = adjust_point_in_time_for_offset(
+            adapter=self.adapter,
+            point_in_time_expr=CURRENT_TIMESTAMP_PLACEHOLDER,
+            offset=spec.parameters.offset,
+            offset_direction=self.get_offset_direction(),
         )
 
         # Only use records from the SCD table that are valid as at point in time
