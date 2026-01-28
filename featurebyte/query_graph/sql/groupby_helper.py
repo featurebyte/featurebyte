@@ -28,6 +28,30 @@ class InternalAggFunc(StrEnum):
     ANY = "any"
 
 
+def normalize_agg_func(agg_func: AggFunc | InternalAggFunc | str) -> AggFunc | InternalAggFunc:
+    """
+    Normalize agg_func to enum if needed.
+
+    Pydantic deserialization may return plain string instead of enum, so we need to
+    convert it back to the proper enum type.
+
+    Parameters
+    ----------
+    agg_func : AggFunc | InternalAggFunc | str
+        Aggregation function (may be string or enum)
+
+    Returns
+    -------
+    AggFunc | InternalAggFunc
+    """
+    if isinstance(agg_func, str) and not isinstance(agg_func, (AggFunc, InternalAggFunc)):
+        try:
+            return AggFunc(agg_func)
+        except ValueError:
+            return InternalAggFunc(agg_func)
+    return agg_func
+
+
 @dataclass
 class GroupbyColumn:
     """
@@ -155,12 +179,7 @@ def get_aggregation_expression(
     -------
     Expression
     """
-    # Normalize string to enum if needed (Pydantic deserialization may return plain string)
-    if isinstance(agg_func, str) and not isinstance(agg_func, (AggFunc, InternalAggFunc)):
-        try:  # type: ignore[unreachable]
-            agg_func = AggFunc(agg_func)
-        except ValueError:
-            agg_func = InternalAggFunc(agg_func)
+    agg_func = normalize_agg_func(agg_func)
 
     # Check if it's a count function
     if agg_func == AggFunc.COUNT:
@@ -331,15 +350,17 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     non_vector_agg_exprs = []
     vector_agg_cols = []
     for index, column in enumerate(groupby_columns):
+        agg_func = normalize_agg_func(column.agg_func)
+
         if (
-            isinstance(column.agg_func, AggFunc)
-            and should_use_element_wise_vector_aggregation(column.agg_func, column.parent_dtype)
+            isinstance(agg_func, AggFunc)
+            and should_use_element_wise_vector_aggregation(agg_func, column.parent_dtype)
             and source_type == SourceType.SNOWFLAKE
         ):
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
                     input_expr=input_expr,
-                    agg_func=column.agg_func,
+                    agg_func=agg_func,
                     groupby_keys=groupby_keys,
                     groupby_column=column,
                     index=index,
