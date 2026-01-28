@@ -4,13 +4,13 @@ ContextService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from redis import Redis
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.context import ContextModel
+from featurebyte.models.context import ContextModel, UserProvidedColumn
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
@@ -50,6 +50,50 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         )
         self.entity_service = entity_service
         self.table_service = table_service
+
+    def _validate_user_provided_columns_update(
+        self,
+        existing_columns: List[UserProvidedColumn],
+        new_columns: List[UserProvidedColumn],
+    ) -> None:
+        """
+        Validate user_provided_columns update.
+
+        Rules:
+        - New columns can be added
+        - Existing columns cannot be removed
+        - Existing column dtypes cannot be changed
+        - Existing column descriptions can be updated
+
+        Parameters
+        ----------
+        existing_columns: List[UserProvidedColumn]
+            Current user_provided_columns in the context
+        new_columns: List[UserProvidedColumn]
+            New user_provided_columns to update to
+
+        Raises
+        ------
+        DocumentUpdateError
+            When validation fails (column removed or dtype changed)
+        """
+        existing_cols = {col.name: col for col in existing_columns}
+        new_cols = {col.name: col for col in new_columns}
+
+        # Check no columns are removed
+        removed = set(existing_cols.keys()) - set(new_cols.keys())
+        if removed:
+            raise DocumentUpdateError(
+                f"Cannot remove existing user-provided columns: {sorted(removed)}"
+            )
+
+        # Check dtypes not changed for existing columns
+        for name, existing_col in existing_cols.items():
+            if name in new_cols and new_cols[name].dtype != existing_col.dtype:
+                raise DocumentUpdateError(
+                    f"Cannot change dtype of existing user-provided column '{name}' "
+                    f"from {existing_col.dtype} to {new_cols[name].dtype}"
+                )
 
     async def _validate_view(
         self, operation_structure: OperationStructure, context: ContextModel
@@ -131,6 +175,13 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
                 node=node, keep_all_source_columns=True
             )
             await self._validate_view(operation_structure=operation_structure, context=document)
+
+        # Validate user_provided_columns update if provided
+        if data.user_provided_columns is not None:
+            self._validate_user_provided_columns_update(
+                existing_columns=document.user_provided_columns,
+                new_columns=data.user_provided_columns,
+            )
 
         document = await super().update_document(
             document_id=document_id,
