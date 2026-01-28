@@ -5,16 +5,31 @@ This module contains context related models.
 from typing import Any, List, Optional
 
 import pymongo
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+
+
+class UserProvidedColumn(FeatureByteBaseModel):
+    """
+    Schema for user-provided column definition.
+
+    User-provided columns are columns that users will provide as part of the observation table
+    during feature materialization. These columns can be accessed as Features through the Context.
+    """
+
+    name: StrictStr
+    dtype: DBVarType
+    description: Optional[StrictStr] = Field(default=None)
 
 
 class ContextModel(FeatureByteCatalogBaseDocumentModel):
@@ -38,6 +53,9 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
+
+    # User-provided columns that will be available in observation tables for this context
+    user_provided_columns: List[UserProvidedColumn] = Field(default_factory=list)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
