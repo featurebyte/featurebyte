@@ -15,9 +15,9 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import ConflictResolution
+from featurebyte.enum import ConflictResolution, DBVarType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.context import ContextModel
+from featurebyte.models.context import ContextModel, UserProvidedColumn
 from featurebyte.schema.context import ContextUpdate
 
 
@@ -39,11 +39,13 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         "primary_entity_ids",
         "description",
         "treatment_id",
+        "user_provided_columns",
     ]
 
     # pydantic instance variable (public)
     primary_entity_ids: List[PydanticObjectId]
     treatment_id: Optional[PydanticObjectId] = None
+    user_provided_columns: List[UserProvidedColumn] = []
 
     @property
     def primary_entities(self) -> List[Entity]:
@@ -75,6 +77,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         primary_entity: List[str],
         description: Optional[str] = None,
         treatment_name: Optional[str] = None,
+        user_provided_columns: Optional[List[Dict[str, Any]]] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -89,6 +92,11 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             Description of the Context.
         treatment_name: Optional[str]
             treatment name if this is a causal modeling context.
+        user_provided_columns: Optional[List[Dict[str, Any]]]
+            List of user-provided column definitions. Each column should have:
+            - name: str - Name of the column
+            - dtype: DBVarType - Data type of the column
+            - description: Optional[str] - Description of the column
 
         Returns
         -------
@@ -102,6 +110,16 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ...     primary_entity=primary_entity,
         ... )
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
+
+        >>> # Example with user-provided columns
+        >>> fb.Context.create(  # doctest: +SKIP
+        ...     name="loan_approval_context",
+        ...     primary_entity=["customer"],
+        ...     user_provided_columns=[
+        ...         {"name": "annual_income", "dtype": fb.DBVarType.FLOAT},
+        ...         {"name": "credit_score", "dtype": fb.DBVarType.INT},
+        ...     ],
+        ... )
 
         >>> # Example with Observational Treatment and Estimated Unit-Level Propensity
 
@@ -139,11 +157,18 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         if treatment_name:
             treatment_id = Treatment.get(treatment_name).id
 
+        # Convert user_provided_columns dicts to UserProvidedColumn objects
+        user_provided_column_objs: List[UserProvidedColumn] = []
+        if user_provided_columns:
+            for col in user_provided_columns:
+                user_provided_column_objs.append(UserProvidedColumn(**col))
+
         context = Context(
             name=name,
             primary_entity_ids=entity_ids,
             description=description,
             treatment_id=treatment_id,
+            user_provided_columns=user_provided_column_objs,
         )
         context.save()
         return context
@@ -320,6 +345,58 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> context.update_description(description)  # doctest: +SKIP
         """
         super().update_description(description)
+
+    @typechecked
+    def add_user_provided_column(
+        self,
+        name: str,
+        dtype: DBVarType,
+        description: Optional[str] = None,
+    ) -> None:
+        """
+        Add a new user-provided column to this context.
+
+        User-provided columns define data that users will provide as part of the observation table
+        during feature materialization. Once added, columns cannot be removed or have their dtype
+        changed (though descriptions can be updated).
+
+        Parameters
+        ----------
+        name: str
+            Name of the column
+        dtype: DBVarType
+            Data type of the column
+        description: Optional[str]
+            Description of the column
+
+        Raises
+        ------
+        ValueError
+            If column with same name already exists
+
+        Examples
+        --------
+        >>> context = catalog.get_context("loan_approval_context")  # doctest: +SKIP
+        >>> context.add_user_provided_column(  # doctest: +SKIP
+        ...     name="annual_income",
+        ...     dtype=fb.DBVarType.FLOAT,
+        ...     description="Customer's annual income",
+        ... )
+        """
+        # Check if column name already exists
+        existing_names = {col.name for col in self.user_provided_columns}
+        if name in existing_names:
+            raise ValueError(f"User-provided column with name '{name}' already exists")
+
+        # Create updated list with new column
+        new_column = UserProvidedColumn(name=name, dtype=dtype, description=description)
+        updated_columns = list(self.user_provided_columns) + [new_column]
+
+        # Update via API
+        self.update(
+            update_payload={"user_provided_columns": [col.model_dump() for col in updated_columns]},
+            allow_update_local=True,
+        )
 
     @typechecked
     def remove_observation_table(self, observation_table_name: str) -> None:
