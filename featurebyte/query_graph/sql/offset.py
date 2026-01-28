@@ -52,3 +52,37 @@ def add_offset_to_timestamp(
         timestamp_expr,
     )
     return adjusted_timestamp_expr
+
+
+def adjust_point_in_time_for_offset(
+    adapter: BaseAdapter,
+    point_in_time_expr: Expression,
+    offset: str | None,
+    offset_direction: OffsetDirection,
+) -> Expression:
+    """
+    Adjust point in time expression for offset and normalize for comparison.
+
+    Parameters
+    ----------
+    adapter: BaseAdapter
+        Sql adapter
+    point_in_time_expr: Expression
+        Point in time expression to adjust
+    offset: str | None
+        Offset specification
+    offset_direction: OffsetDirection
+        Offset direction
+
+    Returns
+    -------
+    Expression
+    """
+    if offset is not None:
+        point_in_time_expr = add_offset_to_timestamp(
+            adapter=adapter,
+            timestamp_expr=point_in_time_expr,
+            offset=offset,
+            offset_direction=offset_direction,
+        )
+    return adapter.normalize_timestamp_before_comparison(point_in_time_expr)

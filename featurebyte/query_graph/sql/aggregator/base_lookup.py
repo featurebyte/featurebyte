@@ -5,7 +5,7 @@ SQL generation for lookup features
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar, cast
 
 import pandas as pd
 from sqlglot import expressions
@@ -20,14 +20,28 @@ from featurebyte.query_graph.sql.aggregator.base import (
     CommonTable,
     LeftJoinableSubquery,
 )
+from featurebyte.query_graph.sql.asat_helper import (
+    ensure_end_timestamp_column,
+    get_record_validity_condition,
+)
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
     get_qualified_column_identifier,
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.cron import get_request_table_job_datetime_column_name
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
-from featurebyte.query_graph.sql.offset import OffsetDirection
+from featurebyte.query_graph.sql.groupby_helper import (
+    GroupbyColumn,
+    GroupbyKey,
+    InternalAggFunc,
+    get_groupby_expr,
+)
+from featurebyte.query_graph.sql.offset import (
+    OffsetDirection,
+    adjust_point_in_time_for_offset,
+)
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
@@ -267,6 +281,85 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
 
         return out
 
+    def get_scd_lookups_deployment_sql(self) -> Sequence[LeftJoinableSubquery]:
+        """
+        Get SCD lookup queries for deployment SQL
+
+        Returns
+        -------
+        Sequence[LeftJoinableSubquery]
+            List of subqueries for SCD lookups
+        """
+        out = []
+        for specs in self.iterate_grouped_lookup_specs(is_scd=True):
+            out.append(self._get_scd_lookup_subquery_deployment_sql(specs))
+        return out
+
+    def _get_scd_lookup_subquery_deployment_sql(
+        self, specs: list[LookupSpecT]
+    ) -> LeftJoinableSubquery:
+        spec = specs[0]
+        scd_parameters = spec.scd_parameters
+        assert scd_parameters is not None
+        end_timestamp_column, scd_expr = ensure_end_timestamp_column(
+            adapter=self.adapter,
+            effective_timestamp_column=scd_parameters.effective_timestamp_column,
+            effective_timestamp_schema=scd_parameters.effective_timestamp_schema,
+            natural_key_column=cast(str, scd_parameters.natural_key_column),
+            end_timestamp_column=scd_parameters.end_timestamp_column,
+            source_expr=spec.source_expr,
+        )
+
+        # Use offset adjusted point in time to join with SCD table if any
+        point_in_time_expr = adjust_point_in_time_for_offset(
+            adapter=self.adapter,
+            point_in_time_expr=CURRENT_TIMESTAMP_PLACEHOLDER,
+            offset=scd_parameters.offset,
+            offset_direction=OffsetDirection.BACKWARD,
+        )
+
+        # Only use records from the SCD table that are valid as at point in time
+        record_validity_condition = get_record_validity_condition(
+            adapter=self.adapter,
+            effective_timestamp_column=scd_parameters.effective_timestamp_column,
+            effective_timestamp_schema=scd_parameters.effective_timestamp_schema,
+            end_timestamp_column=end_timestamp_column,
+            end_timestamp_schema=scd_parameters.end_timestamp_schema,
+            point_in_time_expr=point_in_time_expr,
+        )
+
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.entity_column, "SCD"),
+                name=spec.serving_names[0],
+            )
+        ]
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=InternalAggFunc.ANY,
+                parent_expr=get_qualified_column_identifier(s.input_column_name, "SCD"),
+                result_name=s.agg_result_name,
+                parent_dtype=None,
+                parent_cols=[get_qualified_column_identifier(s.input_column_name, "SCD")],
+            )
+            for s in specs
+        ]
+        groupby_input_expr = (
+            select().from_(scd_expr.subquery(alias="SCD")).where(record_validity_condition)
+        )
+        scd_lookup_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=None,
+            adapter=self.adapter,
+        )
+        return LeftJoinableSubquery(
+            expr=scd_lookup_expr,
+            column_names=[s.agg_result_name for s in specs],
+            join_keys=spec.serving_names,
+        )
+
     def update_aggregation_table_expr(
         self,
         table_expr: Select,
@@ -275,14 +368,21 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
         current_query_index: int,
     ) -> AggregationResult:
         # SCD lookup
-        table_expr, scd_agg_result_names = self._update_with_scd_lookups(
-            table_expr=table_expr,
-            point_in_time_column=point_in_time_column,
-            current_columns=current_columns,
-        )
+        queries: list[LeftJoinableSubquery] = []
+        if not self.is_deployment_sql:
+            # Union with request table for historical / batch sql
+            table_expr, scd_agg_result_names = self._update_with_scd_lookups(
+                table_expr=table_expr,
+                point_in_time_column=point_in_time_column,
+                current_columns=current_columns,
+            )
+        else:
+            # For deployment sql, use a different query without union with request table
+            queries.extend(self.get_scd_lookups_deployment_sql())
+            scd_agg_result_names = []
 
         # Non-time based lookup
-        queries = self.get_direct_lookups()
+        queries.extend(self.get_direct_lookups())
         result = self._update_with_left_joins(
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
