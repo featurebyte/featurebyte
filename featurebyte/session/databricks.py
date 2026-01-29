@@ -83,7 +83,7 @@ class DatabricksSession(BaseSparkSession):
     async def _list_databases(self) -> list[str]:
         output = []
         try:
-            for catalog_info in self._workspace_client.catalogs.list(include_browse=True):
+            for catalog_info in self._workspace_client.catalogs.list(include_browse=False):
                 if catalog_info.name:
                     output.append(catalog_info.name)
             return output
@@ -96,7 +96,7 @@ class DatabricksSession(BaseSparkSession):
         output = []
         try:
             for schema_info in self._workspace_client.schemas.list(
-                catalog_name=database_name, include_browse=True
+                catalog_name=database_name, include_browse=False
             ):
                 if schema_info.name:
                     output.append(schema_info.name)
@@ -115,7 +115,7 @@ class DatabricksSession(BaseSparkSession):
         output = []
         try:
             for table_info in self._workspace_client.tables.list(
-                catalog_name=database_name, schema_name=schema_name, include_browse=True
+                catalog_name=database_name, schema_name=schema_name, include_browse=False
             ):
                 if table_info.name:
                     output.append(TableSpec(name=table_info.name, description=table_info.comment))
