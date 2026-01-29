@@ -70,14 +70,17 @@ def get_deployment_feature_query_plan(
     )
     plan = planner.generate_plan(nodes)
 
-    # Form a request table as a common table expression (CTE) and add the point in time column
-    request_query = construct_request_table_query(
-        current_timestamp_expr=point_in_time_placeholder,
-        request_table_columns=request_table_columns,
-        request_table_expr=request_table_expr,
-    )
+    # Form a request table as a common table expression (CTE) and add the point in time column. This
+    # is necessary for complex features that require parent child entity lookups internally.
     request_table_name = "DEPLOYMENT_REQUEST_TABLE"
-    ctes = [CommonTable(request_table_name, request_query, quoted=False)]
+    ctes = []
+    if plan.get_simplifiable_feature_subquery() is None:
+        request_query = construct_request_table_query(
+            current_timestamp_expr=point_in_time_placeholder,
+            request_table_columns=request_table_columns,
+            request_table_expr=request_table_expr,
+        )
+        ctes.append(CommonTable(request_table_name, request_query, quoted=False))
 
     output = plan.construct_combined_sql(
         request_table_name=request_table_name,

@@ -732,9 +732,10 @@ class WindowAggregator(TileBasedAggregator):
 
         return results
 
-    def _get_window_aggregation_deployment_subquery(
-        self, specs: list[TileBasedAggregationSpec], existing_columns: set[str]
-    ) -> LeftJoinableSubquery:
+    def get_deployment_feature_subquery_from_specs(
+        self,
+        specs: list[TileBasedAggregationSpec],
+    ) -> Optional[LeftJoinableSubquery]:
         spec = specs[0]
 
         # Filter source data to only include rows within the window for the fixed point in time
@@ -814,15 +815,11 @@ class WindowAggregator(TileBasedAggregator):
             adapter=self.adapter,
             window_order_by=timestamp_expr if AggFunc(spec.agg_func).is_order_dependent else None,
         )
-        column_names = set()
-        for _spec in specs:
-            if _spec.agg_result_name not in existing_columns:
-                column_names.add(_spec.agg_result_name)
 
         # Join keys doesn't include point in time since there's only one fixed value
         query = LeftJoinableSubquery(
             expr=aggregated_expr,
-            column_names=sorted(column_names),
+            column_names=sorted([spec.agg_result_name for spec in specs]),
             join_keys=spec.serving_names,
         )
         return query
@@ -839,7 +836,11 @@ class WindowAggregator(TileBasedAggregator):
         queries = []
         existing_columns: set[str] = set()
         for specs in self.grouped_specs.values():
-            query = self._get_window_aggregation_deployment_subquery(specs, existing_columns)
+            query = self.get_deployment_feature_subquery_from_specs(specs)
+            assert query is not None
+            query.column_names = sorted([
+                col_name for col_name in query.column_names if col_name not in existing_columns
+            ])
             existing_columns.update(query.column_names)
             queries.append(query)
         return queries

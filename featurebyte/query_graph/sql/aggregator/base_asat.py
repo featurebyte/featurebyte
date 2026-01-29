@@ -5,7 +5,7 @@ SQL generation for as-at aggregation
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, TypeVar, cast
+from typing import Any, Optional, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -504,6 +504,14 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
             column_names=aggregated_column_names,
             join_keys=spec.serving_names,
         )
+
+    def get_deployment_feature_subquery_from_specs(
+        self, specs: list[AsAtSpecT]
+    ) -> Optional[LeftJoinableSubquery]:
+        spec = specs[0]
+        if spec.parameters.snapshots_parameters is None:
+            return self._get_aggregation_subquery_from_scd_deployment(specs)
+        return self._get_aggregation_subquery_from_snapshots_deployment(specs)
 
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         result = self.request_table_plan.construct_request_table_ctes(request_table_name)
