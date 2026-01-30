@@ -149,6 +149,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         higher_prediction_is_better: bool
             Whether higher prediction values are better. Set to True (default) for targets like
             revenue or conversions. Set to False for targets like churn or costs.
+            This information is important for causal modeling.
 
         Returns
         -------
