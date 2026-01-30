@@ -568,6 +568,7 @@ class UseCaseInfo(BaseInfo):
     use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = Field(
         default=UseCaseType.PREDICTIVE
     )
+    higher_prediction_is_better: bool = Field(default=True)
 
 
 class TreatmentInfo(BaseInfo):

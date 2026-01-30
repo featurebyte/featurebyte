@@ -63,6 +63,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     target_id: Optional[PydanticObjectId]
     target_namespace_id: PydanticObjectId
     context_id: PydanticObjectId
+    higher_prediction_is_better: bool = True
 
     @property
     def target(self) -> Optional[Target]:
@@ -101,6 +102,27 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         """
         return self.cached_model.use_case_type
 
+    @typechecked
+    def update_higher_prediction_is_better(self, higher_prediction_is_better: bool) -> None:
+        """
+        Update whether higher prediction values are better for this use case.
+
+        Parameters
+        ----------
+        higher_prediction_is_better: bool
+            True if higher prediction values are desirable (e.g., revenue, conversions).
+            False if lower prediction values are desirable (e.g., churn, costs).
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
+        >>> use_case.update_higher_prediction_is_better(False)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"higher_prediction_is_better": higher_prediction_is_better},
+            allow_update_local=False,
+        )
+
     @classmethod
     @typechecked
     def create(
@@ -109,6 +131,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         target_name: str,
         context_name: str,
         description: Optional[str] = None,
+        higher_prediction_is_better: bool = True,
     ) -> UseCase:
         """
         Create a new UseCase.
@@ -123,6 +146,10 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             context name of the UseCase.
         description: Optional[str]
             description of the UseCase.
+        higher_prediction_is_better: bool
+            Whether higher prediction values are better. Set to True (default) for targets like
+            revenue or conversions. Set to False for targets like churn or costs.
+            This information is important for causal modeling.
 
         Returns
         -------
@@ -146,6 +173,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             target_namespace_id=target_namespace.id,
             context_id=Context.get(context_name).id,
             description=description,
+            higher_prediction_is_better=higher_prediction_is_better,
         )
         use_case.save()
         return use_case
