@@ -833,3 +833,61 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             response.json()["detail"]
             == "Positive label is not set for the classification target: bool_target"
         )
+
+    def test_create_use_case_with_higher_is_better(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+    ):
+        """Test create use case with higher_is_better field"""
+        _ = create_success_response
+        test_api_client, _ = test_api_client_persistent
+
+        # Test default higher_is_better (should be True)
+        response = test_api_client.get(f"{self.base_route}/{self.payload['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_is_better"] is True
+
+        # Create use case with higher_is_better=False
+        use_case_payload = self.payload.copy()
+        use_case_payload["_id"] = str(ObjectId())
+        use_case_payload["name"] = "churn_use_case"
+        use_case_payload["higher_is_better"] = False
+        response = test_api_client.post(self.base_route, json=use_case_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["higher_is_better"] is False
+
+    def test_update_higher_is_better(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+    ):
+        """Test update higher_is_better field"""
+        test_api_client, _ = test_api_client_persistent
+        use_case_id = create_success_response.json()["_id"]
+
+        # Verify initial value is True
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_is_better"] is True
+
+        # Update to False
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"higher_is_better": False},
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_is_better"] is False
+
+        # Verify the update persisted
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_is_better"] is False
+
+        # Update back to True
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"higher_is_better": True},
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_is_better"] is True

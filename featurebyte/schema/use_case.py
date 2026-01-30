@@ -25,6 +25,7 @@ class UseCaseCreate(FeatureByteBaseModel):
     use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = Field(
         default=UseCaseType.PREDICTIVE
     )
+    higher_is_better: bool = Field(default=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -54,6 +55,7 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_preview_table: Optional[bool] = Field(default=None)
 
     name: Optional[NameStr] = Field(default=None)
+    higher_is_better: Optional[bool] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod

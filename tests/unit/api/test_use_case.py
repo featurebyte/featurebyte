@@ -75,12 +75,45 @@ def test_create_use_case(catalog, float_target, context):
     assert retrieved_use_case.description == "test_use_case_1 description"
     assert retrieved_use_case.target.name == float_target.name
     assert retrieved_use_case.context.name == context.name
+    assert retrieved_use_case.higher_is_better is True  # Default value
 
     # Test list use cases
     use_case_df = UseCase.list()
     assert len(use_case_df) == 1
     assert use_case_df.iloc[0]["id"] == str(use_case.id)
     assert use_case_df.iloc[0]["name"] == use_case.name
+
+
+def test_create_use_case_with_higher_is_better_false(catalog, float_target, context):
+    """
+    Test UseCase.create method with higher_is_better=False (e.g., for churn targets)
+    """
+    _ = catalog
+
+    if not context.saved:
+        context.save()
+
+    if not float_target.saved:
+        float_target.save()
+        float_target.update_target_type(TargetType.REGRESSION)
+
+    use_case = UseCase.create(
+        name="test_use_case_churn",
+        target_name=float_target.name,
+        context_name=context.name,
+        description="Churn prediction use case",
+        higher_is_better=False,
+    )
+
+    # Test get use case and verify higher_is_better is False
+    retrieved_use_case = UseCase.get_by_id(use_case.id)
+    assert retrieved_use_case.name == "test_use_case_churn"
+    assert retrieved_use_case.higher_is_better is False
+
+    # Test update_higher_is_better
+    retrieved_use_case.update_higher_is_better(True)
+    updated_use_case = UseCase.get_by_id(use_case.id)
+    assert updated_use_case.higher_is_better is True
 
 
 def test_create_use_case_with_treatment(catalog, cust_id_entity):
