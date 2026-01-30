@@ -105,13 +105,13 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     @typechecked
     def update_higher_is_better(self, higher_is_better: bool) -> None:
         """
-        Update whether higher target values are better for this use case.
+        Update whether higher prediction values are better for this use case.
 
         Parameters
         ----------
         higher_is_better: bool
-            True if higher target values are desirable (e.g., revenue, conversions).
-            False if lower target values are desirable (e.g., churn, costs).
+            True if higher prediction values are desirable (e.g., revenue, conversions).
+            False if lower prediction values are desirable (e.g., churn, costs).
 
         Examples
         --------
@@ -144,7 +144,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         description: Optional[str]
             description of the UseCase.
         higher_is_better: bool
-            Whether higher target values are better. Set to True (default) for targets like
+            Whether higher prediction values are better. Set to True (default) for targets like
             revenue or conversions. Set to False for targets like churn or costs.
 
         Returns
