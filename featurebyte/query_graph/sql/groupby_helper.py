@@ -10,7 +10,7 @@ from typing import List, Optional, cast
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import AggFunc, DBVarType, SourceType
+from featurebyte.enum import AggFunc, DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.adapter.base import VectorAggColumn
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -20,13 +20,45 @@ from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_ve
 ROW_NUMBER = "__FB_GROUPBY_HELPER_ROW_NUMBER"
 
 
+class InternalAggFunc(StrEnum):
+    """
+    Internal aggregate functions
+    """
+
+    ANY = "any"
+
+
+def normalize_agg_func(agg_func: AggFunc | InternalAggFunc | str) -> AggFunc | InternalAggFunc:
+    """
+    Normalize agg_func to enum if needed.
+
+    Pydantic deserialization may return plain string instead of enum, so we need to
+    convert it back to the proper enum type.
+
+    Parameters
+    ----------
+    agg_func : AggFunc | InternalAggFunc | str
+        Aggregation function (may be string or enum)
+
+    Returns
+    -------
+    AggFunc | InternalAggFunc
+    """
+    if isinstance(agg_func, str) and not isinstance(agg_func, (AggFunc, InternalAggFunc)):
+        try:
+            return AggFunc(agg_func)
+        except ValueError:
+            return InternalAggFunc(agg_func)
+    return agg_func
+
+
 @dataclass
 class GroupbyColumn:
     """
     Represents a set of parameters that produces one output column in a groupby statement
     """
 
-    agg_func: AggFunc
+    agg_func: AggFunc | InternalAggFunc
     # parent_expr refers to the expression that is used to generate the column. For example, `sum(col1)`.
     # This is not provided for certain aggregations like count.
     parent_expr: Optional[Expression]
@@ -124,7 +156,7 @@ def column_distinct_count_including_null(
 
 
 def get_aggregation_expression(
-    agg_func: AggFunc,
+    agg_func: AggFunc | InternalAggFunc,
     input_column: Optional[str | Expression],
     parent_dtype: Optional[DBVarType],
     adapter: BaseAdapter,
@@ -147,6 +179,8 @@ def get_aggregation_expression(
     -------
     Expression
     """
+    agg_func = normalize_agg_func(agg_func)
+
     # Check if it's a count function
     if agg_func == AggFunc.COUNT:
         return expressions.Count(this=expressions.Star())
@@ -161,7 +195,11 @@ def get_aggregation_expression(
     if agg_func == AggFunc.COUNT_DISTINCT:
         return column_distinct_count_including_null(input_column_expr, adapter)
 
+    if agg_func == InternalAggFunc.ANY:
+        return adapter.any_value(input_column_expr)
+
     # Try to get a built-in SQL aggregate function
+    assert isinstance(agg_func, AggFunc)
     agg_func_sql_mapping = {
         AggFunc.SUM: "SUM",
         AggFunc.AVG: "AVG",
@@ -312,14 +350,17 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     non_vector_agg_exprs = []
     vector_agg_cols = []
     for index, column in enumerate(groupby_columns):
+        agg_func = normalize_agg_func(column.agg_func)
+
         if (
-            should_use_element_wise_vector_aggregation(column.agg_func, column.parent_dtype)
+            isinstance(agg_func, AggFunc)
+            and should_use_element_wise_vector_aggregation(agg_func, column.parent_dtype)
             and source_type == SourceType.SNOWFLAKE
         ):
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
                     input_expr=input_expr,
-                    agg_func=column.agg_func,
+                    agg_func=agg_func,
                     groupby_keys=groupby_keys,
                     groupby_column=column,
                     index=index,
