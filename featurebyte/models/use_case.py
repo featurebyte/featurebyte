@@ -84,4 +84,4 @@ class UseCaseModel(BaseUseCaseModel):
     use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = UseCaseType.PREDICTIVE
     target_id: Optional[PydanticObjectId] = None
     target_namespace_id: PydanticObjectId
-    higher_is_better: bool = True
+    higher_prediction_is_better: bool = True
