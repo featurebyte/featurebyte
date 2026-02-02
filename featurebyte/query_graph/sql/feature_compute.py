@@ -626,7 +626,19 @@ class FeatureExecutionPlan:
         self,
         feature_subquery: LeftJoinableSubquery,
     ) -> tuple[CommonTable, list[str]]:
-        """Construct SQL code for all aggregations for simplified deployment SQL"""
+        """
+        Construct SQL code for all aggregations for simplified deployment SQL
+
+        Parameters
+        ----------
+        feature_subquery: LeftJoinableSubquery
+            Subquery that computes the feature
+
+        Returns
+        -------
+        tuple[CommonTable, list[str]]
+            Common table expression and list of aggregation result names
+        """
         agg_result_names = feature_subquery.column_names
         aggregated_expr = feature_subquery.expr
         # Make point in time column available in the aggregated table so it can be used in
@@ -735,6 +747,11 @@ class FeatureExecutionPlan:
     def get_simplifiable_feature_subquery(self) -> Optional[LeftJoinableSubquery]:
         """
         Check if the plan can use simplified deployment SQL
+
+        Returns
+        -------
+        Optional[LeftJoinableSubquery]
+            Subquery if simplification is possible, None otherwise
         """
         if not self.is_deployment_sql:
             return None
@@ -855,7 +872,14 @@ class FeatureExecutionPlan:
         )
 
     def _is_single_feature_subquery(self) -> bool:
-        """Check if the plan contains only features that can be computed in a single subquery."""
+        """
+        Check if the plan contains only features that can be computed in a single subquery.
+
+        Returns
+        -------
+        bool
+            True if there is exactly one grouped spec across all aggregators
+        """
         num_grouped_specs = 0
         for aggregator in self.iter_aggregators():
             num_grouped_specs += len(aggregator.grouped_specs)
@@ -864,7 +888,14 @@ class FeatureExecutionPlan:
         return num_grouped_specs == 1
 
     def _get_simplifiable_feature_subquery(self) -> Optional[LeftJoinableSubquery]:
-        """Get the single feature subquery from the plan."""
+        """
+        Get the single feature subquery from the plan.
+
+        Returns
+        -------
+        Optional[LeftJoinableSubquery]
+            Subquery if there is exactly one grouped spec that supports simplification, None otherwise
+        """
         if not self._is_single_feature_subquery():
             return None
         for aggregator in self.iter_aggregators():
