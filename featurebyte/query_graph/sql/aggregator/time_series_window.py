@@ -762,9 +762,9 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
-    def _get_aggregation_subquery_deployment(
-        self, specs: list[TimeSeriesWindowAggregateSpec], existing_columns: set[str]
-    ) -> LeftJoinableSubquery:
+    def get_deployment_feature_subquery_from_specs(
+        self, specs: list[TimeSeriesWindowAggregateSpec]
+    ) -> Optional[LeftJoinableSubquery]:
         spec = specs[0]
 
         # Filter input for the specific point in time during deployment
@@ -820,18 +820,22 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
             adapter=self.adapter,
         )
 
-        # remove existing columns from the new columns
-        column_names = set()
-        for _spec in specs:
-            if _spec.agg_result_name not in existing_columns:
-                column_names.add(_spec.agg_result_name)
-        aggregated_column_names = sorted(column_names)
-
         return LeftJoinableSubquery(
             expr=aggregated_expr,
-            column_names=aggregated_column_names,
+            column_names=sorted([spec.agg_result_name for spec in specs]),
             join_keys=spec.serving_names,
         )
+
+    def _get_aggregation_subquery_deployment(
+        self, specs: list[TimeSeriesWindowAggregateSpec], existing_columns: set[str]
+    ) -> LeftJoinableSubquery:
+        result = self.get_deployment_feature_subquery_from_specs(specs)
+        assert result is not None
+        # remove existing columns from the new columns
+        result.column_names = [
+            col_name for col_name in result.column_names if col_name not in existing_columns
+        ]
+        return result
 
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         if self.is_deployment_sql:

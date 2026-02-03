@@ -382,6 +382,24 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             List of common table expressions
         """
 
+    def get_deployment_feature_subquery_from_specs(
+        self, specs: list[AggregationSpecT]
+    ) -> Optional[LeftJoinableSubquery]:
+        """
+        Construct a LeftJoinableSubquery that can be used in simplified deployment feature sql.
+        Return None if simplified sql should not be used.
+
+        Parameters
+        ----------
+        specs: list[AggregationSpecT]
+            List of aggregation specifications
+
+        Returns
+        -------
+        Optional[LeftJoinableSubquery]
+        """
+        return None
+
 
 @dataclass
 class TileBasedAggregatorOnlineJoinInfo:

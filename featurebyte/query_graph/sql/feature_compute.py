@@ -15,7 +15,7 @@ from sqlglot.expressions import select
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.utils import timer_log
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
@@ -32,7 +32,11 @@ from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.aggregator.base import CommonTable, TileBasedAggregator
+from featurebyte.query_graph.sql.aggregator.base import (
+    CommonTable,
+    LeftJoinableSubquery,
+    TileBasedAggregator,
+)
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
@@ -46,6 +50,7 @@ from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    CURRENT_TIMESTAMP_PLACEHOLDER,
     DevelopmentDatasets,
     PartitionColumnFilters,
     SQLType,
@@ -341,6 +346,7 @@ class FeatureExecutionPlan:
         self.job_schedule_table_set = job_schedule_table_set
         self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
+        self.is_deployment_sql = is_deployment_sql
 
     @property
     def required_entity_ids(self) -> set[ObjectId]:
@@ -616,6 +622,36 @@ class FeatureExecutionPlan:
             name=self.AGGREGATION_TABLE_NAME, expr=table_expr, quoted=False
         ), agg_result_names
 
+    def construct_simplified_aggregation_cte(
+        self,
+        feature_subquery: LeftJoinableSubquery,
+    ) -> tuple[CommonTable, list[str]]:
+        """
+        Construct SQL code for all aggregations for simplified deployment SQL
+
+        Parameters
+        ----------
+        feature_subquery: LeftJoinableSubquery
+            Subquery that computes the feature
+
+        Returns
+        -------
+        tuple[CommonTable, list[str]]
+            Common table expression and list of aggregation result names
+        """
+        agg_result_names = feature_subquery.column_names
+        aggregated_expr = feature_subquery.expr
+        # Make point in time column available in the aggregated table so it can be used in
+        # post-aggregation transforms
+        aggregated_expr = aggregated_expr.select(
+            expressions.alias_(
+                CURRENT_TIMESTAMP_PLACEHOLDER, alias=SpecialColumnName.POINT_IN_TIME, quoted=True
+            )
+        )
+        return CommonTable(
+            name=self.AGGREGATION_TABLE_NAME, expr=aggregated_expr, quoted=False
+        ), agg_result_names
+
     def construct_post_aggregation_sql(
         self,
         request_table_columns: Optional[list[str]],
@@ -708,6 +744,22 @@ class FeatureExecutionPlan:
         out.extend(self.feature_entity_lookup_steps.values())
         return out
 
+    def get_simplifiable_feature_subquery(self) -> Optional[LeftJoinableSubquery]:
+        """
+        Check if the plan can use simplified deployment SQL
+
+        Returns
+        -------
+        Optional[LeftJoinableSubquery]
+            Subquery if simplification is possible, None otherwise
+        """
+        if not self.is_deployment_sql:
+            return None
+        if self.get_overall_entity_lookup_steps():
+            return None
+        simplifiable_feature_subquery = self._get_simplifiable_feature_subquery()
+        return simplifiable_feature_subquery
+
     @timer_log
     def construct_combined_sql(
         self,
@@ -790,14 +842,21 @@ class FeatureExecutionPlan:
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
-        for aggregator in self.iter_aggregators():
-            common_tables.extend(aggregator.get_common_table_expressions(request_table_name))
-
-        agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
-            request_table_name,
-            point_in_time_column,
-            request_table_columns,
-        )
+        # When possible, generate simplified feature query without left joining with request table
+        # for simple queries (no join under deployment sql setting)
+        simplifiable_feature_subquery = self.get_simplifiable_feature_subquery()
+        if simplifiable_feature_subquery is None:
+            for aggregator in self.iter_aggregators():
+                common_tables.extend(aggregator.get_common_table_expressions(request_table_name))
+            agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
+                request_table_name,
+                point_in_time_column,
+                request_table_columns,
+            )
+        else:
+            agg_cte, agg_result_names = self.construct_simplified_aggregation_cte(
+                simplifiable_feature_subquery
+            )
         common_tables.append(agg_cte)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
@@ -811,6 +870,39 @@ class FeatureExecutionPlan:
             post_aggregation_sql=post_aggregation_sql,
             feature_names=self.feature_names,
         )
+
+    def _is_single_feature_subquery(self) -> bool:
+        """
+        Check if the plan contains only features that can be computed in a single subquery.
+
+        Returns
+        -------
+        bool
+            True if there is exactly one grouped spec across all aggregators
+        """
+        num_grouped_specs = 0
+        for aggregator in self.iter_aggregators():
+            num_grouped_specs += len(aggregator.grouped_specs)
+            if num_grouped_specs > 1:
+                return False
+        return num_grouped_specs == 1
+
+    def _get_simplifiable_feature_subquery(self) -> Optional[LeftJoinableSubquery]:
+        """
+        Get the single feature subquery from the plan.
+
+        Returns
+        -------
+        Optional[LeftJoinableSubquery]
+            Subquery if there is exactly one grouped spec that supports simplification, None otherwise
+        """
+        if not self._is_single_feature_subquery():
+            return None
+        for aggregator in self.iter_aggregators():
+            if aggregator.grouped_specs:
+                for specs in aggregator.grouped_specs.values():
+                    return aggregator.get_deployment_feature_subquery_from_specs(specs)  # type: ignore[arg-type]
+        return None
 
 
 class FeatureExecutionPlanner:

@@ -360,6 +360,16 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
             join_keys=spec.serving_names,
         )
 
+    def get_deployment_feature_subquery_from_specs(
+        self, specs: list[LookupSpecT]
+    ) -> Optional[LeftJoinableSubquery]:
+        spec = specs[0]
+        if spec.scd_parameters is not None:
+            return self._get_scd_lookup_subquery_deployment_sql(specs)
+        # Snapshots lookup is still referencing the request table. This can be improved
+        # subsequently if needed.
+        return None
+
     def update_aggregation_table_expr(
         self,
         table_expr: Select,
