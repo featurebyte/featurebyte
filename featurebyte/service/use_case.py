@@ -165,12 +165,15 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         UseCaseModel
         """
         if data.higher_prediction_is_better is not None:
-            if await self._has_related_observation_tables(document_id):
-                raise DocumentUpdateError(
-                    "Cannot update higher_prediction_is_better when the use case has "
-                    "related observation tables. Please remove all observation tables from "
-                    "this use case first."
-                )
+            # Check if the value is actually being changed
+            current_doc = await self.get_document(document_id=document_id)
+            if data.higher_prediction_is_better != current_doc.higher_prediction_is_better:
+                if await self._has_related_observation_tables(document_id):
+                    raise DocumentUpdateError(
+                        "Cannot update higher_prediction_is_better when the use case has "
+                        "related observation tables. Please remove all observation tables from "
+                        "this use case first."
+                    )
 
         result_doc = await super().update_document(
             document_id=document_id,
