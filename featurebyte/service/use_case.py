@@ -10,7 +10,8 @@ from bson import ObjectId
 from redis import Redis
 
 from featurebyte.enum import TargetType
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import DocumentCreationError, DocumentUpdateError
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -117,6 +118,28 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
 
         return use_case
 
+    async def _has_related_observation_tables(self, use_case_id: ObjectId) -> bool:
+        """
+        Check if a use case has any related observation tables.
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            Use case id
+
+        Returns
+        -------
+        bool
+            True if there are observation tables linked to this use case
+        """
+        # Query the observation_table collection directly to avoid circular dependency
+        result = await self.persistent.find_one(
+            collection_name=ObservationTableModel.collection_name(),
+            query_filter={"use_case_ids": use_case_id},
+            projection={"_id": 1},
+        )
+        return result is not None
+
     async def update_use_case(
         self,
         document_id: ObjectId,
@@ -132,10 +155,22 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         data: UseCaseUpdate
             use case update data
 
+        Raises
+        ------
+        DocumentUpdateError
+            If attempting to update higher_prediction_is_better when observation tables exist
+
         Returns
         -------
         UseCaseModel
         """
+        if data.higher_prediction_is_better is not None:
+            if await self._has_related_observation_tables(document_id):
+                raise DocumentUpdateError(
+                    "Cannot update higher_prediction_is_better when the use case has "
+                    "related observation tables. Please remove all observation tables from "
+                    "this use case first."
+                )
 
         result_doc = await super().update_document(
             document_id=document_id,
