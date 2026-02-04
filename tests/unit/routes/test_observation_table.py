@@ -1116,6 +1116,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["request_input"] == {
             "observation_table_id": source_observation_table["_id"],
             "downsampling_info": None,
+            "split_info": None,
             "type": "source_observation_table",
         }
         assert (
@@ -1383,6 +1384,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["request_input"] == {
             "observation_table_id": source_observation_table_id,
             "downsampling_info": payload["request_input"]["downsampling_info"],
+            "split_info": None,
             "type": "source_observation_table",
         }
         assert response_dict["has_row_weights"] is True
@@ -1411,6 +1413,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["request_input"] == {
             "observation_table_id": new_source_observation_table_id,
             "downsampling_info": payload["request_input"]["downsampling_info"],
+            "split_info": None,
             "type": "source_observation_table",
         }
         assert response_dict["has_row_weights"] is True
@@ -1433,6 +1436,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["request_input"] == {
             "observation_table_id": new_source_observation_table_id,
             "downsampling_info": None,
+            "split_info": None,
             "type": "source_observation_table",
         }
         # ensure that has_row_weights is still True
@@ -1698,3 +1702,376 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             response = self.wait_for_results(test_api_client, response)
             response_dict = response.json()
             assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_split_201(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create with an observation table and split_info"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["name"] = "split_observation_table"
+        payload["purpose"] = "training"
+        payload["request_input"]["split_info"] = {
+            "split_index": 0,
+            "split_ratios": [0.7, 0.3],
+            "seed": 42,
+        }
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+
+        assert response_dict["request_input"] == {
+            "observation_table_id": source_observation_table["_id"],
+            "downsampling_info": None,
+            "split_info": {
+                "split_index": 0,
+                "split_ratios": [0.7, 0.3],
+                "seed": 42,
+            },
+            "type": "source_observation_table",
+        }
+        assert response_dict["purpose"] == "training"
+        assert response_dict["primary_entity_ids"] == source_observation_table["primary_entity_ids"]
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_split_and_sample_rows_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test that split_info cannot be used with sample_rows"""
+        test_api_client, _ = test_api_client_persistent
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["name"] = "split_with_sample_rows"
+        payload["request_input"]["split_info"] = {
+            "split_index": 0,
+            "split_ratios": [0.7, 0.3],
+            "seed": 42,
+        }
+        payload["sample_rows"] = 100  # Conflict with split_info
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == "Split cannot be used together with sample_rows."
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_split_and_downsampling_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test that split_info cannot be used with downsampling_info"""
+        test_api_client, _ = test_api_client_persistent
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["name"] = "split_with_downsampling"
+        payload["request_input"]["split_info"] = {
+            "split_index": 0,
+            "split_ratios": [0.7, 0.3],
+            "seed": 42,
+        }
+        payload["request_input"]["downsampling_info"] = {
+            "sampling_rate_per_target_value": [{"target_value": "1", "rate": 0.5}],
+        }
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert response_dict["detail"] == "Split cannot be used together with downsampling_info."
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_split_invalid_ratios_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test that split_info validates ratios sum to 1.0"""
+        test_api_client, _ = test_api_client_persistent
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["name"] = "split_invalid_ratios"
+        payload["request_input"]["split_info"] = {
+            "split_index": 0,
+            "split_ratios": [0.5, 0.3],  # Does not sum to 1.0
+            "seed": 42,
+        }
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        # Check that validation error mentions the sum requirement
+        assert "Split ratios must sum to 1.0" in str(response_dict["detail"])
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_split_invalid_index_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test that split_index must be less than number of splits"""
+        test_api_client, _ = test_api_client_persistent
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+        )
+        payload["name"] = "split_invalid_index"
+        payload["request_input"]["split_info"] = {
+            "split_index": 2,  # Out of range for 2 splits
+            "split_ratios": [0.7, 0.3],
+            "seed": 42,
+        }
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        # Check that validation error mentions index out of range
+        assert "split_index (2) must be less than number of splits (2)" in str(
+            response_dict["detail"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_from_obs_table_with_three_way_split_201(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test 3-way split via route"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+
+        # Create all 3 splits
+        for i, purpose in enumerate(["training", "validation_test", "validation_test"]):
+            payload = self.load_payload(
+                "tests/fixtures/request_payloads/observation_table_from_obs_table.json"
+            )
+            payload["_id"] = str(ObjectId())
+            payload["name"] = f"three_way_split_{i}"
+            payload["purpose"] = purpose
+            payload["request_input"]["split_info"] = {
+                "split_index": i,
+                "split_ratios": [0.6, 0.2, 0.2],
+                "seed": 1234,
+            }
+            response = self.post(test_api_client, payload)
+            response_dict = response.json()
+            assert response.status_code == HTTPStatus.CREATED, response_dict
+
+            response = self.wait_for_results(test_api_client, response)
+            response_dict = response.json()
+            assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+            response = test_api_client.get(response_dict["output_path"])
+            response_dict = response.json()
+            assert response_dict["request_input"]["split_info"]["split_index"] == i
+            assert response_dict["request_input"]["split_info"]["split_ratios"] == [0.6, 0.2, 0.2]
+            assert response_dict["purpose"] == purpose
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_two_way_split_201(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test the split endpoint with 70/30 two-way split"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+        source_id = source_observation_table["_id"]
+
+        # Call the new split endpoint
+        response = test_api_client.post(
+            f"/observation_table/{source_id}/split",
+            json={
+                "split_ratios": [0.7, 0.3],
+                "seed": 42,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        # Should return 2 tasks
+        assert len(response_dict) == 2
+
+        # Wait for both tasks to complete and verify
+        for i, task_data in enumerate(response_dict):
+            # Create mock response object for wait_for_results
+            class MockResponse:
+                def __init__(self, data):
+                    self._data = data
+                    self.is_success = True
+
+                def json(self):
+                    return self._data
+
+            mock_resp = MockResponse(task_data)
+            result_response = self.wait_for_results(test_api_client, mock_resp)
+            task_result = result_response.json()
+            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
+
+            # Get the created observation table
+            obs_table_response = test_api_client.get(task_result["output_path"])
+            obs_table = obs_table_response.json()
+
+            # Verify split info
+            assert obs_table["request_input"]["split_info"]["split_index"] == i
+            assert obs_table["request_input"]["split_info"]["split_ratios"] == [0.7, 0.3]
+            assert obs_table["request_input"]["split_info"]["seed"] == 42
+
+            # Verify auto-generated names
+            assert obs_table["name"] == f"{source_observation_table['name']}_split_{i}"
+
+            # Verify purpose assignment
+            if i == 0:
+                assert obs_table["purpose"] == "training"
+            else:
+                assert obs_table["purpose"] == "validation_test"
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_with_custom_names_201(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test the split endpoint with custom split names"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+        source_id = source_observation_table["_id"]
+
+        # Call the split endpoint with custom names
+        response = test_api_client.post(
+            f"/observation_table/{source_id}/split",
+            json={
+                "split_ratios": [0.8, 0.2],
+                "split_names": ["my_train_set", "my_test_set"],
+                "seed": 1234,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        # Should return 2 tasks
+        assert len(response_dict) == 2
+
+        # Wait for both tasks and verify names
+        expected_names = ["my_train_set", "my_test_set"]
+        for i, task_data in enumerate(response_dict):
+            # Create mock response object for wait_for_results
+            class MockResponse:
+                def __init__(self, data):
+                    self._data = data
+                    self.is_success = True
+
+                def json(self):
+                    return self._data
+
+            mock_resp = MockResponse(task_data)
+            result_response = self.wait_for_results(test_api_client, mock_resp)
+            task_result = result_response.json()
+            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
+
+            obs_table_response = test_api_client.get(task_result["output_path"])
+            obs_table = obs_table_response.json()
+            assert obs_table["name"] == expected_names[i]
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_three_way_split_201(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test the split endpoint with 60/20/20 three-way split"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+        source_id = source_observation_table["_id"]
+
+        response = test_api_client.post(
+            f"/observation_table/{source_id}/split",
+            json={
+                "split_ratios": [0.6, 0.2, 0.2],
+                "split_names": ["train", "val", "test"],
+                "seed": 99,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+
+        # Should return 3 tasks
+        assert len(response_dict) == 3
+
+        # Verify purpose assignments
+        expected_purposes = ["training", "validation_test", "validation_test"]
+        for i, task_data in enumerate(response_dict):
+            # Create mock response object for wait_for_results
+            class MockResponse:
+                def __init__(self, data):
+                    self._data = data
+                    self.is_success = True
+
+                def json(self):
+                    return self._data
+
+            mock_resp = MockResponse(task_data)
+            result_response = self.wait_for_results(test_api_client, mock_resp)
+            task_result = result_response.json()
+            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
+
+            obs_table_response = test_api_client.get(task_result["output_path"])
+            obs_table = obs_table_response.json()
+            assert obs_table["purpose"] == expected_purposes[i]
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_invalid_ratios_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test the split endpoint rejects ratios not summing to 1.0"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+        source_id = source_observation_table["_id"]
+
+        response = test_api_client.post(
+            f"/observation_table/{source_id}/split",
+            json={
+                "split_ratios": [0.5, 0.3],  # Sums to 0.8, not 1.0
+                "seed": 42,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert "Split ratios must sum to 1.0" in str(response_dict["detail"])
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_mismatched_names_count_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test the split endpoint rejects when split_names count doesn't match split_ratios count"""
+        test_api_client, _ = test_api_client_persistent
+        source_observation_table = create_success_response.json()
+        source_id = source_observation_table["_id"]
+
+        response = test_api_client.post(
+            f"/observation_table/{source_id}/split",
+            json={
+                "split_ratios": [0.7, 0.3],
+                "split_names": ["train", "val", "test"],  # 3 names but only 2 ratios
+                "seed": 42,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert "Number of split_names" in str(response_dict["detail"])
+
+    @pytest.mark.asyncio
+    async def test_split_endpoint_not_found_422(self, test_api_client_persistent):
+        """Test the split endpoint returns error for non-existent observation table"""
+        test_api_client, _ = test_api_client_persistent
+        fake_id = str(ObjectId())
+
+        response = test_api_client.post(
+            f"/observation_table/{fake_id}/split",
+            json={
+                "split_ratios": [0.7, 0.3],
+                "seed": 42,
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
+        assert "not found" in response_dict["detail"].lower()
