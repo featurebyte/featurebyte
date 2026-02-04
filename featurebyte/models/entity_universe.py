@@ -370,6 +370,17 @@ def filter_aggregation_input_for_time_series(
     return filtered_aggregate_input_expr
 
 
+# # TODO: should not be needed if filter is done directly on input_aggregate_expr
+# def get_required_columns_from_timestamp_metadata(
+#     vartype_metadata: DBVarTypeMetadata
+# ) -> list[str]:
+#     if vartype_metadata.timestamp_schema is not None:
+#         timestamp_schema = vartype_metadata.timestamp_schema
+#         if timestamp_schema.timezone_offset_column_name is not None:
+#             return [timestamp_schema.timezone_offset_column_name]
+#     return []
+
+
 DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
 
 
@@ -419,6 +430,15 @@ class BaseEntityUniverseConstructor:
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
 
+        required_columns = self.get_required_columns()
+        required_columns_set = set(required_columns) if required_columns else None
+        if required_columns_set:
+            filtered_columns = [
+                col for col in self.aggregate_input_expr.args["expressions"]
+                if col.alias_or_name in required_columns_set
+            ]
+            self.aggregate_input_expr.args["expressions"] = filtered_columns
+
         op_struct = (
             OperationStructureExtractor(graph=flat_graph)
             .extract(node=flat_node)
@@ -440,6 +460,17 @@ class BaseEntityUniverseConstructor:
         """
         Return list of serving names
         """
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        """
+        Get the list of required columns for the entity universe construction. Aggregation input
+        statement will be filtered to only include these columns if specified.
+
+        Returns
+        -------
+        Optional[list[str]]
+        """
+        return None
 
     @classmethod
     def get_event_table_timestamp_filter(
@@ -503,6 +534,11 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     def get_serving_names(self) -> List[str]:
         node = cast(LookupNode, self.node)
         return [node.parameters.serving_name]
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(LookupNode, self.node)
+        required_columns = [str(node.parameters.entity_column)]
+        return required_columns
 
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(LookupNode, self.node)
