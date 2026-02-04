@@ -218,16 +218,7 @@ def test_lookup_feature(catalog, lookup_graph_and_node, source_info):
           "col_text" AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_text" AS "col_text"
           FROM "sf_database"."sf_schema"."scd_table"
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -257,15 +248,7 @@ def test_snapshots_lookup_feature(catalog, snapshots_lookup_graph_and_node, sour
           "col_int" AS "transaction_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "date" AS "date",
-            "store_id" AS "store_id",
-            "another_timestamp_col" AS "another_timestamp_col"
+            "col_int" AS "col_int"
           FROM "sf_database"."sf_schema"."snapshots_table"
           WHERE
             (
@@ -300,16 +283,7 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node, source_
           "col_boolean" AS "gender"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_boolean" AS "col_boolean"
           FROM "sf_database"."sf_schema"."scd_table"
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -337,15 +311,7 @@ def test_snapshots_aggregate_asat_universe(
           "col_binary" AS "another_key"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "date" AS "date",
-            "store_id" AS "store_id",
-            "another_timestamp_col" AS "another_timestamp_col"
+            "col_binary" AS "col_binary"
           FROM "sf_database"."sf_schema"."snapshots_table"
           WHERE
             (
@@ -398,13 +364,7 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node, source_
           CAST("event_id_col" AS BIGINT) AS "transaction_id"
         FROM (
           SELECT
-            L."event_id_col" AS "event_id_col",
-            L."item_id_col" AS "item_id_col",
-            L."item_type" AS "item_type",
-            L."item_amount" AS "item_amount",
-            L."created_at" AS "created_at",
-            L."event_timestamp" AS "event_timestamp",
-            R."event_timestamp" AS "event_timestamp_event_table"
+            L."event_id_col" AS "event_id_col"
           FROM (
             SELECT
               "event_id_col" AS "event_id_col",
@@ -471,15 +431,7 @@ def test_item_aggregate_with_timestamp_schema_universe(
           CAST("event_id_col" AS BIGINT) AS "transaction_id"
         FROM (
           SELECT
-            L."event_id_col" AS "event_id_col",
-            L."item_id_col" AS "item_id_col",
-            L."item_type" AS "item_type",
-            L."item_amount" AS "item_amount",
-            L."created_at" AS "created_at",
-            L."event_timestamp" AS "event_timestamp",
-            R."event_timestamp" AS "event_timestamp_event_table",
-            R."cust_id" AS "cust_id_event_table",
-            R."tz_offset" AS "tz_offset_event_table"
+            L."event_id_col" AS "event_id_col"
           FROM (
             SELECT
               "event_id_col" AS "event_id_col",
@@ -555,16 +507,7 @@ def test_combined_universe(
           "col_boolean" AS "gender"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_boolean" AS "col_boolean"
           FROM "sf_database"."sf_schema"."scd_table"
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -577,16 +520,7 @@ def test_combined_universe(
           "col_text" AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_text" AS "col_text"
           FROM "sf_database"."sf_schema"."scd_table"
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -627,16 +561,7 @@ def test_combined_universe_deduplicate(
           "col_text" AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_text" AS "col_text"
           FROM "sf_database"."sf_schema"."scd_table"
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -673,16 +598,7 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
             "col_text" AS "cust_id"
           FROM (
             SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "effective_timestamp" AS "effective_timestamp",
-              "end_timestamp" AS "end_timestamp",
-              "date_of_birth" AS "date_of_birth",
-              "created_at" AS "created_at",
-              "cust_id" AS "cust_id"
+              "col_text" AS "col_text"
             FROM "sf_database"."sf_schema"."scd_table"
             WHERE
               "effective_timestamp" >= __fb_last_materialized_timestamp
@@ -754,13 +670,6 @@ def test_combined_universe__exclude_dummy_entity_universe(
           CAST("cust_id" AS BIGINT) AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
@@ -811,13 +720,6 @@ def test_combined_universe__window_aggregate_multiple_windows(
           CAST("cust_id" AS BIGINT) AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
@@ -835,13 +737,6 @@ def test_combined_universe__window_aggregate_multiple_windows(
           CAST("cust_id" AS BIGINT) AS "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
