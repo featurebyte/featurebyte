@@ -586,3 +586,6 @@ training_data.parquet
 CLAUDE.md
 .claude
 *.local.*
+
+# Miscellaneous local files
+.misc/
