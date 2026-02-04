@@ -156,6 +156,58 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
                 f"Entities {missing_entity_names} not found in the context view."
             )
 
+    async def update_user_provided_column_description(
+        self,
+        document_id: ObjectId,
+        column_name: str,
+        description: Optional[str],
+    ) -> ContextModel:
+        """
+        Update user-provided column description.
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Context document ID
+        column_name: str
+            Name of the user-provided column to update
+        description: Optional[str]
+            New description for the column
+
+        Raises
+        ------
+        DocumentUpdateError
+            When column is not found
+
+        Returns
+        -------
+        ContextModel
+            Updated context document
+        """
+        document = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
+
+        # Find and update the column
+        column_found = False
+        updated_columns = []
+        for col in document.user_provided_columns:
+            if col.name == column_name:
+                col.description = description
+                column_found = True
+            updated_columns.append(col)
+
+        if not column_found:
+            raise DocumentUpdateError(f"User-provided column '{column_name}' not found in context")
+
+        # Update the document
+        result = await self.update_document(
+            document_id=document_id,
+            data=ContextUpdate(user_provided_columns=updated_columns),
+        )
+        assert result is not None
+        return result
+
     async def update_document(
         self,
         document_id: ObjectId,

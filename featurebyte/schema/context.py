@@ -38,6 +38,15 @@ class ContextList(PaginationMixin):
     data: List[ContextModel]
 
 
+class UserProvidedColumnDescriptionUpdate(FeatureByteBaseModel):
+    """
+    User-provided column description update payload schema
+    """
+
+    column_name: NameStr
+    description: Optional[StrictStr] = Field(default=None)
+
+
 class ContextUpdate(BaseDocumentServiceUpdateSchema):
     """
     Context update schema

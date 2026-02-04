@@ -665,3 +665,89 @@ class TestContextApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
+
+    def test_update_user_provided_column_description__success(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update user-provided column description"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        # First add a user-provided column
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}",
+            json={
+                "user_provided_columns": [
+                    {"name": "annual_income", "dtype": "FLOAT"},
+                ]
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # Update the description
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/user_provided_column_description",
+            json={"column_name": "annual_income", "description": "Customer's annual income"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert len(response.json()["user_provided_columns"]) == 1
+        assert response.json()["user_provided_columns"][0]["name"] == "annual_income"
+        assert (
+            response.json()["user_provided_columns"][0]["description"] == "Customer's annual income"
+        )
+
+    def test_update_user_provided_column_description__column_not_found(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update user-provided column description when column not found"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        # First add a user-provided column
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}",
+            json={
+                "user_provided_columns": [
+                    {"name": "annual_income", "dtype": "FLOAT"},
+                ]
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # Try to update a non-existent column
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/user_provided_column_description",
+            json={"column_name": "non_existent", "description": "Some description"},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert "User-provided column 'non_existent' not found" in response.json()["detail"]
+
+    def test_update_user_provided_column_description__clear_description(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test clearing user-provided column description"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        # First add a user-provided column with description
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}",
+            json={
+                "user_provided_columns": [
+                    {
+                        "name": "annual_income",
+                        "dtype": "FLOAT",
+                        "description": "Customer's annual income",
+                    },
+                ]
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # Clear the description
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/user_provided_column_description",
+            json={"column_name": "annual_income", "description": None},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["user_provided_columns"][0]["description"] is None

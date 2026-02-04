@@ -24,7 +24,12 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
-from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
+from featurebyte.schema.context import (
+    ContextCreate,
+    ContextList,
+    ContextUpdate,
+    UserProvidedColumnDescriptionUpdate,
+)
 from featurebyte.schema.info import ContextInfo
 from featurebyte.schema.observation_table import ObservationTableList
 
@@ -65,6 +70,15 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             self.context_info,
             methods=["GET"],
             response_model=ContextInfo,
+        )
+
+        # update user-provided column description
+        self.router.add_api_route(
+            "/{context_id}/user_provided_column_description",
+            self.update_user_provided_column_description,
+            methods=["PATCH"],
+            response_model=ContextModel,
+            status_code=HTTPStatus.OK,
         )
 
     async def get_object(self, request: Request, context_id: PydanticObjectId) -> ContextModel:
@@ -145,3 +159,20 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         """
         controller = self.get_controller_for_request(request)
         return await controller.get_info(context_id=ObjectId(context_id))
+
+    async def update_user_provided_column_description(
+        self,
+        request: Request,
+        context_id: PydanticObjectId,
+        data: UserProvidedColumnDescriptionUpdate,
+    ) -> ContextModel:
+        """
+        Update user-provided column description
+        """
+        controller = self.get_controller_for_request(request)
+        context: ContextModel = await controller.update_user_provided_column_description(
+            context_id=ObjectId(context_id),
+            column_name=data.column_name,
+            description=data.description,
+        )
+        return context

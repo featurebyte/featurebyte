@@ -249,3 +249,11 @@ def test_user_provided_columns(catalog, cust_id_entity, target_table):
         UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT, description=None),
         UserProvidedColumn(name="credit_score", dtype=DBVarType.INT, description=None),
     ]
+
+    # test add user-provided columns with name conflict
+    with pytest.raises(ValueError) as exc:
+        context.add_user_provided_column(
+            name="credit_score",
+            dtype=DBVarType.FLOAT,
+        )
+    assert str(exc.value) == "User-provided column with name 'credit_score' already exists"

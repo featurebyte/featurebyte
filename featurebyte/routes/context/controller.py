@@ -168,6 +168,32 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
 
         return await self.get(document_id=context_id)
 
+    async def update_user_provided_column_description(
+        self, context_id: ObjectId, column_name: str, description: Optional[str]
+    ) -> ContextModel:
+        """
+        Update user-provided column description
+
+        Parameters
+        ----------
+        context_id: ObjectId
+            Context ID
+        column_name: str
+            Name of the user-provided column to update
+        description: Optional[str]
+            New description for the column
+
+        Returns
+        -------
+        ContextModel
+            Context object with updated user-provided column description
+        """
+        return await self.context_service.update_user_provided_column_description(
+            document_id=context_id,
+            column_name=column_name,
+            description=description,
+        )
+
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
