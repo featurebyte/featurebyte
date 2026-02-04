@@ -249,7 +249,9 @@ async def preview_observation_table(
     return preview
 
 
-@router.post("/{observation_table_id}/split", response_model=List[Task], status_code=HTTPStatus.CREATED)
+@router.post(
+    "/{observation_table_id}/split", response_model=List[Task], status_code=HTTPStatus.CREATED
+)
 async def split_observation_table(
     request: Request,
     observation_table_id: PydanticObjectId,
