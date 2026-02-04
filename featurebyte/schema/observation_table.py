@@ -120,7 +120,24 @@ class ObservationTableSplit(FeatureByteBaseModel):
     @field_validator("split_ratios")
     @classmethod
     def _validate_split_ratios(cls, values: List[float]) -> List[float]:
-        """Validate that ratios are valid and sum to 1.0"""
+        """
+        Validate that ratios are valid and sum to 1.0
+
+        Parameters
+        ----------
+        values: List[float]
+            List of split ratios
+
+        Returns
+        -------
+        List[float]
+            Validated split ratios
+
+        Raises
+        ------
+        ValueError
+            If any ratio is not between 0 and 1 (exclusive) or ratios don't sum to 1.0
+        """
         for ratio in values:
             if ratio <= 0 or ratio > 1:
                 raise ValueError(
@@ -133,7 +150,19 @@ class ObservationTableSplit(FeatureByteBaseModel):
 
     @model_validator(mode="after")
     def _validate_split_names_count(self) -> "ObservationTableSplit":
-        """Validate that split_names count matches split_ratios count if provided"""
+        """
+        Validate that split_names count matches split_ratios count if provided
+
+        Returns
+        -------
+        ObservationTableSplit
+            Validated model instance
+
+        Raises
+        ------
+        ValueError
+            If number of split_names doesn't match number of split_ratios
+        """
         if self.split_names is not None:
             if len(self.split_names) != len(self.split_ratios):
                 raise ValueError(
