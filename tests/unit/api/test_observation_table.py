@@ -375,3 +375,135 @@ def test_create_observation_table_from_observation_table(
     assert new_observation_table.context_id == observation_table.context_id
     assert new_observation_table.use_case_ids == observation_table.use_case_ids
     assert new_observation_table.primary_entity_ids == observation_table.primary_entity_ids
+
+
+class TestObservationTableSplit:
+    """Tests for observation table split functionality"""
+
+    def test_split_two_way_with_auto_names(
+        self, catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+    ):
+        """Test 2-way split with auto-generated names"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
+
+        # Check auto-generated names
+        assert train_table.name == "source_table_for_split_split_0"
+        assert test_table.name == "source_table_for_split_split_1"
+
+        # Check purpose assignment
+        assert train_table.purpose == Purpose.TRAINING
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_two_way_with_custom_names(
+        self, catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+    ):
+        """Test 2-way split with custom names"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        train_table, test_table = observation_table.split(
+            split_ratios=[0.8, 0.2],
+            names=["training_data", "testing_data"],
+        )
+
+        assert train_table.name == "training_data"
+        assert test_table.name == "testing_data"
+        assert train_table.purpose == Purpose.TRAINING
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_three_way(
+        self, catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+    ):
+        """Test 3-way split"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        train_table, val_table, test_table = observation_table.split(
+            split_ratios=[0.6, 0.2, 0.2],
+            names=["train", "validation", "test"],
+            seed=42,
+        )
+
+        assert train_table.name == "train"
+        assert val_table.name == "validation"
+        assert test_table.name == "test"
+
+        # Check purpose: first is TRAINING, rest are VALIDATION_TEST
+        assert train_table.purpose == Purpose.TRAINING
+        assert val_table.purpose == Purpose.VALIDATION_TEST
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_invalid_ratios_not_sum_to_one(self, observation_table_from_source):
+        """Test that split raises error when ratios don't sum to 1"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.5, 0.3])
+        assert "split_ratios must sum to 1.0" in str(exc.value)
+
+    def test_split_invalid_ratios_wrong_count(self, observation_table_from_source):
+        """Test that split raises error with wrong number of ratios"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[1.0])
+        assert "split_ratios must contain 2 or 3 values" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.25, 0.25, 0.25, 0.25])
+        assert "split_ratios must contain 2 or 3 values" in str(exc.value)
+
+    def test_split_invalid_ratios_out_of_range(self, observation_table_from_source):
+        """Test that split raises error when ratio is out of range"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.0, 1.0])
+        assert "Each split ratio must be between 0 (exclusive) and 1 (inclusive)" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[-0.1, 1.1])
+        assert "Each split ratio must be between 0 (exclusive) and 1 (inclusive)" in str(exc.value)
+
+    def test_split_invalid_names_length(self, observation_table_from_source):
+        """Test that split raises error when names length doesn't match ratios"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(
+                split_ratios=[0.7, 0.3],
+                names=["train"],  # Only 1 name for 2 splits
+            )
+        assert "names length (1) must match split_ratios length (2)" in str(exc.value)
+
+    def test_split_preserves_properties(
+        self, catalog, cust_id_entity, patched_observation_table_service, snowflake_database_table
+    ):
+        """Test that split preserves entity and context properties from source"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
+
+        # Check that primary entity IDs are inherited
+        assert train_table.primary_entity_ids == observation_table.primary_entity_ids
+        assert test_table.primary_entity_ids == observation_table.primary_entity_ids

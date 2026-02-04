@@ -36,7 +36,7 @@ from featurebyte.models.observation_table import (
     Purpose,
     TargetInput,
 )
-from featurebyte.models.request_input import DownSamplingInfo
+from featurebyte.models.request_input import DownSamplingInfo, SplitInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
@@ -588,8 +588,6 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         ... )
         """
 
-        from featurebyte.api.observation_table import ObservationTable
-
         # Validate timestamp inputs
         sample_from_timestamp = (
             validate_datetime_input(sample_from_timestamp) if sample_from_timestamp else None
@@ -613,3 +611,112 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             route="/observation_table", payload=payload.json_dict()
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
+
+    def split(
+        self,
+        split_ratios: List[float],
+        names: Optional[List[str]] = None,
+        seed: int = 1234,
+    ) -> List[ObservationTable]:
+        """
+        Split the observation table into multiple tables based on percentages.
+
+        Each split creates a new observation table containing a non-overlapping subset of rows.
+        The splits are determined using a seeded random assignment, ensuring reproducibility.
+
+        The first split is automatically assigned Purpose.TRAINING, while all subsequent splits
+        are assigned Purpose.VALIDATION_TEST.
+
+        Parameters
+        ----------
+        split_ratios: List[float]
+            List of percentages (0-1) for each split. Must sum to 1.0 and contain 2 or 3 values.
+            Example: [0.7, 0.3] for a 70/30 train/test split
+            Example: [0.6, 0.2, 0.2] for a 60/20/20 train/validation/test split
+        names: Optional[List[str]]
+            Names for the resulting tables. If None, auto-generated as "{name}_split_0", "{name}_split_1", etc.
+            Must have the same length as split_ratios if provided.
+        seed: int
+            Random seed for reproducible splits. Default is 1234.
+
+        Returns
+        -------
+        List[ObservationTable]
+            List of split observation tables in the same order as split_ratios.
+            The first table has Purpose.TRAINING, the rest have Purpose.VALIDATION_TEST.
+
+        Raises
+        ------
+        ValueError
+            If split_ratios is invalid (doesn't sum to 1, wrong length, values out of range).
+            If names length doesn't match split_ratios length.
+
+        Examples
+        --------
+        Split into train (70%) and test (30%) sets:
+
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> train_table, test_table = observation_table.split(  # doctest: +SKIP
+        ...     split_ratios=[0.7, 0.3],
+        ...     names=["train_data", "test_data"],
+        ... )
+
+        Split into train (60%), validation (20%), and test (20%) sets:
+
+        >>> train, val, test = observation_table.split(  # doctest: +SKIP
+        ...     split_ratios=[0.6, 0.2, 0.2],
+        ...     names=["train_data", "validation_data", "test_data"],
+        ...     seed=42,
+        ... )
+        """
+        from featurebyte.api.observation_table import ObservationTable
+
+        # Validate split_ratios
+        if len(split_ratios) < 2 or len(split_ratios) > 3:
+            raise ValueError("split_ratios must contain 2 or 3 values")
+
+        for ratio in split_ratios:
+            if ratio <= 0 or ratio > 1:
+                raise ValueError(
+                    f"Each split ratio must be between 0 (exclusive) and 1 (inclusive), got {ratio}"
+                )
+
+        if abs(sum(split_ratios) - 1.0) > 1e-9:
+            raise ValueError(f"split_ratios must sum to 1.0, got {sum(split_ratios)}")
+
+        # Generate default names if not provided
+        if names is None:
+            names = [f"{self.name}_split_{i}" for i in range(len(split_ratios))]
+        elif len(names) != len(split_ratios):
+            raise ValueError(
+                f"names length ({len(names)}) must match split_ratios length ({len(split_ratios)})"
+            )
+
+        # Assign purposes based on split position:
+        # - First split (index 0) is TRAINING
+        # - Remaining splits are VALIDATION_TEST
+        purposes = [Purpose.TRAINING] + [Purpose.VALIDATION_TEST] * (len(split_ratios) - 1)
+
+        # Create each split table
+        result_tables: List[ObservationTable] = []
+        for i, (name, purpose) in enumerate(zip(names, purposes)):
+            split_info = SplitInfo(
+                split_index=i,
+                split_ratios=split_ratios,
+                seed=seed,
+            )
+            payload = ObservationTableCreate(
+                name=name,
+                feature_store_id=self.cached_model.location.feature_store_id,
+                request_input=ObservationTableObservationInput(
+                    observation_table_id=self.id,
+                    split_info=split_info,
+                ),
+                purpose=purpose,
+            )
+            observation_table_doc = ObservationTable.post_async_task(
+                route="/observation_table", payload=payload.json_dict()
+            )
+            result_tables.append(ObservationTable.get_by_id(observation_table_doc["_id"]))
+
+        return result_tables

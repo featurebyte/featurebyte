@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -96,3 +96,47 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     """
 
     use_case_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+
+
+class ObservationTableSplit(FeatureByteBaseModel):
+    """
+    Schema for splitting an observation table into multiple non-overlapping tables
+    """
+
+    split_ratios: List[float] = Field(
+        min_length=2,
+        max_length=3,
+        description="List of ratios for each split (must sum to 1.0). For example, [0.7, 0.3] for a 70/30 split.",
+    )
+    split_names: Optional[List[StrictStr]] = Field(
+        default=None,
+        description="Optional names for each split. If not provided, names will be auto-generated as '{source_table_name}_split_0', etc.",
+    )
+    seed: int = Field(
+        default=1234,
+        description="Random seed for reproducible splits",
+    )
+
+    @field_validator("split_ratios")
+    @classmethod
+    def _validate_split_ratios(cls, values: List[float]) -> List[float]:
+        """Validate that ratios are valid and sum to 1.0"""
+        for ratio in values:
+            if ratio <= 0 or ratio > 1:
+                raise ValueError(
+                    f"Each split ratio must be between 0 and 1 (exclusive), got {ratio}"
+                )
+        total = sum(values)
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
+        return values
+
+    @model_validator(mode="after")
+    def _validate_split_names_count(self) -> "ObservationTableSplit":
+        """Validate that split_names count matches split_ratios count if provided"""
+        if self.split_names is not None:
+            if len(self.split_names) != len(self.split_ratios):
+                raise ValueError(
+                    f"Number of split_names ({len(self.split_names)}) must match number of split_ratios ({len(self.split_ratios)})"
+                )
+        return self

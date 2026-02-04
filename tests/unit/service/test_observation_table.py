@@ -13,11 +13,17 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
+    ObservationTableInvalidSamplingError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.models.request_input import SourceTableRequestInput
+from featurebyte.models.request_input import (
+    DownSamplingInfo,
+    SourceTableRequestInput,
+    SplitInfo,
+    TargetValueSamplingRate,
+)
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -1684,3 +1690,124 @@ async def test_validate_metadata__without_forecast_context(
         assert "most_recent_forecast_point" not in metadata
         assert "least_recent_forecast_point" not in metadata
         assert "forecast_horizon" not in metadata
+
+
+class TestSplitInfoValidation:
+    """Tests for split_info validation in observation table service"""
+
+    @pytest.fixture(name="source_observation_table")
+    def source_observation_table_fixture(self, event_table, user):
+        """Fixture for a source observation table to split"""
+        request_input = SourceTableRequestInput(source=event_table.tabular_source)
+        location = TabularSource(**{
+            "feature_store_id": event_table.tabular_source.feature_store_id,
+            "table_details": {
+                "database_name": "fb_database",
+                "schema_name": "fb_schema",
+                "table_name": "fb_source_table",
+            },
+        })
+        return ObservationTableModel(
+            name="source_observation_table",
+            location=location,
+            request_input=request_input.model_dump(by_alias=True),
+            columns_info=[
+                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+                {"name": "cust_id", "dtype": "VARCHAR"},
+            ],
+            num_rows=1000,
+            most_recent_point_in_time="2023-01-15T10:00:00",
+            user_id=user.id,
+        )
+
+    @pytest.mark.asyncio
+    async def test_split_info_with_sample_rows_raises_error(
+        self, observation_table_service, source_observation_table, catalog
+    ):
+        """Test that split_info cannot be used with sample_rows"""
+        from featurebyte.models.observation_table import ObservationTableObservationInput
+        from featurebyte.schema.observation_table import ObservationTableCreate
+
+        # Create the source observation table first
+        await observation_table_service.create_document(source_observation_table)
+
+        # Create a request with split_info and sample_rows
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        request_input = ObservationTableObservationInput(
+            observation_table_id=source_observation_table.id,
+            split_info=split_info,
+        )
+        create_payload = ObservationTableCreate(
+            name="split_table",
+            feature_store_id=source_observation_table.location.feature_store_id,
+            request_input=request_input,
+            sample_rows=100,  # This should conflict with split_info
+        )
+
+        with pytest.raises(ObservationTableInvalidSamplingError) as exc:
+            await observation_table_service.get_observation_table_task_payload(create_payload)
+
+        assert "Split cannot be used together with sample_rows" in str(exc.value)
+
+    @pytest.mark.asyncio
+    async def test_split_info_with_downsampling_info_raises_error(
+        self, observation_table_service, source_observation_table, catalog
+    ):
+        """Test that split_info cannot be used with downsampling_info"""
+        from featurebyte.models.observation_table import ObservationTableObservationInput
+        from featurebyte.schema.observation_table import ObservationTableCreate
+
+        # Create the source observation table first
+        await observation_table_service.create_document(source_observation_table)
+
+        # Create a request with both split_info and downsampling_info
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        downsampling_info = DownSamplingInfo(
+            sampling_rate_per_target_value=[
+                TargetValueSamplingRate(target_value=1, rate=0.5),
+            ],
+            default_sampling_rate=1.0,
+        )
+        request_input = ObservationTableObservationInput(
+            observation_table_id=source_observation_table.id,
+            split_info=split_info,
+            downsampling_info=downsampling_info,  # This should conflict with split_info
+        )
+        create_payload = ObservationTableCreate(
+            name="split_table",
+            feature_store_id=source_observation_table.location.feature_store_id,
+            request_input=request_input,
+        )
+
+        with pytest.raises(ObservationTableInvalidSamplingError) as exc:
+            await observation_table_service.get_observation_table_task_payload(create_payload)
+
+        assert "Split cannot be used together with downsampling_info" in str(exc.value)
+
+    @pytest.mark.asyncio
+    async def test_split_info_valid_split(
+        self, observation_table_service, source_observation_table, catalog
+    ):
+        """Test that split_info works when used alone"""
+        from featurebyte.models.observation_table import ObservationTableObservationInput
+        from featurebyte.schema.observation_table import ObservationTableCreate
+
+        # Create the source observation table first
+        await observation_table_service.create_document(source_observation_table)
+
+        # Create a valid split request (no sample_rows or downsampling_info)
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        request_input = ObservationTableObservationInput(
+            observation_table_id=source_observation_table.id,
+            split_info=split_info,
+        )
+        create_payload = ObservationTableCreate(
+            name="split_table",
+            feature_store_id=source_observation_table.location.feature_store_id,
+            request_input=request_input,
+        )
+
+        # Should not raise an error
+        result = await observation_table_service.get_observation_table_task_payload(create_payload)
+        assert result is not None
+        assert result.request_input.split_info == split_info

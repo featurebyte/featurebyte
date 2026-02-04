@@ -13,8 +13,13 @@ from fastapi import UploadFile
 from featurebyte.enum import SpecialColumnName, UploadFileFormat
 from featurebyte.exception import UnsupportedObservationTableUploadFileFormat
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.observation_table import (
+    ObservationTableModel,
+    ObservationTableObservationInput,
+    Purpose,
+)
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.models.request_input import SplitInfo
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import ObservationTableInfo
@@ -23,6 +28,7 @@ from featurebyte.schema.observation_table import (
     ObservationTableList,
     ObservationTableModelResponse,
     ObservationTableServiceUpdate,
+    ObservationTableSplit,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
@@ -242,6 +248,56 @@ class ObservationTableController(
             updated_at=observation_table.updated_at,
             description=observation_table.description,
         )
+
+    async def split_observation_table(
+        self, observation_table_id: ObjectId, data: ObservationTableSplit
+    ) -> List[Task]:
+        """
+        Split an observation table into multiple non-overlapping tables
+
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            Source ObservationTable document ID
+        data: ObservationTableSplit
+            Split configuration with ratios, names, and seed
+
+        Returns
+        -------
+        List[Task]
+            List of tasks for creating each split table
+        """
+        # Get source observation table
+        source_table = await self.service.get_document(document_id=observation_table_id)
+
+        # Generate split names if not provided
+        split_names = data.split_names
+        if split_names is None:
+            split_names = [f"{source_table.name}_split_{i}" for i in range(len(data.split_ratios))]
+
+        tasks = []
+        for split_index, split_name in enumerate(split_names):
+            # First split is for training, rest are for validation/test
+            purpose = Purpose.TRAINING if split_index == 0 else Purpose.VALIDATION_TEST
+
+            create_data = ObservationTableCreate(
+                name=split_name,
+                feature_store_id=source_table.location.feature_store_id,
+                request_input=ObservationTableObservationInput(
+                    observation_table_id=observation_table_id,
+                    split_info=SplitInfo(
+                        split_index=split_index,
+                        split_ratios=data.split_ratios,
+                        seed=data.seed,
+                    ),
+                ),
+                purpose=purpose,
+                skip_entity_validation_checks=True,
+            )
+            task = await self.create_observation_table(data=create_data)
+            tasks.append(task)
+
+        return tasks
 
     async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableUpdate

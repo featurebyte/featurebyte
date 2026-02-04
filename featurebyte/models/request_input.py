@@ -110,6 +110,61 @@ class DownSamplingInfoWithTargetColumn(DownSamplingInfo):
     target_column: str
 
 
+class SplitInfo(FeatureByteBaseModel):
+    """
+    Information for splitting a table into multiple parts based on percentages.
+
+    This is used internally when creating split observation tables.
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SplitInfo")
+
+    split_index: int = Field(ge=0, description="The index of this split (0-based)")
+    split_ratios: List[float] = Field(
+        min_length=2,
+        max_length=3,
+        description="List of ratios for each split. Must sum to 1.0.",
+    )
+    seed: int = Field(default=1234, description="Random seed for reproducible splits")
+
+    @field_validator("split_ratios")
+    @classmethod
+    def _validate_split_ratios(cls, values: List[float]) -> List[float]:
+        # ensure ratios are valid (0 < ratio < 1)
+        for ratio in values:
+            if ratio <= 0 or ratio > 1:
+                raise ValueError(
+                    f"Each split ratio must be between 0 and 1 (exclusive), got {ratio}"
+                )
+        # ensure ratios sum to 1
+        total = sum(values)
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
+        return values
+
+    @model_validator(mode="after")
+    def validate_split_index(self) -> "SplitInfo":
+        """
+        Validate that split_index is within the valid range.
+
+        Raises
+        ------
+        ValueError
+            If split_index is greater than or equal to the number of split ratios.
+
+        Returns
+        -------
+        SplitInfo
+            The validated SplitInfo instance.
+        """
+        if self.split_index >= len(self.split_ratios):
+            raise ValueError(
+                f"split_index ({self.split_index}) must be less than number of splits ({len(self.split_ratios)})"
+            )
+        return self
+
+
 class BaseRequestInput(FeatureByteBaseModel):
     """
     BaseRequestInput is the base class for all RequestInput types
@@ -366,6 +421,86 @@ class BaseRequestInput(FeatureByteBaseModel):
         )
         return output
 
+    @staticmethod
+    def get_split_sql(
+        adapter: BaseAdapter,
+        select_expr: Select,
+        split_info: "SplitInfo",
+    ) -> Select:
+        """
+        Construct query to filter rows for a specific split partition.
+
+        The split is determined by assigning each row a random value (seeded for reproducibility)
+        and filtering based on cumulative ratio ranges.
+
+        Parameters
+        ----------
+        adapter: BaseAdapter
+            SQL adapter
+        select_expr: Select
+            Table to split
+        split_info: SplitInfo
+            Split configuration including index, ratios, and seed
+
+        Returns
+        -------
+        Select
+        """
+        original_cols = [
+            quoted_identifier(col_expr.alias or col_expr.name)
+            for col_expr in select_expr.expressions
+        ]
+
+        # Add a deterministic random value column based on the seed
+        prob_expr = expressions.alias_(
+            adapter.get_uniform_distribution_expr(split_info.seed),
+            alias="__fb_split_prob",
+            quoted=True,
+        )
+        expr_with_prob = expressions.select(prob_expr, *original_cols).from_(select_expr.subquery())
+
+        # Calculate the cumulative ratio range for this split
+        # E.g., for ratios [0.6, 0.2, 0.2]:
+        #   split 0: 0.0 <= prob < 0.6
+        #   split 1: 0.6 <= prob < 0.8
+        #   split 2: 0.8 <= prob < 1.0
+        lower_bound = sum(split_info.split_ratios[: split_info.split_index])
+        upper_bound = lower_bound + split_info.split_ratios[split_info.split_index]
+
+        # Build the WHERE clause to filter rows for this split
+        prob_col = quoted_identifier("__fb_split_prob")
+
+        # First split: prob < upper_bound
+        # Other splits: lower_bound <= prob < upper_bound
+        filter_condition: Union[expressions.LT, expressions.And]
+
+        if split_info.split_index == 0:
+            filter_condition = expressions.LT(
+                this=prob_col,
+                expression=make_literal_value(upper_bound),
+            )
+        else:
+            filter_condition = expressions.And(
+                expressions=[
+                    expressions.GTE(
+                        this=prob_col,
+                        expression=make_literal_value(lower_bound),
+                    ),
+                    expressions.LT(
+                        this=prob_col,
+                        expression=make_literal_value(upper_bound),
+                    ),
+                ]
+            )
+
+        # Return only the original columns (without the prob column)
+        output = (
+            expressions.select(*original_cols)
+            .from_(expr_with_prob.subquery())
+            .where(filter_condition)
+        )
+        return output
+
     async def materialize(
         self,
         session: BaseSession,
@@ -377,6 +512,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         downsampling_info: Optional[DownSamplingInfoWithTargetColumn] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
+        split_info: Optional["SplitInfo"] = None,
     ) -> None:
         """
         Materialize the request input table
@@ -401,6 +537,8 @@ class BaseRequestInput(FeatureByteBaseModel):
             The columns to exclude missing values from
         missing_data_table_details: Optional[TableDetails]
             Missing data table details
+        split_info: Optional[SplitInfo]
+            Split information for partitioning the table into multiple parts
         """
         # Get the base query and column info
         query_expr = await self.get_query_expr(session=session, feature_store=feature_store)
@@ -526,6 +664,14 @@ class BaseRequestInput(FeatureByteBaseModel):
                 main_query_expr,
                 downsampling_info=downsampling_info,
                 seed=0,
+            )
+
+        # apply split filtering if applicable
+        if split_info:
+            main_query_expr = self.get_split_sql(
+                adapter,
+                main_query_expr,
+                split_info=split_info,
             )
 
         # Materialize the destination table
