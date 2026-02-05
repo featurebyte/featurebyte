@@ -5,7 +5,9 @@ Test ContextService
 import pytest
 import pytest_asyncio
 
+from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.context import UserProvidedColumn
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import JoinNode
@@ -279,3 +281,204 @@ async def test_context_update__validation_error_column_not_found(
         )
     expected_error = 'Column "col_int" not found in table "sf_item_table".'
     assert expected_error in str(exc.value)
+
+
+class TestUserProvidedColumnsUpdate:
+    """Tests for user_provided_columns update validation"""
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_columns__add_new_column(self, context_service, context):
+        """Test adding new user_provided_columns"""
+
+        # Add first column
+        new_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+        ]
+        updated_context = await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=new_columns),
+        )
+        assert len(updated_context.user_provided_columns) == 1
+        assert updated_context.user_provided_columns[0].name == "annual_income"
+        assert updated_context.user_provided_columns[0].dtype == DBVarType.FLOAT
+
+        # Add another column
+        new_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(name="credit_score", dtype=DBVarType.INT),
+        ]
+        updated_context = await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=new_columns),
+        )
+        assert len(updated_context.user_provided_columns) == 2
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_columns__cannot_remove_column(
+        self, context_service, context
+    ):
+        """Test that removing existing columns is not allowed"""
+
+        # First add columns
+        initial_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(name="credit_score", dtype=DBVarType.INT),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Try to remove a column
+        new_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+        ]
+        with pytest.raises(DocumentUpdateError) as exc:
+            await context_service.update_document(
+                document_id=context.id,
+                data=ContextUpdate(user_provided_columns=new_columns),
+            )
+        assert "Cannot remove existing user-provided columns: ['credit_score']" in str(exc.value)
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_columns__cannot_change_dtype(
+        self, context_service, context
+    ):
+        """Test that changing dtype of existing columns is not allowed"""
+
+        # First add column
+        initial_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Try to change dtype
+        new_columns = [
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.INT
+            ),  # Changed from FLOAT to INT
+        ]
+        with pytest.raises(DocumentUpdateError) as exc:
+            await context_service.update_document(
+                document_id=context.id,
+                data=ContextUpdate(user_provided_columns=new_columns),
+            )
+        assert "Cannot change dtype of existing user-provided column 'annual_income'" in str(
+            exc.value
+        )
+        assert "from FLOAT to INT" in str(exc.value)
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_columns__can_update_description(
+        self, context_service, context
+    ):
+        """Test that updating description is allowed"""
+
+        # First add column without description
+        initial_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Update with description
+        new_columns = [
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                description="Customer's annual income",
+            ),
+        ]
+        updated_context = await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=new_columns),
+        )
+        assert updated_context.user_provided_columns[0].description == "Customer's annual income"
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_column_description__success(self, context_service, context):
+        """Test update_user_provided_column_description updates description correctly"""
+
+        # First add columns
+        initial_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="employment_status", dtype=DBVarType.VARCHAR, description="Initial description"
+            ),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Update description of first column
+        updated_context = await context_service.update_user_provided_column_description(
+            document_id=context.id,
+            column_name="annual_income",
+            description="Customer's annual income in USD",
+        )
+        assert len(updated_context.user_provided_columns) == 2
+        assert updated_context.user_provided_columns[0].name == "annual_income"
+        assert (
+            updated_context.user_provided_columns[0].description
+            == "Customer's annual income in USD"
+        )
+        # Other column should remain unchanged
+        assert updated_context.user_provided_columns[1].name == "employment_status"
+        assert updated_context.user_provided_columns[1].description == "Initial description"
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_column_description__clear_description(
+        self, context_service, context
+    ):
+        """Test update_user_provided_column_description can clear description"""
+
+        # First add column with description
+        initial_columns = [
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                description="Customer's annual income",
+            ),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Clear description
+        updated_context = await context_service.update_user_provided_column_description(
+            document_id=context.id,
+            column_name="annual_income",
+            description=None,
+        )
+        assert updated_context.user_provided_columns[0].description is None
+
+    @pytest.mark.asyncio
+    async def test_update_user_provided_column_description__column_not_found(
+        self, context_service, context
+    ):
+        """Test update_user_provided_column_description raises error when column not found"""
+
+        # First add a column
+        initial_columns = [
+            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+        ]
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(user_provided_columns=initial_columns),
+        )
+
+        # Try to update non-existent column
+        with pytest.raises(DocumentUpdateError) as exc:
+            await context_service.update_user_provided_column_description(
+                document_id=context.id,
+                column_name="non_existent_column",
+                description="Some description",
+            )
+        assert "User-provided column 'non_existent_column' not found in context" in str(exc.value)

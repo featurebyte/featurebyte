@@ -19,6 +19,7 @@ from featurebyte import (
     UseCase,
 )
 from featurebyte.enum import DBVarType
+from featurebyte.models.context import UserProvidedColumn
 
 
 @pytest.fixture(name="context_1")
@@ -217,3 +218,42 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     assert context_info["default_preview_table"] == target_table.name
     assert context_info["associated_use_cases"] == [use_case.name]
     assert not context_info["treatment"]
+
+
+def test_user_provided_columns(catalog, cust_id_entity, target_table):
+    """
+    Test Context with user defined columns
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+    context = Context.create(
+        name="test_context",
+        primary_entity=entity_names,
+        user_provided_columns=[
+            {"name": "annual_income", "dtype": DBVarType.FLOAT},
+        ],
+    )
+
+    assert context.user_provided_columns == [
+        UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT, description=None),
+    ]
+
+    # test add user-provided columns
+    context.add_user_provided_column(
+        name="credit_score",
+        dtype=DBVarType.INT,
+    )
+
+    assert context.user_provided_columns == [
+        UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT, description=None),
+        UserProvidedColumn(name="credit_score", dtype=DBVarType.INT, description=None),
+    ]
+
+    # test add user-provided columns with name conflict
+    with pytest.raises(ValueError) as exc:
+        context.add_user_provided_column(
+            name="credit_score",
+            dtype=DBVarType.FLOAT,
+        )
+    assert str(exc.value) == "User-provided column with name 'credit_score' already exists"

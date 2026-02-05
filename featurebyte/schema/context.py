@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, StrictStr, field_validator, model_validat
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.context import ContextModel
+from featurebyte.models.context import ContextModel, UserProvidedColumn
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -24,6 +24,7 @@ class ContextCreate(FeatureByteBaseModel):
     primary_entity_ids: List[PydanticObjectId]
     description: Optional[StrictStr] = Field(default=None)
     treatment_id: Optional[PydanticObjectId] = Field(default=None)
+    user_provided_columns: List[UserProvidedColumn] = Field(default_factory=list)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
@@ -35,6 +36,15 @@ class ContextList(PaginationMixin):
     """
 
     data: List[ContextModel]
+
+
+class UserProvidedColumnDescriptionUpdate(FeatureByteBaseModel):
+    """
+    User-provided column description update payload schema
+    """
+
+    column_name: NameStr
+    description: Optional[StrictStr] = Field(default=None)
 
 
 class ContextUpdate(BaseDocumentServiceUpdateSchema):
@@ -52,6 +62,9 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
 
     remove_default_eda_table: Optional[bool] = Field(default=None)
     remove_default_preview_table: Optional[bool] = Field(default=None)
+
+    # User-provided columns update (with validation constraints enforced by service)
+    user_provided_columns: Optional[List[UserProvidedColumn]] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
