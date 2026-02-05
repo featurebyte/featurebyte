@@ -891,3 +891,67 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json()["higher_prediction_is_better"] is True
+
+    @pytest.mark.asyncio
+    async def test_update_higher_prediction_is_better_blocked_with_observation_tables(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        create_observation_table,
+    ):
+        """Test that updating higher_prediction_is_better is blocked when observation tables exist"""
+        test_api_client, _ = test_api_client_persistent
+        use_case_id = create_success_response.json()["_id"]
+
+        # Create an observation table linked to the use case
+        ob_table_id = ObjectId()
+        await create_observation_table(
+            ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        # Attempt to update higher_prediction_is_better - should fail
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"higher_prediction_is_better": False},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert "Cannot update higher_prediction_is_better" in response.json()["detail"]
+        assert "observation tables" in response.json()["detail"]
+
+        # Verify the value was not changed
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["higher_prediction_is_better"] is True
+
+    @pytest.mark.asyncio
+    async def test_update_other_fields_allowed_with_observation_tables(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        create_observation_table,
+    ):
+        """Test that updating other fields (not higher_prediction_is_better) works with observation tables"""
+        test_api_client, _ = test_api_client_persistent
+        use_case_id = create_success_response.json()["_id"]
+
+        # Create an observation table linked to the use case
+        ob_table_id = ObjectId()
+        await create_observation_table(
+            ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        # Update default_preview_table_id - should succeed even with observation tables
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"default_preview_table_id": str(ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["default_preview_table_id"] == str(ob_table_id)
