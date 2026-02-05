@@ -587,6 +587,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         ...     )
         ... )
         """
+        from featurebyte.api.observation_table import ObservationTable
 
         # Validate timestamp inputs
         sample_from_timestamp = (
