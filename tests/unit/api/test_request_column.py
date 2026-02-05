@@ -102,11 +102,11 @@ def test_point_in_time_minus_timestamp_feature(
 
 def test_request_column_non_point_in_time_blocked():
     """
-    Test non-point-in-time request column is blocked
+    Test non-supported request column is blocked
     """
     with pytest.raises(NotImplementedError) as exc:
         _ = RequestColumn.create_request_column("foo", DBVarType.FLOAT)
-    assert "Currently only POINT_IN_TIME column is supported" in str(exc.value)
+    assert "Only POINT_IN_TIME and FORECAST_POINT columns are supported" in str(exc.value)
 
 
 def test_request_column_offline_store_query_extraction(latest_event_timestamp_feature):

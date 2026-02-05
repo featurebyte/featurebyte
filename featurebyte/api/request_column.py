@@ -15,6 +15,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 
 
 class RequestColumn(Series):
@@ -34,7 +35,12 @@ class RequestColumn(Series):
     )
 
     @classmethod
-    def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
+    def create_request_column(
+        cls,
+        column_name: str,
+        column_dtype: DBVarType,
+        dtype_info: Optional[DBVarTypeInfo] = None,
+    ) -> RequestColumn:
         """
         Create a RequestColumn object.
 
@@ -44,6 +50,8 @@ class RequestColumn(Series):
             Column name in the request data.
         column_dtype: DBVarType
             Variable type of the column.
+        dtype_info: Optional[DBVarTypeInfo]
+            Optional dtype info with metadata (e.g., timezone schema).
 
         Returns
         -------
@@ -52,19 +60,32 @@ class RequestColumn(Series):
         Raises
         ------
         NotImplementedError
-            If the request column is not the POINT_IN_TIME column
+            If the request column is not a supported special column
         """
-        if not (
-            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
-        ):
+        # Define allowed column name and dtype combinations
+        allowed_columns = {
+            (SpecialColumnName.POINT_IN_TIME, DBVarType.TIMESTAMP),
+            (SpecialColumnName.FORECAST_POINT, DBVarType.TIMESTAMP),
+            (SpecialColumnName.FORECAST_POINT, DBVarType.TIMESTAMP_TZ),
+            (SpecialColumnName.FORECAST_POINT, DBVarType.DATE),
+        }
+        if (column_name, column_dtype) not in allowed_columns:
             raise NotImplementedError(
-                "Currently only POINT_IN_TIME column is supported. Please use"
-                " RequestColumn.point_in_time() instead."
+                "Only POINT_IN_TIME and FORECAST_POINT columns are supported. "
+                "Please use RequestColumn.point_in_time() or context.forecast_point."
             )
+
+        # Build dtype_info if not provided
+        if dtype_info is None:
+            dtype_info = DBVarTypeInfo(dtype=column_dtype)
 
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
-            node_params={"column_name": column_name, "dtype": column_dtype},
+            node_params={
+                "column_name": column_name,
+                "dtype": column_dtype,
+                "dtype_info": dtype_info.model_dump(),
+            },
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[],
         )

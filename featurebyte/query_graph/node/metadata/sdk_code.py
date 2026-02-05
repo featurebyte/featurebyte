@@ -131,8 +131,13 @@ class ObjectClass(FeatureByteBaseModel):
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
     callable_name: Optional[str] = Field(default=None)
+    is_attribute: bool = Field(default=False)
 
     def __str__(self) -> str:
+        # Handle attribute access (e.g., DBVarType.TIMESTAMP)
+        if self.is_attribute and self.callable_name:
+            return f"{self.class_name}.{self.callable_name}"
+
         params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
         for elem in self.positional_args:
             if not isinstance(elem, VariableNameStr) and not isinstance(elem, ExpressionStr):
@@ -246,6 +251,9 @@ class ClassEnum(Enum):
     ADD_TIMESTAMP_SCHEMA = ("featurebyte", "AddTimestampSchema")
     CAST_TO_NUMERIC = ("featurebyte", "CastToNumeric")
 
+    # enums
+    DB_VAR_TYPE = ("featurebyte", "DBVarType")
+
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
@@ -263,7 +271,11 @@ class ClassEnum(Enum):
     CALENDAR_WINDOW = ("featurebyte", "CalendarWindow")
 
     def __call__(
-        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
+        self,
+        *args: Any,
+        _method_name: Optional[str] = None,
+        _is_attribute: bool = False,
+        **kwargs: Any,
     ) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
@@ -272,6 +284,7 @@ class ClassEnum(Enum):
             callable_name=_method_name,
             positional_args=args,
             keyword_args=kwargs,
+            is_attribute=_is_attribute,
         )
 
 

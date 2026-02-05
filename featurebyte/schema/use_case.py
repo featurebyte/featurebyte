@@ -22,8 +22,8 @@ class UseCaseCreate(FeatureByteBaseModel):
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     context_id: PydanticObjectId
     description: Optional[StrictStr] = Field(default=None)
-    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = Field(
-        default=UseCaseType.PREDICTIVE
+    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL, UseCaseType.FORECAST] = (
+        Field(default=UseCaseType.PREDICTIVE)
     )
     higher_prediction_is_better: bool = Field(default=True)
 
