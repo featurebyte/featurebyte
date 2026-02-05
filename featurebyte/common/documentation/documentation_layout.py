@@ -924,6 +924,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREATE_OBSERVATION_TABLE, "TargetValueSamplingRate"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_OBSERVATION_TABLE, "DownSamplingInfo"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimestampSchema"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "ForecastPointSchema"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeZoneColumn"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "CalendarWindow"]),
