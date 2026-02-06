@@ -24,6 +24,7 @@ from featurebyte.models.observation_table import (
 )
 from featurebyte.models.request_input import (
     DownSamplingInfoWithTargetColumn,
+    SplitInfo,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -658,6 +659,11 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
                     use_case_ids=source_table.use_case_ids,
                     request_input=ObservationTableObservationInput(
                         observation_table_id=payload.source_observation_table_id,
+                        split_info=SplitInfo(
+                            split_index=split_index,
+                            split_ratios=split_ratios,
+                            seed=payload.seed,
+                        ),
                     ),
                     purpose=purpose,
                     primary_entity_ids=primary_entity_ids,
