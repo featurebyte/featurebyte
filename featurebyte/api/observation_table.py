@@ -40,8 +40,10 @@ from featurebyte.models.request_input import DownSamplingInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
+    ObservationTableSplit,
     ObservationTableUpdate,
     ObservationTableUpload,
+    SplitDefinition,
 )
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
@@ -587,7 +589,6 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         ...     )
         ... )
         """
-
         from featurebyte.api.observation_table import ObservationTable
 
         # Validate timestamp inputs
@@ -613,3 +614,90 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             route="/observation_table", payload=payload.json_dict()
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
+
+    def split(
+        self,
+        split_ratios: List[float],
+        names: Optional[List[str]] = None,
+        seed: int = 1234,
+    ) -> List[ObservationTable]:
+        """
+        Split the observation table into multiple tables based on percentages.
+
+        Each split creates a new observation table containing a non-overlapping subset of rows.
+        The splits are determined using a seeded random assignment, ensuring reproducibility.
+
+        The first split is automatically assigned Purpose.TRAINING, while all subsequent splits
+        are assigned Purpose.VALIDATION_TEST.
+
+        Parameters
+        ----------
+        split_ratios: List[float]
+            List of percentages (0-1) for each split. Must sum to 1.0 and contain 2 or 3 values.
+            Example: [0.7, 0.3] for a 70/30 train/test split
+            Example: [0.6, 0.2, 0.2] for a 60/20/20 train/validation/test split
+        names: Optional[List[str]]
+            Names for the resulting tables. If None, auto-generated as "{name}_split_0", "{name}_split_1", etc.
+            Must have the same length as split_ratios if provided.
+        seed: int
+            Random seed for reproducible splits. Default is 1234.
+
+        Returns
+        -------
+        List[ObservationTable]
+            List of split observation tables in the same order as split_ratios.
+            The first table has Purpose.TRAINING, the rest have Purpose.VALIDATION_TEST.
+
+        Raises
+        ------
+        ValueError
+            If split_ratios is invalid (doesn't sum to 1, wrong length, values out of range).
+            If names length doesn't match split_ratios length.
+
+        Examples
+        --------
+        Split into train (70%) and test (30%) sets:
+
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> train_table, test_table = observation_table.split(  # doctest: +SKIP
+        ...     split_ratios=[0.7, 0.3],
+        ...     names=["train_data", "test_data"],
+        ... )
+
+        Split into train (60%), validation (20%), and test (20%) sets:
+
+        >>> train, val, test = observation_table.split(  # doctest: +SKIP
+        ...     split_ratios=[0.6, 0.2, 0.2],
+        ...     names=["train_data", "validation_data", "test_data"],
+        ...     seed=42,
+        ... )
+        """
+        from featurebyte.api.observation_table import ObservationTable
+
+        # Build SplitDefinition objects from ratios and names
+        if names is not None and len(names) != len(split_ratios):
+            raise ValueError(
+                f"names length ({len(names)}) must match split_ratios length ({len(split_ratios)})"
+            )
+
+        splits = [
+            SplitDefinition(
+                name=names[i] if names is not None else None,
+                ratio=ratio,
+            )
+            for i, ratio in enumerate(split_ratios)
+        ]
+
+        payload = ObservationTableSplit(splits=splits, seed=seed)
+
+        # Call the split route - returns a single task that creates all splits
+        result = ObservationTable.post_async_task(
+            route=f"{self._route}/{self.id}/split",
+            payload=payload.json_dict(),
+        )
+
+        # The task output contains the IDs of all created observation tables
+        output_document_ids = result.get("output_document_ids", [])
+
+        # Return the created observation tables in order
+        return [ObservationTable.get_by_id(doc_id) for doc_id in output_document_ids]

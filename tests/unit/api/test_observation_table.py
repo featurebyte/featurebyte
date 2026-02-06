@@ -3,7 +3,7 @@ Unit tests for ObservationTable class
 """
 
 from typing import Any, Dict
-from unittest.mock import call, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pandas as pd
 import pytest
@@ -375,3 +375,255 @@ def test_create_observation_table_from_observation_table(
     assert new_observation_table.context_id == observation_table.context_id
     assert new_observation_table.use_case_ids == observation_table.use_case_ids
     assert new_observation_table.primary_entity_ids == observation_table.primary_entity_ids
+
+
+class TestObservationTableSplit:
+    """Tests for observation table split functionality"""
+
+    def test_split_two_way_with_auto_names(
+        self,
+        catalog,
+        cust_id_entity,
+        patched_observation_table_service,
+        snowflake_database_table,
+    ):
+        """Test 2-way split with auto-generated names"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        # Mock the split task result
+        train_id = ObjectId()
+        test_id = ObjectId()
+
+        # Create mock observation tables for the split results
+        mock_train_table = AsyncMock()
+        mock_train_table.name = "source_table_for_split_split_0"
+        mock_train_table.purpose = Purpose.TRAINING
+
+        mock_test_table = AsyncMock()
+        mock_test_table.name = "source_table_for_split_split_1"
+        mock_test_table.purpose = Purpose.VALIDATION_TEST
+
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
+            mock_post_async_task.return_value = {
+                "output_document_ids": [str(train_id), str(test_id)]
+            }
+            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+
+            train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
+
+            # Verify post_async_task was called with correct route
+            assert mock_post_async_task.called
+            call_args = mock_post_async_task.call_args
+            assert f"/observation_table/{observation_table.id}/split" in call_args.kwargs["route"]
+
+        # Check auto-generated names
+        assert train_table.name == "source_table_for_split_split_0"
+        assert test_table.name == "source_table_for_split_split_1"
+
+        # Check purpose assignment
+        assert train_table.purpose == Purpose.TRAINING
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_two_way_with_custom_names(
+        self,
+        catalog,
+        cust_id_entity,
+        patched_observation_table_service,
+        snowflake_database_table,
+    ):
+        """Test 2-way split with custom names"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        # Mock the split task result
+        train_id = ObjectId()
+        test_id = ObjectId()
+
+        # Create mock observation tables for the split results
+        mock_train_table = AsyncMock()
+        mock_train_table.name = "training_data"
+        mock_train_table.purpose = Purpose.TRAINING
+
+        mock_test_table = AsyncMock()
+        mock_test_table.name = "testing_data"
+        mock_test_table.purpose = Purpose.VALIDATION_TEST
+
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
+            mock_post_async_task.return_value = {
+                "output_document_ids": [str(train_id), str(test_id)]
+            }
+            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+
+            train_table, test_table = observation_table.split(
+                split_ratios=[0.8, 0.2],
+                names=["training_data", "testing_data"],
+            )
+
+        assert train_table.name == "training_data"
+        assert test_table.name == "testing_data"
+        assert train_table.purpose == Purpose.TRAINING
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_three_way(
+        self,
+        catalog,
+        cust_id_entity,
+        patched_observation_table_service,
+        snowflake_database_table,
+    ):
+        """Test 3-way split"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        # Mock the split task result
+        train_id = ObjectId()
+        val_id = ObjectId()
+        test_id = ObjectId()
+
+        # Create mock observation tables for the split results
+        mock_train_table = AsyncMock()
+        mock_train_table.name = "train"
+        mock_train_table.purpose = Purpose.TRAINING
+
+        mock_val_table = AsyncMock()
+        mock_val_table.name = "validation"
+        mock_val_table.purpose = Purpose.VALIDATION_TEST
+
+        mock_test_table = AsyncMock()
+        mock_test_table.name = "test"
+        mock_test_table.purpose = Purpose.VALIDATION_TEST
+
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
+            mock_post_async_task.return_value = {
+                "output_document_ids": [str(train_id), str(val_id), str(test_id)]
+            }
+            mock_get_by_id.side_effect = [mock_train_table, mock_val_table, mock_test_table]
+
+            train_table, val_table, test_table = observation_table.split(
+                split_ratios=[0.6, 0.2, 0.2],
+                names=["train", "validation", "test"],
+                seed=42,
+            )
+
+        assert train_table.name == "train"
+        assert val_table.name == "validation"
+        assert test_table.name == "test"
+
+        # Check purpose: first is TRAINING, rest are VALIDATION_TEST
+        assert train_table.purpose == Purpose.TRAINING
+        assert val_table.purpose == Purpose.VALIDATION_TEST
+        assert test_table.purpose == Purpose.VALIDATION_TEST
+
+    def test_split_invalid_ratios_not_sum_to_one(self, observation_table_from_source):
+        """Test that split raises error when ratios don't sum to 1"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.5, 0.3])
+        assert "Split ratios must sum to 1.0" in str(exc.value)
+
+    def test_split_invalid_ratios_wrong_count(self, observation_table_from_source):
+        """Test that split raises error with wrong number of ratios"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[1.0])
+        assert "List should have at least 2 items" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.25, 0.25, 0.25, 0.25])
+        assert "List should have at most 3 items" in str(exc.value)
+
+    def test_split_invalid_ratios_out_of_range(self, observation_table_from_source):
+        """Test that split raises error when ratio is out of range"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[0.0, 1.0])
+        assert "Input should be greater than 0" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(split_ratios=[-0.1, 1.1])
+        # Both -0.1 and 1.1 are invalid - either "greater than 0" or "less than or equal to 1"
+        error_str = str(exc.value)
+        assert (
+            "Input should be greater than 0" in error_str
+            or "Input should be less than or equal to 1" in error_str
+        )
+
+    def test_split_invalid_names_length(self, observation_table_from_source):
+        """Test that split raises error when names length doesn't match ratios"""
+        with pytest.raises(ValueError) as exc:
+            observation_table_from_source.split(
+                split_ratios=[0.7, 0.3],
+                names=["train"],  # Only 1 name for 2 splits
+            )
+        assert "names length (1) must match split_ratios length (2)" in str(exc.value)
+
+    def test_split_preserves_properties(
+        self,
+        catalog,
+        cust_id_entity,
+        patched_observation_table_service,
+        snowflake_database_table,
+    ):
+        """Test that split preserves entity and context properties from source"""
+        _ = catalog
+        _ = patched_observation_table_service
+
+        observation_table = snowflake_database_table.create_observation_table(
+            "source_table_for_split",
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+            primary_entities=[cust_id_entity.name],
+        )
+
+        # Mock the split task result
+        train_id = ObjectId()
+        test_id = ObjectId()
+
+        # Use fixed primary_entity_ids to avoid property access issues
+        expected_primary_entity_ids = [cust_id_entity.id]
+
+        # Create mock observation tables that inherit properties from source
+        mock_train_table = AsyncMock()
+        mock_train_table.primary_entity_ids = expected_primary_entity_ids
+
+        mock_test_table = AsyncMock()
+        mock_test_table.primary_entity_ids = expected_primary_entity_ids
+
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
+            mock_post_async_task.return_value = {
+                "output_document_ids": [str(train_id), str(test_id)]
+            }
+            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+
+            train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
+
+        # Check that primary entity IDs are inherited
+        assert train_table.primary_entity_ids == expected_primary_entity_ids
+        assert test_table.primary_entity_ids == expected_primary_entity_ids

@@ -24,6 +24,7 @@ from featurebyte.models.request_input import (
     ManagedViewRequestInput,
     RequestInputType,
     SourceTableRequestInput,
+    SplitInfo,
     ViewRequestInput,
 )
 from featurebyte.query_graph.node.schema import TableDetails
@@ -66,6 +67,7 @@ class NoOpMaterializeMixin:
         downsampling_info: Optional[DownSamplingInfoWithTargetColumn] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
         missing_data_table_details: Optional[TableDetails] = None,
+        split_info: Optional[SplitInfo] = None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
@@ -93,6 +95,8 @@ class NoOpMaterializeMixin:
             The columns to exclude missing values from
         missing_data_table_details: Optional[TableDetails]
             Missing data table details
+        split_info: Optional[SplitInfo]
+            Split information for partitioning the table into multiple parts
         """
 
 
@@ -125,6 +129,7 @@ class ObservationTableObservationInput(FeatureByteBaseModel):
     )
     observation_table_id: PydanticObjectId
     downsampling_info: Optional[DownSamplingInfo] = None
+    split_info: Optional[SplitInfo] = None
 
 
 ObservationInput = Annotated[

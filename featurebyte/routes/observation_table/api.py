@@ -35,6 +35,7 @@ from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
     ObservationTableModelResponse,
+    ObservationTableSplit,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
@@ -246,3 +247,29 @@ async def preview_observation_table(
         limit=limit,
     )
     return preview
+
+
+@router.post("/{observation_table_id}/split", response_model=Task, status_code=HTTPStatus.CREATED)
+async def split_observation_table(
+    request: Request,
+    observation_table_id: PydanticObjectId,
+    data: ObservationTableSplit,
+) -> Task:
+    """
+    Split an observation table into multiple non-overlapping tables.
+
+    This creates multiple new observation tables by partitioning the source table
+    based on the provided ratios. Each row is assigned to exactly one split using
+    a deterministic random sampling approach with the provided seed.
+
+    All splits are created atomically in a single task to ensure reproducible
+    random partitioning.
+    """
+    controller: ObservationTableController = (
+        request.state.app_container.observation_table_controller
+    )
+    task: Task = await controller.split_observation_table(
+        observation_table_id=observation_table_id,
+        data=data,
+    )
+    return task
