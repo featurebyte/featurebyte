@@ -36,12 +36,14 @@ from featurebyte.models.observation_table import (
     Purpose,
     TargetInput,
 )
-from featurebyte.models.request_input import DownSamplingInfo, SplitInfo
+from featurebyte.models.request_input import DownSamplingInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableListRecord,
+    ObservationTableSplit,
     ObservationTableUpdate,
     ObservationTableUpload,
+    SplitDefinition,
 )
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
@@ -672,52 +674,30 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         """
         from featurebyte.api.observation_table import ObservationTable
 
-        # Validate split_ratios
-        if len(split_ratios) < 2 or len(split_ratios) > 3:
-            raise ValueError("split_ratios must contain 2 or 3 values")
-
-        for ratio in split_ratios:
-            if ratio <= 0 or ratio > 1:
-                raise ValueError(
-                    f"Each split ratio must be between 0 (exclusive) and 1 (inclusive), got {ratio}"
-                )
-
-        if abs(sum(split_ratios) - 1.0) > 1e-9:
-            raise ValueError(f"split_ratios must sum to 1.0, got {sum(split_ratios)}")
-
-        # Generate default names if not provided
-        if names is None:
-            names = [f"{self.name}_split_{i}" for i in range(len(split_ratios))]
-        elif len(names) != len(split_ratios):
+        # Build SplitDefinition objects from ratios and names
+        if names is not None and len(names) != len(split_ratios):
             raise ValueError(
                 f"names length ({len(names)}) must match split_ratios length ({len(split_ratios)})"
             )
 
-        # Assign purposes based on split position:
-        # - First split (index 0) is TRAINING
-        # - Remaining splits are VALIDATION_TEST
-        purposes = [Purpose.TRAINING] + [Purpose.VALIDATION_TEST] * (len(split_ratios) - 1)
+        splits = [
+            SplitDefinition(
+                name=names[i] if names is not None else None,
+                ratio=ratio,
+            )
+            for i, ratio in enumerate(split_ratios)
+        ]
 
-        # Create each split table
-        result_tables: List[ObservationTable] = []
-        for i, (name, purpose) in enumerate(zip(names, purposes)):
-            split_info = SplitInfo(
-                split_index=i,
-                split_ratios=split_ratios,
-                seed=seed,
-            )
-            payload = ObservationTableCreate(
-                name=name,
-                feature_store_id=self.cached_model.location.feature_store_id,
-                request_input=ObservationTableObservationInput(
-                    observation_table_id=self.id,
-                    split_info=split_info,
-                ),
-                purpose=purpose,
-            )
-            observation_table_doc = ObservationTable.post_async_task(
-                route="/observation_table", payload=payload.json_dict()
-            )
-            result_tables.append(ObservationTable.get_by_id(observation_table_doc["_id"]))
+        payload = ObservationTableSplit(splits=splits, seed=seed)
 
-        return result_tables
+        # Call the split route - returns a single task that creates all splits
+        result = ObservationTable.post_async_task(
+            route=f"{self._route}/{self.id}/split",
+            payload=payload.json_dict(),
+        )
+
+        # The task output contains the IDs of all created observation tables
+        output_document_ids = result.get("output_document_ids", [])
+
+        # Return the created observation tables in order
+        return [ObservationTable.get_by_id(doc_id) for doc_id in output_document_ids]
