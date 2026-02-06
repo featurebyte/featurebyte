@@ -360,7 +360,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         observation_table_payload["_id"] = observation_table_id
         observation_table_payload["name"] = "test_observation_table_1"
         observation_table_payload["context_id"] = None
-        response = test_api_client.post("/observation_table", json=observation_table_payload)
+        response = test_api_client.post(self.base_route, json=observation_table_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
         response = test_api_client.patch(
             f"{self.base_route}/{observation_table_id}", json={"use_case_id_to_add": use_case_id}
@@ -1881,53 +1881,45 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         source_observation_table = create_success_response.json()
         source_id = source_observation_table["_id"]
 
-        # Call the new split endpoint
+        # Call the new split endpoint with splits format
         response = test_api_client.post(
-            f"/observation_table/{source_id}/split",
+            f"{self.base_route}/{source_id}/split",
             json={
-                "split_ratios": [0.7, 0.3],
+                "splits": [{"ratio": 0.7}, {"ratio": 0.3}],
                 "seed": 42,
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
 
-        # Should return 2 tasks
-        assert len(response_dict) == 2
+        result_response = self.wait_for_results(test_api_client, response)
 
-        # Wait for both tasks to complete and verify
-        for i, task_data in enumerate(response_dict):
-            # Create mock response object for wait_for_results
-            class MockResponse:
-                def __init__(self, data):
-                    self._data = data
-                    self.is_success = True
+        task_result = result_response.json()
+        assert task_result["status"] == "SUCCESS", task_result.get("traceback")
 
-                def json(self):
-                    return self._data
+        # Query observation tables by name to verify creation
+        source_name = source_observation_table["name"]
+        expected_names = [f"{source_name}_split_0", f"{source_name}_split_1"]
+        expected_purposes = ["training", "validation_test"]
 
-            mock_resp = MockResponse(task_data)
-            result_response = self.wait_for_results(test_api_client, mock_resp)
-            task_result = result_response.json()
-            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
+        for i, expected_name in enumerate(expected_names):
+            # Find the observation table by name
+            list_response = test_api_client.get(f"{self.base_route}?name={expected_name}")
+            list_data = list_response.json()
+            assert list_data["total"] == 1, f"Expected to find table {expected_name}"
 
-            # Get the created observation table
-            obs_table_response = test_api_client.get(task_result["output_path"])
-            obs_table = obs_table_response.json()
+            obs_table = list_data["data"][0]
 
             # Verify split info
             assert obs_table["request_input"]["split_info"]["split_index"] == i
             assert obs_table["request_input"]["split_info"]["split_ratios"] == [0.7, 0.3]
             assert obs_table["request_input"]["split_info"]["seed"] == 42
 
-            # Verify auto-generated names
-            assert obs_table["name"] == f"{source_observation_table['name']}_split_{i}"
+            # Verify name
+            assert obs_table["name"] == expected_name
 
             # Verify purpose assignment
-            if i == 0:
-                assert obs_table["purpose"] == "training"
-            else:
-                assert obs_table["purpose"] == "validation_test"
+            assert obs_table["purpose"] == expected_purposes[i]
 
     @pytest.mark.asyncio
     async def test_split_endpoint_with_custom_names_201(
@@ -1938,41 +1930,31 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         source_observation_table = create_success_response.json()
         source_id = source_observation_table["_id"]
 
-        # Call the split endpoint with custom names
+        # Call the split endpoint with custom names in splits format
         response = test_api_client.post(
-            f"/observation_table/{source_id}/split",
+            f"{self.base_route}/{source_id}/split",
             json={
-                "split_ratios": [0.8, 0.2],
-                "split_names": ["my_train_set", "my_test_set"],
+                "splits": [
+                    {"name": "my_train_set", "ratio": 0.8},
+                    {"name": "my_test_set", "ratio": 0.2},
+                ],
                 "seed": 1234,
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
 
-        # Should return 2 tasks
-        assert len(response_dict) == 2
+        result_response = self.wait_for_results(test_api_client, response)
+        task_result = result_response.json()
+        assert task_result["status"] == "SUCCESS", task_result.get("traceback")
 
-        # Wait for both tasks and verify names
+        # Query observation tables by name to verify creation
         expected_names = ["my_train_set", "my_test_set"]
-        for i, task_data in enumerate(response_dict):
-            # Create mock response object for wait_for_results
-            class MockResponse:
-                def __init__(self, data):
-                    self._data = data
-                    self.is_success = True
-
-                def json(self):
-                    return self._data
-
-            mock_resp = MockResponse(task_data)
-            result_response = self.wait_for_results(test_api_client, mock_resp)
-            task_result = result_response.json()
-            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
-
-            obs_table_response = test_api_client.get(task_result["output_path"])
-            obs_table = obs_table_response.json()
-            assert obs_table["name"] == expected_names[i]
+        for expected_name in expected_names:
+            list_response = test_api_client.get(f"{self.base_route}?name={expected_name}")
+            list_data = list_response.json()
+            assert list_data["total"] == 1, f"Expected to find table {expected_name}"
+            assert list_data["data"][0]["name"] == expected_name
 
     @pytest.mark.asyncio
     async def test_split_endpoint_three_way_split_201(
@@ -1984,39 +1966,32 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         source_id = source_observation_table["_id"]
 
         response = test_api_client.post(
-            f"/observation_table/{source_id}/split",
+            f"{self.base_route}/{source_id}/split",
             json={
-                "split_ratios": [0.6, 0.2, 0.2],
-                "split_names": ["train", "val", "test"],
+                "splits": [
+                    {"name": "train", "ratio": 0.6},
+                    {"name": "val", "ratio": 0.2},
+                    {"name": "test", "ratio": 0.2},
+                ],
                 "seed": 99,
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED, response_dict
 
-        # Should return 3 tasks
-        assert len(response_dict) == 3
+        result_response = self.wait_for_results(test_api_client, response)
+        task_result = result_response.json()
+        assert task_result["status"] == "SUCCESS", task_result.get("traceback")
 
-        # Verify purpose assignments
+        # Query observation tables by name and verify purpose assignments
+        expected_names = ["train", "val", "test"]
         expected_purposes = ["training", "validation_test", "validation_test"]
-        for i, task_data in enumerate(response_dict):
-            # Create mock response object for wait_for_results
-            class MockResponse:
-                def __init__(self, data):
-                    self._data = data
-                    self.is_success = True
 
-                def json(self):
-                    return self._data
-
-            mock_resp = MockResponse(task_data)
-            result_response = self.wait_for_results(test_api_client, mock_resp)
-            task_result = result_response.json()
-            assert task_result["status"] == "SUCCESS", task_result.get("traceback")
-
-            obs_table_response = test_api_client.get(task_result["output_path"])
-            obs_table = obs_table_response.json()
-            assert obs_table["purpose"] == expected_purposes[i]
+        for expected_name, expected_purpose in zip(expected_names, expected_purposes):
+            list_response = test_api_client.get(f"{self.base_route}?name={expected_name}")
+            list_data = list_response.json()
+            assert list_data["total"] == 1, f"Expected to find table {expected_name}"
+            assert list_data["data"][0]["purpose"] == expected_purpose
 
     @pytest.mark.asyncio
     async def test_split_endpoint_invalid_ratios_422(
@@ -2028,9 +2003,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         source_id = source_observation_table["_id"]
 
         response = test_api_client.post(
-            f"/observation_table/{source_id}/split",
+            f"{self.base_route}/{source_id}/split",
             json={
-                "split_ratios": [0.5, 0.3],  # Sums to 0.8, not 1.0
+                "splits": [{"ratio": 0.5}, {"ratio": 0.3}],  # Sums to 0.8, not 1.0
                 "seed": 42,
             },
         )
@@ -2039,25 +2014,24 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert "Split ratios must sum to 1.0" in str(response_dict["detail"])
 
     @pytest.mark.asyncio
-    async def test_split_endpoint_mismatched_names_count_422(
+    async def test_split_endpoint_too_few_splits_422(
         self, test_api_client_persistent, create_success_response
     ):
-        """Test the split endpoint rejects when split_names count doesn't match split_ratios count"""
+        """Test the split endpoint rejects fewer than 2 splits"""
         test_api_client, _ = test_api_client_persistent
         source_observation_table = create_success_response.json()
         source_id = source_observation_table["_id"]
 
         response = test_api_client.post(
-            f"/observation_table/{source_id}/split",
+            f"{self.base_route}/{source_id}/split",
             json={
-                "split_ratios": [0.7, 0.3],
-                "split_names": ["train", "val", "test"],  # 3 names but only 2 ratios
+                "splits": [{"ratio": 1.0}],  # Only 1 split
                 "seed": 42,
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert "Number of split_names" in str(response_dict["detail"])
+        # Should fail validation for min_length=2
 
     @pytest.mark.asyncio
     async def test_split_endpoint_not_found_422(self, test_api_client_persistent):
@@ -2066,9 +2040,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         fake_id = str(ObjectId())
 
         response = test_api_client.post(
-            f"/observation_table/{fake_id}/split",
+            f"{self.base_route}/{fake_id}/split",
             json={
-                "split_ratios": [0.7, 0.3],
+                "splits": [{"ratio": 0.7}, {"ratio": 0.3}],
                 "seed": 42,
             },
         )
