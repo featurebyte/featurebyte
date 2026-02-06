@@ -101,15 +101,6 @@ def test_point_in_time_minus_timestamp_feature(
     check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
-def test_request_column_non_point_in_time_blocked():
-    """
-    Test non-point-in-time request column is blocked via public API
-    """
-    with pytest.raises(NotImplementedError) as exc:
-        _ = RequestColumn.create_request_column("foo", DBVarType.FLOAT)
-    assert "Currently only POINT_IN_TIME column is supported" in str(exc.value)
-
-
 def test_internal_create_request_column():
     """
     Test internal _create_request_column works for arbitrary column names and dtypes

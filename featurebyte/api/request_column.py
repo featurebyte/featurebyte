@@ -34,37 +34,6 @@ class RequestColumn(Series):
     )
 
     @classmethod
-    def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
-        """
-        Create a RequestColumn object.
-
-        Parameters
-        ----------
-        column_name: str
-            Column name in the request data.
-        column_dtype: DBVarType
-            Variable type of the column.
-
-        Returns
-        -------
-        RequestColumn
-
-        Raises
-        ------
-        NotImplementedError
-            If the request column is not the POINT_IN_TIME column
-        """
-        if not (
-            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
-        ):
-            raise NotImplementedError(
-                "Currently only POINT_IN_TIME column is supported. Please use"
-                " RequestColumn.point_in_time() instead."
-            )
-
-        return cls._create_request_column(column_name, column_dtype)
-
-    @classmethod
     def _create_request_column(
         cls,
         column_name: str,
@@ -134,7 +103,7 @@ class RequestColumn(Series):
         ... ).dt.hour
         >>> feature.name = "Customer number of hours since last visit"
         """
-        return RequestColumn.create_request_column(
+        return RequestColumn._create_request_column(
             SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
         )
 
