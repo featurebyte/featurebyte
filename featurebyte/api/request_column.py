@@ -62,9 +62,41 @@ class RequestColumn(Series):
                 " RequestColumn.point_in_time() instead."
             )
 
+        return cls._create_request_column(column_name, column_dtype)
+
+    @classmethod
+    def _create_request_column(
+        cls,
+        column_name: str,
+        column_dtype: DBVarType,
+        context_id: Optional[str] = None,
+    ) -> RequestColumn:
+        """
+        Internal method to create a RequestColumn for any column name and dtype.
+
+        This is not exposed publicly - users should use Context.get_user_provided_feature()
+        to access user-provided columns as Feature objects.
+
+        Parameters
+        ----------
+        column_name: str
+            Column name in the request data.
+        column_dtype: DBVarType
+            Variable type of the column.
+        context_id: Optional[str]
+            Context ID for user-provided columns. Used in SDK code generation
+            to produce Context.get_by_id(...).get_user_provided_feature(...) calls.
+
+        Returns
+        -------
+        RequestColumn
+        """
+        node_params = {"column_name": column_name, "dtype": column_dtype}
+        if context_id is not None:
+            node_params["context_id"] = context_id
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
-            node_params={"column_name": column_name, "dtype": column_dtype},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[],
         )
