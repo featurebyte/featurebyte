@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional, cast
 
 from fastapi import APIRouter, Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
@@ -250,25 +250,28 @@ async def preview_observation_table(
 
 
 @router.post(
-    "/{observation_table_id}/split", response_model=List[Task], status_code=HTTPStatus.CREATED
+    "/{observation_table_id}/split", response_model=Task, status_code=HTTPStatus.CREATED
 )
 async def split_observation_table(
     request: Request,
     observation_table_id: PydanticObjectId,
     data: ObservationTableSplit,
-) -> List[Task]:
+) -> Task:
     """
     Split an observation table into multiple non-overlapping tables.
 
     This creates multiple new observation tables by partitioning the source table
     based on the provided ratios. Each row is assigned to exactly one split using
     a deterministic random sampling approach with the provided seed.
+
+    All splits are created atomically in a single task to ensure reproducible
+    random partitioning.
     """
     controller: ObservationTableController = (
         request.state.app_container.observation_table_controller
     )
-    tasks: List[Task] = await controller.split_observation_table(
+    task: Task = await controller.split_observation_table(
         observation_table_id=observation_table_id,
         data=data,
     )
-    return tasks
+    return task

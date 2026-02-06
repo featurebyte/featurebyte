@@ -98,60 +98,41 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     use_case_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
+class SplitDefinition(FeatureByteBaseModel):
+    """
+    Definition of a single split with name and ratio
+    """
+
+    name: Optional[StrictStr] = Field(
+        default=None,
+        description="Name for this split. If not provided, will be auto-generated as '{source_table_name}_split_{index}'.",
+    )
+    ratio: float = Field(
+        gt=0,
+        le=1,
+        description="Ratio of rows for this split (must be between 0 exclusive and 1 inclusive).",
+    )
+
+
 class ObservationTableSplit(FeatureByteBaseModel):
     """
     Schema for splitting an observation table into multiple non-overlapping tables
     """
 
-    split_ratios: List[float] = Field(
+    splits: List[SplitDefinition] = Field(
         min_length=2,
         max_length=3,
-        description="List of ratios for each split (must sum to 1.0). For example, [0.7, 0.3] for a 70/30 split.",
-    )
-    split_names: Optional[List[StrictStr]] = Field(
-        default=None,
-        description="Optional names for each split. If not provided, names will be auto-generated as '{source_table_name}_split_0', etc.",
+        description="List of split definitions. Each split has a name (optional) and ratio. Ratios must sum to 1.0.",
     )
     seed: int = Field(
         default=1234,
         description="Random seed for reproducible splits",
     )
 
-    @field_validator("split_ratios")
-    @classmethod
-    def _validate_split_ratios(cls, values: List[float]) -> List[float]:
-        """
-        Validate that ratios are valid and sum to 1.0
-
-        Parameters
-        ----------
-        values: List[float]
-            List of split ratios
-
-        Returns
-        -------
-        List[float]
-            Validated split ratios
-
-        Raises
-        ------
-        ValueError
-            If any ratio is not between 0 and 1 (exclusive) or ratios don't sum to 1.0
-        """
-        for ratio in values:
-            if ratio <= 0 or ratio > 1:
-                raise ValueError(
-                    f"Each split ratio must be between 0 and 1 (exclusive), got {ratio}"
-                )
-        total = sum(values)
-        if abs(total - 1.0) > 1e-9:
-            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
-        return values
-
     @model_validator(mode="after")
-    def _validate_split_names_count(self) -> "ObservationTableSplit":
+    def _validate_split_ratios_sum(self) -> "ObservationTableSplit":
         """
-        Validate that split_names count matches split_ratios count if provided
+        Validate that ratios sum to 1.0
 
         Returns
         -------
@@ -161,11 +142,9 @@ class ObservationTableSplit(FeatureByteBaseModel):
         Raises
         ------
         ValueError
-            If number of split_names doesn't match number of split_ratios
+            If ratios don't sum to 1.0
         """
-        if self.split_names is not None:
-            if len(self.split_names) != len(self.split_ratios):
-                raise ValueError(
-                    f"Number of split_names ({len(self.split_names)}) must match number of split_ratios ({len(self.split_ratios)})"
-                )
+        total = sum(split.ratio for split in self.splits)
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
         return self

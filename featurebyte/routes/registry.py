@@ -272,7 +272,10 @@ from featurebyte.worker.task.feature_materialize_sync import FeatureMaterializeS
 from featurebyte.worker.task.feature_store_table_cleanup import FeatureStoreTableCleanupTask
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
-from featurebyte.worker.task.observation_table import ObservationTableTask
+from featurebyte.worker.task.observation_table import (
+    ObservationTableTask,
+    SplitObservationTableTask,
+)
 from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
@@ -537,6 +540,7 @@ app_container_config.register_class(FeatureJobSettingAnalysisTask)
 app_container_config.register_class(FeatureJobSettingAnalysisBacktestTask)
 app_container_config.register_class(HistoricalFeatureTableTask)
 app_container_config.register_class(ObservationTableTask)
+app_container_config.register_class(SplitObservationTableTask)
 app_container_config.register_class(ObservationTableUploadTask)
 app_container_config.register_class(DeploymentCreateUpdateTask)
 app_container_config.register_class(DeploymentSqlCreateTask)

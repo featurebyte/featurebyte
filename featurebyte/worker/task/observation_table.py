@@ -35,7 +35,10 @@ from featurebyte.query_graph.sql.materialisation import (
     get_source_count_expr,
 )
 from featurebyte.schema.target import ComputeTargetRequest
-from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.schema.worker.task.observation_table import (
+    ObservationTableTaskPayload,
+    SplitObservationTableTaskPayload,
+)
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.managed_view import ManagedViewService
@@ -506,3 +509,368 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
 
     async def execute(self, payload: ObservationTableTaskPayload) -> Any:
         await self.create_observation_table(payload)
+
+
+class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTableTaskPayload]):
+    """
+    Task to split an observation table into multiple non-overlapping tables.
+
+    This task creates all split tables atomically in a single operation using a temp table
+    approach to ensure reproducible random partitioning.
+    """
+
+    payload_class = SplitObservationTableTaskPayload
+
+    def __init__(
+        self,
+        task_manager: TaskManager,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
+        observation_table_service: ObservationTableService,
+    ):
+        super().__init__(task_manager=task_manager)
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
+        self.observation_table_service = observation_table_service
+
+    async def get_task_description(self, payload: SplitObservationTableTaskPayload) -> str:
+        split_count = len(payload.splits)
+        return f"Split observation table into {split_count} parts."
+
+    async def execute(self, payload: SplitObservationTableTaskPayload) -> Any:
+        """
+        Execute the split observation table task.
+
+        This creates a temp table with partition assignments, then creates each split table
+        by filtering from the temp table.
+
+        Parameters
+        ----------
+        payload: SplitObservationTableTaskPayload
+            Task payload
+
+        Returns
+        -------
+        Any
+            Dictionary with created observation table IDs
+        """
+        from featurebyte.models.observation_table import (
+            ObservationTableObservationInput,
+            Purpose,
+        )
+
+        # Get source observation table
+        source_table = await self.observation_table_service.get_document(
+            document_id=payload.source_observation_table_id
+        )
+
+        # Get feature store and session
+        feature_store = await self.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        adapter = db_session.adapter
+
+        # Generate temp table location
+        temp_location = await self.observation_table_service.generate_materialized_table_location(
+            payload.feature_store_id,
+        )
+        temp_table_name = f"__TEMP_SPLIT_{temp_location.table_details.table_name}"
+        temp_table_details = temp_location.table_details.model_copy(
+            update={"table_name": temp_table_name}
+        )
+
+        # Prepare split ratios and names
+        split_ratios = [split.ratio for split in payload.splits]
+        split_names = [
+            split.name if split.name is not None else f"{source_table.name}_split_{i}"
+            for i, split in enumerate(payload.splits)
+        ]
+
+        created_table_ids = []
+        created_table_details = []
+
+        try:
+            # Step 1: Create temp table with partition index column
+            await self._create_temp_table_with_partitions(
+                db_session=db_session,
+                adapter=adapter,
+                source_table=source_table,
+                temp_table_details=temp_table_details,
+                split_ratios=split_ratios,
+                seed=payload.seed,
+            )
+
+            # Step 2: Create each split table from the temp table
+            for split_index, split_name in enumerate(split_names):
+                # Generate location for this split
+                split_location = (
+                    await self.observation_table_service.generate_materialized_table_location(
+                        payload.feature_store_id,
+                    )
+                )
+
+                # First split is for training, rest are for validation/test
+                purpose = Purpose.TRAINING if split_index == 0 else Purpose.VALIDATION_TEST
+
+                # Create the split table by selecting from temp table
+                await self._create_split_table_from_temp(
+                    db_session=db_session,
+                    temp_table_details=temp_table_details,
+                    destination_table_details=split_location.table_details,
+                    split_index=split_index,
+                )
+
+                # Add row index column
+                await self.observation_table_service.add_row_index_column(
+                    session=db_session, table_details=split_location.table_details
+                )
+
+                created_table_details.append(split_location.table_details)
+
+                # Get primary entity IDs, handling Optional type
+                primary_entity_ids = (
+                    list(source_table.primary_entity_ids)
+                    if source_table.primary_entity_ids
+                    else []
+                )
+
+                # Validate and get metadata
+                additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session,
+                    split_location.table_details,
+                    feature_store=feature_store,
+                    skip_entity_validation_checks=True,
+                    primary_entity_ids=primary_entity_ids,
+                    target_namespace_id=source_table.target_namespace_id,
+                    treatment_id=source_table.treatment_id,
+                )
+
+                # Create observation table document
+                observation_table = ObservationTableModel(
+                    user_id=payload.user_id,
+                    name=split_name,
+                    location=split_location,
+                    context_id=source_table.context_id,
+                    use_case_ids=source_table.use_case_ids,
+                    request_input=ObservationTableObservationInput(
+                        observation_table_id=payload.source_observation_table_id,
+                    ),
+                    purpose=purpose,
+                    primary_entity_ids=primary_entity_ids,
+                    treatment_id=source_table.treatment_id,
+                    has_row_index=True,
+                    has_row_weights=source_table.has_row_weights,
+                    target_namespace_id=source_table.target_namespace_id,
+                    **additional_metadata,
+                )
+                observation_table = await self.observation_table_service.create_document(
+                    observation_table
+                )
+                created_table_ids.append(observation_table.id)
+
+                logger.info(
+                    f"Created split observation table: {split_name}",
+                    extra={"observation_table_id": str(observation_table.id)},
+                )
+
+        except Exception as e:
+            # Clean up any created tables on error
+            for table_details in created_table_details:
+                try:
+                    await db_session.drop_table(
+                        table_name=table_details.table_name,
+                        schema_name=table_details.schema_name or db_session.schema_name,
+                        database_name=table_details.database_name or db_session.database_name,
+                        if_exists=True,
+                    )
+                except Exception:
+                    pass
+            raise e
+        finally:
+            # Step 3: Drop the temp table
+            await db_session.drop_table(
+                table_name=temp_table_details.table_name,
+                schema_name=temp_table_details.schema_name or db_session.schema_name,
+                database_name=temp_table_details.database_name or db_session.database_name,
+                if_exists=True,
+            )
+
+        return {"output_document_ids": [str(id) for id in created_table_ids]}
+
+    async def _create_temp_table_with_partitions(
+        self,
+        db_session: BaseSession,
+        adapter: Any,
+        source_table: ObservationTableModel,
+        temp_table_details: TableDetails,
+        split_ratios: list[float],
+        seed: int,
+    ) -> None:
+        """
+        Create a temp table with partition index column.
+
+        The partition index (0, 1, 2, ...) is assigned based on seeded random values
+        and cumulative ratio ranges.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        adapter: Any
+            SQL adapter
+        source_table: ObservationTableModel
+            Source observation table
+        temp_table_details: TableDetails
+            Table details for the temp table
+        split_ratios: list[float]
+            List of ratios for each split
+        seed: int
+            Random seed
+        """
+        from sqlglot import expressions
+
+        from featurebyte.query_graph.sql.ast.literal import make_literal_value
+        from featurebyte.query_graph.sql.common import (
+            get_fully_qualified_table_name,
+            quoted_identifier,
+        )
+
+        # Get source table expression
+        source_table_expr = expressions.Table(
+            this=get_fully_qualified_table_name(
+                source_table.location.table_details.model_dump()
+            )
+        )
+
+        # Build CASE expression for partition assignment
+        # E.g., for ratios [0.6, 0.2, 0.2]:
+        #   CASE
+        #     WHEN prob < 0.6 THEN 0
+        #     WHEN prob < 0.8 THEN 1
+        #     ELSE 2
+        #   END
+        prob_col = quoted_identifier("__fb_split_prob")
+        case_conditions = []
+        cumulative = 0.0
+        for i, ratio in enumerate(split_ratios[:-1]):  # All but last
+            cumulative += ratio
+            case_conditions.append(
+                expressions.If(
+                    this=expressions.LT(
+                        this=prob_col,
+                        expression=make_literal_value(cumulative),
+                    ),
+                    true=make_literal_value(i),
+                )
+            )
+        # Last partition gets remaining rows
+        partition_expr = expressions.Case(
+            ifs=case_conditions,
+            default=make_literal_value(len(split_ratios) - 1),
+        )
+
+        # Build the CREATE TABLE AS SELECT query
+        # SELECT *, partition_index FROM (SELECT *, random(seed) as __fb_split_prob FROM source)
+        inner_select = expressions.select(
+            expressions.Star(),
+            expressions.alias_(
+                adapter.get_uniform_distribution_expr(seed),
+                alias="__fb_split_prob",
+                quoted=True,
+            ),
+        ).from_(source_table_expr)
+
+        outer_select = expressions.select(
+            expressions.Star(),
+            expressions.alias_(partition_expr, alias="__fb_split_partition", quoted=True),
+        ).from_(inner_select.subquery())
+
+        # Exclude the prob column from final output
+        final_cols = [
+            col
+            for col in outer_select.expressions
+            if not (hasattr(col, "alias") and col.alias == "__fb_split_prob")
+        ]
+        final_select = expressions.select(*final_cols).from_(outer_select.subquery())
+
+        # Create the temp table using session
+        await db_session.create_table_as(
+            table_details=temp_table_details,
+            select_expr=final_select,
+        )
+
+    async def _create_split_table_from_temp(
+        self,
+        db_session: BaseSession,
+        temp_table_details: TableDetails,
+        destination_table_details: TableDetails,
+        split_index: int,
+    ) -> None:
+        """
+        Create a split table by selecting rows with matching partition index from temp table.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        temp_table_details: TableDetails
+            Table details for the temp table
+        destination_table_details: TableDetails
+            Table details for the destination table
+        split_index: int
+            Index of the split to create (0, 1, 2, ...)
+        """
+        from sqlglot import expressions
+
+        from featurebyte.query_graph.sql.ast.literal import make_literal_value
+        from featurebyte.query_graph.sql.common import (
+            get_fully_qualified_table_name,
+            quoted_identifier,
+            sql_to_string,
+        )
+
+        # Get temp table expression
+        temp_table_expr = expressions.Table(
+            this=get_fully_qualified_table_name(temp_table_details.model_dump())
+        )
+
+        # Get column names from temp table to exclude partition column
+        temp_table_name = sql_to_string(temp_table_expr, db_session.source_type)
+        columns_result = await db_session.execute_query_long_running(
+            f"SELECT * FROM {temp_table_name} LIMIT 0"
+        )
+
+        # Build select query excluding the partition column
+        if columns_result is not None:
+            columns = [
+                col for col in columns_result.columns if col != "__fb_split_partition"
+            ]
+            select_query = (
+                expressions.select(*[quoted_identifier(col) for col in columns])
+                .from_(temp_table_expr)
+                .where(
+                    expressions.EQ(
+                        this=quoted_identifier("__fb_split_partition"),
+                        expression=make_literal_value(split_index),
+                    )
+                )
+            )
+        else:
+            # Fallback: select all and hope column isn't there
+            select_query = (
+                expressions.select(expressions.Star())
+                .from_(temp_table_expr)
+                .where(
+                    expressions.EQ(
+                        this=quoted_identifier("__fb_split_partition"),
+                        expression=make_literal_value(split_index),
+                    )
+                )
+            )
+
+        # Create the destination table
+        await db_session.create_table_as(
+            table_details=destination_table_details,
+            select_expr=select_query,
+        )
