@@ -553,6 +553,11 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
         -------
         Any
             Dictionary with created observation table IDs
+
+        Raises
+        ------
+        Exception
+            Re-raised after cleaning up any partially created tables on error
         """
         from featurebyte.models.observation_table import (
             ObservationTableObservationInput,
@@ -630,9 +635,7 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
 
                 # Get primary entity IDs, handling Optional type
                 primary_entity_ids = (
-                    list(source_table.primary_entity_ids)
-                    if source_table.primary_entity_ids
-                    else []
+                    list(source_table.primary_entity_ids) if source_table.primary_entity_ids else []
                 )
 
                 # Validate and get metadata
@@ -738,9 +741,7 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
 
         # Get source table expression
         source_table_expr = expressions.Table(
-            this=get_fully_qualified_table_name(
-                source_table.location.table_details.model_dump()
-            )
+            this=get_fully_qualified_table_name(source_table.location.table_details.model_dump())
         )
 
         # Build CASE expression for partition assignment
@@ -843,9 +844,7 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
 
         # Build select query excluding the partition column
         if columns_result is not None:
-            columns = [
-                col for col in columns_result.columns if col != "__fb_split_partition"
-            ]
+            columns = [col for col in columns_result.columns if col != "__fb_split_partition"]
             select_query = (
                 expressions.select(*[quoted_identifier(col) for col in columns])
                 .from_(temp_table_expr)

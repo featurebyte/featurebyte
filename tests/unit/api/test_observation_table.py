@@ -410,11 +410,10 @@ class TestObservationTableSplit:
         mock_test_table.name = "source_table_for_split_split_1"
         mock_test_table.purpose = Purpose.VALIDATION_TEST
 
-        with patch.object(
-            ObservationTable, "post_async_task"
-        ) as mock_post_async_task, patch.object(
-            ObservationTable, "get_by_id"
-        ) as mock_get_by_id:
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
             mock_post_async_task.return_value = {
                 "output_document_ids": [str(train_id), str(test_id)]
             }
@@ -465,11 +464,10 @@ class TestObservationTableSplit:
         mock_test_table.name = "testing_data"
         mock_test_table.purpose = Purpose.VALIDATION_TEST
 
-        with patch.object(
-            ObservationTable, "post_async_task"
-        ) as mock_post_async_task, patch.object(
-            ObservationTable, "get_by_id"
-        ) as mock_get_by_id:
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
             mock_post_async_task.return_value = {
                 "output_document_ids": [str(train_id), str(test_id)]
             }
@@ -520,11 +518,10 @@ class TestObservationTableSplit:
         mock_test_table.name = "test"
         mock_test_table.purpose = Purpose.VALIDATION_TEST
 
-        with patch.object(
-            ObservationTable, "post_async_task"
-        ) as mock_post_async_task, patch.object(
-            ObservationTable, "get_by_id"
-        ) as mock_get_by_id:
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
             mock_post_async_task.return_value = {
                 "output_document_ids": [str(train_id), str(val_id), str(test_id)]
             }
@@ -571,7 +568,10 @@ class TestObservationTableSplit:
             observation_table_from_source.split(split_ratios=[-0.1, 1.1])
         # Both -0.1 and 1.1 are invalid - either "greater than 0" or "less than or equal to 1"
         error_str = str(exc.value)
-        assert "Input should be greater than 0" in error_str or "Input should be less than or equal to 1" in error_str
+        assert (
+            "Input should be greater than 0" in error_str
+            or "Input should be less than or equal to 1" in error_str
+        )
 
     def test_split_invalid_names_length(self, observation_table_from_source):
         """Test that split raises error when names length doesn't match ratios"""
@@ -613,11 +613,10 @@ class TestObservationTableSplit:
         mock_test_table = AsyncMock()
         mock_test_table.primary_entity_ids = expected_primary_entity_ids
 
-        with patch.object(
-            ObservationTable, "post_async_task"
-        ) as mock_post_async_task, patch.object(
-            ObservationTable, "get_by_id"
-        ) as mock_get_by_id:
+        with (
+            patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
+            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+        ):
             mock_post_async_task.return_value = {
                 "output_document_ids": [str(train_id), str(test_id)]
             }

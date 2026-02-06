@@ -63,8 +63,6 @@ class SplitObservationTableTaskPayload(BaseTaskPayload):
         default=1234,
         description="Random seed for reproducible splits",
     )
-    feature_store_id: PydanticObjectId = Field(
-        description="Feature store ID for the split tables"
-    )
+    feature_store_id: PydanticObjectId = Field(description="Feature store ID for the split tables")
     # Output document IDs for each split (populated during task execution)
     output_document_ids: Optional[List[PydanticObjectId]] = Field(default=None)
