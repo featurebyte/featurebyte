@@ -7,15 +7,7 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
       "col_int" AS "transaction_id"
     FROM (
       SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "date" AS "date",
-        "store_id" AS "store_id",
-        "another_timestamp_col" AS "another_timestamp_col"
+        "col_int" AS "col_int"
       FROM "sf_database"."sf_schema"."snapshots_table"
       WHERE
         (

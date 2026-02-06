@@ -731,13 +731,6 @@ async def test_feature_table_one_feature_deployed(
                       CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM (
                       SELECT
-                        "col_int" AS "col_int",
-                        "col_float" AS "col_float",
-                        "col_char" AS "col_char",
-                        "col_text" AS "col_text",
-                        "col_binary" AS "col_binary",
-                        "col_boolean" AS "col_boolean",
-                        "event_timestamp" AS "event_timestamp",
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
@@ -896,13 +889,6 @@ async def test_feature_table_two_features_deployed(
                       CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM (
                       SELECT
-                        "col_int" AS "col_int",
-                        "col_float" AS "col_float",
-                        "col_char" AS "col_char",
-                        "col_text" AS "col_text",
-                        "col_binary" AS "col_binary",
-                        "col_boolean" AS "col_boolean",
-                        "event_timestamp" AS "event_timestamp",
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
@@ -1017,13 +1003,6 @@ async def test_feature_table_undeploy(
                       CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM (
                       SELECT
-                        "col_int" AS "col_int",
-                        "col_float" AS "col_float",
-                        "col_char" AS "col_char",
-                        "col_text" AS "col_text",
-                        "col_binary" AS "col_binary",
-                        "col_boolean" AS "col_boolean",
-                        "event_timestamp" AS "event_timestamp",
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
@@ -1175,13 +1154,6 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                       CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM (
                       SELECT
-                        "col_int" AS "col_int",
-                        "col_float" AS "col_float",
-                        "col_char" AS "col_char",
-                        "col_text" AS "col_text",
-                        "col_binary" AS "col_binary",
-                        "col_boolean" AS "col_boolean",
-                        "event_timestamp" AS "event_timestamp",
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
@@ -1246,13 +1218,6 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                       CAST("cust_id" AS BIGINT) AS "cust_id"
                     FROM (
                       SELECT
-                        "col_int" AS "col_int",
-                        "col_float" AS "col_float",
-                        "col_char" AS "col_char",
-                        "col_text" AS "col_text",
-                        "col_binary" AS "col_binary",
-                        "col_boolean" AS "col_boolean",
-                        "event_timestamp" AS "event_timestamp",
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
@@ -1966,13 +1931,7 @@ async def test_item_view_window_aggregate(
                       "item_type" AS "item_type"
                     FROM (
                       SELECT
-                        L."event_id_col" AS "event_id_col",
-                        L."item_id_col" AS "item_id_col",
-                        L."item_type" AS "item_type",
-                        L."item_amount" AS "item_amount",
-                        L."created_at" AS "created_at",
-                        L."event_timestamp" AS "event_timestamp",
-                        R."event_timestamp" AS "event_timestamp_event"
+                        L."item_type" AS "item_type"
                       FROM (
                         SELECT
                           "event_id_col" AS "event_id_col",
