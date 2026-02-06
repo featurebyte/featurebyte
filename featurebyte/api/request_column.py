@@ -127,6 +127,50 @@ class RequestColumn(Series):
             SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
         )
 
+    @classmethod
+    def forecast_point(
+        cls,
+        dtype: str = "DATE",
+        timezone: Optional[str] = None,
+    ) -> RequestColumn:
+        """
+        Get a RequestColumn that represents the FORECAST_POINT column in the request data.
+
+        This method is primarily used internally by SDK code generation. Users should typically
+        access forecast_point through Context.forecast_point property instead, which provides
+        the correct dtype and timezone based on the Context's ForecastPointSchema.
+
+        Parameters
+        ----------
+        dtype: str
+            Data type of the forecast point column. Defaults to "DATE".
+            Supported values: "DATE", "TIMESTAMP", "TIMESTAMP_TZ"
+        timezone: Optional[str]
+            IANA timezone string for the forecast point (e.g., "America/New_York").
+            Only applicable when dtype is TIMESTAMP or TIMESTAMP_TZ.
+
+        Returns
+        -------
+        RequestColumn
+        """
+        from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
+        from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+
+        column_dtype = DBVarType(dtype)
+
+        # Build dtype_info with timezone metadata if provided
+        dtype_info: Optional[DBVarTypeInfo] = None
+        if timezone is not None:
+            timestamp_schema = TimestampSchema(is_utc_time=False, timezone=timezone)
+            dtype_info = DBVarTypeInfo(
+                dtype=column_dtype,
+                metadata=DBVarTypeMetadata(timestamp_schema=timestamp_schema),
+            )
+
+        return RequestColumn.create_request_column(
+            SpecialColumnName.FORECAST_POINT.value, column_dtype, dtype_info=dtype_info
+        )
+
     @property
     def binary_op_output_class_priority(self) -> int:
         return 1

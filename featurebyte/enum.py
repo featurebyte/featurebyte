@@ -625,7 +625,6 @@ class SpecialColumnName(StrEnum):
 
     POINT_IN_TIME = "POINT_IN_TIME"
     FORECAST_POINT = "FORECAST_POINT"
-    FORECAST_TIMEZONE = "FORECAST_TIMEZONE"
 
 
 class InternalName(StrEnum):

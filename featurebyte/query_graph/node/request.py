@@ -136,7 +136,7 @@ class RequestColumnNode(BaseNode):
                     if isinstance(self.parameters.dtype, DBVarType)
                     else self.parameters.dtype
                 )
-                kwargs["dtype"] = ClassEnum.DB_VAR_TYPE(_method_name=dtype_name, _is_attribute=True)
+                kwargs["dtype"] = dtype_name
 
             # Pass timezone if present in metadata
             timestamp_schema = self.parameters.dtype_info.timestamp_schema

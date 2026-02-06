@@ -89,14 +89,8 @@ class ForecastPointSchema(FeatureByteBaseModel):
         if self.is_utc_time is False and self.timezone is None:
             raise ValueError("Timezone must be provided for local time forecast points")
 
-        # Validate dtype is string-based (not INT)
-        valid_dtypes = (
-            DBVarType.DATE,
-            DBVarType.TIMESTAMP,
-            DBVarType.TIMESTAMP_TZ,
-            DBVarType.VARCHAR,
-        )
-        if self.dtype not in valid_dtypes:
+        # Validate dtype
+        if self.dtype not in DBVarType.supported_datetime_types():
             raise ValueError(
                 f"Invalid dtype {self.dtype} for forecast point. "
                 f"Must be one of: DATE, TIMESTAMP, TIMESTAMP_TZ, VARCHAR"

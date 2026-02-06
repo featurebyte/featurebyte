@@ -4,12 +4,14 @@ RequestColumn unit tests
 
 import pytest
 
+from featurebyte.api.context import Context
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TimeIntervalUnit
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
@@ -145,3 +147,62 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
         feature_model=new_feature_model,
         output=output,
     )
+
+
+def test_forecast_point_request_column():
+    """
+    Test forecast_point request column creation via create_request_column
+    """
+    # Create a FORECAST_POINT request column with DATE dtype (default)
+    forecast_point = RequestColumn.create_request_column(
+        "FORECAST_POINT",
+        DBVarType.DATE,
+    )
+    assert isinstance(forecast_point, RequestColumn)
+    node_dict = forecast_point.node.model_dump()
+    # Check node properties (excluding name which depends on global state)
+    assert node_dict["type"] == "request_column"
+    assert node_dict["output_type"] == "series"
+    assert node_dict["parameters"] == {
+        "column_name": "FORECAST_POINT",
+        "dtype": "DATE",
+        "dtype_info": {"dtype": "DATE", "metadata": None},
+    }
+
+
+def test_forecast_point_minus_timestamp_feature(
+    latest_event_timestamp_feature, cust_id_entity, transaction_entity
+):
+    """
+    Test an on-demand feature involving forecast point.
+    """
+    _ = transaction_entity
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
+
+    # Create a feature using forecast_point from context
+    new_feature = (forecast_context.forecast_point - latest_event_timestamp_feature).dt.day
+    new_feature.name = "Days Until Forecast (from latest event)"
+    assert isinstance(new_feature, Feature)
+
+    # Verify the feature has correct properties
+    assert new_feature.entity_ids == latest_event_timestamp_feature.entity_ids
+
+    # Save the feature
+    new_feature.save()
+
+    # Verify the feature model
+    new_feature_model = new_feature.cached_model
+    assert isinstance(new_feature_model, FeatureModel)
