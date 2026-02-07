@@ -514,3 +514,147 @@ def test_validate_columns_info(
         validate_columns_info(
             columns_info, primary_entity_ids, skip_entity_checks, target_namespace
         )
+
+
+# Tests for FORECAST_POINT column validation
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__forecast_context_missing_forecast_point(observation_table_service):
+    """
+    Test validation fails when forecast context is provided but FORECAST_POINT column is missing
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import MissingForecastPointColumnError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+
+    # Create a mock context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns do not include FORECAST_POINT
+    available_columns = ["POINT_IN_TIME", "entity_col"]
+
+    with pytest.raises(MissingForecastPointColumnError) as exc:
+        await observation_table_service._validate_columns(
+            available_columns=available_columns,
+            primary_entity_ids=None,
+            target_column=None,
+            treatment_column=None,
+            context=mock_context,
+        )
+    assert "FORECAST_POINT" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__forecast_context_missing_timezone_column(
+    observation_table_service,
+):
+    """
+    Test validation fails when forecast context requires timezone column but it's missing
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import MissingForecastTimezoneColumnError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include FORECAST_POINT but not FORECAST_TIMEZONE
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "entity_col"]
+
+    with pytest.raises(MissingForecastTimezoneColumnError) as exc:
+        await observation_table_service._validate_columns(
+            available_columns=available_columns,
+            primary_entity_ids=None,
+            target_column=None,
+            treatment_column=None,
+            context=mock_context,
+        )
+    assert "FORECAST_TIMEZONE" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__forecast_context_with_all_required_columns(
+    observation_table_service,
+):
+    """
+    Test validation passes when all required forecast columns are present
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include all required columns
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
+
+    # Should not raise any exception
+    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+        available_columns=available_columns,
+        primary_entity_ids=None,
+        target_column=None,
+        treatment_column=None,
+        context=mock_context,
+    )
+    assert target_namespace_id is None
+    assert treatment_id is None
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__non_forecast_context_no_forecast_point_required(
+    observation_table_service,
+):
+    """
+    Test validation passes for non-forecast context without FORECAST_POINT column
+    """
+    from featurebyte.models.context import ContextModel
+
+    # Create a mock context without forecast_point_schema
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_regular_context"
+    mock_context.forecast_point_schema = None
+
+    # Available columns do not include FORECAST_POINT (which is fine for non-forecast context)
+    available_columns = ["POINT_IN_TIME", "entity_col"]
+
+    # Should not raise any exception
+    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+        available_columns=available_columns,
+        primary_entity_ids=None,
+        target_column=None,
+        treatment_column=None,
+        context=mock_context,
+    )
+    assert target_namespace_id is None
+    assert treatment_id is None

@@ -66,6 +66,7 @@ from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import (
     AggFunc,
+    DBVarType,
     SourceType,
     StorageType,
     TargetType,
@@ -107,6 +108,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
 )
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.model.window import CalendarWindow
@@ -588,6 +590,7 @@ __all__ = [
     "TimestampSchema",
     "TimeInterval",
     "TimeZoneColumn",
+    "ForecastPointSchema",
     "CalendarWindow",
     "TargetValueSamplingRate",
     "DownSamplingInfo",

@@ -23,6 +23,8 @@ from featurebyte.enum import (
     UploadFileFormat,
 )
 from featurebyte.exception import (
+    MissingForecastPointColumnError,
+    MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
     ObservationTableInvalidSamplingError,
@@ -467,6 +469,7 @@ class ObservationTableService(
         primary_entity_ids: Optional[List[PydanticObjectId]],
         target_column: Optional[str],
         treatment_column: Optional[str],
+        context: Optional[ContextModel] = None,
     ) -> Tuple[Optional[ObjectId], Optional[ObjectId]]:
         # Check if required column names are provided
         missing_columns = []
@@ -474,6 +477,24 @@ class ObservationTableService(
         # Check if point in time column is present
         if SpecialColumnName.POINT_IN_TIME not in available_columns:
             missing_columns.append(str(SpecialColumnName.POINT_IN_TIME))
+
+        # Check if forecast point column is required and present
+        if context is not None and context.forecast_point_schema is not None:
+            forecast_point_schema = context.forecast_point_schema
+            if SpecialColumnName.FORECAST_POINT not in available_columns:
+                raise MissingForecastPointColumnError(
+                    f"Forecast point column not provided: {SpecialColumnName.FORECAST_POINT}. "
+                    f"This column is required for forecast context '{context.name}'."
+                )
+
+            # Check if forecast timezone column is required and present
+            if forecast_point_schema.has_timezone_column:
+                timezone_column_name = forecast_point_schema.timezone_column_name
+                if timezone_column_name and timezone_column_name not in available_columns:
+                    raise MissingForecastTimezoneColumnError(
+                        f"Forecast timezone column not provided: {timezone_column_name}. "
+                        f"This column is required by the forecast point schema for context '{context.name}'."
+                    )
 
         # Check if entity columns are present
         if primary_entity_ids:
@@ -630,11 +651,22 @@ class ObservationTableService(
                 available_columns = [
                     columns_rename_mapping.get(col, col) for col in available_columns
                 ]
+
+            # Fetch context for forecast point validation
+            context: Optional[ContextModel] = None
+            context_id = data.context_id
+            if data.use_case_id is not None:
+                use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
+                context_id = use_case.context_id
+            if context_id is not None:
+                context = await self.context_service.get_document(document_id=context_id)
+
             target_namespace_id, treatment_id = await self._validate_columns(
                 available_columns=available_columns,
                 primary_entity_ids=data.primary_entity_ids,
                 target_column=data.target_column,
                 treatment_column=data.treatment_column,
+                context=context,
             )
         elif (
             isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None
@@ -699,12 +731,23 @@ class ObservationTableService(
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
+
+        # Fetch context for forecast point validation
+        context: Optional[ContextModel] = None
+        context_id = data.context_id
+        if data.use_case_id is not None:
+            use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
+            context_id = use_case.context_id
+        if context_id is not None:
+            context = await self.context_service.get_document(document_id=context_id)
+
         # Check if required column names are provided
         target_namespace_id, treatment_id = await self._validate_columns(
             available_columns=observation_set_dataframe.columns.tolist(),
             primary_entity_ids=data.primary_entity_ids,
             target_column=data.target_column,
             treatment_column=data.treatment_column,
+            context=context,
         )
 
         # Validate context and use case

@@ -3,13 +3,13 @@ Request data related node classes
 """
 
 import textwrap
-from typing import Any, List, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from pydantic import StrictStr, model_validator
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseNode
@@ -51,6 +51,7 @@ class RequestColumnNode(BaseNode):
         column_name: StrictStr
         dtype: DBVarType  # deprecated, keep it for old client compatibility
         dtype_info: DBVarTypeInfo
+        context_id: Optional[PydanticObjectId] = None  # Context ID for FORECAST_POINT columns
 
         @model_validator(mode="before")
         @classmethod
@@ -125,8 +126,20 @@ class RequestColumnNode(BaseNode):
             obj = ClassEnum.REQUEST_COLUMN(
                 _method_name="point_in_time",
             )
+        elif self.parameters.column_name == SpecialColumnName.FORECAST_POINT:
+            # Generate Context.get_by_id("<id>").forecast_point
+            if self.parameters.context_id is None:
+                raise ValueError(
+                    "FORECAST_POINT column requires context_id to be set for SDK code generation"
+                )
+            context_id_str = str(self.parameters.context_id)
+            obj = ClassEnum.CONTEXT(
+                context_id_str,
+                _method_name="get_by_id",
+                _suffix=".forecast_point",
+            )
         else:
-            raise NotImplementedError("Currently only POINT_IN_TIME column is supported")
+            raise NotImplementedError("Only POINT_IN_TIME and FORECAST_POINT columns are supported")
         statements.append((var_name, obj))
         return statements, var_name
 

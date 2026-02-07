@@ -150,6 +150,24 @@ class UnsupportedPointInTimeColumnTypeError(FeatureByteException):
     """
 
 
+class MissingForecastPointColumnError(FeatureByteException):
+    """
+    Raised when forecast point column is not provided for forecast context
+    """
+
+
+class UnsupportedForecastPointColumnTypeError(FeatureByteException):
+    """
+    Raised when forecast point column type is not supported
+    """
+
+
+class MissingForecastTimezoneColumnError(FeatureByteException):
+    """
+    Raised when forecast timezone column is not provided when required by forecast point schema
+    """
+
+
 class TooRecentPointInTimeError(FeatureByteException):
     """
     Raised when the latest point in time value is too recent in historical requests

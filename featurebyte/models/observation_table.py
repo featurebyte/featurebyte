@@ -191,6 +191,11 @@ class ObservationTableModel(MaterializedTableModel):
     table_with_missing_data: Optional[TableDetails] = Field(default=None)
     downsampling_info: Optional[DownSamplingInfo] = None
 
+    # Forecast point metadata
+    most_recent_forecast_point: Optional[StrictStr] = Field(default=None)
+    least_recent_forecast_point: Optional[StrictStr] = Field(default=None)
+    has_forecast_timezone_column: Optional[bool] = Field(default=False)
+
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()
     )
@@ -252,12 +257,17 @@ class ObservationTableModel(MaterializedTableModel):
             return reason
         return ""
 
-    @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
+    @field_validator(
+        "most_recent_point_in_time",
+        "least_recent_point_in_time",
+        "most_recent_forecast_point",
+        "least_recent_forecast_point",
+    )
     @classmethod
-    def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_datetime_fields(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
-        # Check that most_recent_point_in_time is a valid ISO 8601 datetime
+        # Check that the value is a valid ISO 8601 datetime
         _ = datetime.fromisoformat(value)
         return value
 

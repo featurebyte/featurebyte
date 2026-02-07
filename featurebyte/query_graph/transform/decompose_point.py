@@ -329,10 +329,11 @@ class DecomposePointState:
             # request columns introduced by request column node
             if self.deployment_sql_generation:
                 # for deployment SQL generation, only consider request columns that are not
-                # point-in-time columns
-                aggregation_info.has_request_column = (
-                    node.parameters.column_name != SpecialColumnName.POINT_IN_TIME
-                )
+                # point-in-time or forecast-point columns
+                aggregation_info.has_request_column = node.parameters.column_name not in {
+                    SpecialColumnName.POINT_IN_TIME,
+                    SpecialColumnName.FORECAST_POINT,
+                }
             else:
                 aggregation_info.has_request_column = True
 

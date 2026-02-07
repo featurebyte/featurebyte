@@ -20,7 +20,7 @@ class UseCaseType(StrEnum):
     """
     UseCaseType defines the primary analytical objective of a use case.
 
-    The enum distinguishes between predictive, descriptive, and causal use cases,
+    The enum distinguishes between predictive, descriptive, causal, and forecast use cases,
     each representing a different intent in how data is analyzed, modeled, or
     interpreted.
     """
@@ -30,6 +30,7 @@ class UseCaseType(StrEnum):
     PREDICTIVE = "predictive", "Use case focused on predicting future or unknown outcomes"
     DESCRIPTIVE = "descriptive", "Use case focused on summarizing and understanding historical data"
     CAUSAL = "causal", "Use case focused on measuring causal effects and relationships"
+    FORECAST = "forecast", "Use case focused on forecasting future values at specific future dates"
 
 
 class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):
@@ -81,7 +82,9 @@ class DescriptiveUseCaseModel(BaseUseCaseModel):
 class UseCaseModel(BaseUseCaseModel):
     """PredictiveUseCaseModel represents a predictive use case within a feature store"""
 
-    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL] = UseCaseType.PREDICTIVE
+    use_case_type: Literal[UseCaseType.PREDICTIVE, UseCaseType.CAUSAL, UseCaseType.FORECAST] = (
+        UseCaseType.PREDICTIVE
+    )
     target_id: Optional[PydanticObjectId] = None
     target_namespace_id: PydanticObjectId
     higher_prediction_is_better: bool = True
