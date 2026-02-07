@@ -264,6 +264,9 @@ class QueryGraphModel(FeatureByteBaseModel):
             handle_time_series_window_aggregate_node_parameters(node_parameters)
         if node.type == NodeType.LOOKUP:
             handle_lookup_node_parameters(node_parameters)
+        if node.type == NodeType.REQUEST_COLUMN:
+            if node_parameters.get("context_id") is None:
+                node_parameters.pop("context_id", None)
         if node.type in NodeType.aggregation_and_lookup_node_types():
             exclude_aggregation_and_lookup_node_timestamp_metadata(
                 node_type=node.type, node_parameters=node_parameters

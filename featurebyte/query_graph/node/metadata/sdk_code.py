@@ -255,6 +255,7 @@ class ClassEnum(Enum):
     TO_TIMESTAMP_FROM_EPOCH = ("featurebyte", "to_timestamp_from_epoch")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
+    CONTEXT = ("featurebyte", "Context")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")

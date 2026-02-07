@@ -34,9 +34,17 @@ class RequestColumn(Series):
     )
 
     @classmethod
-    def create_request_column(cls, column_name: str, column_dtype: DBVarType) -> RequestColumn:
+    def _create_request_column(
+        cls,
+        column_name: str,
+        column_dtype: DBVarType,
+        context_id: Optional[str] = None,
+    ) -> RequestColumn:
         """
-        Create a RequestColumn object.
+        Internal method to create a RequestColumn for any column name and dtype.
+
+        This is not exposed publicly - users should use Context.get_user_provided_feature()
+        to access user-provided columns as Feature objects.
 
         Parameters
         ----------
@@ -44,27 +52,20 @@ class RequestColumn(Series):
             Column name in the request data.
         column_dtype: DBVarType
             Variable type of the column.
+        context_id: Optional[str]
+            Context ID for user-provided columns. Used in SDK code generation
+            to produce Context.get_by_id(...).get_user_provided_feature(...) calls.
 
         Returns
         -------
         RequestColumn
-
-        Raises
-        ------
-        NotImplementedError
-            If the request column is not the POINT_IN_TIME column
         """
-        if not (
-            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
-        ):
-            raise NotImplementedError(
-                "Currently only POINT_IN_TIME column is supported. Please use"
-                " RequestColumn.point_in_time() instead."
-            )
-
+        node_params = {"column_name": column_name, "dtype": column_dtype}
+        if context_id is not None:
+            node_params["context_id"] = context_id
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
-            node_params={"column_name": column_name, "dtype": column_dtype},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[],
         )
@@ -102,7 +103,7 @@ class RequestColumn(Series):
         ... ).dt.hour
         >>> feature.name = "Customer number of hours since last visit"
         """
-        return RequestColumn.create_request_column(
+        return RequestColumn._create_request_column(
             SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
         )
 
