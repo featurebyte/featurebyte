@@ -21,7 +21,7 @@ from tests.util.helper import (
 )
 
 
-def test_point_in_time_request_column():
+def test_point_in_time_request_column(catalog):
     """
     Test point_in_time request column
     """
@@ -101,7 +101,7 @@ def test_point_in_time_minus_timestamp_feature(
     check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
-def test_internal_create_request_column():
+def test_internal_create_request_column(catalog):
     """
     Test internal _create_request_column works for arbitrary column names and dtypes
     """
@@ -110,7 +110,7 @@ def test_internal_create_request_column():
     assert request_col.name == "annual_income"
     assert request_col.dtype == DBVarType.FLOAT
     assert request_col.tabular_source is None
-    assert request_col.feature_store is None
+    assert request_col.feature_store is not None
     node_dict = request_col.node.model_dump()
     assert node_dict["type"] == "request_column"
     assert node_dict["output_type"] == "series"

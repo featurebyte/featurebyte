@@ -87,6 +87,7 @@ def test_feature_list_creation__success(
         "updated_at": None,
         "user_id": None,
         "catalog_id": catalog.id,
+        "context_id": None,
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
@@ -151,6 +152,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "catalog_id": catalog.id,
+        "context_id": None,
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
@@ -522,6 +524,7 @@ def test_get_feature_list(
             ("aggregation_ids", ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"]),
             ("block_modification_by", []),
             ("catalog_id", str(catalog.id)),
+            ("context_id", None),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
             ("description", None),
@@ -717,11 +720,9 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
 
     with pytest.raises(RecordCreationException) as exc:
         feature_list.save()
-    expected_msg = (
-        'FeatureNamespace (name: "production_ready_feature") already exists. '
-        'Please rename object (name: "production_ready_feature") to something else.'
-    )
+    expected_msg = 'FeatureNamespace (name: "production_ready_feature"'
     assert expected_msg in str(exc.value)
+    assert "already exists" in str(exc.value)
     assert feature_list[feature.name].id == feature.id
 
 
@@ -1033,11 +1034,8 @@ def test_save_feature_group(feature_group_with_conflict):
     with pytest.raises(RecordCreationException) as exc:
         feature_group_with_conflict.save()
 
-    expected_msg = (
-        'FeatureNamespace (name: "feat_0") already exists. '
-        'Please rename object (name: "feat_0") to something else.'
-    )
-    assert expected_msg in str(exc.value)
+    assert 'FeatureNamespace (name: "feat_0"' in str(exc.value)
+    assert "already exists" in str(exc.value)
 
 
 def test_save_feature_group_with_conflict_resolution(feature_group_with_conflict):

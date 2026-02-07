@@ -353,6 +353,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     feature_clusters_path: Optional[str] = Field(default=None)
     internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters", default=None)
 
+    # Context ID for feature lists that contain features using user-provided columns
+    # Derived from the features in the list
+    context_id: Optional[PydanticObjectId] = Field(frozen=True, default=None)
+
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
@@ -425,14 +429,24 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             entity_ids = set()
             table_ids = set()
             features_primary_entity_ids = set()
+            context_ids: Set[PydanticObjectId] = set()
             for feature in features:
                 entity_ids.update(feature.entity_ids)
                 features_primary_entity_ids.add(tuple(feature.primary_entity_ids))
                 table_ids.update(feature.table_ids)
+                if feature.context_id is not None:
+                    context_ids.add(feature.context_id)
+
+            if len(context_ids) > 1:
+                raise ValueError(
+                    "All features in a FeatureList must use the same context or no context. "
+                    f"Found context_ids: {context_ids}"
+                )
 
             values["entity_ids"] = sorted(entity_ids)
             values["features_primary_entity_ids"] = sorted(features_primary_entity_ids)
             values["table_ids"] = sorted(table_ids)
+            values["context_id"] = context_ids.pop() if context_ids else None
 
             aggregation_ids = set()
             for feature in features:
@@ -516,6 +530,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         List[FeatureCluster]
         """
         # split features into groups that share the same feature store
+        # skip features without tabular_source (pure user-provided features)
         groups = defaultdict(list)
         for feature in features:
             feature_store_id = feature.tabular_source.feature_store_id
@@ -601,8 +616,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                fields=("name", "version", "context_id"),
+                conflict_fields_signature={
+                    "name": ["name"],
+                    "version": ["version"],
+                },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
@@ -618,6 +636,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("deployed"),
             pymongo.operations.IndexModel("relationships_info"),
             pymongo.operations.IndexModel("supported_serving_entity_ids"),
+            pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),
                 ("version", pymongo.TEXT),

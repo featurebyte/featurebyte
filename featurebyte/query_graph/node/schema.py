@@ -10,7 +10,7 @@ from typing import Any, ClassVar, Optional, Union
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType, SourceType, StorageType
+from featurebyte.enum import DBVarType, InternalName, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
 from featurebyte.query_graph.model.dtype import (
     DBVarTypeInfo,
@@ -435,6 +435,14 @@ class TableDetails(FeatureByteBaseModel):
 
     def __hash__(self) -> int:
         return hash((self.database_name, self.schema_name, self.table_name))
+
+
+class DummyTableDetails(TableDetails):
+    """Dummy Table details"""
+
+    database_name: Optional[NameStr] = None
+    schema_name: Optional[NameStr] = None
+    table_name: NameStr = InternalName.DUMMY_TABLE
 
 
 class ColumnSpec(FeatureByteBaseModel):

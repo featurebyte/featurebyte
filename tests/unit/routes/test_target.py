@@ -101,6 +101,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "default_version_mode": "AUTO",
             "entity_ids": response_dict["entity_ids"],
             "catalog_id": str(default_catalog_id),
+            "context_id": None,
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "user_id": str(user_id),

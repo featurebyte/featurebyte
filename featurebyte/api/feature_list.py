@@ -29,6 +29,7 @@ from featurebyte.api.api_handler.feature_list import FeatureListListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup, Item
@@ -233,12 +234,24 @@ class FeatureListNamespace(ApiObject):
         )
 
     @classmethod
+    def _resolve_context_id(cls, context: Optional[str], use_case: Optional[str]) -> Optional[str]:
+        if context is not None and use_case is not None:
+            raise ValueError("Cannot specify both 'context' and 'use_case'.")
+        if context is not None:
+            return str(Context.get(context).id)
+        if use_case is not None:
+            return str(UseCase.get(use_case).context_id)
+        return None
+
+    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
         primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -254,13 +267,24 @@ class FeatureListNamespace(ApiObject):
             Name of entity used to filter results
         table: Optional[str]
             Name of table used to filter results
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular feature lists
+            and feature lists specific to that context. If not provided, context-specific feature lists
+            are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
         pd.DataFrame
             Table of feature lists
         """
-        feature_lists = super().list(include_id=include_id)
+        params: Dict[str, Any] = {}
+        context_id = cls._resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        feature_lists = cls._list(include_id=include_id, params=params)
         target_entities = convert_to_list_of_strings(primary_entity)
         if target_entities:
             feature_lists = feature_lists[
@@ -336,6 +360,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         default_factory=get_active_catalog_id,
         alias="catalog_id",  # type: ignore
     )
+    internal_context_id: Optional[PydanticObjectId] = Field(
+        default=None,
+        alias="context_id",
+    )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
     @model_validator(mode="after")
@@ -396,6 +424,24 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             return cast(FeatureListModel, self.cached_model).catalog_id
         except RecordRetrievalException:
             return self.internal_catalog_id
+
+    @property
+    def context_id(self) -> Optional[ObjectId]:
+        """
+        Returns the context ID that is associated with the FeatureList object.
+
+        Returns
+        -------
+        Optional[ObjectId]
+            Context ID of the feature list, or None if not context-specific.
+        See Also
+        --------
+        - [Context](/reference/featurebyte.api.context.Context)
+        """
+        try:
+            return cast(FeatureListModel, self.cached_model).context_id
+        except RecordRetrievalException:
+            return self.internal_context_id
 
     @property
     @substitute_docstring(
@@ -1042,6 +1088,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -1057,6 +1105,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             Name of entity used to filter results
         table: Optional[str]
             Name of table used to filter results
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular feature lists
+            and feature lists specific to that context. If not provided, context-specific feature lists
+            are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -1064,7 +1119,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             Table of feature lists
         """
         return FeatureListNamespace.list(
-            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+            include_id=include_id,
+            primary_entity=primary_entity,
+            entity=entity,
+            table=table,
+            context=context,
+            use_case=use_case,
         )
 
     def list_features(self) -> pd.DataFrame:

@@ -3,6 +3,7 @@ Unit test for Context class
 """
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import (
     AssignmentDesign,
@@ -20,6 +21,8 @@ from featurebyte import (
 )
 from featurebyte.enum import DBVarType
 from featurebyte.models.context import UserProvidedColumn
+from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.query_graph.node.schema import DummyTableDetails
 
 
 @pytest.fixture(name="context_1")
@@ -257,3 +260,117 @@ def test_user_provided_columns(catalog, cust_id_entity, target_table):
             dtype=DBVarType.FLOAT,
         )
     assert str(exc.value) == "User-provided column with name 'credit_score' already exists"
+
+
+def test_get_user_provided_feature(catalog, cust_id_entity):
+    """
+    Test Context.get_user_provided_feature() method
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+    context = Context.create(
+        name="test_context_features",
+        primary_entity=entity_names,
+        user_provided_columns=[
+            {"name": "annual_income", "dtype": DBVarType.FLOAT, "description": "Customer income"},
+            {"name": "credit_score", "dtype": DBVarType.INT},
+        ],
+    )
+
+    # Test getting a user-provided feature
+    income_feature = context.get_user_provided_feature("annual_income")
+    assert income_feature.name == "annual_income"
+    assert income_feature.dtype == DBVarType.FLOAT
+    assert income_feature.context_id == context.id
+    assert income_feature.tabular_source.table_details == DummyTableDetails()
+    assert income_feature.feature_store is not None
+
+    # Test getting a feature with a custom name
+    score_feature = context.get_user_provided_feature(
+        "credit_score", feature_name="my_credit_score"
+    )
+    assert score_feature.name == "my_credit_score"
+    assert score_feature.dtype == DBVarType.INT
+    assert score_feature.context_id == context.id
+
+    # Test error for undefined column
+    with pytest.raises(ValueError, match="Column 'nonexistent' not defined in context"):
+        context.get_user_provided_feature("nonexistent")
+
+
+def test_get_user_provided_feature_derived(catalog, cust_id_entity):
+    """
+    Test that user-provided features can be used in derived expressions
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+    context = Context.create(
+        name="test_context_derived",
+        primary_entity=entity_names,
+        user_provided_columns=[
+            {"name": "income", "dtype": DBVarType.FLOAT},
+            {"name": "expenses", "dtype": DBVarType.FLOAT},
+        ],
+    )
+
+    income = context.get_user_provided_feature("income")
+    expenses = context.get_user_provided_feature("expenses")
+
+    # Derived feature from two user-provided features
+    savings = income - expenses
+    savings.name = "savings"
+    assert savings.context_id is None  # derived features don't auto-inherit context_id
+    assert savings.dtype == DBVarType.FLOAT
+
+
+def test_user_provided_feature_model_context_id():
+    """
+    Test that FeatureModel properly handles context_id field
+    """
+    context_id = ObjectId()
+
+    # Verify FeatureModel accepts context_id
+    # (just testing the field exists and defaults to None)
+    from featurebyte.models.feature import BaseFeatureModel
+
+    assert BaseFeatureModel.model_fields["context_id"].default is None
+
+
+def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
+    """
+    Test that FeatureListModel derives context_id from features
+    """
+
+    context1 = Context(
+        name="test_context_1",
+        primary_entity_ids=[cust_id_entity.id],
+        user_provided_columns=[
+            UserProvidedColumn(name="income1", dtype=DBVarType.FLOAT),
+        ],
+    )
+    context1.save()
+    context2 = Context(
+        name="test_context_2",
+        primary_entity_ids=[cust_id_entity.id],
+        user_provided_columns=[
+            UserProvidedColumn(name="income2", dtype=DBVarType.FLOAT),
+        ],
+    )
+    context2.save()
+    feature1 = context1.get_user_provided_feature("income1")
+    feature1.save()
+    feature2 = context2.get_user_provided_feature("income2")
+    feature2.save()
+
+    # Test that mixed context_ids raise an error
+    with pytest.raises(ValueError, match="All features in a FeatureList must use the same context"):
+        FeatureListModel(
+            name="test",
+            version={"name": "V220710", "suffix": None},
+            features=[
+                feature1.cached_model,
+                feature2.cached_model,
+            ],
+        )

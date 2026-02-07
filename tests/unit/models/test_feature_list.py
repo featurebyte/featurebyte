@@ -43,6 +43,7 @@ def feature_list_model_dict_fixture():
         "is_deleted": False,
         "aggregation_ids": [],
         "feast_enabled": False,
+        "context_id": None,
     }
 
 
@@ -69,6 +70,7 @@ def feature_list_namespace_model_dict_fixture():
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "context_id": None,
     }
 
 

@@ -34,6 +34,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
     entity_ids: List[PydanticObjectId]
     table_ids: List[PydanticObjectId]
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class FeatureNamespaceModelResponse(FeatureNamespaceModel):

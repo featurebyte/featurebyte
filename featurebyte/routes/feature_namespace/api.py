@@ -83,6 +83,7 @@ async def list_feature_namespaces(
     sort_dir: Optional[SortDir] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    context_id: Optional[PydanticObjectId] = None,
 ) -> FeatureNamespaceList:
     """
     List FeatureNamespace
@@ -94,6 +95,7 @@ async def list_feature_namespaces(
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
         search=search,
         name=name,
+        context_id=context_id,
     )
     return feature_namespace_list
 
