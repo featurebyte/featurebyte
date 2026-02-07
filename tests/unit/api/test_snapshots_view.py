@@ -9,13 +9,15 @@ from unittest.mock import AsyncMock, patch
 import pandas as pd
 import pytest
 
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.snapshots_view import SnapshotsView
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TimeIntervalUnit
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -859,6 +861,8 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
                 "offset_size": 7,
             },
             "offset": None,
+            "use_forecast_point": False,
+            "forecast_point_schema": None,
         },
     }
 
@@ -908,3 +912,104 @@ def test_snapshots_view_offset_validation(snowflake_snapshots_table, cust_id_ent
 
     with pytest.raises(ValueError, match="Offset for SnapshotsView must be a non-negative integer"):
         view["col_float"].as_target("FloatTarget", offset=-1, fill_value=0)
+
+
+def test_snapshots_view_as_forecast_target(catalog, snowflake_snapshots_table, cust_id_entity):
+    """
+    Test SnapshotsView as_forecast_target configures use_forecast_point=True
+    """
+    _ = catalog
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+    context = Context.create(
+        name="test_forecast_context",
+        primary_entity=[cust_id_entity.name],
+        description="test forecast context",
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Create forecast target
+    target = view["col_float"].as_forecast_target(
+        "ForecastFloatTarget",
+        context=context,
+        fill_value=0,
+        offset=7,
+    )
+
+    # Verify the lookup node has use_forecast_point=True
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node["parameters"]["use_forecast_point"] is True
+    assert lookup_node["parameters"]["forecast_point_schema"] is not None
+    assert lookup_node["parameters"]["forecast_point_schema"]["granularity"] == "DAY"
+    assert lookup_node["parameters"]["forecast_point_schema"]["dtype"] == "DATE"
+    assert lookup_node["parameters"]["forecast_point_schema"]["timezone"] == "America/New_York"
+
+
+def test_snapshots_view_as_forecast_target_no_forecast_schema(
+    catalog, snowflake_snapshots_table, cust_id_entity
+):
+    """
+    Test as_forecast_target raises error when context doesn't have forecast_point_schema
+    """
+    _ = catalog
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+
+    # Create a context without forecast_point_schema
+    context = Context.create(
+        name="test_regular_context",
+        primary_entity=[cust_id_entity.name],
+        description="test regular context",
+    )
+
+    # Should raise ValueError
+    with pytest.raises(ValueError, match="does not have a forecast_point_schema"):
+        view["col_float"].as_forecast_target(
+            "ForecastTarget",
+            context=context,
+            fill_value=0,
+        )
+
+
+def test_as_forecast_target_vs_as_target(catalog, snowflake_snapshots_table, cust_id_entity):
+    """
+    Test that as_forecast_target uses FORECAST_POINT while as_target uses POINT_IN_TIME
+    """
+    _ = catalog
+    snowflake_snapshots_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_snapshots_table.get_view()
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="UTC",
+    )
+    context = Context.create(
+        name="test_forecast_context_compare",
+        primary_entity=[cust_id_entity.name],
+        description="test forecast context",
+        forecast_point_schema=forecast_schema,
+    )
+
+    # as_target should NOT have use_forecast_point=True
+    regular_target = view["col_float"].as_target("RegularTarget", fill_value=None)
+    regular_graph = regular_target.model_dump()["graph"]
+    regular_lookup = get_node(regular_graph, "lookup_target_1")
+    assert regular_lookup["parameters"]["use_forecast_point"] is False
+
+    # as_forecast_target SHOULD have use_forecast_point=True
+    forecast_target = view["col_float"].as_forecast_target(
+        "ForecastTarget", context=context, fill_value=None
+    )
+    forecast_graph = forecast_target.model_dump()["graph"]
+    forecast_lookup = get_node(forecast_graph, "lookup_target_1")
+    assert forecast_lookup["parameters"]["use_forecast_point"] is True

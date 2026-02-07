@@ -14,6 +14,7 @@ from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
@@ -341,3 +342,49 @@ def apply_snapshots_datetime_transform(
         )
     )
     return output_expr
+
+
+def convert_forecast_point_to_utc(
+    forecast_point_expr: Expression,
+    forecast_point_schema: ForecastPointSchema,
+    adapter: BaseAdapter,
+) -> Expression:
+    """
+    Convert FORECAST_POINT expression to UTC for comparison with table datetime.
+
+    Uses the ForecastPointSchema to determine timezone and apply conversion.
+    This is analogous to convert_timestamp_to_utc but for ForecastPointSchema.
+
+    Parameters
+    ----------
+    forecast_point_expr: Expression
+        FORECAST_POINT column expression
+    forecast_point_schema: ForecastPointSchema
+        Schema defining the forecast point column's timezone and format
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+        Forecast point expression converted to UTC
+    """
+    # Convert to timestamp if stored as string
+    if forecast_point_schema.format_string is not None:
+        forecast_point_expr = adapter.to_timestamp_from_string(
+            forecast_point_expr, forecast_point_schema.format_string
+        )
+
+    if forecast_point_schema.is_utc_time:
+        # Already in UTC, nothing to do
+        return forecast_point_expr
+
+    # Convert to UTC if timezone is specified
+    if forecast_point_schema.timezone is not None:
+        forecast_point_expr = convert_timezone(
+            target_tz="utc",
+            timezone_obj=forecast_point_schema.timezone,
+            adapter=adapter,
+            column_expr=forecast_point_expr,
+        )
+    return forecast_point_expr

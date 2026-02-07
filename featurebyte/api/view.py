@@ -78,8 +78,10 @@ from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.typing import UNSET, OffsetType, OptionalScalar, ScalarSequence, Unset
 
 if TYPE_CHECKING:
+    from featurebyte.api.context import Context
     from featurebyte.api.groupby import GroupBy
 else:
+    Context = TypeVar("Context")
     GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
@@ -380,6 +382,99 @@ class ViewColumn(Series, SampleMixin):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
+        target = view.project_target_from_node(
+            input_node=lookup_node,
+            target_name=target_name,
+            target_dtype=view.column_var_type_map[input_column_name],
+        )
+
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError("fill_value must be provided")
+        elif fill_value is not None:
+            target.fillna(fill_value)  # type: ignore
+        if target_type:
+            validate_target_type(target_type, target.dtype)
+            target.update_target_type(target_type)
+        return target
+
+    @typechecked
+    def as_forecast_target(
+        self,
+        target_name: str,
+        context: "Context",
+        offset: Optional[OffsetType] = None,
+        target_type: Optional[TargetType] = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
+    ) -> Target:
+        """
+        Create a lookup target using FORECAST_POINT as the reference time.
+
+        Similar to as_target(), but uses FORECAST_POINT (converted to UTC) instead of
+        POINT_IN_TIME for the temporal join. The target value is retrieved where the
+        table's datetime column matches the FORECAST_POINT in the observation table.
+
+        This is useful for forecast use cases where you want to look up the actual value
+        at the forecast date, rather than the value at prediction time.
+
+        Parameters
+        ----------
+        target_name: str
+            Name of the target to create.
+        context: Context
+            The context with forecast_point_schema defining the forecast configuration.
+        offset: Optional[OffsetType]
+            When specified, retrieve target value as of this offset after the forecast point.
+        target_type: Optional[TargetType]
+            Type of the target
+        fill_value: Union[OptionalScalar, Unset]
+            Value to fill if the value in the column is empty
+
+        Returns
+        -------
+        Target
+
+        Raises
+        ------
+        ValueError
+            If context doesn't have forecast_point_schema
+        TargetFillValueNotProvidedError
+            If fill_value is not provided.
+
+        Examples
+        --------
+        >>> ts_view = catalog.get_view("DailySales")
+        >>> context = catalog.get_context("daily_forecast_context")
+        >>> target = ts_view["sales_amount"].as_forecast_target(
+        ...     "Daily Sales Target",
+        ...     context=context,
+        ...     fill_value=None,
+        ... )
+        """
+        # Validate context has forecast_point_schema
+        if context.forecast_point_schema is None:
+            raise ValueError(
+                f"Context '{context.name}' does not have a forecast_point_schema. "
+                "Please create a Context with forecast_point_schema to use as_forecast_target()."
+            )
+
+        view, input_column_name = self._get_view_and_input_col_for_lookup("as_forecast_target")
+
+        # Perform validation
+        view.validate_offset(offset)
+
+        # Get lookup node params - similar to as_target but with use_forecast_point flag
+        lookup_node_params = view.get_lookup_node_params([input_column_name], [target_name], offset)
+        lookup_node_params["use_forecast_point"] = True
+        lookup_node_params["forecast_point_schema"] = context.forecast_point_schema.model_dump()
+
+        input_node = view.get_input_node_for_lookup_node()
+        lookup_node = self.graph.add_operation(
+            node_type=NodeType.LOOKUP_TARGET,
+            node_params=lookup_node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[input_node],
+        )
+
         target = view.project_target_from_node(
             input_node=lookup_node,
             target_name=target_name,

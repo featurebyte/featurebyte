@@ -19,6 +19,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.model.window import CalendarWindow
@@ -1339,6 +1340,8 @@ class LookupTargetParameters(LookupParameters):
     """LookupTargetParameters"""
 
     offset: Optional[str] = Field(default=None)
+    use_forecast_point: bool = Field(default=False)
+    forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
 
 
 class LookupTargetNode(BaseLookupNode):
