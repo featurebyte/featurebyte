@@ -173,7 +173,11 @@ def test_forecast_point_request_column():
 
 
 def test_forecast_point_minus_timestamp_feature(
-    latest_event_timestamp_feature, cust_id_entity, transaction_entity, mock_deployment_flow
+    latest_event_timestamp_feature,
+    cust_id_entity,
+    transaction_entity,
+    mock_deployment_flow,
+    update_fixtures,
 ):
     """
     Test an on-demand feature involving forecast point.
@@ -203,9 +207,56 @@ def test_forecast_point_minus_timestamp_feature(
     # Verify the feature has correct properties
     assert new_feature.entity_ids == latest_event_timestamp_feature.entity_ids
 
-    # Save the feature
+    # Save the feature and deploy
     new_feature.save()
+    deploy_features_through_api([new_feature])
+
+    # Check SDK code generation
+    loaded_feature = Feature.get(new_feature.name)
+    check_sdk_code_generation(
+        loaded_feature,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_forecast_point.py",
+        update_fixtures=update_fixtures,
+        table_id=new_feature.table_ids[0],
+    )
 
     # Verify the feature model
     new_feature_model = new_feature.cached_model
     assert isinstance(new_feature_model, FeatureModel)
+    check_on_demand_feature_code_generation(feature_model=new_feature_model)
+
+
+# def test_forecast_point_dt_hour(cust_id_entity, transaction_entity, mock_deployment_flow):
+#     """
+#     Test a simple on-demand feature using forecast_point.dt.hour.
+#     """
+#     _ = mock_deployment_flow
+#     _ = transaction_entity
+
+#     # Create a context with forecast_point_schema
+#     forecast_schema = ForecastPointSchema(
+#         granularity=TimeIntervalUnit.DAY,
+#         dtype=DBVarType.DATE,
+#         is_utc_time=False,
+#         timezone="America/New_York",
+#     )
+#     forecast_context = Context(
+#         name="forecast_context_hour",
+#         primary_entity_ids=[cust_id_entity.id],
+#         forecast_point_schema=forecast_schema,
+#     )
+#     forecast_context.save()
+
+#     # Create a feature using forecast_point.dt.hour
+#     new_feature = forecast_context.forecast_point.dt.hour
+#     new_feature.name = "Forecast Hour"
+#     assert isinstance(new_feature, Feature)
+
+#     # Save the feature
+#     new_feature.save()
+
+#     # Verify the feature model
+#     new_feature_model = new_feature.cached_model
+#     assert isinstance(new_feature_model, FeatureModel)
+#     check_on_demand_feature_code_generation(feature_model=new_feature_model)
