@@ -6,12 +6,10 @@ import textwrap
 from typing import Any, List, Optional, Sequence, Tuple
 
 from pydantic import StrictStr, model_validator
-
-from featurebyte.models.base import PydanticObjectId
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseNode
