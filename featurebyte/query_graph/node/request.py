@@ -123,13 +123,18 @@ class RequestColumnNode(BaseNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
-        var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
         if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_col", node_name=self.name
+            )
             obj = ClassEnum.REQUEST_COLUMN(
                 _method_name="point_in_time",
             )
             statements.append((var_name, obj))
         else:
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_feature", node_name=self.name
+            )
             # Generate: context = Context.get_by_id(ObjectId("..."))
             context_var = var_name_generator.convert_to_variable_name("context", node_name=None)
             context_obj = ClassEnum.CONTEXT(

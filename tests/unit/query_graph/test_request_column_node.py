@@ -130,9 +130,9 @@ def test_request_column_node_sdk_code_user_provided_column(column_name, dtype):
     assert str(context_obj) == f'Context.get_by_id(ObjectId("{SAMPLE_CONTEXT_ID}"))'
 
     var_name, feature_expr = statements[1]
-    assert str(var_name) == "request_col"
+    assert str(var_name) == "request_feature"
     assert str(feature_expr) == f'context.get_user_provided_feature(column_name="{column_name}")'
-    assert str(var_name_or_expr) == "request_col"
+    assert str(var_name_or_expr) == "request_feature"
 
 
 def test_request_column_node_sdk_code_user_provided_column_imports():
