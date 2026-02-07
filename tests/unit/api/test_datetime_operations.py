@@ -128,6 +128,7 @@ def test_date_diff_with_varchar_timestamp(
             inputs: pd.DataFrame,
         ) -> pd.DataFrame:
             df = pd.DataFrame()
+            request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
 
             # TTL handling for __diff_in_day_V250101__part0 column
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -137,7 +138,6 @@ def test_date_diff_with_varchar_timestamp(
             )
             mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
             inputs.loc[~mask, "__diff_in_day_V250101__part0"] = np.nan
-            request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             feat = pd.to_datetime(
                 inputs["__diff_in_day_V250101__part0"], format="%y-%m-%d %H:%M"
             ).dt.tz_localize("Asia/Singapore").dt.tz_convert("UTC") - pd.to_datetime(
