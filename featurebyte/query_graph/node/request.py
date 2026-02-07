@@ -3,9 +3,11 @@ Request data related node classes
 """
 
 import textwrap
-from typing import Any, List, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from pydantic import StrictStr, model_validator
+
+from featurebyte.models.base import PydanticObjectId
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
@@ -51,6 +53,7 @@ class RequestColumnNode(BaseNode):
         column_name: StrictStr
         dtype: DBVarType  # deprecated, keep it for old client compatibility
         dtype_info: DBVarTypeInfo
+        context_id: Optional[PydanticObjectId] = None  # Context ID for FORECAST_POINT columns
 
         @model_validator(mode="before")
         @classmethod
@@ -126,35 +129,17 @@ class RequestColumnNode(BaseNode):
                 _method_name="point_in_time",
             )
         elif self.parameters.column_name == SpecialColumnName.FORECAST_POINT:
-            # Build kwargs for forecast_point call
-            kwargs: dict[str, Any] = {}
-
-            # Pass dtype if it's not the default (DATE)
-            if self.parameters.dtype != DBVarType.DATE:
-                dtype_name = (
-                    self.parameters.dtype.value
-                    if isinstance(self.parameters.dtype, DBVarType)
-                    else self.parameters.dtype
+            # Generate Context.get_by_id("<id>").forecast_point
+            if self.parameters.context_id is None:
+                raise ValueError(
+                    "FORECAST_POINT column requires context_id to be set for SDK code generation"
                 )
-                kwargs["dtype"] = dtype_name
-
-            # Pass timezone if present in metadata
-            timestamp_schema = self.parameters.dtype_info.timestamp_schema
-            if timestamp_schema is not None and timestamp_schema.timezone is not None:
-                # Use the timezone string directly for IANA timezone names
-                if isinstance(timestamp_schema.timezone, str):
-                    kwargs["timezone"] = timestamp_schema.timezone
-                else:
-                    # For TimeZoneColumn, generate the TimestampSchema object
-                    kwargs["timezone"] = ClassEnum.TIMESTAMP_SCHEMA(
-                        is_utc_time=timestamp_schema.is_utc_time,
-                        timezone=ClassEnum.TIME_ZONE_COLUMN(
-                            column_name=timestamp_schema.timezone.column_name,
-                            type=timestamp_schema.timezone.type,
-                        ),
-                    )
-
-            obj = ClassEnum.REQUEST_COLUMN(_method_name="forecast_point", **kwargs)
+            context_id_str = str(self.parameters.context_id)
+            obj = ClassEnum.CONTEXT(
+                context_id_str,
+                _method_name="get_by_id",
+                _suffix=".forecast_point",
+            )
         else:
             raise NotImplementedError("Only POINT_IN_TIME and FORECAST_POINT columns are supported")
         statements.append((var_name, obj))

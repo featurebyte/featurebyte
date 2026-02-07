@@ -131,6 +131,7 @@ class ObjectClass(FeatureByteBaseModel):
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
     callable_name: Optional[str] = Field(default=None)
+    suffix: Optional[str] = Field(default=None)  # property access suffix, e.g., ".forecast_point"
 
     def __str__(self) -> str:
         params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
@@ -148,15 +149,16 @@ class ObjectClass(FeatureByteBaseModel):
 
         params_str = ", ".join(params)
 
+        suffix = self.suffix or ""
         if self.class_name is not None:
             # Calling a class constructor or a classmethod
             if self.callable_name:
-                return f"{self.class_name}.{self.callable_name}({params_str})"
-            return f"{self.class_name}({params_str})"
+                return f"{self.class_name}.{self.callable_name}({params_str}){suffix}"
+            return f"{self.class_name}({params_str}){suffix}"
 
         # Calling a function
         assert self.callable_name is not None
-        return f"{self.callable_name}({params_str})"
+        return f"{self.callable_name}({params_str}){suffix}"
 
     def __repr__(self) -> str:
         return str(self)
@@ -255,6 +257,7 @@ class ClassEnum(Enum):
     TO_TIMESTAMP_FROM_EPOCH = ("featurebyte", "to_timestamp_from_epoch")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
+    CONTEXT = ("featurebyte", "Context")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
@@ -263,7 +266,11 @@ class ClassEnum(Enum):
     CALENDAR_WINDOW = ("featurebyte", "CalendarWindow")
 
     def __call__(
-        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
+        self,
+        *args: Any,
+        _method_name: Optional[str] = None,
+        _suffix: Optional[str] = None,
+        **kwargs: Any,
     ) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
@@ -272,6 +279,7 @@ class ClassEnum(Enum):
             callable_name=_method_name,
             positional_args=args,
             keyword_args=kwargs,
+            suffix=_suffix,
         )
 
 

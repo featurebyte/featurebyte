@@ -38,6 +38,7 @@ def test_point_in_time_request_column():
             "column_name": "POINT_IN_TIME",
             "dtype": "TIMESTAMP",
             "dtype_info": {"dtype": "TIMESTAMP", "metadata": None},
+            "context_id": None,
         },
     }
 
@@ -167,15 +168,17 @@ def test_forecast_point_request_column():
         "column_name": "FORECAST_POINT",
         "dtype": "DATE",
         "dtype_info": {"dtype": "DATE", "metadata": None},
+        "context_id": None,
     }
 
 
 def test_forecast_point_minus_timestamp_feature(
-    latest_event_timestamp_feature, cust_id_entity, transaction_entity
+    latest_event_timestamp_feature, cust_id_entity, transaction_entity, mock_deployment_flow
 ):
     """
     Test an on-demand feature involving forecast point.
     """
+    _ = mock_deployment_flow
     _ = transaction_entity
 
     # Create a context with forecast_point_schema

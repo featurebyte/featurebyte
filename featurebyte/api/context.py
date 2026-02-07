@@ -135,6 +135,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             SpecialColumnName.FORECAST_POINT.value,
             schema.dtype,
             dtype_info=dtype_info,
+            context_id=self.id,
         )
 
     @classmethod
