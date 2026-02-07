@@ -313,7 +313,6 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
 
         # TTL handling for __composite_feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -326,6 +325,7 @@ def test_feature__ttl_item_aggregate_request_column(
         feat = pd.to_datetime(
             inputs["__composite_feature_V231227__part0"], utc=True
         )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
             feat, utc=True
         )
