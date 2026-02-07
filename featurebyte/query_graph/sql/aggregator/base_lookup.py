@@ -12,6 +12,8 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import SpecialColumnName
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.generic import SCDLookupParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import (
@@ -44,7 +46,10 @@ from featurebyte.query_graph.sql.offset import (
 )
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
-from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
+from featurebyte.query_graph.sql.timestamp_helper import (
+    apply_snapshot_adjustment,
+    convert_forecast_point_to_utc,
+)
 
 
 class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
@@ -55,6 +60,8 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     event_timestamp_column: Optional[str]
     forward_point_in_time_offset: Optional[str]
     adapter: BaseAdapter
+    use_forecast_point: bool = False
+    forecast_point_schema: Optional[ForecastPointSchema] = None
 
     def get_expression_for_column(
         self,
@@ -73,10 +80,23 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
         # For lookup from EventData, set the looked up value to NA if the point in time is prior to
         # the event timestamp
         if self.event_timestamp_column is not None:
+            # Use FORECAST_POINT for forecast targets, POINT_IN_TIME otherwise
+            datetime_column = (
+                SpecialColumnName.FORECAST_POINT
+                if self.use_forecast_point
+                else SpecialColumnName.POINT_IN_TIME
+            )
             point_in_time_expr = get_qualified_column_identifier(
-                SpecialColumnName.POINT_IN_TIME,
+                datetime_column,
                 main_alias,
             )
+            # Convert FORECAST_POINT to UTC if schema is available
+            if self.use_forecast_point and self.forecast_point_schema is not None:
+                point_in_time_expr = convert_forecast_point_to_utc(
+                    point_in_time_expr,
+                    self.forecast_point_schema,
+                    adapter,
+                )
 
             # Add the forward point in time offset to the point in time if it is present.
             if self.forward_point_in_time_offset is not None:
@@ -218,9 +238,22 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 else:
                     feature_job_setting = snapshots_parameters.feature_job_setting
                 if snapshots_parameters.feature_job_setting is None or specs[0].is_deployment_sql:
-                    datetime_expr_to_adjust = get_qualified_column_identifier(
-                        SpecialColumnName.POINT_IN_TIME, "REQ"
+                    # Use FORECAST_POINT for forecast targets, POINT_IN_TIME otherwise
+                    datetime_column = (
+                        SpecialColumnName.FORECAST_POINT
+                        if specs[0].use_forecast_point
+                        else SpecialColumnName.POINT_IN_TIME
                     )
+                    datetime_expr_to_adjust = get_qualified_column_identifier(
+                        datetime_column, "REQ"
+                    )
+                    # Convert FORECAST_POINT to UTC if schema is available
+                    if specs[0].use_forecast_point and specs[0].forecast_point_schema is not None:
+                        datetime_expr_to_adjust = convert_forecast_point_to_utc(
+                            datetime_expr_to_adjust,
+                            specs[0].forecast_point_schema,
+                            self.adapter,
+                        )
                 else:
                     job_datetime_column_name = get_request_table_job_datetime_column_name(
                         snapshots_parameters.feature_job_setting, self.adapter.source_type
@@ -276,6 +309,8 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 event_timestamp_column=event_timestamp_column,
                 forward_point_in_time_offset=self.get_forward_point_in_time_offset(specs[0]),
                 adapter=self.adapter,
+                use_forecast_point=specs[0].use_forecast_point,
+                forecast_point_schema=specs[0].forecast_point_schema,
             )
             out.append(result)
 
@@ -459,10 +494,25 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
         scd_agg_result_names = []
 
         for lookup_specs in self.iterate_grouped_lookup_specs(is_scd=True):
+            # Use FORECAST_POINT for forecast targets, POINT_IN_TIME otherwise
+            timestamp_column = (
+                SpecialColumnName.FORECAST_POINT
+                if lookup_specs[0].use_forecast_point
+                else point_in_time_column
+            )
+            # Create timestamp schema from ForecastPointSchema for timezone conversion
+            left_timestamp_schema: Optional[TimestampSchema] = None
+            forecast_point_schema = lookup_specs[0].forecast_point_schema
+            if lookup_specs[0].use_forecast_point and forecast_point_schema is not None:
+                left_timestamp_schema = TimestampSchema(
+                    format_string=forecast_point_schema.format_string,
+                    is_utc_time=forecast_point_schema.is_utc_time,
+                    timezone=forecast_point_schema.timezone,
+                )
             left_table = Table(
                 expr=table_expr,
-                timestamp_column=point_in_time_column,
-                timestamp_schema=None,
+                timestamp_column=timestamp_column,
+                timestamp_schema=left_timestamp_schema,
                 join_keys=[lookup_specs[0].serving_names[0]],
                 input_columns=current_columns,
                 output_columns=current_columns,

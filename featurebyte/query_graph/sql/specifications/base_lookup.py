@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -32,6 +33,8 @@ class BaseLookupSpec(AggregationSpec, ABC):
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
     snapshots_parameters: Optional[SnapshotsLookupParameters]
+    use_forecast_point: bool = False
+    forecast_point_schema: Optional[ForecastPointSchema] = None
     is_parent_lookup: bool = False
 
     @property
