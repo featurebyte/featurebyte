@@ -61,6 +61,7 @@ class AggregationType(StrEnum):
     NON_TILE_WINDOW = "non_tile_window"
     FORWARD = "forward"
     FORWARD_AS_AT = "forward_as_at"
+    FORECAST_AS_AT = "forecast_as_at"
     TIME_SERIES = "time_series"
 
 

@@ -60,6 +60,7 @@ class NodeType(StrEnum):
     TRACK_CHANGES = "track_changes"
     FORWARD_AGGREGATE = "forward_aggregate"
     FORWARD_AGGREGATE_AS_AT = "forward_aggregate_as_at"
+    FORECAST_AGGREGATE_AS_AT = "forecast_aggregate_as_at"
     NON_TILE_WINDOW_AGGREGATE = "non_tile_window_aggregate"
     TIME_SERIES_WINDOW_AGGREGATE = "time_series_window_aggregate"
 
@@ -141,6 +142,7 @@ class NodeType(StrEnum):
             # aggregation as at
             cls.AGGREGATE_AS_AT,
             cls.FORWARD_AGGREGATE_AS_AT,
+            cls.FORECAST_AGGREGATE_AS_AT,
             # lookup nodes
             cls.LOOKUP,
             cls.LOOKUP_TARGET,

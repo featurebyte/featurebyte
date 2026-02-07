@@ -37,6 +37,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
     LeftJoinableSubquery,
     TileBasedAggregator,
 )
+from featurebyte.query_graph.sql.aggregator.forecast_asat import ForecastAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
@@ -65,6 +66,9 @@ from featurebyte.query_graph.sql.cron import (
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
+from featurebyte.query_graph.sql.specifications.forecast_aggregate_asat import (
+    ForecastAggregateAsAtSpec,
+)
 from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
     ForwardAggregateAsAtSpec,
 )
@@ -98,6 +102,7 @@ AggregatorType = Union[
     TimeSeriesWindowAggregator,
     ForwardAggregator,
     ForwardAsAtAggregator,
+    ForecastAsAtAggregator,
 ]
 
 sys.setrecursionlimit(10000)
@@ -337,6 +342,7 @@ class FeatureExecutionPlan:
             AggregationType.TIME_SERIES: TimeSeriesWindowAggregator(**aggregator_kwargs),
             AggregationType.FORWARD: ForwardAggregator(**aggregator_kwargs),
             AggregationType.FORWARD_AS_AT: ForwardAsAtAggregator(**aggregator_kwargs),
+            AggregationType.FORECAST_AS_AT: ForecastAsAtAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.feature_entity_lookup_steps: dict[str, EntityLookupStep] = {}
@@ -1066,6 +1072,9 @@ class FeatureExecutionPlanner:
         )
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
         forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
+        forecast_asat_nodes = list(
+            self.graph.iterate_nodes(node, NodeType.FORECAST_AGGREGATE_AS_AT)
+        )
 
         out: list[AggregationSpec] = []
         if groupby_nodes:
@@ -1108,6 +1117,10 @@ class FeatureExecutionPlanner:
         if forward_asat_nodes:
             for forward_asat_node in forward_asat_nodes:
                 out.extend(self.get_specs(ForwardAggregateAsAtSpec, forward_asat_node))
+
+        if forecast_asat_nodes:
+            for forecast_asat_node in forecast_asat_nodes:
+                out.extend(self.get_specs(ForecastAggregateAsAtSpec, forecast_asat_node))
 
         return out
 

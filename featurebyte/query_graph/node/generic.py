@@ -2181,6 +2181,66 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
         return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
+class ForecastAggregateAsAtParameters(AggregateAsAtParameters):
+    """Parameters for ForecastAggregateAsAtNode"""
+
+    use_forecast_point: bool = Field(default=True)
+    forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
+
+
+class ForecastAggregateAsAtNode(BaseAggregateAsAtNode):
+    """ForecastAggregateAsAtNode class - aggregates as at FORECAST_POINT instead of POINT_IN_TIME"""
+
+    type: Literal[NodeType.FORECAST_AGGREGATE_AS_AT] = NodeType.FORECAST_AGGREGATE_AS_AT
+    parameters: ForecastAggregateAsAtParameters
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix: ClassVar[str] = "target_"
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[NodeCodeGenOutput],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `scd_view.groupby(...).forecast_aggregate_asat()` will generate
+        # ForecastAggregateAsAtNode + ProjectNode. Output of ForecastAggregateAsAtNode is just an
+        # expression, the actual variable assignment will be done at the ProjectNode.
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.TARGET,
+            to_associate_with_node_name=False,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        target_name = ValueStr.create(self.parameters.name)
+        offset: Optional[OffsetType]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
+        offset = ValueStr.create(offset)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"forecast_aggregate_asat(value_column={value_column}, "
+            f"method={method}, "
+            f"target_name={target_name}, "
+            f"offset={offset}, "
+            f"fill_value=None, "
+            f"skip_fill_na=True, "
+            f"context=context)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
+
+
 class NonTileWindowAggregateParameters(BaseWindowAggregateParameters):
     """
     NonTileWindowAggregatesParameters for window aggregates without tile

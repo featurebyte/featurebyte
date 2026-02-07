@@ -10,11 +10,13 @@ from typing import ClassVar, List, Optional, Union
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.asat_aggregator import AsAtAggregator
+from featurebyte.api.aggregator.forecast_asat_aggregator import ForecastAsAtAggregator
 from featurebyte.api.aggregator.forward_aggregator import ForwardAggregator
 from featurebyte.api.aggregator.forward_asat_aggregator import ForwardAsAtAggregator
 from featurebyte.api.aggregator.simple_aggregator import SimpleAggregator
 from featurebyte.api.aggregator.window_aggregator import WindowAggregator
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -665,6 +667,104 @@ class GroupBy:
             value_column=value_column,
             method=method,
             target_name=target_name,
+            offset=offset,
+            fill_value=fill_value,  # type: ignore
+            skip_fill_na=skip_fill_na,
+            target_type=target_type,
+        )
+
+    @typechecked
+    def forecast_aggregate_asat(
+        self,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
+        target_name: str,
+        context: "Context",
+        offset: Optional[OffsetType] = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
+        skip_fill_na: Optional[bool] = None,
+        target_type: Optional[TargetType] = None,
+    ) -> Target:
+        """
+        The forecast_aggregate_asat method of a GroupBy instance returns an Aggregate "as at"
+        Target object that uses FORECAST_POINT instead of POINT_IN_TIME for temporal lookups.
+
+        Similar to forward_aggregate_asat, but uses FORECAST_POINT (converted to UTC) from the
+        observation table to determine which records are valid at the forecast date.
+
+        These aggregation operations are available for Slowly Changing Dimension (SCD) views and
+        Snapshots views. The grouping key used in the GroupBy instance should not be the natural
+        key of the SCD view or the series ID column of the Snapshots view.
+
+        Parameters
+        ----------
+        value_column: Optional[str]
+            Column to be aggregated
+        method: Union[AggFunc, str]
+            Aggregation method
+        target_name: str
+            Output target name
+        context: Context
+            The context with forecast_point_schema defining the forecast configuration
+        offset: Optional[OffsetType]
+            Optional offset to apply to the forecast point. The aggregation result will be as at
+            the forecast point adjusted by this offset. For SCD views, format is "{size}{unit}".
+            For Snapshots views, this is an integer representing number of time intervals.
+        fill_value: Union[OptionalScalar, Unset]
+            Value to fill if the value in the column is empty
+        skip_fill_na: Optional[bool]
+            Whether to skip filling NaN values, filling nan operation is skipped by default as it is
+            expensive during feature serving
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
+
+        Returns
+        -------
+        Target
+
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided for the aggregation method
+
+        Examples
+        --------
+        Count number of active cards per customer at the forecast date.
+
+        >>> # Create context with forecast_point_schema
+        >>> forecast_schema = fb.ForecastPointSchema(
+        ...     granularity=fb.TimeIntervalUnit.DAY,
+        ...     dtype=fb.DBVarType.DATE,
+        ...     timezone="America/New_York",
+        ... )
+        >>> context = fb.Context.create(
+        ...     name="credit_card_forecast",
+        ...     primary_entity=["customer"],
+        ...     forecast_point_schema=forecast_schema,
+        ... )
+        >>> # Filter active cards
+        >>> cond = credit_card_accounts["status"] == "active"  # doctest: +SKIP
+        >>> # Group by customer
+        >>> active_credit_card_by_cust = credit_card_accounts[cond].groupby(  # doctest: +SKIP
+        ...     "CustomerID"
+        ... )
+        >>> target = active_credit_card_by_cust.forecast_aggregate_asat(  # doctest: +SKIP
+        ...     method=fb.AggFunc.COUNT,
+        ...     target_name="Number of Active Credit Cards at Forecast Date",
+        ...     context=context,
+        ...     fill_value=0,
+        ... )
+        """
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError(f"fill_value is required for method {method}")
+
+        return ForecastAsAtAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).forecast_aggregate_asat(
+            value_column=value_column,
+            method=method,
+            target_name=target_name,
+            context=context,
             offset=offset,
             fill_value=fill_value,  # type: ignore
             skip_fill_na=skip_fill_na,
