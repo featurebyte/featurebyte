@@ -136,7 +136,6 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         -------
         UseCaseModel
         """
-
         result_doc = await super().update_document(
             document_id=document_id,
             data=data,
