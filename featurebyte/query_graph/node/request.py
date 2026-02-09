@@ -3,7 +3,7 @@ Request data related node classes
 """
 
 import textwrap
-from typing import Any, List, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from pydantic import StrictStr, model_validator
 from typing_extensions import Literal
@@ -32,6 +32,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     NodeCodeGenOutput,
     StatementStr,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
@@ -51,6 +52,8 @@ class RequestColumnNode(BaseNode):
         column_name: StrictStr
         dtype: DBVarType  # deprecated, keep it for old client compatibility
         dtype_info: DBVarTypeInfo
+        # context_id for user-provided columns (not set for POINT_IN_TIME)
+        context_id: Optional[str] = None
 
         @model_validator(mode="before")
         @classmethod
@@ -120,14 +123,31 @@ class RequestColumnNode(BaseNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
-        var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
         if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_col", node_name=self.name
+            )
             obj = ClassEnum.REQUEST_COLUMN(
                 _method_name="point_in_time",
             )
+            statements.append((var_name, obj))
         else:
-            raise NotImplementedError("Currently only POINT_IN_TIME column is supported")
-        statements.append((var_name, obj))
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_feature", node_name=self.name
+            )
+            # Generate: context = Context.get_by_id(ObjectId("..."))
+            context_var = var_name_generator.convert_to_variable_name("context", node_name=None)
+            context_obj = ClassEnum.CONTEXT(
+                ClassEnum.OBJECT_ID(self.parameters.context_id),
+                _method_name="get_by_id",
+            )
+            statements.append((context_var, context_obj))
+            # Generate: request_col = context.get_user_provided_feature(column_name="...")
+            quoted_col = ValueStr.create(self.parameters.column_name)
+            feature_expr = ExpressionStr(
+                f"{context_var}.get_user_provided_feature(column_name={quoted_col})"
+            )
+            statements.append((var_name, feature_expr))
         return statements, var_name
 
     def _derive_on_demand_view_or_user_defined_function_helper(
