@@ -263,6 +263,7 @@ def test_forecast_point_minus_timestamp_feature(
         fixture_path="tests/fixtures/sdk_code/feature_with_forecast_point.py",
         update_fixtures=update_fixtures,
         table_id=new_feature.table_ids[0],
+        context_id=forecast_context.id,
     )
 
     # Verify the feature model
