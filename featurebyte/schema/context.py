@@ -11,6 +11,7 @@ from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel, UserProvidedColumn
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -25,6 +26,7 @@ class ContextCreate(FeatureByteBaseModel):
     description: Optional[StrictStr] = Field(default=None)
     treatment_id: Optional[PydanticObjectId] = Field(default=None)
     user_provided_columns: List[UserProvidedColumn] = Field(default_factory=list)
+    forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
