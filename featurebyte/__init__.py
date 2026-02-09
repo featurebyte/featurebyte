@@ -66,6 +66,7 @@ from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import (
     AggFunc,
+    DBVarType,
     SourceType,
     StorageType,
     TargetType,
