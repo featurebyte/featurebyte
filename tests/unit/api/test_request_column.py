@@ -21,6 +21,7 @@ from tests.util.helper import (
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
     deploy_features_through_api,
+    reset_global_graph,
 )
 
 
@@ -28,6 +29,7 @@ def test_point_in_time_request_column():
     """
     Test point_in_time request column
     """
+    reset_global_graph()
     point_in_time = RequestColumn.point_in_time()
     assert isinstance(point_in_time, RequestColumn)
     node_dict = point_in_time.node.model_dump()

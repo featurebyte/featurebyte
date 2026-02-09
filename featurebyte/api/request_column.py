@@ -64,11 +64,6 @@ class RequestColumn(Series):
         Returns
         -------
         RequestColumn
-
-        Raises
-        ------
-        NotImplementedError
-            If the request column is not a supported special column
         """
         # Build dtype_info if not provided
         if dtype_info is None:
