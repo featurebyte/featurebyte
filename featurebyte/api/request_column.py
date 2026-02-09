@@ -36,7 +36,7 @@ class RequestColumn(Series):
     )
 
     @classmethod
-    def create_request_column(
+    def _create_request_column(
         cls,
         column_name: str,
         column_dtype: DBVarType,
@@ -44,7 +44,10 @@ class RequestColumn(Series):
         context_id: Optional[ObjectId] = None,
     ) -> RequestColumn:
         """
-        Create a RequestColumn object.
+        Internal method to create a RequestColumn for any column name and dtype.
+
+        This is not exposed publicly - users should use Context.get_user_provided_feature()
+        to access user-provided columns as Feature objects.
 
         Parameters
         ----------
@@ -54,8 +57,9 @@ class RequestColumn(Series):
             Variable type of the column.
         dtype_info: Optional[DBVarTypeInfo]
             Optional dtype info with metadata (e.g., timezone schema).
-        context_id: Optional[ObjectId]
-            Context ID for FORECAST_POINT columns (used for SDK code generation).
+        context_id: Optional[str]
+            Context ID for user-provided columns. Used in SDK code generation
+            to produce Context.get_by_id(...).get_user_provided_feature(...) calls.
 
         Returns
         -------
@@ -66,19 +70,6 @@ class RequestColumn(Series):
         NotImplementedError
             If the request column is not a supported special column
         """
-        # Define allowed column name and dtype combinations
-        allowed_columns = {
-            (SpecialColumnName.POINT_IN_TIME, DBVarType.TIMESTAMP),
-            (SpecialColumnName.FORECAST_POINT, DBVarType.TIMESTAMP),
-            (SpecialColumnName.FORECAST_POINT, DBVarType.TIMESTAMP_TZ),
-            (SpecialColumnName.FORECAST_POINT, DBVarType.DATE),
-        }
-        if (column_name, column_dtype) not in allowed_columns:
-            raise NotImplementedError(
-                "Only POINT_IN_TIME and FORECAST_POINT columns are supported. "
-                "Please use RequestColumn.point_in_time() or context.forecast_point."
-            )
-
         # Build dtype_info if not provided
         if dtype_info is None:
             dtype_info = DBVarTypeInfo(dtype=column_dtype)
@@ -131,7 +122,7 @@ class RequestColumn(Series):
         ... ).dt.hour
         >>> feature.name = "Customer number of hours since last visit"
         """
-        return RequestColumn.create_request_column(
+        return RequestColumn._create_request_column(
             SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
         )
 

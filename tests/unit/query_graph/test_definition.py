@@ -7,7 +7,9 @@ from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
+from featurebyte.query_graph.util import hash_node
 from tests.util.helper import add_groupby_operation, add_project_operation, compare_pydantic_obj
 
 
@@ -949,3 +951,133 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
             "snapshots_parameters": None,
         },
     )
+
+
+def test_extract_definition__request_column_context_id_backward_compatibility():
+    """
+    Test that adding context_id field to REQUEST_COLUMN node doesn't change the definition hash.
+
+    Before the context_id field was added, REQUEST_COLUMN node parameters were:
+    {"column_name": "POINT_IN_TIME", "dtype": "TIMESTAMP", "dtype_info": {...}}
+
+    After adding context_id with default None, model_dump() includes "context_id": None.
+    The backward compatibility code in _get_node_parameter_for_compute_node_hash should
+    strip context_id when it's None to maintain the same hash.
+    """
+    graph = QueryGraphModel()
+
+    # Add a REQUEST_COLUMN node (context_id defaults to None)
+    request_col_node = graph.add_operation(
+        node_type=NodeType.REQUEST_COLUMN,
+        node_params={"column_name": "POINT_IN_TIME", "dtype": DBVarType.TIMESTAMP},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[],
+    )
+
+    # Get the hash computed by the graph (which applies backward compat logic)
+    hash_with_default_context_id = graph.node_name_to_ref[request_col_node.name]
+
+    # Compute the expected hash WITHOUT context_id in the params (old behavior before the field was added)
+    node_params = request_col_node.parameters.model_dump()
+    node_params.pop("context_id", None)
+    expected_hash = hash_node(
+        request_col_node.type,
+        node_params,
+        request_col_node.output_type,
+        [],
+    )
+
+    assert hash_with_default_context_id == expected_hash, (
+        "Definition hash changed after adding context_id field to RequestColumnNodeParameters. "
+        "This breaks backward compatibility for existing features."
+    )
+
+
+def test_extract_definition__request_column_with_context_id_produces_different_hash():
+    """
+    Test that a REQUEST_COLUMN node with context_id set produces a different hash
+    than one without context_id. This ensures user-defined columns (which have context_id)
+    are distinguished from built-in request columns (like POINT_IN_TIME).
+    """
+    graph_without = QueryGraphModel()
+    request_col_without = graph_without.add_operation(
+        node_type=NodeType.REQUEST_COLUMN,
+        node_params={"column_name": "annual_income", "dtype": DBVarType.FLOAT},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[],
+    )
+    hash_without_context_id = graph_without.node_name_to_ref[request_col_without.name]
+
+    graph_with = QueryGraphModel()
+    request_col_with = graph_with.add_operation(
+        node_type=NodeType.REQUEST_COLUMN,
+        node_params={
+            "column_name": "annual_income",
+            "dtype": DBVarType.FLOAT,
+            "context_id": "6471a3d0f2b3c8a1e9d5f012",
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[],
+    )
+    hash_with_context_id = graph_with.node_name_to_ref[request_col_with.name]
+
+    assert hash_without_context_id != hash_with_context_id, (
+        "REQUEST_COLUMN nodes with and without context_id should have different definition hashes."
+    )
+
+
+def test_extract_definition__request_column_on_demand_feature(
+    global_graph, input_node, groupby_node_params
+):
+    """
+    Test definition hash extraction for an on-demand feature that uses a REQUEST_COLUMN node.
+    Ensures the full definition hash pipeline works correctly with REQUEST_COLUMN nodes.
+    """
+    # Create a groupby feature (latest timestamp)
+    groupby_node_params["parent"] = "a"
+    groupby_node_params["agg_func"] = "latest"
+    groupby_node_params["names"] = ["latest_val"]
+    groupby_node_params["windows"] = ["90d"]
+    groupby_node = add_groupby_operation(
+        graph=global_graph,
+        groupby_node_params=groupby_node_params,
+        input_node=input_node,
+    )
+    latest_val_node = add_project_operation(
+        graph=global_graph, input_node=groupby_node, column_names=["latest_val"]
+    )
+
+    # Add a POINT_IN_TIME request column (no context_id)
+    request_col_node = global_graph.add_operation(
+        node_type=NodeType.REQUEST_COLUMN,
+        node_params={"column_name": "POINT_IN_TIME", "dtype": DBVarType.TIMESTAMP},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[],
+    )
+
+    # Create date_diff feature
+    date_diff_node = global_graph.add_operation(
+        node_type=NodeType.DATE_DIFF,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[latest_val_node, request_col_node],
+    )
+    alias_node = global_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "time_since_latest"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[date_diff_node],
+    )
+
+    # Extract definition hash - should work without errors
+    definition_extractor = DefinitionHashExtractor(graph=global_graph)
+    output = definition_extractor.extract(node=alias_node)
+
+    # Verify the request column node in the definition graph doesn't include context_id
+    request_col_def_node = output.graph.get_node_by_name("request_column_1")
+    assert request_col_def_node.parameters.context_id is None
+
+    # Verify hash is deterministic (run extraction again)
+    definition_extractor2 = DefinitionHashExtractor(graph=global_graph)
+    output2 = definition_extractor2.extract(node=alias_node)
+    assert output.definition_hash == output2.definition_hash

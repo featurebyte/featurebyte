@@ -419,6 +419,16 @@ class BaseEntityUniverseConstructor:
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
 
+        required_columns = self.get_required_columns()
+        required_columns_set = set(required_columns) if required_columns else None
+        if required_columns_set:
+            filtered_columns = [
+                col
+                for col in self.aggregate_input_expr.args["expressions"]
+                if col.alias_or_name in required_columns_set
+            ]
+            self.aggregate_input_expr.args["expressions"] = filtered_columns
+
         op_struct = (
             OperationStructureExtractor(graph=flat_graph)
             .extract(node=flat_node)
@@ -440,6 +450,17 @@ class BaseEntityUniverseConstructor:
         """
         Return list of serving names
         """
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        """
+        Get the list of required columns for the entity universe construction. Aggregation input
+        statement will be filtered to only include these columns if specified.
+
+        Returns
+        -------
+        Optional[list[str]]
+        """
+        return None
 
     @classmethod
     def get_event_table_timestamp_filter(
@@ -504,6 +525,10 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(LookupNode, self.node)
         return [node.parameters.serving_name]
 
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(LookupNode, self.node)
+        return [str(node.parameters.entity_column)]
+
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(LookupNode, self.node)
 
@@ -551,6 +576,10 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(AggregateAsAtNode, self.node)
         return node.parameters.serving_names
 
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(AggregateAsAtNode, self.node)
+        return list(node.parameters.keys)
+
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(AggregateAsAtNode, self.node)
 
@@ -587,6 +616,10 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     def get_serving_names(self) -> List[str]:
         node = cast(ItemGroupbyNode, self.node)
         return node.parameters.serving_names
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(ItemGroupbyNode, self.node)
+        return list(node.parameters.keys)
 
     @classmethod
     def get_event_table_timestamp_filter(
@@ -649,6 +682,10 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
     def get_serving_names(self) -> List[str]:
         node = cast(GroupByNode, self.node)
         return node.parameters.serving_names
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(GroupByNode, self.node)
+        return list(node.parameters.keys)
 
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(GroupByNode, self.node)
@@ -746,6 +783,10 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         node = cast(NonTileWindowAggregateNode, self.node)
         return node.parameters.serving_names
 
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(NonTileWindowAggregateNode, self.node)
+        return list(node.parameters.keys)
+
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(NonTileWindowAggregateNode, self.node)
 
@@ -781,6 +822,10 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
     def get_serving_names(self) -> List[str]:
         node = cast(TimeSeriesWindowAggregateNode, self.node)
         return node.parameters.serving_names
+
+    def get_required_columns(self) -> Optional[list[str]]:
+        node = cast(TimeSeriesWindowAggregateNode, self.node)
+        return list(node.parameters.keys)
 
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(TimeSeriesWindowAggregateNode, self.node)

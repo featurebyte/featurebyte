@@ -3,6 +3,7 @@ RequestColumn unit tests
 """
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.api.context import Context
 from featurebyte.api.feature import Feature
@@ -103,13 +104,56 @@ def test_point_in_time_minus_timestamp_feature(
     check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
-def test_request_column_non_point_in_time_blocked():
+def test_internal_create_request_column():
     """
-    Test non-supported request column is blocked
+    Test internal _create_request_column works for arbitrary column names and dtypes
     """
-    with pytest.raises(NotImplementedError) as exc:
-        _ = RequestColumn.create_request_column("foo", DBVarType.FLOAT)
-    assert "Only POINT_IN_TIME and FORECAST_POINT columns are supported" in str(exc.value)
+    request_col = RequestColumn._create_request_column("annual_income", DBVarType.FLOAT)
+    assert isinstance(request_col, RequestColumn)
+    assert request_col.name == "annual_income"
+    assert request_col.dtype == DBVarType.FLOAT
+    assert request_col.tabular_source is None
+    assert request_col.feature_store is None
+    node_dict = request_col.node.model_dump()
+    assert node_dict["type"] == "request_column"
+    assert node_dict["output_type"] == "series"
+    assert node_dict["parameters"]["column_name"] == "annual_income"
+    assert node_dict["parameters"]["dtype"] == "FLOAT"
+    assert node_dict["parameters"]["context_id"] is None
+
+
+def test_internal_create_request_column_with_context_id():
+    """
+    Test internal _create_request_column stores context_id in node parameters
+    """
+    context_id = ObjectId("6471a3d0f2b3c8a1e9d5f012")
+    request_col = RequestColumn._create_request_column(
+        "annual_income", DBVarType.FLOAT, context_id=context_id
+    )
+    assert isinstance(request_col, RequestColumn)
+    node_dict = request_col.node.model_dump()
+    assert node_dict["parameters"]["context_id"] == context_id
+
+
+@pytest.mark.parametrize(
+    "column_name, column_dtype",
+    [
+        ("credit_score", DBVarType.INT),
+        ("customer_name", DBVarType.VARCHAR),
+        ("is_active", DBVarType.BOOL),
+    ],
+)
+def test_internal_create_request_column_various_dtypes(column_name, column_dtype):
+    """
+    Test internal _create_request_column works with various dtypes
+    """
+    request_col = RequestColumn._create_request_column(column_name, column_dtype)
+    assert isinstance(request_col, RequestColumn)
+    assert request_col.name == column_name
+    assert request_col.dtype == column_dtype
+    node_dict = request_col.node.model_dump()
+    assert node_dict["parameters"]["column_name"] == column_name
+    assert node_dict["parameters"]["dtype"] == column_dtype.value
 
 
 def test_request_column_offline_store_query_extraction(latest_event_timestamp_feature):
@@ -155,7 +199,7 @@ def test_forecast_point_request_column():
     Test forecast_point request column creation via create_request_column
     """
     # Create a FORECAST_POINT request column with DATE dtype (default)
-    forecast_point = RequestColumn.create_request_column(
+    forecast_point = RequestColumn._create_request_column(
         "FORECAST_POINT",
         DBVarType.DATE,
     )

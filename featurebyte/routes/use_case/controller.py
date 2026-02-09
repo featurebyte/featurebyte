@@ -101,12 +101,31 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             if observation table to remove is the default EDA or preview table
         DocumentUpdateError
             if observation table to set as default EDA table is invalid
+            if attempting to update higher_prediction_is_better when observation tables exist
 
 
         Returns
         -------
         UseCaseModel
         """
+        if data.higher_prediction_is_better is not None:
+            # Check if the value is actually being changed
+            current_doc = await self.get(document_id=use_case_id)
+            if data.higher_prediction_is_better != current_doc.higher_prediction_is_better:
+                # Check if use case has related observation tables
+                has_observation_tables = False
+                async for _ in self.observation_table_service.list_documents_iterator(
+                    query_filter={"use_case_ids": use_case_id},
+                ):
+                    has_observation_tables = True
+                    break
+                if has_observation_tables:
+                    raise DocumentUpdateError(
+                        "Cannot update higher_prediction_is_better when the use case has "
+                        "related observation tables. Please remove all observation tables from "
+                        "this use case first."
+                    )
+
         for obs_id in [data.default_eda_table_id, data.default_preview_table_id]:
             if obs_id:
                 observation_table = await self.observation_table_service.get_document(

@@ -131,7 +131,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
                 metadata=DBVarTypeMetadata(timestamp_schema=timestamp_schema),
             )
 
-        return RequestColumn.create_request_column(
+        return RequestColumn._create_request_column(
             SpecialColumnName.FORECAST_POINT.value,
             schema.dtype,
             dtype_info=dtype_info,
