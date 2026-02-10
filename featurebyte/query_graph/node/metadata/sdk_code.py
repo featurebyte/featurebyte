@@ -258,6 +258,7 @@ class ClassEnum(Enum):
     CONTEXT = ("featurebyte", "Context")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
+    ATAN2 = ("featurebyte", "atan2")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
     TIME_INTERVAL = ("featurebyte", "TimeInterval")
     TIME_ZONE_COLUMN = ("featurebyte", "TimeZoneColumn")

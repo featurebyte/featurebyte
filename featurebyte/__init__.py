@@ -59,6 +59,7 @@ from featurebyte.core.datetime import to_timestamp_from_epoch
 from featurebyte.core.distance import haversine
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
+from featurebyte.core.trigonometry import atan2
 from featurebyte.datasets.app import import_dataset
 from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
@@ -535,6 +536,7 @@ __all__ = [
     "to_timedelta",
     "to_timestamp_from_epoch",
     "haversine",
+    "atan2",
     "Table",
     "TableFeatureJobSetting",
     "Target",
