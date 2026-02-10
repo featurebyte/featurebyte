@@ -9,6 +9,7 @@ from featurebyte import (
     AssignmentDesign,
     AssignmentSource,
     Context,
+    Feature,
     ForecastPointSchema,
     Propensity,
     TargetNamespace,
@@ -21,7 +22,6 @@ from featurebyte import (
     TreatmentType,
     UseCase,
 )
-from featurebyte.api.request_column import RequestColumn
 from featurebyte.enum import DBVarType
 from featurebyte.models.context import UserProvidedColumn
 from featurebyte.models.feature_list import FeatureListModel
@@ -401,10 +401,10 @@ def test_context_forecast_point_with_timezone(catalog, cust_id_entity):
     )
 
     # Get forecast_point from context
-    forecast_point = context.forecast_point
+    forecast_point = context.get_forecast_point_feature()
 
-    # Verify it's a RequestColumn
-    assert isinstance(forecast_point, RequestColumn)
+    # Verify it's a Feature
+    assert isinstance(forecast_point, Feature)
 
     # Verify the node has correct parameters
     node_dict = forecast_point.node.model_dump()
@@ -420,7 +420,7 @@ def test_context_forecast_point_with_timezone(catalog, cust_id_entity):
 
 def test_context_forecast_point_without_schema(catalog, cust_id_entity):
     """
-    Test Context.forecast_point raises error when no forecast_point_schema is defined
+    Test Context.get_forecast_point_feature raises error when no forecast_point_schema is defined
     """
     _ = catalog
 
@@ -434,14 +434,14 @@ def test_context_forecast_point_without_schema(catalog, cust_id_entity):
 
     # Accessing forecast_point should raise ValueError
     with pytest.raises(ValueError) as exc:
-        _ = context.forecast_point
+        _ = context.get_forecast_point_feature()
 
     assert "does not have a forecast_point_schema defined" in str(exc.value)
 
 
 def test_context_forecast_point_date_part_extraction(catalog, cust_id_entity):
     """
-    Test that date parts can be extracted from Context.forecast_point
+    Test that date parts can be extracted from Context.get_forecast_point_feature
     """
     _ = catalog
 
@@ -461,7 +461,7 @@ def test_context_forecast_point_date_part_extraction(catalog, cust_id_entity):
     )
 
     # Get forecast_point and extract month
-    forecast_point = context.forecast_point
+    forecast_point = context.get_forecast_point_feature()
     month = forecast_point.dt.month
 
     # Verify month extraction works

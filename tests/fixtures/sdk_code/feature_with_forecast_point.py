@@ -22,7 +22,9 @@ grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     offset=None,
 )
 feat = grouped["latest_event_timestamp_90d"]
-request_col = Context.get_by_id("{context_id}").forecast_point
+request_col = Context.get_by_id(
+    "{context_id}"
+).get_forecast_point_feature()
 feat_1 = (request_col - feat).dt.day
 feat_1.name = "Days Until Forecast (from latest event)"
 output = feat_1

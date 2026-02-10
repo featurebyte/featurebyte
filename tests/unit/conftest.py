@@ -2996,7 +2996,9 @@ def days_until_forecast_feature_fixture(
     forecast_context.save()
 
     # Create a feature using forecast_point from context
-    feature = (forecast_context.forecast_point - latest_event_timestamp_feature).dt.day
+    feature = (
+        forecast_context.get_forecast_point_feature() - latest_event_timestamp_feature
+    ).dt.day
     feature.name = "days_until_forecast"
     feature.save()
 

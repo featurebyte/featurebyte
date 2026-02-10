@@ -246,7 +246,9 @@ def test_forecast_point_minus_timestamp_feature(
     forecast_context.save()
 
     # Create a feature using forecast_point from context
-    new_feature = (forecast_context.forecast_point - latest_event_timestamp_feature).dt.day
+    new_feature = (
+        forecast_context.get_forecast_point_feature() - latest_event_timestamp_feature
+    ).dt.day
     new_feature.name = "Days Until Forecast (from latest event)"
     assert isinstance(new_feature, Feature)
 

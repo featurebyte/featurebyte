@@ -144,7 +144,7 @@ class RequestColumnNode(BaseNode):
             obj = ClassEnum.CONTEXT(
                 context_id_str,
                 _method_name="get_by_id",
-                _suffix=".forecast_point",
+                _suffix=".get_forecast_point_feature()",
             )
             statements.append((var_name, obj))
         elif self.parameters.context_id is not None:

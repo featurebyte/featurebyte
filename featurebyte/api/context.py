@@ -75,10 +75,9 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             entities.append(Entity.get_by_id(entity_id))
         return entities
 
-    @property
-    def forecast_point(self) -> RequestColumn:
+    def get_forecast_point_feature(self) -> Any:
         """
-        Returns a RequestColumn representing the FORECAST_POINT column with timezone info
+        Returns a Feature representing the FORECAST_POINT column with timezone info
         from this Context's forecast_point_schema.
 
         The returned RequestColumn will have the correct dtype and timezone information
@@ -86,8 +85,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Returns
         -------
-        RequestColumn
-            A RequestColumn for FORECAST_POINT with timezone metadata from the schema.
+        Feature
+            A Feature for FORECAST_POINT with timezone metadata from the schema.
 
         Raises
         ------
@@ -99,16 +98,19 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         Get forecast point from a Context and extract month in local time:
 
         >>> context = catalog.get_context("daily_forecast_context")  # doctest: +SKIP
-        >>> forecast_month = context.forecast_point.dt.month  # doctest: +SKIP
+        >>> forecast_month = context.get_forecast_point_feature().dt.month  # doctest: +SKIP
         >>> forecast_month.name = "Forecast Month (Local)"  # doctest: +SKIP
 
         Calculate forecast horizon from Context's forecast point:
 
         >>> forecast_horizon = (  # doctest: +SKIP
-        ...     context.forecast_point - fb.RequestColumn.point_in_time()
+        ...     context.get_forecast_point_feature() - fb.RequestColumn.point_in_time()
         ... ).dt.day
         >>> forecast_horizon.name = "Forecast Horizon Days"  # doctest: +SKIP
         """
+        # Import here to avoid circular import
+        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
         if self.forecast_point_schema is None:
             raise ValueError(
                 f"Context '{self.name}' does not have a forecast_point_schema defined. "
@@ -131,10 +133,15 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
                 metadata=DBVarTypeMetadata(timestamp_schema=timestamp_schema),
             )
 
-        return RequestColumn._create_request_column(
+        request_col = RequestColumn._create_request_column(
             SpecialColumnName.FORECAST_POINT.value,
             schema.dtype,
             dtype_info=dtype_info,
+            context_id=self.id,
+        )
+        return Feature._from_request_column(
+            request_col,
+            name=SpecialColumnName.FORECAST_POINT.value,
             context_id=self.id,
         )
 
