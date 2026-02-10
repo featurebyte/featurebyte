@@ -140,9 +140,8 @@ class RequestColumnNode(BaseNode):
                 raise ValueError(
                     "FORECAST_POINT column requires context_id to be set for SDK code generation"
                 )
-            context_id_str = str(self.parameters.context_id)
             obj = ClassEnum.CONTEXT(
-                context_id_str,
+                ClassEnum.OBJECT_ID(self.parameters.context_id),
                 _method_name="get_by_id",
                 _suffix=".get_forecast_point_feature()",
             )

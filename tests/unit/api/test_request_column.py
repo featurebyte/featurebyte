@@ -278,36 +278,38 @@ def test_forecast_point_minus_timestamp_feature(
     check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
-# def test_forecast_point_dt_hour(cust_id_entity, transaction_entity, mock_deployment_flow):
-#     """
-#     Test a simple on-demand feature using forecast_point.dt.hour.
-#     """
-#     _ = mock_deployment_flow
-#     _ = transaction_entity
+def test_forecast_point_dt_hour(catalog, cust_id_entity, transaction_entity, mock_deployment_flow):
+    """
+    Test a simple on-demand feature using forecast_point.dt.hour.
+    """
+    _ = catalog
+    _ = mock_deployment_flow
+    _ = transaction_entity
 
-#     # Create a context with forecast_point_schema
-#     forecast_schema = ForecastPointSchema(
-#         granularity=TimeIntervalUnit.DAY,
-#         dtype=DBVarType.DATE,
-#         is_utc_time=False,
-#         timezone="America/New_York",
-#     )
-#     forecast_context = Context(
-#         name="forecast_context_hour",
-#         primary_entity_ids=[cust_id_entity.id],
-#         forecast_point_schema=forecast_schema,
-#     )
-#     forecast_context.save()
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context_hour",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
 
-#     # Create a feature using forecast_point.dt.hour
-#     new_feature = forecast_context.forecast_point.dt.hour
-#     new_feature.name = "Forecast Hour"
-#     assert isinstance(new_feature, Feature)
+    # Create a feature using forecast_point.dt.hour
+    new_feature = forecast_context.get_forecast_point_feature().dt.hour
+    new_feature.name = "Forecast Hour"
+    assert isinstance(new_feature, Feature)
 
-#     # Save the feature
-#     new_feature.save()
-
-#     # Verify the feature model
-#     new_feature_model = new_feature.cached_model
-#     assert isinstance(new_feature_model, FeatureModel)
-#     check_on_demand_feature_code_generation(feature_model=new_feature_model)
+    # Save the feature
+    new_feature.save()
+    # deploy_features_through_api([new_feature])
+    #
+    # # Verify the feature model
+    # new_feature_model = new_feature.cached_model
+    # assert isinstance(new_feature_model, FeatureModel)
+    # check_on_demand_feature_code_generation(feature_model=new_feature_model)
