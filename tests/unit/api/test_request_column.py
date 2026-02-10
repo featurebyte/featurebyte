@@ -196,10 +196,12 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     )
 
 
-def test_forecast_point_request_column():
+def test_forecast_point_request_column(catalog):
     """
     Test forecast_point request column creation via create_request_column
     """
+    _ = catalog
+
     # Create a FORECAST_POINT request column with DATE dtype (default)
     forecast_point = RequestColumn._create_request_column(
         "FORECAST_POINT",
