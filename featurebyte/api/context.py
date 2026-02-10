@@ -78,7 +78,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             entities.append(Entity.get_by_id(entity_id))
         return entities
 
-    def get_forecast_point_feature(self) -> Feature:
+    def get_forecast_point_feature(self) -> Any:
         """
         Returns a Feature representing the FORECAST_POINT column with timezone info
         from this Context's forecast_point_schema.
@@ -88,7 +88,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Returns
         -------
-        Feature
+        Any
             A Feature for FORECAST_POINT with timezone metadata from the schema.
 
         Raises
@@ -519,7 +519,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         self,
         column_name: str,
         feature_name: Optional[str] = None,
-    ) -> Feature:
+    ) -> Any:
         """
         Get a Feature object for a user-provided column defined in this context.
 
@@ -536,7 +536,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Returns
         -------
-        Feature
+        Any
             A Feature object representing the user-provided column
 
         Raises
