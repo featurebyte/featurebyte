@@ -589,3 +589,83 @@ async def test_time_series_window_boundaries(session, data_source, source_type):
     expected = preview_params.copy()
     expected["value_sum_7d"] = [14 + 15 + 16 + 17 + 18 + 19 + 20]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+
+
+@pytest.mark.asyncio
+async def test_time_series_window_boundaries_hourly(session, data_source, source_type):
+    """
+    Test hourly time series window boundaries to verify:
+    - Window end is exclusive (2021-10-21 06:00:00 not included)
+    - Window start is inclusive (2021-10-21 02:00:00 included)
+
+    Scenario:
+    - Hourly time series with row datetime up to 2021-10-21 06:00:00 America/New_York
+    - Point in time: 2021-10-21 10:05:00 UTC = 2021-10-21 06:05:00 America/New_York
+    - Feature job runs hourly at minute 0
+    - Last job time: 2021-10-21 06:00:00 America/New_York = 2021-10-21 10:00:00 UTC
+    - Expected window: [2021-10-21 02:00:00, 2021-10-21 06:00:00) America/New_York
+    """
+    # 1. Create test data with hourly rows from 2021-10-21 00:00:00 to 2021-10-21 06:00:00
+    # Value equals the hour for easy verification of which hours are included
+    # 7 data points: 00:00 (value=0), 01:00 (value=1), ..., 06:00 (value=6)
+    timestamps = pd.date_range("2021-10-21 00:00:00", "2021-10-21 06:00:00", freq="h")
+    df_ts = pd.DataFrame({
+        "reference_datetime": timestamps,
+        "series_id": ["S1"] * len(timestamps),
+        "value_col": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],  # Value = hour
+    })
+
+    # 2. Register table with timestamp
+    table_prefix = f"TEST_TS_WINDOW_BOUNDARIES_HOURLY_{ObjectId()}"
+    table_name = table_prefix.upper()
+    await session.register_table(table_name, df_ts)
+
+    # 3. Create TimeSeriesTable
+    source_table = data_source.get_source_table(
+        table_name=table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    ts_table = source_table.create_time_series_table(
+        name=f"{source_type}_{table_name}_TS",
+        reference_datetime_column="reference_datetime",
+        reference_datetime_schema=TimestampSchema(timezone="America/New_York", is_utc_time=False),
+        time_interval=TimeInterval(unit="HOUR", value=1),
+        series_id_column="series_id",
+    )
+
+    # 4. Create entity and assign
+    entity = Entity.create(f"{table_prefix}_series_entity", ["ts_series_id_hourly"])
+    ts_table["series_id"].as_entity(entity.name)
+
+    # 5. Create feature with 4-hour window
+    # Feature job runs hourly at minute 0 in America/New_York
+    # Point-in-time 2021-10-21 10:05:00 UTC = 06:05 America/New_York
+    # Last job was at 06:00 America/New_York = 10:00 UTC
+    view = ts_table.get_view()
+    feature = view.groupby("series_id").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="HOUR", size=4)],
+        feature_names=["value_sum_4h"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 * * * *",  # Every hour at minute 0
+            timezone="America/New_York",
+        ),
+    )["value_sum_4h"]
+
+    # 6. Check feature value
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2021-10-21 10:05:00"),
+            "ts_series_id_hourly": "S1",
+        }
+    ])
+    feature_list = FeatureList([feature], f"test_window_boundaries_hourly_{ObjectId()}")
+
+    # 7. Verify: should include hours 02:00, 03:00, 04:00, 05:00 (end exclusive at 06:00)
+    # Window: [2021-10-21 02:00:00, 2021-10-21 06:00:00) America/New_York = 4 hours
+    # Sum = 2 + 3 + 4 + 5 = 14
+    expected = preview_params.copy()
+    expected["value_sum_4h"] = [2 + 3 + 4 + 5]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
