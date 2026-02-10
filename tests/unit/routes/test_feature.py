@@ -69,6 +69,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                     "input": {
                         "_COMMENT": payload["_COMMENT"],
                         "_id": payload["_id"],
+                        "context_id": None,
                         "graph": {"edges": {"name": "value"}},
                         "name": "sum_30m",
                         "node_name": "project_1",
@@ -100,6 +101,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                     "input": {
                         "_COMMENT": payload["_COMMENT"],
                         "_id": payload["_id"],
+                        "context_id": None,
                         "graph": {"nodes": {}},
                         "name": "sum_30m",
                         "node_name": "project_1",

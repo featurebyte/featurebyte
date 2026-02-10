@@ -23,6 +23,7 @@ from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.entity_doc import (
@@ -64,6 +65,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
+from featurebyte.query_graph.node.schema import DummyTableDetails
 from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
@@ -117,9 +119,11 @@ class Feature(
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
     # pydantic instance variable (public)
-    feature_store: FeatureStoreModel = Field(
+    tabular_source: TabularSource = Field(frozen=True)
+    feature_store: FeatureStoreModel = Field(  # type: ignore[assignment]
         exclude=True,
         frozen=True,
+        default=None,
         description="Provides information about the feature store that the feature is connected to.",
     )
 
@@ -128,7 +132,8 @@ class Feature(
         return data.json_dict()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {"feature_store": self.feature_store}
+        params: dict[str, Any] = {"feature_store": self.feature_store}
+        return params
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
         tile_specs = ExtendedFeatureModel(**self.model_dump(by_alias=True)).tile_specs
@@ -153,6 +158,7 @@ class Feature(
             if isinstance(tabular_source, dict):
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
+            # For user-provided features without a tabular_source, feature_store stays None
         return values
 
     @property
@@ -174,6 +180,11 @@ class Feature(
     @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def catalog_id(self) -> ObjectId:
         return self._get_catalog_id()
+
+    @property
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def context_id(self) -> Optional[ObjectId]:
+        return self._get_context_id()
 
     @property
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
@@ -353,6 +364,8 @@ class Feature(
         include_id: Optional[bool] = False,
         primary_entity: Optional[Union[str, List[str]]] = None,
         primary_table: Optional[Union[str, List[str]]] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -367,6 +380,13 @@ class Feature(
         primary_table: Optional[Union[str, List[str]]]
             Name of table used to filter results. If multiple tables are provided, the filtered results will
             contain features that are associated with all the tables.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -374,7 +394,11 @@ class Feature(
             Table of features
         """
         return FeatureNamespace.list(
-            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+            include_id=include_id,
+            primary_entity=primary_entity,
+            primary_table=primary_table,
+            context=context,
+            use_case=use_case,
         )
 
     @classmethod
@@ -714,6 +738,7 @@ class Feature(
                 name=self.name,
                 node_name=node_name_map[self.node_name],
                 tabular_source=self.tabular_source,
+                context_id=self.context_id,
             )
             try:
                 self.post_async_task(
@@ -1195,3 +1220,38 @@ class Feature(
             Description of feature version
         """
         super().update_description(description=description)
+
+    @classmethod
+    def _from_request_column(
+        cls,
+        request_column: RequestColumn,
+        name: str,
+        context_id: PydanticObjectId,
+    ) -> Feature:
+        """
+        Create a Feature from a RequestColumn. This is used internally by
+        Context.get_user_provided_feature() to create Features from user-provided columns.
+
+        Parameters
+        ----------
+        request_column: RequestColumn
+            The request column to convert to a feature
+        name: str
+            Name of the feature
+        context_id: PydanticObjectId
+            Context ID that this feature is associated with
+
+        Returns
+        -------
+        Feature
+        """
+        return cls(
+            feature_store=request_column.feature_store,
+            tabular_source=TabularSource(
+                feature_store_id=request_column.feature_store.id, table_details=DummyTableDetails()
+            ),
+            node_name=request_column.node_name,
+            name=name,
+            dtype=request_column.dtype,
+            context_id=context_id,
+        )

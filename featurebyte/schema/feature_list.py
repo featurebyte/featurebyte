@@ -58,6 +58,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_ids: List[PydanticObjectId] = Field(min_length=1)
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):

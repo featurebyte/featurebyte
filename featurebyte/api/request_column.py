@@ -9,6 +9,8 @@ from typing import Any, ClassVar, Optional
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, SpecialColumnName
@@ -17,6 +19,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.node.schema import DummyTableDetails
 
 
 class RequestColumn(Series):
@@ -28,12 +31,8 @@ class RequestColumn(Series):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.RequestColumn")
 
     # instance variables
-    tabular_source: Optional[TabularSource] = Field(  # type: ignore[assignment]
-        frozen=True, default=None
-    )
-    feature_store: Optional[FeatureStoreModel] = Field(  # type: ignore[assignment]
-        exclude=True, frozen=True, default=None
-    )
+    tabular_source: TabularSource = Field(frozen=True)
+    feature_store: FeatureStoreModel = Field(exclude=True, frozen=True)
 
     @classmethod
     def _create_request_column(
@@ -83,9 +82,21 @@ class RequestColumn(Series):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[],
         )
+
+        # Import here to avoid circular import
+        from featurebyte.api.catalog import Catalog  # pylint: disable=import-outside-toplevel
+
+        # use feature store from active catalog
+        catalog_id = get_active_catalog_id()
+        assert catalog_id
+        catalog = Catalog.get_by_id(catalog_id)
+        feature_store = FeatureStore.get_by_id(catalog.default_feature_store_ids[0])
+
         return cls(
-            feature_store=None,
-            tabular_source=None,
+            feature_store=feature_store,
+            tabular_source=TabularSource(
+                feature_store_id=feature_store.id, table_details=DummyTableDetails()
+            ),
             node_name=node.name,
             name=column_name,
             dtype=column_dtype,

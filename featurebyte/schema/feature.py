@@ -40,6 +40,7 @@ class FeatureCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class FeatureServiceCreate(FeatureCreate):
@@ -59,6 +60,7 @@ class BatchFeatureItem(FeatureByteBaseModel):
     name: NameStr
     node_name: str
     tabular_source: TabularSource
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class BatchFeatureCreatePayload(FeatureByteBaseModel):

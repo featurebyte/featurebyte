@@ -4,7 +4,7 @@ This module contains Feature list namespace related models
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -71,6 +71,9 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
     role: FeatureListRole = Field(default=FeatureListRole.OUTCOME_PREDICTORS)
 
+    # Context ID for feature list namespaces that contain features using user-provided columns
+    context_id: Optional[PydanticObjectId] = Field(frozen=True, default=None)
+
     # pydantic validators
     _sort_ids_validator = field_validator(
         "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids"
@@ -102,8 +105,10 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=None,
             ),
             UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
+                fields=("name", "context_id"),
+                conflict_fields_signature={
+                    "name": ["name"],
+                },
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
@@ -113,6 +118,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("default_feature_list_id"),
             pymongo.operations.IndexModel("status"),
+            pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),
                 ("description", pymongo.TEXT),

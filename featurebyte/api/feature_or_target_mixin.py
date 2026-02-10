@@ -5,7 +5,7 @@ Mixin class containing common methods for feature or target classes
 import time
 from abc import ABC
 from http import HTTPStatus
-from typing import Any, Sequence, Union, cast
+from typing import Any, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -42,6 +42,11 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
         alias="catalog_id",  # type: ignore
     )
 
+    internal_context_id: Optional[PydanticObjectId] = Field(
+        default=None,
+        alias="context_id",
+    )
+
     @property
     def _cast_cached_model(self) -> BaseFeatureModel:
         return cast(BaseFeatureModel, self.cached_model)
@@ -56,6 +61,13 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
             return self._cast_cached_model.catalog_id
         except RecordRetrievalException:
             return self.internal_catalog_id
+
+    def _get_context_id(self) -> Optional[ObjectId]:
+        # helper function to get context id
+        try:
+            return self._cast_cached_model.context_id
+        except RecordRetrievalException:
+            return self.internal_context_id
 
     def _get_entity_ids(self) -> Sequence[ObjectId]:
         # helper function to get entity ids

@@ -73,6 +73,11 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     dtype: DBVarType = Field(default=DBVarType.UNKNOWN.value)
     node_name: str
     tabular_source: TabularSource = Field(frozen=True)
+
+    # Context ID for features that use user-provided columns
+    # This enables filtering features by context during listing and allows features
+    # from different contexts with the same name to coexist without conflict
+    context_id: Optional[PydanticObjectId] = Field(default=None)
     version: VersionIdentifier = Field(frozen=True, default_factory=VersionIdentifier.create)
     definition: Optional[str] = Field(frozen=True, default=None)
     definition_hash: Optional[str] = Field(frozen=True, default=None)
@@ -474,8 +479,11 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                fields=("name", "version", "context_id"),
+                conflict_fields_signature={
+                    "name": ["name"],
+                    "version": ["version"],
+                },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
@@ -488,6 +496,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("user_defined_function_ids"),
             pymongo.operations.IndexModel("relationships_info"),
+            pymongo.operations.IndexModel("context_id"),
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),
@@ -559,6 +568,11 @@ class FeatureModel(BaseFeatureModel):
     def _add_tile_derived_attributes(self) -> "FeatureModel":
         # Each aggregation_id refers to a set of columns in a tile table
         if self.aggregation_ids:
+            return self
+
+        # Skip tile derivation for features that only use user-provided columns
+        # (no warehouse tables involved)
+        if not self.table_ids:
             return self
 
         graph_dict = self.internal_graph
