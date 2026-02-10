@@ -38,6 +38,7 @@ from tests.util.helper import check_sdk_code_generation, get_node
             DBVarType.FLOAT,
             {"transform_type": "unique_count", "include_missing": False},
         ),
+        ("normalize", {}, DBVarType.OBJECT, {"transform_type": "normalize"}),
     ],
 )
 def test_transformation(

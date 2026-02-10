@@ -124,6 +124,18 @@ def fixture_rank_key_feat():
             {"parameters": {"transform_type": "unique_count", "include_missing": False}},
             pd.Series([np.nan, 1, 0, 3, 3, 4, 4]),
         ),
+        (
+            {"parameters": {"transform_type": "normalize"}},
+            pd.Series([
+                np.nan,  # None -> nan (null input)
+                {"a": 1.0},  # {"a": 1} -> {"a": 1.0}
+                {},  # {} -> {} (empty dict)
+                {"a": 1 / 3, "b": 1 / 3, "c": 1 / 3},  # sum=3, each value/3
+                {"a": 0.1, "b": 0.2, "c": 0.3, "__MISSING__": 0.4},  # sum=10
+                {"0": 0.5 / 6.5, "1": 1 / 6.5, "2": 2 / 6.5, "3": 3 / 6.5},  # sum=6.5
+                {"0": 0.1, "1": 0.2, "2": 0.3, "3": 0.4},  # sum=10
+            ]),
+        ),
     ],
 )
 def test_derive_on_demand_view_code__count_dict_transform(
