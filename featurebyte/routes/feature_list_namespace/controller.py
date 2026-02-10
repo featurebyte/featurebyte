@@ -96,9 +96,21 @@ class FeatureListNamespaceController(
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: list[tuple[str, SortDir]] | None = None,
+        context_id: ObjectId | None = None,
         **kwargs: Any,
     ) -> PaginatedDocument:
         sort_by = sort_by or [("created_at", "desc")]
+
+        # Build context_id filter:
+        # - No context specified: exclude context-specific feature lists (only show context_id=None)
+        # - Context specified: show both regular feature lists and that context's feature lists
+        query_filter = kwargs.pop("query_filter", {}).copy() if "query_filter" in kwargs else {}
+        if context_id is not None:
+            query_filter["$or"] = [{"context_id": None}, {"context_id": context_id}]
+        else:
+            query_filter["context_id"] = None
+        kwargs["query_filter"] = query_filter
+
         document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,

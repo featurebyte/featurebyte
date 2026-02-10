@@ -267,6 +267,7 @@ class BatchFeatureCreator:
                 graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
                 node_name=node_name_map[feature_item.node_name],
                 tabular_source=feature_item.tabular_source,
+                context_id=feature_item.context_id,
             )
 
             # prepare the feature document & definition

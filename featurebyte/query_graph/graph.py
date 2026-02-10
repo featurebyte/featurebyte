@@ -100,8 +100,14 @@ class QueryGraph(QueryGraphModel):
 
         node_name_to_input_node = OrderedDict()
         for column in target_op_struct.iterate_source_columns_or_aggregations():
-            if graph.get_node_by_name(column.node_name).type == NodeType.REQUEST_COLUMN:
+            # skip for request column or it's alias
+            node = graph.get_node_by_name(column.node_name)
+            if node.type == NodeType.REQUEST_COLUMN:
                 continue
+            elif node.type == NodeType.ALIAS:
+                node = graph.get_node_by_name(graph.backward_edges_map[node.name][0])
+                if node.type == NodeType.REQUEST_COLUMN:
+                    continue
             # get_input_node performs a depth-first search to find the input node
             # during the search, it will traverse the left input node first before the right input node.
             # This is important because left input node is the main table for all existing join operations.

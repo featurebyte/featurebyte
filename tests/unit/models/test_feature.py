@@ -42,6 +42,7 @@ def feature_name_space_dict_fixture():
         "description": None,
         "is_deleted": False,
         "feature_type": None,
+        "context_id": None,
     }
 
 
@@ -130,6 +131,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "aggregation_result_names": [],
         "agg_result_name_include_serving_names": False,
         "description": None,
+        "context_id": None,
         "definition_hash": None,
         "online_store_table_names": [],
         "last_updated_by_scheduled_task_at": None,

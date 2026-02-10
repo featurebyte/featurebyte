@@ -49,6 +49,10 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO, frozen=True)
     entity_ids: List[PydanticObjectId] = Field(frozen=True)
 
+    # Context ID for feature namespaces that use user-provided columns
+    # Allows features from different contexts with the same name to coexist
+    context_id: Optional[PydanticObjectId] = Field(frozen=True, default=None)
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
@@ -61,8 +65,10 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=None,
             ),
             UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
+                fields=("name", "context_id"),
+                conflict_fields_signature={
+                    "name": ["name"],
+                },
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
@@ -75,6 +81,7 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 ],
             ),
             pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("context_id"),
         ]
 
 

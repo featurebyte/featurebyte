@@ -233,3 +233,49 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
         )
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text
+
+    def test_list_200__filter_by_context_id(self, test_api_client_persistent):
+        """Test listing feature namespaces filters by context_id"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # Create a regular feature (no context_id)
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        response = test_api_client.post("/feature", json=feature_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        regular_namespace_id = response.json()["feature_namespace_id"]
+
+        # Create a feature with a context_id
+        context_id = str(ObjectId())
+        context_feature_payload = feature_payload.copy()
+        context_feature_payload["_id"] = str(ObjectId())
+        context_feature_payload["name"] = "context_specific_feature"
+        context_feature_payload["context_id"] = context_id
+        response = test_api_client.post("/feature", json=context_feature_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        context_namespace_id = response.json()["feature_namespace_id"]
+
+        # List without context_id: should only see regular features
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        namespace_ids = {item["_id"] for item in response_dict["data"]}
+        assert regular_namespace_id in namespace_ids
+        assert context_namespace_id not in namespace_ids
+
+        # List with context_id: should see both regular and context-specific features
+        response = test_api_client.get(self.base_route, params={"context_id": context_id})
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        namespace_ids = {item["_id"] for item in response_dict["data"]}
+        assert regular_namespace_id in namespace_ids
+        assert context_namespace_id in namespace_ids
+
+        # List with a different context_id: should only see regular features
+        other_context_id = str(ObjectId())
+        response = test_api_client.get(self.base_route, params={"context_id": other_context_id})
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        namespace_ids = {item["_id"] for item in response_dict["data"]}
+        assert regular_namespace_id in namespace_ids
+        assert context_namespace_id not in namespace_ids

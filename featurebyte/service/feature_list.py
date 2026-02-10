@@ -476,6 +476,7 @@ class FeatureListService(
                                 feature_list_ids=[insert_id],
                                 default_feature_list_id=insert_id,
                                 features=features,
+                                context_id=feature_list.context_id,
                             )
                         )
                     )

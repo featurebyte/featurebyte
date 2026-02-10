@@ -131,7 +131,7 @@ class RequestColumnNode(BaseNode):
                 _method_name="point_in_time",
             )
             statements.append((var_name, obj))
-        else:
+        elif self.parameters.context_id is not None:
             var_name = var_name_generator.convert_to_variable_name(
                 "request_feature", node_name=self.name
             )
@@ -148,6 +148,10 @@ class RequestColumnNode(BaseNode):
                 f"{context_var}.get_user_provided_feature(column_name={quoted_col})"
             )
             statements.append((var_name, feature_expr))
+        else:
+            raise NotImplementedError(
+                "Currently only POINT_IN_TIME column is supported for catalog agnostic request columns"
+            )
         return statements, var_name
 
     def _derive_on_demand_view_or_user_defined_function_helper(

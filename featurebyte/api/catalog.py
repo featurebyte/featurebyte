@@ -510,6 +510,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         include_id: Optional[bool] = True,
         primary_entity: Optional[Union[str, List[str]]] = None,
         primary_table: Optional[Union[str, List[str]]] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Generates a DataFrame that contains various attributes of the registered features, such as their names,
@@ -529,6 +531,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         primary_table: Optional[Union[str, List[str]]]
             Name of table used to filter results. If multiple tables are provided, the filtered results will
             contain features that are associated with all the tables.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -549,7 +558,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ... )
         """
         return Feature.list(
-            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+            include_id=include_id,
+            primary_entity=primary_entity,
+            primary_table=primary_table,
+            context=context,
+            use_case=use_case,
         )
 
     @update_and_reset_catalog
@@ -559,6 +572,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         primary_entity: Optional[Union[str, List[str]]] = None,
         entity: Optional[str] = None,
         table: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered feature lists. These attributes
@@ -583,6 +598,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         table: Optional[str]
             Specifies the table name for filtering results. Retrieve feature lists associated with
             the specified table name.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -594,7 +616,12 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> feature_lists = catalog.list_feature_lists()
         """
         return FeatureList.list(
-            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+            include_id=include_id,
+            primary_entity=primary_entity,
+            entity=entity,
+            table=table,
+            context=context,
+            use_case=use_case,
         )
 
     @update_and_reset_catalog

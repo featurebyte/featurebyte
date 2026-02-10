@@ -237,7 +237,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 await validate_version_and_namespace_consistency(
                     base_model=document,
                     base_namespace_model=feature_namespace,
-                    attributes=["name", "dtype", "entity_ids", "table_ids"],
+                    attributes=["name", "dtype", "entity_ids", "table_ids", "context_id"],
                 )
                 await self.feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
@@ -260,6 +260,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(document.entity_ids),
                         table_ids=sorted(document.table_ids),
+                        context_id=document.context_id,
                     ),
                 )
         return await self.get_document(document_id=insert_id)

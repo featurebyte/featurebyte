@@ -11,6 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
@@ -396,6 +397,84 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         self.update(
             update_payload={"user_provided_columns": [col.model_dump() for col in updated_columns]},
             allow_update_local=True,
+        )
+
+    def _get_user_provided_column_info(self, column_name: str) -> Optional[UserProvidedColumn]:
+        """
+        Look up a user-provided column definition by name.
+
+        Parameters
+        ----------
+        column_name: str
+            Name of the column to look up
+
+        Returns
+        -------
+        Optional[UserProvidedColumn]
+            The column definition, or None if not found
+        """
+        for col in self.user_provided_columns:
+            if col.name == column_name:
+                return col
+        return None
+
+    @typechecked
+    def get_user_provided_feature(
+        self,
+        column_name: str,
+        feature_name: Optional[str] = None,
+    ) -> Any:
+        """
+        Get a Feature object for a user-provided column defined in this context.
+
+        The returned feature will have context_id set, linking it to this context.
+        Features from different contexts that use the same column name can coexist
+        without name conflicts.
+
+        Parameters
+        ----------
+        column_name: str
+            Name of the user-provided column (must be defined in context)
+        feature_name: Optional[str]
+            Name for the feature (defaults to column_name)
+
+        Returns
+        -------
+        Any
+            A Feature object representing the user-provided column
+
+        Raises
+        ------
+        ValueError
+            If column_name is not defined in context's user_provided_columns
+
+        Examples
+        --------
+        >>> context = fb.Context.get("loan_approval_context")  # doctest: +SKIP
+        >>> income_feature = context.get_user_provided_feature("annual_income")  # doctest: +SKIP
+        >>> income_feature.save()  # doctest: +SKIP
+        """
+        # Import here to avoid circular import
+        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
+        col_info = self._get_user_provided_column_info(column_name)
+        if col_info is None:
+            available = [col.name for col in self.user_provided_columns]
+            raise ValueError(
+                f"Column '{column_name}' not defined in context user_provided_columns. "
+                f"Available columns: {available}"
+            )
+
+        # Create RequestColumn internally with context_id for SDK code generation
+        request_col = RequestColumn._create_request_column(
+            column_name, col_info.dtype, context_id=str(self.id)
+        )
+
+        # Convert to Feature with context_id set
+        return Feature._from_request_column(
+            request_col,
+            name=feature_name or column_name,
+            context_id=self.id,
         )
 
     @typechecked
