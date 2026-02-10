@@ -4,7 +4,7 @@ util.py contains common functions used across different classes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -12,7 +12,50 @@ from featurebyte.query_graph.node.scalar import get_value_parameter
 from featurebyte.typing import AllSupportedValueTypes, Scalar, ScalarSequence
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import FrozenSeries, FrozenSeriesT
+    from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
+
+
+def validate_numeric_series(series_list: List[Series]) -> None:
+    """
+    Validate that:
+    - all series are numeric
+    - all series are of the same type (all ViewColumns, or Features, or Targets)
+
+    Parameters
+    ----------
+    series_list: List[Series]
+        List of series to validate
+
+    Raises
+    ------
+    ValueError
+        if any of the series are not numeric
+    """
+    from featurebyte import Feature, Target
+    from featurebyte.api.view import ViewColumn
+    from featurebyte.core.series import Series
+
+    # Check numeric
+    for series in series_list:
+        if not series.is_numeric:
+            raise ValueError(
+                f"Expected all series to be numeric, but got {series.dtype} for series {series.name}"
+            )
+
+    # Check all series are of the same type
+    series_type_to_check: Optional[Any] = Series
+    if isinstance(series_list[0], ViewColumn):
+        series_type_to_check = ViewColumn
+    elif isinstance(series_list[0], Feature):
+        series_type_to_check = Feature
+    elif isinstance(series_list[0], Target):
+        series_type_to_check = Target
+
+    if not series_type_to_check:
+        raise ValueError(f"unknown series type found: {series_list[0].name}")
+
+    for series in series_list:
+        assert isinstance(series, series_type_to_check)
 
 
 def series_unary_operation(
