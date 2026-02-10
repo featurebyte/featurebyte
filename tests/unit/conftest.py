@@ -48,7 +48,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.online_store import OnlineStore
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.app import User, app, get_celery
-from featurebyte.enum import AggFunc, InternalName, SourceType
+from featurebyte.enum import AggFunc, DBVarType, InternalName, SourceType, TimeIntervalUnit
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
@@ -62,6 +62,7 @@ from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.dtype import PartitionMetadata
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
@@ -2965,6 +2966,40 @@ def time_since_latest_event_timestamp_feature_fixture(
     """
     feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
     feature.name = "time_since_latest_event_timestamp"
+    return feature
+
+
+@pytest.fixture(name="days_until_forecast_feature")
+def days_until_forecast_feature_fixture(
+    latest_event_timestamp_feature,
+    cust_id_entity,
+    transaction_entity,
+):
+    """
+    Fixture for a feature that computes days until forecast point from latest event timestamp.
+    Uses a Context with ForecastPointSchema to create the FORECAST_POINT request column.
+    """
+    _ = transaction_entity
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context_for_fixture",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
+
+    # Create a feature using forecast_point from context
+    feature = (forecast_context.forecast_point - latest_event_timestamp_feature).dt.day
+    feature.name = "days_until_forecast"
+    feature.save()
+
     return feature
 
 
