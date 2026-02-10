@@ -11,7 +11,15 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
+from featurebyte import (
+    CalendarWindow,
+    CronFeatureJobSetting,
+    Entity,
+    FeatureList,
+    RequestColumn,
+    TimeInterval,
+    TimestampSchema,
+)
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
@@ -485,4 +493,88 @@ def test_blind_spot(time_series_table):
         2.94,
         3.01,
     ]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+
+
+@pytest.mark.asyncio
+async def test_time_series_window_boundaries(session, data_source, source_type):
+    """
+    Test time series window boundaries to verify:
+    - Window end is exclusive (2021-10-21 not included)
+    - Window start is inclusive (2021-10-14 included)
+
+    Scenario:
+    - Daily time series with row date 2021-10-21
+    - Point in time: 2021-10-21 10:00:00 UTC
+    - Feature job: 5:00 AM America/New_York = 9:00 AM UTC
+    - Expected window: [2021-10-14, 2021-10-21)
+    """
+    # 1. Create test data with daily rows from 2021-10-14 to 2021-10-21
+    # Value equals day of month for easy verification of which days are included
+    df_ts = pd.DataFrame({
+        "reference_date": pd.to_datetime([
+            "2021-10-14",
+            "2021-10-15",
+            "2021-10-16",
+            "2021-10-17",
+            "2021-10-18",
+            "2021-10-19",
+            "2021-10-20",
+            "2021-10-21",
+        ]),
+        "series_id": ["S1"] * 8,
+        "value_col": [14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0],
+    })
+
+    # 2. Register table
+    table_prefix = f"TEST_TS_WINDOW_BOUNDARIES_{ObjectId()}"
+    table_name = table_prefix.upper()
+    await session.register_table(table_name, df_ts)
+
+    # 3. Create TimeSeriesTable
+    source_table = data_source.get_source_table(
+        table_name=table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    ts_table = source_table.create_time_series_table(
+        name=f"{source_type}_{table_name}_TS",
+        reference_datetime_column="reference_date",
+        reference_datetime_schema=TimestampSchema(timezone="America/New_York", is_utc_time=False),
+        time_interval=TimeInterval(unit="DAY", value=1),
+        series_id_column="series_id",
+    )
+
+    # 4. Create entity and assign
+    entity = Entity.create(f"{table_prefix}_series_entity", ["ts_series_id"])
+    ts_table["series_id"].as_entity(entity.name)
+
+    # 5. Create feature with 7-day window
+    # Feature job at 5:00 America/New_York = 9:00 UTC
+    # Point-in-time 2021-10-21 10:00:00 UTC is after 9:00 UTC, so last job was at 9:00 UTC
+    view = ts_table.get_view()
+    feature = view.groupby("series_id").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["value_sum_7d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 5 * * *",  # 5:00 AM America/New_York
+            timezone="America/New_York",
+        ),
+    )["value_sum_7d"]
+
+    # 6. Check feature value
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2021-10-21 10:00:00"),
+            "ts_series_id": "S1",
+        }
+    ])
+    feature_list = FeatureList([feature], f"test_window_boundaries_{ObjectId()}")
+
+    # 7. Verify: should include days 14-20 (window end exclusive)
+    # Window: [2021-10-14, 2021-10-21) = 7 days
+    expected = preview_params.copy()
+    expected["value_sum_7d"] = [14 + 15 + 16 + 17 + 18 + 19 + 20]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
