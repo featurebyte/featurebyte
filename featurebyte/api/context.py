@@ -2,7 +2,7 @@
 Context module
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -23,9 +23,6 @@ from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.context import ContextUpdate
-
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
 
 
 class Context(SavableApiObject, UseCaseOrContextMixin):
