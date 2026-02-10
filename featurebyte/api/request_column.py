@@ -74,11 +74,9 @@ class RequestColumn(Series):
 
         # use feature store from active catalog
         catalog_id = get_active_catalog_id()
-        if catalog_id:
-            catalog = Catalog.get_by_id(catalog_id)
-            feature_store = FeatureStore.get_by_id(catalog.default_feature_store_ids[0])
-        else:
-            feature_store = None
+        assert catalog_id
+        catalog = Catalog.get_by_id(catalog_id)
+        feature_store = FeatureStore.get_by_id(catalog.default_feature_store_ids[0])
 
         return cls(
             feature_store=feature_store,

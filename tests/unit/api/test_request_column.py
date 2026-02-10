@@ -109,7 +109,7 @@ def test_internal_create_request_column(catalog):
     assert isinstance(request_col, RequestColumn)
     assert request_col.name == "annual_income"
     assert request_col.dtype == DBVarType.FLOAT
-    assert request_col.tabular_source is None
+    assert request_col.tabular_source is not None
     assert request_col.feature_store is not None
     node_dict = request_col.node.model_dump()
     assert node_dict["type"] == "request_column"
