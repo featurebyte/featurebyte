@@ -27,9 +27,8 @@ from typeguard import typechecked
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_list import FeatureListListHandler
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping, resolve_context_id
 from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup, Item
@@ -234,16 +233,6 @@ class FeatureListNamespace(ApiObject):
         )
 
     @classmethod
-    def _resolve_context_id(cls, context: Optional[str], use_case: Optional[str]) -> Optional[str]:
-        if context is not None and use_case is not None:
-            raise ValueError("Cannot specify both 'context' and 'use_case'.")
-        if context is not None:
-            return str(Context.get(context).id)
-        if use_case is not None:
-            return str(UseCase.get(use_case).context_id)
-        return None
-
-    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
@@ -281,7 +270,7 @@ class FeatureListNamespace(ApiObject):
             Table of feature lists
         """
         params: Dict[str, Any] = {}
-        context_id = cls._resolve_context_id(context, use_case)
+        context_id = resolve_context_id(context, use_case)
         if context_id is not None:
             params["context_id"] = context_id
         feature_lists = cls._list(include_id=include_id, params=params)

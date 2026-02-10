@@ -120,10 +120,9 @@ class Feature(
 
     # pydantic instance variable (public)
     tabular_source: TabularSource = Field(frozen=True)
-    feature_store: FeatureStoreModel = Field(  # type: ignore[assignment]
+    feature_store: FeatureStoreModel = Field(
         exclude=True,
         frozen=True,
-        default=None,
         description="Provides information about the feature store that the feature is connected to.",
     )
 

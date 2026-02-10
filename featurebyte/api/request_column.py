@@ -88,7 +88,9 @@ class RequestColumn(Series):
 
         # use feature store from active catalog
         catalog_id = get_active_catalog_id()
-        assert catalog_id
+        assert catalog_id, (
+            "No active catalog in this session. Please activate an existing catalog or create a new one to proceed."
+        )
         catalog = Catalog.get_by_id(catalog_id)
         feature_store = FeatureStore.get_by_id(catalog.default_feature_store_ids[0])
 

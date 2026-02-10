@@ -111,6 +111,21 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                     )
                     raise ValueError(error_message)
 
+        if isinstance(self.other, Series):
+            # Check that context_ids are compatible
+            self_context_id = getattr(self.input_series, "internal_context_id", None)
+            other_context_id = getattr(self.other, "internal_context_id", None)
+            if (
+                self_context_id is not None
+                and other_context_id is not None
+                and self_context_id != other_context_id
+            ):
+                raise ValueError(
+                    f"Operations between features from different contexts are not supported. "
+                    f'Feature "{self.input_series.name}" has context_id "{self_context_id}", '
+                    f'while feature "{self.other.name}" has context_id "{other_context_id}".'
+                )
+
 
 class FrozenSeries(
     QueryObject,

@@ -58,6 +58,28 @@ def validate_numeric_series(series_list: List[Series]) -> None:
         assert isinstance(series, series_type_to_check)
 
 
+def _get_context_id_kwargs(*series_list: FrozenSeries) -> dict[str, Any]:
+    """Get context_id constructor kwargs resolved from the given series.
+
+    If any series has a non-None context_id, it is included in the returned kwargs.
+    Assumes cross-context validation has already been done by the caller.
+
+    Parameters
+    ----------
+    series_list : FrozenSeries
+        Series to resolve context id kwargs from.
+
+    Returns
+    -------
+    dict[str, Any]
+    """
+    for series in series_list:
+        context_id = getattr(series, "internal_context_id", None)
+        if context_id is not None:
+            return {"context_id": context_id}
+    return {}
+
+
 def series_unary_operation(
     input_series: FrozenSeriesT,
     node_type: NodeType,
@@ -97,6 +119,7 @@ def series_unary_operation(
         node_name=node.name,
         name=None,
         dtype=output_var_type,
+        **_get_context_id_kwargs(input_series),
         **kwargs,
     )
 
@@ -189,6 +212,7 @@ def construct_binary_op_series_output(
         node_name=node_name,
         name=None,
         dtype=output_var_type,
+        **_get_context_id_kwargs(input_series, other),
     )
 
 
@@ -250,4 +274,5 @@ def series_binary_operation(
         node_name=node.name,
         name=None,
         dtype=output_var_type,
+        **_get_context_id_kwargs(input_series),
     )

@@ -9,15 +9,13 @@ from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
-from featurebyte.api.api_object_util import ForeignKeyMapping
-from featurebyte.api.context import Context
+from featurebyte.api.api_object_util import ForeignKeyMapping, resolve_context_id
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
     FEATURE_LIST_FOREIGN_KEYS,
     filter_feature_list,
 )
-from featurebyte.api.use_case import UseCase
 from featurebyte.enum import FeatureType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -109,16 +107,6 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
         )
 
     @classmethod
-    def _resolve_context_id(cls, context: Optional[str], use_case: Optional[str]) -> Optional[str]:
-        if context is not None and use_case is not None:
-            raise ValueError("Cannot specify both 'context' and 'use_case'.")
-        if context is not None:
-            return str(Context.get(context).id)
-        if use_case is not None:
-            return str(UseCase.get(use_case).context_id)
-        return None
-
-    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
@@ -154,7 +142,7 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
             Table of features
         """
         params: Dict[str, Any] = {}
-        context_id = cls._resolve_context_id(context, use_case)
+        context_id = resolve_context_id(context, use_case)
         if context_id is not None:
             params["context_id"] = context_id
         feature_list = cls._list(include_id=include_id, params=params)
