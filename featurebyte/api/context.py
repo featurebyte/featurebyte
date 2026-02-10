@@ -119,19 +119,16 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         schema = self.forecast_point_schema
 
-        # Build dtype_info with timezone metadata from the schema
-        dtype_info: Optional[DBVarTypeInfo] = None
-        if schema.timezone is not None:
-            # Build TimestampSchema from the ForecastPointSchema timezone
-            # TimeZoneUnion = Union[str, TimeZoneColumn], so these are the only cases
-            timestamp_schema = TimestampSchema(
-                is_utc_time=schema.is_utc_time if schema.is_utc_time is not None else False,
-                timezone=schema.timezone,
-            )
-            dtype_info = DBVarTypeInfo(
-                dtype=schema.dtype,
-                metadata=DBVarTypeMetadata(timestamp_schema=timestamp_schema),
-            )
+        # Build dtype_info with timestamp schema derived from forecast_point_schema
+        timestamp_schema = TimestampSchema(
+            is_utc_time=schema.is_utc_time if schema.is_utc_time is not None else False,
+            timezone=schema.timezone,
+            format_string=schema.format_string,
+        )
+        dtype_info = DBVarTypeInfo(
+            dtype=schema.dtype,
+            metadata=DBVarTypeMetadata(timestamp_schema=timestamp_schema),
+        )
 
         request_col = RequestColumn._create_request_column(
             SpecialColumnName.FORECAST_POINT.value,
