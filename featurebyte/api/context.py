@@ -2,7 +2,7 @@
 Context module
 """
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -23,6 +23,9 @@ from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.context import ContextUpdate
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 
 class Context(SavableApiObject, UseCaseOrContextMixin):
@@ -75,7 +78,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             entities.append(Entity.get_by_id(entity_id))
         return entities
 
-    def get_forecast_point_feature(self) -> Any:
+    def get_forecast_point_feature(self) -> Feature:
         """
         Returns a Feature representing the FORECAST_POINT column with timezone info
         from this Context's forecast_point_schema.
@@ -516,7 +519,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         self,
         column_name: str,
         feature_name: Optional[str] = None,
-    ) -> Any:
+    ) -> Feature:
         """
         Get a Feature object for a user-provided column defined in this context.
 
@@ -533,7 +536,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Returns
         -------
-        Any
+        Feature
             A Feature object representing the user-provided column
 
         Raises
@@ -560,7 +563,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         # Create RequestColumn internally with context_id for SDK code generation
         request_col = RequestColumn._create_request_column(
-            column_name, col_info.dtype, context_id=str(self.id)
+            column_name, col_info.dtype, context_id=self.id
         )
 
         # Convert to Feature with context_id set
