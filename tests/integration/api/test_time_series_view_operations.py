@@ -526,10 +526,21 @@ async def test_time_series_window_boundaries(session, data_source, source_type):
         "value_col": [14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0],
     })
 
-    # 2. Register table
+    # 2. Register table with timestamp, then create new table with DATE type
     table_prefix = f"TEST_TS_WINDOW_BOUNDARIES_{ObjectId()}"
+    temp_table_name = f"{table_prefix}_TEMP".upper()
     table_name = table_prefix.upper()
-    await session.register_table(table_name, df_ts)
+    await session.register_table(temp_table_name, df_ts)
+
+    # Convert timestamp to DATE type
+    await session.execute_query(f"""
+        CREATE TABLE "{table_name}" AS
+        SELECT
+            CAST("reference_date" AS DATE) AS "reference_date",
+            "series_id",
+            "value_col"
+        FROM "{temp_table_name}"
+    """)
 
     # 3. Create TimeSeriesTable
     source_table = data_source.get_source_table(
