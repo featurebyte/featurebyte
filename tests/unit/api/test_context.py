@@ -3,7 +3,6 @@ Unit test for Context class
 """
 
 import pytest
-from bson import ObjectId
 
 from featurebyte import (
     AssignmentDesign,
@@ -324,21 +323,22 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
     # Derived feature from two user-provided features
     savings = income - expenses
     savings.name = "savings"
-    assert savings.context_id is None  # derived features don't auto-inherit context_id
+    assert savings.context_id == context.id  # derived features inherit context_id
     assert savings.dtype == DBVarType.FLOAT
 
-
-def test_user_provided_feature_model_context_id():
-    """
-    Test that FeatureModel properly handles context_id field
-    """
-    context_id = ObjectId()
-
-    # Verify FeatureModel accepts context_id
-    # (just testing the field exists and defaults to None)
-    from featurebyte.models.feature import BaseFeatureModel
-
-    assert BaseFeatureModel.model_fields["context_id"].default is None
+    # Derived feature from features with different context is prohibited
+    context_2 = Context.create(
+        name="test_context_derived_2",
+        primary_entity=entity_names,
+        user_provided_columns=[
+            {"name": "tax", "dtype": DBVarType.FLOAT},
+        ],
+    )
+    tax = context_2.get_user_provided_feature("tax")
+    with pytest.raises(
+        ValueError, match="Operations between features from different contexts are not supported."
+    ):
+        income - tax
 
 
 def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
@@ -377,6 +377,26 @@ def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
                 feature2.cached_model,
             ],
         )
+
+    feature_list_1 = FeatureListModel(
+        name="fl1",
+        version={"name": "V220710", "suffix": None},
+        feature_ids=[feature1.id],
+        features=[
+            feature1.cached_model,
+        ],
+    )
+    assert feature_list_1.context_id == feature1.context_id
+
+    feature_list_2 = FeatureListModel(
+        name="fl2",
+        version={"name": "V220710", "suffix": None},
+        feature_ids=[feature2.id],
+        features=[
+            feature2.cached_model,
+        ],
+    )
+    assert feature_list_2.context_id == feature2.context_id
 
 
 def test_context_forecast_point_with_timezone(catalog, cust_id_entity):

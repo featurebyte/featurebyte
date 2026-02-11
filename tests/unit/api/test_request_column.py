@@ -262,7 +262,7 @@ def test_forecast_point_minus_timestamp_feature(
     deploy_features_through_api([new_feature])
 
     # Check SDK code generation
-    loaded_feature = Feature.get(new_feature.name)
+    loaded_feature = Feature.get(new_feature.name, context=forecast_context.name)
     check_sdk_code_generation(
         loaded_feature,
         to_use_saved_data=True,

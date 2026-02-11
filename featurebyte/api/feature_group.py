@@ -424,6 +424,7 @@ class BaseFeatureGroup(AsyncMixin):
                     name=feat.name,
                     node_name=node_name_map[feat.node_name],
                     tabular_source=feat.tabular_source,
+                    context_id=feat.context_id,
                 )
             )
 

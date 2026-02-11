@@ -313,3 +313,35 @@ def iterate_api_object_using_paginated_routes(
                 yield obj_dict
         else:
             raise RecordRetrievalException(response, f"Failed to list {route}.")
+
+
+def resolve_context_id(context: Optional[str], use_case: Optional[str]) -> Optional[str]:
+    """
+    Resolve context id from given context and / or use case
+
+    Parameters
+    ----------
+    context: Optional[str]
+        Context to resolve context id from
+    use_case: Optional[str]
+        Use case to resolve context id from
+
+    Raises
+    ------
+    ValueError
+        When both context and use_case are specified
+
+    Returns
+    -------
+    str
+    """
+    from featurebyte.api.context import Context  # pylint: disable=import-outside-toplevel
+    from featurebyte.api.use_case import UseCase  # pylint: disable=import-outside-toplevel
+
+    if context is not None and use_case is not None:
+        raise ValueError("Cannot specify both 'context' and 'use_case'.")
+    if context is not None:
+        return str(Context.get(context).id)
+    if use_case is not None:
+        return str(UseCase.get(use_case).context_id)
+    return None

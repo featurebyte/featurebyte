@@ -27,9 +27,8 @@ from typeguard import typechecked
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_list import FeatureListListHandler
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping, resolve_context_id
 from featurebyte.api.base_table import TableApiObject
-from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup, Item
@@ -234,14 +233,40 @@ class FeatureListNamespace(ApiObject):
         )
 
     @classmethod
-    def _resolve_context_id(cls, context: Optional[str], use_case: Optional[str]) -> Optional[str]:
-        if context is not None and use_case is not None:
-            raise ValueError("Cannot specify both 'context' and 'use_case'.")
-        if context is not None:
-            return str(Context.get(context).id)
-        if use_case is not None:
-            return str(UseCase.get(use_case).context_id)
-        return None
+    def get(
+        cls,
+        name: str,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> FeatureListNamespace:
+        """
+        Retrieve the FeatureListNamespace from the persistent data store given the object's name, and version.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised. To fix this, you should save the object first.
+
+        Parameters
+        ----------
+        name: str
+            Name of the FeatureList to retrieve.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
+
+        Returns
+        -------
+        FeatureListNamespace
+            FeatureListNamespace object.
+        """
+        params: Dict[str, Any] = {}
+        context_id = resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        return cls._get(name=name, other_params=params)
 
     @classmethod
     def list(
@@ -281,7 +306,7 @@ class FeatureListNamespace(ApiObject):
             Table of feature lists
         """
         params: Dict[str, Any] = {}
-        context_id = cls._resolve_context_id(context, use_case)
+        context_id = resolve_context_id(context, use_case)
         if context_id is not None:
             params["context_id"] = context_id
         feature_lists = cls._list(include_id=include_id, params=params)
@@ -657,7 +682,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return {"items": []}
 
     @classmethod
-    def get(cls, name: str, version: Optional[str] = None) -> FeatureList:
+    def get(
+        cls,
+        name: str,
+        version: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> FeatureList:
         """
         Retrieve the FeatureList from the persistent data store given the object's name, and version.
 
@@ -670,6 +701,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             Name of the FeatureList to retrieve.
         version: Optional[str]
             FeatureList version, if None, the default version will be returned.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -683,9 +721,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
         if version is None:
-            feature_list_namespace = FeatureListNamespace.get(name=name)
+            feature_list_namespace = FeatureListNamespace.get(
+                name=name, context=context, use_case=use_case
+            )
             return cls.get_by_id(id=feature_list_namespace.default_feature_list_id)
-        return cls._get(name=name, other_params={"version": version})
+
+        params: Dict[str, Any] = {"version": version}
+        context_id = resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        return cls._get(name=name, other_params=params)
 
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]

@@ -111,6 +111,23 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                     )
                     raise ValueError(error_message)
 
+        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
+        if isinstance(self.input_series, Feature) and isinstance(self.other, Feature):
+            # Check that context_ids are compatible
+            self_context_id = self.input_series.context_id
+            other_context_id = self.other.context_id
+            if (
+                self_context_id is not None
+                and other_context_id is not None
+                and self_context_id != other_context_id
+            ):
+                raise ValueError(
+                    f"Operations between features from different contexts are not supported. "
+                    f'Feature "{self.input_series.name}" has context_id "{self_context_id}", '
+                    f'while feature "{self.other.name}" has context_id "{other_context_id}".'
+                )
+
 
 class FrozenSeries(
     QueryObject,

@@ -2,6 +2,8 @@
 Feature Namespace module.
 """
 
+from __future__ import annotations
+
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
@@ -9,15 +11,13 @@ from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
-from featurebyte.api.api_object_util import ForeignKeyMapping
-from featurebyte.api.context import Context
+from featurebyte.api.api_object_util import ForeignKeyMapping, resolve_context_id
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
     FEATURE_LIST_FOREIGN_KEYS,
     filter_feature_list,
 )
-from featurebyte.api.use_case import UseCase
 from featurebyte.enum import FeatureType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -109,14 +109,40 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
         )
 
     @classmethod
-    def _resolve_context_id(cls, context: Optional[str], use_case: Optional[str]) -> Optional[str]:
-        if context is not None and use_case is not None:
-            raise ValueError("Cannot specify both 'context' and 'use_case'.")
-        if context is not None:
-            return str(Context.get(context).id)
-        if use_case is not None:
-            return str(UseCase.get(use_case).context_id)
-        return None
+    def get(
+        cls,
+        name: str,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> FeatureNamespace:
+        """
+        Retrieve the FeatureNamespace from the persistent data store given the object's name.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
+
+        Parameters
+        ----------
+        name: str
+            Name of the FeatureNamespace to retrieve.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
+
+        Returns
+        -------
+        FeatureNamespace
+            FeatureNamespace object.
+        """
+        params: Dict[str, Any] = {}
+        context_id = resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        return cls._get(name=name, other_params=params)
 
     @classmethod
     def list(
@@ -154,7 +180,7 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
             Table of features
         """
         params: Dict[str, Any] = {}
-        context_id = cls._resolve_context_id(context, use_case)
+        context_id = resolve_context_id(context, use_case)
         if context_id is not None:
             params["context_id"] = context_id
         feature_list = cls._list(include_id=include_id, params=params)
