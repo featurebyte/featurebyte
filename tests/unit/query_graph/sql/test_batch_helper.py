@@ -106,3 +106,6 @@ def test_split_nodes__forecast_point_dt_feature(
         num_features_per_query=1,
         source_info=source_info,
     )
+    assert len(result) == 2
+    assert result[0][0].parameters.name == "days_until_forecast"
+    assert result[1][0].parameters.name == "forecast_point_day"

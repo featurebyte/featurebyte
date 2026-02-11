@@ -17,10 +17,12 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, FeatureQuery
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec, AggregationSpec
 from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
 NUM_FEATURES_PER_QUERY = int(os.getenv("FEATUREBYTE_NUM_FEATURES_PER_QUERY", "20"))
+
+MISSING_AGG_SPEC_KEY = "MISSING_AGG_SPEC_KEY"
 
 
 def split_nodes(
@@ -59,32 +61,30 @@ def split_nodes(
     def get_sort_key(node: Node) -> str:
         mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
         agg_specs = planner.get_aggregation_specs(mapped_node)
-        agg_spec = agg_specs[0]
-        primary_table_ids = [
-            input_node.parameters.id
-            for input_node in QueryGraph.get_primary_input_nodes_from_graph_model(
-                graph=planner.graph, node_name=mapped_node.name
-            )
-        ]
-        primary_table_ids_key = ",".join([str(table_id) for table_id in primary_table_ids])
-        parts = [primary_table_ids_key, agg_spec.aggregation_type.value]
-        if isinstance(agg_spec, TileBasedAggregationSpec):
-            aggregation_id = agg_spec.aggregation_id
-            if aggregation_id not in tile_compute_signature_mapping:
-                tile_infos = interpreter.construct_tile_gen_sql(node, False)
-                tile_compute_signature = get_tile_compute_spec_signature(
-                    tile_infos[0].tile_compute_spec
+        if agg_specs:
+            agg_spec = agg_specs[0]
+            primary_table_ids = [
+                input_node.parameters.id
+                for input_node in QueryGraph.get_primary_input_nodes_from_graph_model(
+                    graph=planner.graph, node_name=mapped_node.name
                 )
-                hasher = hashlib.shake_128()
-                hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
-                tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
-            parts.append(tile_compute_signature_mapping[aggregation_id])
+            ]
+            primary_table_ids_key = ",".join([str(table_id) for table_id in primary_table_ids])
+            parts = [primary_table_ids_key, agg_spec.aggregation_type.value]
+            if isinstance(agg_spec, TileBasedAggregationSpec):
+                aggregation_id = agg_spec.aggregation_id
+                if aggregation_id not in tile_compute_signature_mapping:
+                    tile_infos = interpreter.construct_tile_gen_sql(node, False)
+                    tile_compute_signature = get_tile_compute_spec_signature(
+                        tile_infos[0].tile_compute_spec
+                    )
+                    hasher = hashlib.shake_128()
+                    hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
+                    tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
+                parts.append(tile_compute_signature_mapping[aggregation_id])
         else:
-            # These queries join with source tables directly. Sort by query node name of the source
-            # to group nodes that join with the same source table.
-            query_node = planner.graph.get_node_by_name(agg_spec.aggregation_source.query_node_name)
-            parts.append(query_node.name)
-
+            # Features derived purely from user defined features or forecast point
+            parts = [MISSING_AGG_SPEC_KEY]
         key = ",".join(parts)
         return key
 
