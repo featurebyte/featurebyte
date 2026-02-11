@@ -3005,6 +3005,33 @@ def days_until_forecast_feature_fixture(
     return feature
 
 
+@pytest.fixture(name="forecast_point_dt_feature")
+def forecast_point_dt_feature_fixture(cust_id_entity):
+    """
+    Fixture for a feature derived from forecast point date parts
+    """
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context_for_fixture",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
+
+    # Create a feature using forecast_point from context
+    feature = forecast_context.get_forecast_point_feature().dt.day
+    feature.name = "forecast_point_day"
+    feature.save()
+
+    return feature
+
+
 @pytest.fixture(name="latest_event_timestamp_unbounded_feature")
 def latest_event_timestamp_unbounded_feature_fixture(
     snowflake_event_view_with_entity, feature_group_feature_job_setting
