@@ -27,7 +27,13 @@ FROM (
     F_TIMESTAMP_TO_INDEX(
       CAST(CONVERT_TIMEZONE(
         'UTC',
-        TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+        TO_TIMESTAMP_TZ(
+          CONCAT(
+            TO_CHAR(CAST("event_timestamp" AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS'),
+            ' ',
+            "tz_offset"
+          )
+        )
       ) AS TIMESTAMP),
       300,
       600,

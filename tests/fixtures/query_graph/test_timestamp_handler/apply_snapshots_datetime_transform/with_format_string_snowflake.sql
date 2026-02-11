@@ -8,7 +8,11 @@ SELECT
       -900,
       DATE_TRUNC(
         'minute',
-        CONVERT_TIMEZONE('UTC', 'Europe/London', TO_TIMESTAMP("event_timestamp", '%Y-%m-%d %H:%M:%S'))
+        CONVERT_TIMEZONE(
+          'UTC',
+          'Europe/London',
+          CAST(TO_TIMESTAMP("event_timestamp", '%Y-%m-%d %H:%M:%S') AS TIMESTAMP)
+        )
       )
     ),
     '%Y-%m-%d %H:%M:%S'

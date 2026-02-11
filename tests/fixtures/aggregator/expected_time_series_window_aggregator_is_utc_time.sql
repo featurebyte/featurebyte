@@ -31,7 +31,11 @@ WITH "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER
     "snapshot_date" AS "__FB_VIEW_REFERENCE_DATETIME",
     DATE_PART(
       EPOCH_SECOND,
-      CONVERT_TIMEZONE('UTC', 'Asia/Singapore', TO_TIMESTAMP("snapshot_date", 'YYYYMMDD'))
+      CONVERT_TIMEZONE(
+        'UTC',
+        'Asia/Singapore',
+        CAST(TO_TIMESTAMP("snapshot_date", 'YYYYMMDD') AS TIMESTAMP)
+      )
     ) AS "__FB_VIEW_TIMESTAMP_EPOCH"
   FROM (
     SELECT DISTINCT

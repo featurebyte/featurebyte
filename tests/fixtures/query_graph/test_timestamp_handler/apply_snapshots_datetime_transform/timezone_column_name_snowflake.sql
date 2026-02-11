@@ -7,7 +7,11 @@ SELECT
     -86400,
     DATE_TRUNC(
       'day',
-      CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', CONVERT_TIMEZONE("tz_name", 'UTC', "event_timestamp"))
+      CONVERT_TIMEZONE(
+        'UTC',
+        'America/Los_Angeles',
+        CAST(CONVERT_TIMEZONE("tz_name", 'UTC', CAST("event_timestamp" AS TIMESTAMP)) AS TIMESTAMP)
+      )
     )
   ) AS "__FB_SNAPSHOTS_ADJUSTED_event_timestamp"
 FROM events

@@ -1,1 +1,1 @@
-CONVERT_TIMEZONE('UTC', 'Asia/Singapore', "original_timestamp")
+CONVERT_TIMEZONE('UTC', 'Asia/Singapore', CAST("original_timestamp" AS TIMESTAMP))

@@ -11,7 +11,11 @@ FROM (
     "order_method" AS "order_method",
     TO_CHAR(
       DATE_ADD(
-        DATE_ADD(DATE_TRUNC('day', CONVERT_TIMEZONE('UTC', 'Asia/Singapore', "ts")), -86400, 'SECOND'),
+        DATE_ADD(
+          DATE_TRUNC('day', CONVERT_TIMEZONE('UTC', 'Asia/Singapore', CAST("ts" AS TIMESTAMP))),
+          -86400,
+          'SECOND'
+        ),
         -259200,
         'SECOND'
       ),

@@ -5,6 +5,10 @@ SELECT
   DATEADD(
     SECOND,
     -172800,
-    DATEADD(SECOND, -86400, DATE_TRUNC('day', CONVERT_TIMEZONE('UTC', 'UTC', "event_timestamp")))
+    DATEADD(
+      SECOND,
+      -86400,
+      DATE_TRUNC('day', CONVERT_TIMEZONE('UTC', 'UTC', CAST("event_timestamp" AS TIMESTAMP)))
+    )
   ) AS "__FB_SNAPSHOTS_ADJUSTED_event_timestamp"
 FROM events

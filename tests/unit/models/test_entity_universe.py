@@ -458,11 +458,23 @@ def test_item_aggregate_with_timestamp_schema_universe(
               WHERE
                 CAST(CONVERT_TIMEZONE(
                   'UTC',
-                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                  TO_TIMESTAMP_TZ(
+                    CONCAT(
+                      TO_CHAR(CAST("event_timestamp" AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS'),
+                      ' ',
+                      "tz_offset"
+                    )
+                  )
                 ) AS TIMESTAMP) >= __fb_last_materialized_timestamp
                 AND CAST(CONVERT_TIMEZONE(
                   'UTC',
-                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                  TO_TIMESTAMP_TZ(
+                    CONCAT(
+                      TO_CHAR(CAST("event_timestamp" AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS'),
+                      ' ',
+                      "tz_offset"
+                    )
+                  )
                 ) AS TIMESTAMP) < __fb_current_feature_timestamp
             )
             GROUP BY

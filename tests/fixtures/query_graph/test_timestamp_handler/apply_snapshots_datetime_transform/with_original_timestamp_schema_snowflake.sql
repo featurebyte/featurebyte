@@ -10,7 +10,7 @@ SELECT
       CONVERT_TIMEZONE(
         'UTC',
         'Asia/Singapore',
-        CONVERT_TIMEZONE('America/Los_Angeles', 'UTC', "event_timestamp")
+        CAST(CONVERT_TIMEZONE('America/Los_Angeles', 'UTC', CAST("event_timestamp" AS TIMESTAMP)) AS TIMESTAMP)
       )
     )
   ) AS "__FB_SNAPSHOTS_ADJUSTED_event_timestamp"
