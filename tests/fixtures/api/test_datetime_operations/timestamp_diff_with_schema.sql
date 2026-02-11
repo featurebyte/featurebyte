@@ -12,7 +12,7 @@ SELECT
     DATEDIFF(
       MICROSECOND,
       "another_timestamp_col",
-      CONVERT_TIMEZONE('Etc/UTC', 'UTC', TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS'))
+      CONVERT_TIMEZONE('Etc/UTC', 'UTC', CAST(TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') AS TIMESTAMP))
     ) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)
   ) AS "new_col"
 FROM "sf_database"."sf_schema"."time_series_table"
