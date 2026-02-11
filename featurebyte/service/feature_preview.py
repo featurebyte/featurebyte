@@ -15,6 +15,7 @@ from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
@@ -36,6 +37,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.preview import FeatureOrTargetPreview, FeaturePreview, TargetPreview
 from featurebyte.service.column_statistics import ColumnStatisticsService
+from featurebyte.service.context import ContextService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -75,6 +77,7 @@ class FeaturePreviewService(PreviewService):
         cron_helper: CronHelper,
         column_statistics_service: ColumnStatisticsService,
         development_dataset_service: DevelopmentDatasetService,
+        context_service: ContextService,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -91,6 +94,7 @@ class FeaturePreviewService(PreviewService):
         self.target_service = target_service
         self.cron_helper = cron_helper
         self.column_statistics_service = column_statistics_service
+        self.context_service = context_service
 
     @property
     def feature_list_preview_max_features_number(self) -> int:
@@ -108,7 +112,7 @@ class FeaturePreviewService(PreviewService):
         preview_observation_set: PreviewObservationSet,
         is_time_based: bool,
         serving_names_mapping: Optional[Dict[str, str]],
-    ) -> Tuple[list[Dict[str, Any]], bool]:
+    ) -> Tuple[list[Dict[str, Any]], bool, Optional[ForecastPointSchema]]:
         """
         Helper method to update point in time if needed.
 
@@ -123,15 +127,17 @@ class FeaturePreviewService(PreviewService):
 
         Returns
         -------
-        Tuple[list[Dict[str, Any]], bool]
-            updated list of dictionary, and whether the dictionary was updated with an arbitrary time. Updated will only return
-            True if the dictionary did not contain a point in time variable before.
+        Tuple[list[Dict[str, Any]], bool, Optional[ForecastPointSchema]]
+            updated list of dictionary, whether the dictionary was updated with an arbitrary time,
+            and forecast_point_schema from the observation table's context (if any)
 
         Raises
         ------
         MissingPointInTimeColumnError
             raised if the point in time column is not provided in the dictionary for a time based feature
         """
+        forecast_point_schema: Optional[ForecastPointSchema] = None
+
         # Validate the observation_table_id
         if preview_observation_set.observation_table_id is not None:
             observation_table = await self.observation_table_service.get_document(
@@ -174,6 +180,15 @@ class FeaturePreviewService(PreviewService):
                 columns_to_drop.append(InternalName.TABLE_ROW_WEIGHT)
             if columns_to_drop:
                 observation_set_dataframe.drop(columns_to_drop, axis=1, inplace=True)
+
+            # Check if observation table's context has forecast_point_schema
+            if observation_table.context_id is not None:
+                context = await self.context_service.get_document(
+                    document_id=observation_table.context_id
+                )
+                if context.forecast_point_schema is not None:
+                    forecast_point_schema = context.forecast_point_schema
+
             point_in_time_and_serving_name_list = observation_set_dataframe.to_dict(
                 orient="records"
             )
@@ -205,7 +220,7 @@ class FeaturePreviewService(PreviewService):
                     point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
                 ).tz_localize(None)
 
-        return point_in_time_and_serving_name_list, updated
+        return point_in_time_and_serving_name_list, updated, forecast_point_schema
 
     def _get_cron_job_schedule_table_set(
         self,
@@ -274,6 +289,7 @@ class FeaturePreviewService(PreviewService):
         (
             point_in_time_and_serving_name_list,
             updated,
+            forecast_point_schema,
         ) = await self._update_point_in_time_if_needed(
             feature_or_target_preview,
             operation_struction.is_time_based,
@@ -307,6 +323,7 @@ class FeaturePreviewService(PreviewService):
             parent_serving_preparation=parent_serving_preparation,
             job_schedule_table_set=job_schedule_table_set,
             column_statistics_info=column_statistics_info,
+            forecast_point_schema=forecast_point_schema,
         )
         result = await session.execute_query(preview_sql)
         if result is None:
@@ -413,6 +430,7 @@ class FeaturePreviewService(PreviewService):
         (
             point_in_time_and_serving_name_list,
             updated,
+            forecast_point_schema,
         ) = await self._update_point_in_time_if_needed(
             featurelist_preview,
             has_time_based_feature,
@@ -453,6 +471,7 @@ class FeaturePreviewService(PreviewService):
                 parent_serving_preparation=parent_serving_preparation,
                 job_schedule_table_set=job_schedule_table_set,
                 column_statistics_info=column_statistics_info,
+                forecast_point_schema=forecast_point_schema,
             )
             _result = await db_session.execute_query(preview_sql)
             if result is None:

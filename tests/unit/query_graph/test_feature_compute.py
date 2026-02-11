@@ -575,6 +575,7 @@ def test_feature_execution_planner__lookup_features(
         "left_table_join_keys": None,
         "forward_point_in_time_offset": None,
         "event_timestamp_column": None,
+        "point_in_time_column": "POINT_IN_TIME",
     }
 
     assert plan.required_entity_ids == {ObjectId("63dbe68cd918ef71acffd127")}

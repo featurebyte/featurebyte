@@ -7,8 +7,10 @@ from __future__ import annotations
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.target import ComputeTargetRequest
+from featurebyte.service.context import ContextService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -40,11 +42,13 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         observation_table_service: ObservationTableService,
+        context_service: ContextService,
     ):
         self.feature_table_cache_service = feature_table_cache_service
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.observation_table_service = observation_table_service
+        self.context_service = context_service
 
     async def execute(self, executor_params: ExecutorParams) -> ExecutionResult:
         """
@@ -68,6 +72,18 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 )
             except DocumentNotFoundError:
                 is_temp_observation_table = True
+
+        # Check if observation table's context has forecast_point_schema
+        forecast_point_schema: ForecastPointSchema | None = None
+        if (
+            isinstance(executor_params.observation_set, ObservationTableModel)
+            and executor_params.observation_set.context_id is not None
+        ):
+            context = await self.context_service.get_document(
+                document_id=executor_params.observation_set.context_id
+            )
+            if context.forecast_point_schema is not None:
+                forecast_point_schema = context.forecast_point_schema
 
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
@@ -100,6 +116,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 progress_callback=executor_params.progress_callback,
                 system_metrics_service=self.system_metrics_service,
+                forecast_point_schema=forecast_point_schema,
             )
             historical_features_metrics = features_computation_result.historical_features_metrics
             is_output_view = False

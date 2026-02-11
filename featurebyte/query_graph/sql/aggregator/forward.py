@@ -10,7 +10,6 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
     Aggregator,
@@ -34,7 +33,9 @@ class ForwardAggregator(Aggregator[ForwardAggregateSpec]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.request_table_plan = RequestTablePlan(is_time_aware=True)
+        self.request_table_plan = RequestTablePlan(
+            is_time_aware=True, forecast_point_schema=self.forecast_point_schema
+        )
 
     def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         return self.request_table_plan.construct_request_table_ctes(request_table_name)
@@ -60,7 +61,9 @@ class ForwardAggregator(Aggregator[ForwardAggregateSpec]):
         spec = specs[0]
 
         # End point expression
-        point_in_time_expr = get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")
+        point_in_time_expr = get_qualified_column_identifier(
+            self.target_point_in_time_column, "REQ"
+        )
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_expr)
         window_in_seconds = 0
         if spec.parameters.window:
@@ -105,7 +108,7 @@ class ForwardAggregator(Aggregator[ForwardAggregateSpec]):
         groupby_keys = [
             GroupbyKey(
                 expr=point_in_time_expr,
-                name=SpecialColumnName.POINT_IN_TIME,
+                name=self.target_point_in_time_column,
             )
         ] + [
             GroupbyKey(
@@ -175,7 +178,7 @@ class ForwardAggregator(Aggregator[ForwardAggregateSpec]):
         return LeftJoinableSubquery(
             expr=forward_agg_expr,
             column_names=[s.agg_result_name for s in specs],
-            join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+            join_keys=[self.target_point_in_time_column] + spec.serving_names,
         )
 
     def update_aggregation_table_expr(

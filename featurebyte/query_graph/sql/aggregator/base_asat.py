@@ -10,7 +10,7 @@ from typing import Any, Optional, TypeVar, cast
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
     Aggregator,
@@ -49,7 +49,9 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.request_table_plan = RequestTablePlan(is_time_aware=True)
+        self.request_table_plan = RequestTablePlan(
+            is_time_aware=True, forecast_point_schema=self.forecast_point_schema
+        )
         self.snapshots_request_table_plan = SnapshotsRequestTablePlan(adapter=self.adapter)
 
     @classmethod
@@ -143,7 +145,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         point_in_time_expr = adjust_point_in_time_for_offset(
             adapter=self.adapter,
             point_in_time_expr=get_qualified_column_identifier(
-                SpecialColumnName.POINT_IN_TIME, "REQ"
+                self.target_point_in_time_column, "REQ"
             ),
             offset=spec.parameters.offset,
             offset_direction=self.get_offset_direction(),
@@ -162,8 +164,8 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
 
         groupby_keys = [
             GroupbyKey(
-                expr=get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
-                name=SpecialColumnName.POINT_IN_TIME,
+                expr=get_qualified_column_identifier(self.target_point_in_time_column, "REQ"),
+                name=self.target_point_in_time_column,
             )
         ] + [
             GroupbyKey(
@@ -222,7 +224,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         return LeftJoinableSubquery(
             expr=aggregate_asat_expr,
             column_names=[s.agg_result_name for s in specs],
-            join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+            join_keys=[self.target_point_in_time_column] + spec.serving_names,
         )
 
     def _get_aggregation_subquery_from_scd_deployment(
@@ -422,7 +424,7 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
         return LeftJoinableSubquery(
             expr=aggregated_expr,
             column_names=aggregated_column_names,
-            join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
+            join_keys=[self.target_point_in_time_column] + spec.serving_names,
         )
 
     def _get_aggregation_subquery_from_snapshots_deployment(

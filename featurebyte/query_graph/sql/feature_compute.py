@@ -15,7 +15,7 @@ from sqlglot.expressions import select
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.utils import timer_log
-from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName, SourceType, SpecialColumnName
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
@@ -26,6 +26,7 @@ from featurebyte.models.parent_serving import (
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
@@ -320,11 +321,13 @@ class FeatureExecutionPlan:
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         feature_store_details: Optional[FeatureStoreDetails] = None,
         is_deployment_sql: bool = False,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> None:
         aggregator_kwargs = {
             "source_info": source_info,
             "is_online_serving": is_online_serving,
             "is_deployment_sql": is_deployment_sql,
+            "forecast_point_schema": forecast_point_schema,
         }
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
@@ -347,6 +350,7 @@ class FeatureExecutionPlan:
         self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
         self.is_deployment_sql = is_deployment_sql
+        self.forecast_point_schema = forecast_point_schema
 
     @property
     def required_entity_ids(self) -> set[ObjectId]:
@@ -842,6 +846,30 @@ class FeatureExecutionPlan:
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
+        if self.forecast_point_schema is not None:
+            from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+            from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
+
+            ts_schema = TimestampSchema(
+                format_string=self.forecast_point_schema.format_string,
+                is_utc_time=self.forecast_point_schema.is_utc_time or False,
+                timezone=self.forecast_point_schema.timezone,
+            )
+            utc_expr = convert_timestamp_to_utc(
+                quoted_identifier(SpecialColumnName.FORECAST_POINT), ts_schema, self.adapter
+            )
+            wrapper_expr = select(
+                expressions.Star(),
+                expressions.alias_(utc_expr, InternalName.FORECAST_POINT_UTC, quoted=True),
+            ).from_(quoted_identifier(request_table_name))
+            request_table_name = "WITH_FORECAST_POINT_UTC_" + request_table_name
+            common_tables.append(
+                CommonTable(name=request_table_name, expr=wrapper_expr, quoted=False)
+            )
+            if request_table_columns is not None:
+                request_table_columns = request_table_columns + [InternalName.FORECAST_POINT_UTC]
+            exclude_columns.add(InternalName.FORECAST_POINT_UTC)
+
         # When possible, generate simplified feature query without left joining with request table
         # for simple queries (no join under deployment sql setting)
         simplifiable_feature_subquery = self.get_simplifiable_feature_subquery()
@@ -934,6 +962,7 @@ class FeatureExecutionPlanner:
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
         is_deployment_sql: bool = False,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -948,6 +977,7 @@ class FeatureExecutionPlanner:
             parent_serving_preparation=parent_serving_preparation,
             job_schedule_table_set=job_schedule_table_set,
             is_deployment_sql=is_deployment_sql,
+            forecast_point_schema=forecast_point_schema,
         )
         self.source_info = source_info
         self.serving_names_mapping = serving_names_mapping
