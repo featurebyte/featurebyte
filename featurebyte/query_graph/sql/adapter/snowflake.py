@@ -172,12 +172,16 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
+    def _ensure_timestamp(cls, expr: Expression) -> Expression:
+        """Cast expression to TIMESTAMP to handle DATE types."""
+        return expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMP"))
+
+    @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
-        return expressions.Cast(
-            this=expressions.Anonymous(
+        return cls._ensure_timestamp(
+            expressions.Anonymous(
                 this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
-            ),
-            to=expressions.DataType.build("TIMESTAMP"),
+            )
         )
 
     @classmethod
@@ -529,11 +533,7 @@ class SnowflakeAdapter(BaseAdapter):
         timezone: Expression,
         timezone_type: Literal["name", "offset"],
     ) -> Expression:
-        # Cast to TIMESTAMP to handle DATE types - CONVERT_TIMEZONE requires TIMESTAMP
-        timestamp_expr = expressions.Cast(
-            this=expr,
-            to=expressions.DataType.build("TIMESTAMP"),
-        )
+        timestamp_expr = cls._ensure_timestamp(expr)
         if timezone_type == "name":
             return expressions.Anonymous(
                 this="CONVERT_TIMEZONE",
@@ -558,11 +558,7 @@ class SnowflakeAdapter(BaseAdapter):
     def convert_utc_to_timezone(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
-        # Cast to TIMESTAMP to handle DATE types - CONVERT_TIMEZONE requires TIMESTAMP
-        timestamp_expr = expressions.Cast(
-            this=expr,
-            to=expressions.DataType.build("TIMESTAMP"),
-        )
+        timestamp_expr = cls._ensure_timestamp(expr)
         if timezone_type == "name":
             return expressions.Anonymous(
                 this="CONVERT_TIMEZONE",
