@@ -173,7 +173,19 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def _ensure_timestamp(cls, expr: Expression) -> Expression:
-        """Cast expression to TIMESTAMP to handle DATE types."""
+        """
+        Cast expression to TIMESTAMP to handle DATE types.
+
+        Parameters
+        ----------
+        expr : Expression
+            The expression to cast
+
+        Returns
+        -------
+        Expression
+            The expression cast to TIMESTAMP
+        """
         return expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMP"))
 
     @classmethod
