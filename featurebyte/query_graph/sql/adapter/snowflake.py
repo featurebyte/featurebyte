@@ -529,15 +529,20 @@ class SnowflakeAdapter(BaseAdapter):
         timezone: Expression,
         timezone_type: Literal["name", "offset"],
     ) -> Expression:
+        # Cast to TIMESTAMP to handle DATE types - CONVERT_TIMEZONE requires TIMESTAMP
+        timestamp_expr = expressions.Cast(
+            this=expr,
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
         if timezone_type == "name":
             return expressions.Anonymous(
                 this="CONVERT_TIMEZONE",
-                expressions=[make_literal_value(timezone), make_literal_value("UTC"), expr],
+                expressions=[timezone, make_literal_value("UTC"), timestamp_expr],
             )
         timestamp_str = expressions.Anonymous(
             this="TO_CHAR",
             expressions=[
-                expr,
+                timestamp_expr,
                 make_literal_value("YYYY-MM-DD HH24:MI:SS"),
             ],
         )
@@ -553,16 +558,21 @@ class SnowflakeAdapter(BaseAdapter):
     def convert_utc_to_timezone(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
+        # Cast to TIMESTAMP to handle DATE types - CONVERT_TIMEZONE requires TIMESTAMP
+        timestamp_expr = expressions.Cast(
+            this=expr,
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
         if timezone_type == "name":
             return expressions.Anonymous(
                 this="CONVERT_TIMEZONE",
-                expressions=[make_literal_value("UTC"), make_literal_value(timezone), expr],
+                expressions=[make_literal_value("UTC"), timezone, timestamp_expr],
             )
         timezone_offset_seconds = expressions.Anonymous(
             this="F_TIMEZONE_OFFSET_TO_SECOND",
             expressions=[timezone],
         )
-        return cls.dateadd_second(timezone_offset_seconds, expr)
+        return cls.dateadd_second(timezone_offset_seconds, timestamp_expr)
 
     @classmethod
     def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:

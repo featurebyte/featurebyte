@@ -133,7 +133,7 @@ SELECT
     DATEDIFF(
       MICROSECOND,
       "_fb_internal_cust_id_window_w7776000_latest_d9b2a8ebb02e7a6916ae36e9cc223759433c01e2",
-      CONVERT_TIMEZONE('America/New_York', 'UTC', "FORECAST_POINT")
+      CONVERT_TIMEZONE('America/New_York', 'UTC', CAST("FORECAST_POINT" AS TIMESTAMP))
     ) * CAST(1 AS BIGINT) / CAST(86400000000 AS BIGINT)
   ) AS DOUBLE) AS "days_until_forecast"
 FROM _FB_AGGREGATED AS AGG
