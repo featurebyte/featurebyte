@@ -85,3 +85,24 @@ def test_split_nodes(features_set_1, features_set_2, source_info):
     actual_node_names = sorted([actual_node_names_set_1, actual_node_names_set_2])
 
     assert actual_node_names == expected_node_names
+
+
+def test_split_nodes__forecast_point_dt_feature(
+    days_until_forecast_feature,
+    forecast_point_dt_feature,
+    source_info,
+):
+    """
+    Test split_nodes can handle forecast point datetime features
+    """
+    graph = days_until_forecast_feature.graph
+    nodes = [
+        days_until_forecast_feature.node,
+        forecast_point_dt_feature.node,
+    ]
+    result = split_nodes(
+        graph=graph,
+        nodes=nodes,
+        num_features_per_query=1,
+        source_info=source_info,
+    )
