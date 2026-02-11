@@ -111,10 +111,12 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                     )
                     raise ValueError(error_message)
 
-        if isinstance(self.other, Series):
+        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
+        if isinstance(self.input_series, Feature) and isinstance(self.other, Feature):
             # Check that context_ids are compatible
-            self_context_id = getattr(self.input_series, "internal_context_id", None)
-            other_context_id = getattr(self.other, "internal_context_id", None)
+            self_context_id = self.input_series.context_id
+            other_context_id = self.other.context_id
             if (
                 self_context_id is not None
                 and other_context_id is not None

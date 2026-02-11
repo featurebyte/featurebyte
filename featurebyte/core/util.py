@@ -59,9 +59,9 @@ def validate_numeric_series(series_list: List[Series]) -> None:
 
 
 def _get_context_id_kwargs(*series_list: FrozenSeries) -> dict[str, Any]:
-    """Get context_id constructor kwargs resolved from the given series.
+    """Get context_id constructor kwargs resolved from features among the series
 
-    If any series has a non-None context_id, it is included in the returned kwargs.
+    If any feature has a non-None context_id, it is included in the returned kwargs.
     Assumes cross-context validation has already been done by the caller.
 
     Parameters
@@ -73,10 +73,13 @@ def _get_context_id_kwargs(*series_list: FrozenSeries) -> dict[str, Any]:
     -------
     dict[str, Any]
     """
+    from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
     for series in series_list:
-        context_id = getattr(series, "internal_context_id", None)
-        if context_id is not None:
-            return {"context_id": context_id}
+        if isinstance(series, Feature):
+            context_id = series.context_id
+            if context_id is not None:
+                return {"context_id": context_id}
     return {}
 
 
