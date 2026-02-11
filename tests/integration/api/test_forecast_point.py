@@ -67,7 +67,7 @@ def test_days_until_forecast_from_latest_event(event_table, timestamp_format_str
     feature = (
         forecast_context.get_forecast_point_feature() - latest_event_timestamp_feature
     ).dt.day
-    feature.name = "Days Until Forecast (from latest event)"
+    feature.name = "Days Until Forecast From Latest Event"
 
     feature_list = FeatureList([feature], "test_days_until_forecast_feature_list")
     preview_params = pd.DataFrame([
@@ -78,5 +78,5 @@ def test_days_until_forecast_from_latest_event(event_table, timestamp_format_str
         }
     ])
     expected = preview_params.copy()
-    expected["Days Until Forecast (from latest event)"] = [7.845613]
+    expected["Days Until Forecast From Latest Event"] = [7.845613]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
