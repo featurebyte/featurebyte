@@ -2,6 +2,8 @@
 Feature Namespace module.
 """
 
+from __future__ import annotations
+
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
@@ -105,6 +107,42 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
             list_fields=cls._list_fields,
             list_foreign_keys=cls._list_foreign_keys,
         )
+
+    @classmethod
+    def get(
+        cls,
+        name: str,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> FeatureNamespace:
+        """
+        Retrieve the FeatureNamespace from the persistent data store given the object's name.
+
+        This assumes that the object has been saved to the persistent data store. If the object has not been saved,
+        an exception will be raised and you should create and save the object first.
+
+        Parameters
+        ----------
+        name: str
+            Name of the FeatureNamespace to retrieve.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
+
+        Returns
+        -------
+        FeatureNamespace
+            FeatureNamespace object.
+        """
+        params: Dict[str, Any] = {}
+        context_id = resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        return cls._get(name=name, other_params=params)
 
     @classmethod
     def list(

@@ -15,7 +15,7 @@ from typing_extensions import Literal
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature import FeatureListHandler
-from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping, resolve_context_id
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -327,7 +327,13 @@ class Feature(
         return super().info(verbose)
 
     @classmethod
-    def get(cls, name: str, version: Optional[str] = None) -> Feature:
+    def get(
+        cls,
+        name: str,
+        version: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> Feature:
         """
         Retrieve the Feature from the persistent data store given the object's name, and version.
 
@@ -340,6 +346,13 @@ class Feature(
             Name of the Feature to retrieve.
         version: Optional[str]
             Feature version, if None, the default version will be returned.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -353,9 +366,14 @@ class Feature(
         >>> feature = fb.Feature.get("InvoiceCount_60days")
         """
         if version is None:
-            feature_namespace = FeatureNamespace.get(name=name)
+            feature_namespace = FeatureNamespace.get(name=name, context=context, use_case=use_case)
             return cls.get_by_id(id=feature_namespace.default_feature_id)
-        return cls._get(name=name, other_params={"version": version})
+
+        params: Dict[str, Any] = {"version": version}
+        context_id = resolve_context_id(context, use_case)
+        if context_id is not None:
+            params["context_id"] = context_id
+        return cls._get(name=name, other_params=params)
 
     @classmethod
     def list(
