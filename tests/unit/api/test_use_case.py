@@ -6,10 +6,12 @@ from featurebyte import (
     AssignmentDesign,
     AssignmentSource,
     Context,
+    ForecastPointSchema,
     ObservationTable,
     Propensity,
     TargetNamespace,
     TargetType,
+    TimeIntervalUnit,
     Treatment,
     TreatmentInterference,
     TreatmentTime,
@@ -166,6 +168,45 @@ def test_create_use_case_with_treatment(catalog, cust_id_entity):
     assert use_case.target_namespace_id == namespace.id
     assert use_case.target is None
     assert use_case.use_case_type == UseCaseType.CAUSAL
+
+
+def test_create_use_case_with_forecast_point_schema(catalog, cust_id_entity):
+    """
+    Test create use case with forecast context auto-detects FORECAST type
+    """
+    _ = catalog
+    entity_names = [cust_id_entity.name]
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+
+    context = Context.create(
+        name="test_context_with_forecast",
+        primary_entity=entity_names,
+        description="test_description",
+        forecast_point_schema=forecast_schema,
+    )
+
+    target_name = "forecast_target"
+    namespace = TargetNamespace.create(
+        name=target_name,
+        window="28d",
+        primary_entity=[cust_id_entity.name],
+        dtype=DBVarType.FLOAT,
+        target_type=TargetType.REGRESSION,
+    )
+    assert namespace.name == target_name
+    use_case = UseCase.create(
+        name="test_forecast_use_case",
+        target_name=target_name,
+        context_name=context.name,
+        description="test_forecast_use_case description",
+    )
+    assert use_case.target_namespace_id == namespace.id
+    assert use_case.use_case_type == UseCaseType.FORECAST
 
 
 def test_add_and_remove_observation_table(use_case, target_table):

@@ -9,7 +9,7 @@ from pydantic import StrictStr, model_validator
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseNode
@@ -53,7 +53,7 @@ class RequestColumnNode(BaseNode):
         dtype: DBVarType  # deprecated, keep it for old client compatibility
         dtype_info: DBVarTypeInfo
         # context_id for user-provided columns (not set for POINT_IN_TIME)
-        context_id: Optional[str] = None
+        context_id: Optional[PydanticObjectId] = None
 
         @model_validator(mode="before")
         @classmethod
@@ -129,6 +129,21 @@ class RequestColumnNode(BaseNode):
             )
             obj = ClassEnum.REQUEST_COLUMN(
                 _method_name="point_in_time",
+            )
+            statements.append((var_name, obj))
+        elif self.parameters.column_name == SpecialColumnName.FORECAST_POINT:
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_col", node_name=self.name
+            )
+            # Generate Context.get_by_id("<id>").forecast_point
+            if self.parameters.context_id is None:
+                raise ValueError(
+                    "FORECAST_POINT column requires context_id to be set for SDK code generation"
+                )
+            obj = ClassEnum.CONTEXT(
+                ClassEnum.OBJECT_ID(self.parameters.context_id),
+                _method_name="get_by_id",
+                _suffix=".get_forecast_point_feature()",
             )
             statements.append((var_name, obj))
         elif self.parameters.context_id is not None:

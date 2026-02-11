@@ -112,6 +112,8 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
 
         if context.treatment_id:
             data.use_case_type = UseCaseType.CAUSAL
+        elif context.forecast_point_schema:
+            data.use_case_type = UseCaseType.FORECAST
 
         use_case = await self.create_document(data=data)
 

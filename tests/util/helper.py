@@ -676,6 +676,8 @@ def generate_column_data(var_type, row_number=10, databricks_udf_input=False):
     """Generate data for a given var_type"""
     if var_type in DBVarType.supported_timestamp_types():
         return pd.date_range("2020-01-01", freq="1h", periods=row_number).astype(str)
+    if var_type in DBVarType.DATE:
+        return pd.date_range("2020-01-01", freq="1D", periods=row_number).date.astype(str)
     if var_type in DBVarType.FLOAT:
         return np.random.uniform(size=row_number)
     if var_type in DBVarType.INT:

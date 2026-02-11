@@ -659,3 +659,28 @@ def test_get_feature_preview_sql__time_series_window_aggregate(
         "tests/fixtures/expected_preview_time_series_window_aggregate.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__days_until_forecast_point(
+    days_until_forecast_feature,
+    source_info,
+    update_fixtures,
+):
+    """Test sql generation for features using FORECAST_POINT request column"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+        "FORECAST_POINT": "2022-05-01",
+    }
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=days_until_forecast_feature.graph,
+        nodes=[days_until_forecast_feature.node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_info=source_info,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_days_until_forecast_point.sql",
+        update_fixture=update_fixtures,
+    )

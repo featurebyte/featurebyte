@@ -4,8 +4,9 @@ RequestColumn related classes for on-demand features
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.api.feature_store import FeatureStore
@@ -17,6 +18,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.schema import DummyTableDetails
 
 
@@ -37,7 +39,8 @@ class RequestColumn(Series):
         cls,
         column_name: str,
         column_dtype: DBVarType,
-        context_id: Optional[str] = None,
+        dtype_info: Optional[DBVarTypeInfo] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> RequestColumn:
         """
         Internal method to create a RequestColumn for any column name and dtype.
@@ -51,6 +54,8 @@ class RequestColumn(Series):
             Column name in the request data.
         column_dtype: DBVarType
             Variable type of the column.
+        dtype_info: Optional[DBVarTypeInfo]
+            Optional dtype info with metadata (e.g., timezone schema).
         context_id: Optional[str]
             Context ID for user-provided columns. Used in SDK code generation
             to produce Context.get_by_id(...).get_user_provided_feature(...) calls.
@@ -59,9 +64,18 @@ class RequestColumn(Series):
         -------
         RequestColumn
         """
-        node_params = {"column_name": column_name, "dtype": column_dtype}
+        # Build dtype_info if not provided
+        if dtype_info is None:
+            dtype_info = DBVarTypeInfo(dtype=column_dtype)
+
+        node_params: dict[str, Any] = {
+            "column_name": column_name,
+            "dtype": column_dtype,
+            "dtype_info": dtype_info.model_dump(),
+        }
         if context_id is not None:
             node_params["context_id"] = context_id
+
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.REQUEST_COLUMN,
             node_params=node_params,

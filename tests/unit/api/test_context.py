@@ -9,9 +9,12 @@ from featurebyte import (
     AssignmentDesign,
     AssignmentSource,
     Context,
+    Feature,
+    ForecastPointSchema,
     Propensity,
     TargetNamespace,
     TargetType,
+    TimeIntervalUnit,
     Treatment,
     TreatmentInterference,
     TreatmentTime,
@@ -374,3 +377,103 @@ def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
                 feature2.cached_model,
             ],
         )
+
+
+def test_context_forecast_point_with_timezone(catalog, cust_id_entity):
+    """
+    Test Context.forecast_point property returns RequestColumn with timezone from schema
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+
+    # Create context with forecast_point_schema including timezone
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    context = Context.create(
+        name="forecast_context_with_tz",
+        primary_entity=entity_names,
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Get forecast_point from context
+    forecast_point = context.get_forecast_point_feature()
+
+    # Verify it's a Feature
+    assert isinstance(forecast_point, Feature)
+
+    # Verify the node has correct parameters
+    node_dict = forecast_point.node.model_dump()
+    assert node_dict["parameters"]["column_name"] == "FORECAST_POINT"
+    assert node_dict["parameters"]["dtype"] == "DATE"
+
+    # Verify timezone info is in dtype_info metadata
+    assert node_dict["parameters"]["dtype_info"]["metadata"] is not None
+    ts_schema = node_dict["parameters"]["dtype_info"]["metadata"]["timestamp_schema"]
+    assert ts_schema["timezone"] == "America/New_York"
+    assert ts_schema["is_utc_time"] is False
+
+
+def test_context_forecast_point_without_schema(catalog, cust_id_entity):
+    """
+    Test Context.get_forecast_point_feature raises error when no forecast_point_schema is defined
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+
+    # Create context without forecast_point_schema
+    context = Context.create(
+        name="context_without_forecast",
+        primary_entity=entity_names,
+    )
+
+    # Accessing forecast_point should raise ValueError
+    with pytest.raises(ValueError) as exc:
+        _ = context.get_forecast_point_feature()
+
+    assert "does not have a forecast_point_schema defined" in str(exc.value)
+
+
+def test_context_forecast_point_date_part_extraction(catalog, cust_id_entity):
+    """
+    Test that date parts can be extracted from Context.get_forecast_point_feature
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+
+    # Create context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="Asia/Singapore",
+    )
+    context = Context.create(
+        name="forecast_context_for_extract",
+        primary_entity=entity_names,
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Get forecast_point and extract month
+    forecast_point = context.get_forecast_point_feature()
+    month = forecast_point.dt.month
+
+    # Verify month extraction works
+    assert month.dtype == DBVarType.INT
+
+    # Verify the DT_EXTRACT node has timezone metadata
+    from featurebyte.query_graph.graph import GlobalQueryGraph
+
+    graph = GlobalQueryGraph()
+    dt_extract_node = graph.get_node_by_name(month.node.name)
+    assert dt_extract_node.parameters.timestamp_metadata is not None
+    assert dt_extract_node.parameters.timestamp_metadata.timestamp_schema is not None
+    assert (
+        dt_extract_node.parameters.timestamp_metadata.timestamp_schema.timezone == "Asia/Singapore"
+    )

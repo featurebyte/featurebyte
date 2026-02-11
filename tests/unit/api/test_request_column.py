@@ -3,13 +3,16 @@ RequestColumn unit tests
 """
 
 import pytest
+from bson import ObjectId
 
+from featurebyte.api.context import Context
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TimeIntervalUnit
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
@@ -18,6 +21,7 @@ from tests.util.helper import (
     check_on_demand_feature_code_generation,
     check_sdk_code_generation,
     deploy_features_through_api,
+    reset_global_graph,
 )
 
 
@@ -25,6 +29,7 @@ def test_point_in_time_request_column(catalog):
     """
     Test point_in_time request column
     """
+    reset_global_graph()
     point_in_time = RequestColumn.point_in_time()
     assert isinstance(point_in_time, RequestColumn)
     node_dict = point_in_time.node.model_dump()
@@ -123,7 +128,7 @@ def test_internal_create_request_column_with_context_id():
     """
     Test internal _create_request_column stores context_id in node parameters
     """
-    context_id = "6471a3d0f2b3c8a1e9d5f012"
+    context_id = ObjectId("6471a3d0f2b3c8a1e9d5f012")
     request_col = RequestColumn._create_request_column(
         "annual_income", DBVarType.FLOAT, context_id=context_id
     )
@@ -189,3 +194,122 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
         feature_model=new_feature_model,
         output=output,
     )
+
+
+def test_forecast_point_request_column(catalog):
+    """
+    Test forecast_point request column creation via create_request_column
+    """
+    _ = catalog
+
+    # Create a FORECAST_POINT request column with DATE dtype (default)
+    forecast_point = RequestColumn._create_request_column(
+        "FORECAST_POINT",
+        DBVarType.DATE,
+    )
+    assert isinstance(forecast_point, RequestColumn)
+    node_dict = forecast_point.node.model_dump()
+    # Check node properties (excluding name which depends on global state)
+    assert node_dict["type"] == "request_column"
+    assert node_dict["output_type"] == "series"
+    assert node_dict["parameters"] == {
+        "column_name": "FORECAST_POINT",
+        "dtype": "DATE",
+        "dtype_info": {"dtype": "DATE", "metadata": None},
+        "context_id": None,
+    }
+
+
+def test_forecast_point_minus_timestamp_feature(
+    latest_event_timestamp_feature,
+    cust_id_entity,
+    transaction_entity,
+    mock_deployment_flow,
+    update_fixtures,
+):
+    """
+    Test an on-demand feature involving forecast point.
+    """
+    _ = mock_deployment_flow
+    _ = transaction_entity
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
+
+    # Create a feature using forecast_point from context
+    new_feature = (
+        forecast_context.get_forecast_point_feature() - latest_event_timestamp_feature
+    ).dt.day
+    new_feature.name = "Days Until Forecast (from latest event)"
+    assert isinstance(new_feature, Feature)
+
+    # Verify the feature has correct properties
+    assert new_feature.entity_ids == latest_event_timestamp_feature.entity_ids
+
+    # Save the feature and deploy
+    new_feature.save()
+    deploy_features_through_api([new_feature])
+
+    # Check SDK code generation
+    loaded_feature = Feature.get(new_feature.name)
+    check_sdk_code_generation(
+        loaded_feature,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_forecast_point.py",
+        update_fixtures=update_fixtures,
+        table_id=new_feature.table_ids[0],
+        context_id=forecast_context.id,
+    )
+
+    # Verify the feature model
+    new_feature_model = new_feature.cached_model
+    assert isinstance(new_feature_model, FeatureModel)
+    check_on_demand_feature_code_generation(feature_model=new_feature_model)
+
+
+def test_forecast_point_dt_hour(catalog, cust_id_entity, transaction_entity, mock_deployment_flow):
+    """
+    Test a simple on-demand feature using forecast_point.dt.hour.
+    """
+    _ = catalog
+    _ = mock_deployment_flow
+    _ = transaction_entity
+
+    # Create a context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    forecast_context = Context(
+        name="forecast_context_hour",
+        primary_entity_ids=[cust_id_entity.id],
+        forecast_point_schema=forecast_schema,
+    )
+    forecast_context.save()
+
+    # Create a feature using forecast_point.dt.hour
+    new_feature = forecast_context.get_forecast_point_feature().dt.hour
+    new_feature.name = "Forecast Hour"
+    assert isinstance(new_feature, Feature)
+
+    # Save the feature
+    new_feature.save()
+    # deploy_features_through_api([new_feature])
+    #
+    # # Verify the feature model
+    # new_feature_model = new_feature.cached_model
+    # assert isinstance(new_feature_model, FeatureModel)
+    # check_on_demand_feature_code_generation(feature_model=new_feature_model)

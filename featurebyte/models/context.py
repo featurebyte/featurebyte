@@ -17,6 +17,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 
 
 class UserProvidedColumn(FeatureByteBaseModel):
@@ -48,6 +49,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     primary_entity_ids: List[PydanticObjectId]
     treatment_id: Optional[PydanticObjectId] = Field(default=None)
+    forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
     graph: Optional[QueryGraph] = Field(default=None)
     node_name: Optional[str] = Field(default=None)
 
