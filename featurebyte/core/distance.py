@@ -2,54 +2,12 @@
 Module for distance related operations
 """
 
-from typing import Any, List, Optional
-
 from typeguard import typechecked
 
-from featurebyte import Feature, Target
-from featurebyte.api.view import ViewColumn
 from featurebyte.core.series import Series
+from featurebyte.core.util import validate_numeric_series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-
-def _validate_series(series_list: List[Series]) -> None:
-    """
-    Validate that:
-    - all series are numeric
-    - all series are of the same type (all ViewColumns, or Features, or Targets)
-
-    Parameters
-    ----------
-    series_list: List[Series]
-        List of series to validate
-
-    Raises
-    ------
-    ValueError
-        if any of the series are not numeric
-    """
-    # Check numeric
-    for series in series_list:
-        if not series.is_numeric:
-            raise ValueError(
-                f"Expected all series to be numeric, but got {series.dtype} for series {series.name}"
-            )
-
-    # Check all series are of the same type
-    series_type_to_check: Optional[Any] = Series
-    if isinstance(series_list[0], ViewColumn):
-        series_type_to_check = ViewColumn
-    elif isinstance(series_list[0], Feature):
-        series_type_to_check = Feature
-    elif isinstance(series_list[0], Target):
-        series_type_to_check = Target
-
-    if not series_type_to_check:
-        raise ValueError(f"unknown series type found: {series_list[0].name}")
-
-    for series in series_list:
-        assert isinstance(series, series_type_to_check)
 
 
 @typechecked
@@ -81,7 +39,7 @@ def haversine(
     ...     event_view["LAT_1"], event_view["LON_2"], event_view["LAT_2"], event_view["LON_2"]
     ... )
     """
-    _validate_series([lat_series_1, lon_series_1, lat_series_2, lon_series_2])
+    validate_numeric_series([lat_series_1, lon_series_1, lat_series_2, lon_series_2])
 
     node = lat_series_1.graph.add_operation(
         node_type=NodeType.HAVERSINE,

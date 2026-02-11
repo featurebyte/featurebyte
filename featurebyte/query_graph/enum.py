@@ -46,6 +46,7 @@ class NodeType(StrEnum):
     ACOS = "acos"
     ASIN = "asin"
     ATAN = "atan"
+    ATAN2 = "atan2"
 
     # SQL operations
     PROJECT = "project"

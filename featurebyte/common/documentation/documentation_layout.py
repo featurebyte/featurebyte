@@ -690,6 +690,12 @@ def _get_series_properties_layout(series_type: str) -> List[DocLayoutItem]:
             "astype",
             "abs",
             "ceil",
+            "cos",
+            "sin",
+            "tan",
+            "acos",
+            "asin",
+            "atan",
             "exp",
             "fillna",
             "floor",
@@ -826,6 +832,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [UTILITY_METHODS, TRANSFORM, "haversine"],
             doc_path_override="core.distance.haversine.md",
+            is_pure_method=True,
+        ),
+        DocLayoutItem(
+            [UTILITY_METHODS, TRANSFORM, "atan2"],
+            doc_path_override="core.trigonometry.atan2.md",
             is_pure_method=True,
         ),
         DocLayoutItem(
