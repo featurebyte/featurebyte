@@ -1123,7 +1123,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
-    def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
+    def get_feature(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> Feature:
         """
         Gets a Feature object from the catalog using the feature's name and optionally its version name. If no
         version name is provided, the default version of the feature is returned.
@@ -1137,6 +1143,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             Feature name.
         version: Optional[str]
             Feature version. If None is provided, the default version will be returned.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -1155,10 +1168,16 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         ...   "InvoiceAmountAvg_60days", version=<version_name>
         ... )
         """
-        return Feature.get(name=name, version=version)
+        return Feature.get(name=name, version=version, context=context, use_case=use_case)
 
     @update_and_reset_catalog
-    def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
+    def get_feature_list(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        context: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> FeatureList:
         """
         Gets a FeatureList object from the catalog by specifying the feature list's name and, optionally,
         its version name. If the version name is not provided, the default version of the feature list will
@@ -1170,6 +1189,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             Feature list name.
         version: Optional[str]
             Version of the feature list. If None, the default version will be returned.
+        context: Optional[str]
+            Name of context used to filter results. If provided, results include both regular features
+            and features specific to that context. If not provided, context-specific features
+            (e.g. from user-provided columns) are excluded.
+        use_case: Optional[str]
+            Name of use case used to filter results. The context associated with the use case will be
+            used for filtering. Cannot be specified together with context.
 
         Returns
         -------
@@ -1180,7 +1206,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         """
-        return FeatureList.get(name=name, version=version)
+        return FeatureList.get(name=name, version=version, context=context, use_case=use_case)
 
     @update_and_reset_catalog
     def get_table(self, name: str) -> Any:
