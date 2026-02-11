@@ -84,6 +84,13 @@ def split_nodes(
                     )
                     tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
                 parts.append(tile_compute_signature_mapping[aggregation_id])
+            else:
+                # These queries join with source tables directly. Sort by query node name of the
+                # source to group nodes that join with the same source table.
+                query_node = planner.graph.get_node_by_name(
+                    agg_spec.aggregation_source.query_node_name
+                )
+                parts.append(query_node.name)
         else:
             # Features derived purely from user defined features or forecast point
             parts = [MISSING_AGG_SPEC_KEY]
