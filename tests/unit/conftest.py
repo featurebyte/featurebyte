@@ -2969,19 +2969,11 @@ def time_since_latest_event_timestamp_feature_fixture(
     return feature
 
 
-@pytest.fixture(name="days_until_forecast_feature")
-def days_until_forecast_feature_fixture(
-    latest_event_timestamp_feature,
-    cust_id_entity,
-    transaction_entity,
-):
+@pytest.fixture(name="forecast_context")
+def forecast_context_fixture(cust_id_entity):
     """
-    Fixture for a feature that computes days until forecast point from latest event timestamp.
-    Uses a Context with ForecastPointSchema to create the FORECAST_POINT request column.
+    Fixture for a Context with ForecastPointSchema
     """
-    _ = transaction_entity
-
-    # Create a context with forecast_point_schema
     forecast_schema = ForecastPointSchema(
         granularity=TimeIntervalUnit.DAY,
         dtype=DBVarType.DATE,
@@ -2994,12 +2986,40 @@ def days_until_forecast_feature_fixture(
         forecast_point_schema=forecast_schema,
     )
     forecast_context.save()
+    return forecast_context
+
+
+@pytest.fixture(name="days_until_forecast_feature")
+def days_until_forecast_feature_fixture(
+    forecast_context,
+    latest_event_timestamp_feature,
+    cust_id_entity,
+    transaction_entity,
+):
+    """
+    Fixture for a feature that computes days until forecast point from latest event timestamp.
+    Uses a Context with ForecastPointSchema to create the FORECAST_POINT request column.
+    """
+    _ = transaction_entity
 
     # Create a feature using forecast_point from context
     feature = (
         forecast_context.get_forecast_point_feature() - latest_event_timestamp_feature
     ).dt.day
     feature.name = "days_until_forecast"
+    feature.save()
+
+    return feature
+
+
+@pytest.fixture(name="forecast_point_dt_feature")
+def forecast_point_dt_feature_fixture(cust_id_entity, forecast_context):
+    """
+    Fixture for a feature derived from forecast point date parts
+    """
+    # Create a feature using forecast_point from context
+    feature = forecast_context.get_forecast_point_feature().dt.day
+    feature.name = "forecast_point_day"
     feature.save()
 
     return feature
