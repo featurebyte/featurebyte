@@ -1016,11 +1016,13 @@ class ObservationTableService(
         timezone_column_name = timezone_column.column_name
         timezone_type = timezone_column.type
 
-        # Query distinct timezone values from the table
+        # Query distinct timezone values from the table (limit to avoid scanning entire table)
         query = sql_to_string(
             expressions.select(
                 expressions.Distinct(expressions=[quoted_identifier(timezone_column_name)])
-            ).from_(get_fully_qualified_table_name(table_details.model_dump())),
+            )
+            .from_(get_fully_qualified_table_name(table_details.model_dump()))
+            .limit(1000),
             db_session.source_type,
         )
         result_df = await db_session.execute_query(query)
@@ -1121,10 +1123,12 @@ class ObservationTableService(
             return
 
         # Query distinct values where parsing fails (result is NULL)
+        # Limit to 5 since we only show a few examples in the error message
         query = sql_to_string(
             expressions.select(expressions.Distinct(expressions=[forecast_point_col]))
             .from_(table_ref)
-            .where(expressions.Is(this=try_parse_expr, expression=expressions.Null())),
+            .where(expressions.Is(this=try_parse_expr, expression=expressions.Null()))
+            .limit(5),
             source_type,
         )
 
