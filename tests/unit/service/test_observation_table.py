@@ -1103,3 +1103,239 @@ async def test_validate_forecast_timezone_values__no_forecast_point_schema(
         mock_db_session, table_details, mock_context
     )
     mock_db_session.execute_query.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__valid_values(observation_table_service):
+    """
+    Test validation passes when all FORECAST_POINT values match the format string
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with VARCHAR dtype and format_string
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="YYYY-MM-DD",
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session - no invalid values found (empty result)
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame()  # Empty = all valid
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__invalid_values(observation_table_service):
+    """
+    Test validation fails when FORECAST_POINT values don't match the format string
+    """
+    from featurebyte.enum import SpecialColumnName, TimeIntervalUnit
+    from featurebyte.exception import InvalidForecastPointValueError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with VARCHAR dtype and format_string
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="YYYY-MM-DD",
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session - returns invalid values
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame({
+        SpecialColumnName.FORECAST_POINT: ["invalid-date", "2024/01/15"]
+    })
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    with pytest.raises(InvalidForecastPointValueError) as exc:
+        await observation_table_service._validate_forecast_point_format_string_values(
+            mock_db_session, table_details, mock_context
+        )
+    assert "invalid-date" in str(exc.value)
+    assert "YYYY-MM-DD" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__skipped_for_non_varchar(
+    observation_table_service,
+):
+    """
+    Test validation is skipped when dtype is not VARCHAR
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with DATE dtype (not VARCHAR)
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,  # Not VARCHAR
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception and should not call execute_query
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__skipped_without_format_string(
+    observation_table_service,
+):
+    """
+    Test validation is skipped when format_string is not specified
+    """
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with VARCHAR dtype but no format_string
+    # Note: This shouldn't happen in practice as format_string is required for VARCHAR
+    forecast_schema = Mock(spec=ForecastPointSchema)
+    forecast_schema.dtype = DBVarType.VARCHAR
+    forecast_schema.format_string = None  # No format string
+
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception and should not call execute_query
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__databricks(observation_table_service):
+    """
+    Test validation works with Databricks source type
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="yyyy-MM-dd",
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "databricks"
+    mock_db_session.execute_query.return_value = pd.DataFrame()
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_called_once()
+    # Verify the query uses to_timestamp for Databricks
+    query_arg = mock_db_session.execute_query.call_args[0][0]
+    assert "to_timestamp" in query_arg.lower()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__bigquery(observation_table_service):
+    """
+    Test validation works with BigQuery source type
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="%Y-%m-%d",
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "bigquery"
+    mock_db_session.execute_query.return_value = pd.DataFrame()
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_called_once()
+    # Verify the query uses SAFE.PARSE_TIMESTAMP for BigQuery
+    query_arg = mock_db_session.execute_query.call_args[0][0]
+    assert "SAFE.PARSE_TIMESTAMP" in query_arg

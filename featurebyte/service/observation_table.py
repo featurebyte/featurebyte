@@ -25,6 +25,7 @@ from featurebyte.enum import (
     UploadFileFormat,
 )
 from featurebyte.exception import (
+    InvalidForecastPointValueError,
     InvalidForecastTimezoneColumnTypeError,
     InvalidForecastTimezoneValueError,
     MissingForecastPointColumnError,
@@ -1052,6 +1053,94 @@ class ObservationTableService(
                 f"Expected {expected_format} for context '{context.name}'."
             )
 
+    async def _validate_forecast_point_format_string_values(
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        context: ContextModel,
+    ) -> None:
+        """
+        Validate FORECAST_POINT column values match the expected format string.
+
+        This validation only applies when forecast_point_schema.dtype is VARCHAR
+        and a format_string is specified.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        context: ContextModel
+            Context with forecast point schema
+
+        Raises
+        ------
+        InvalidForecastPointValueError
+            If any forecast point value doesn't match the expected format
+        """
+        forecast_point_schema = context.forecast_point_schema
+        if forecast_point_schema is None:
+            return
+
+        # Only validate VARCHAR dtype with format_string
+        if (
+            forecast_point_schema.dtype != DBVarType.VARCHAR
+            or not forecast_point_schema.format_string
+        ):
+            return
+
+        format_string = forecast_point_schema.format_string
+        forecast_point_col = quoted_identifier(SpecialColumnName.FORECAST_POINT)
+        table_ref = get_fully_qualified_table_name(table_details.model_dump())
+
+        # Build query to find values that don't match the format
+        # Using TRY_TO_TIMESTAMP (Snowflake) or equivalent for other databases
+        # Returns NULL for values that can't be parsed with the format
+        source_type = db_session.source_type
+        if source_type == "snowflake":
+            # Snowflake: TRY_TO_TIMESTAMP returns NULL for invalid format
+            try_parse_expr = expressions.Anonymous(
+                this="TRY_TO_TIMESTAMP",
+                expressions=[forecast_point_col, make_literal_value(format_string)],
+            )
+        elif source_type in ("databricks", "databricks_unity"):
+            # Databricks: to_timestamp returns NULL for invalid format
+            try_parse_expr = expressions.Anonymous(
+                this="to_timestamp",
+                expressions=[forecast_point_col, make_literal_value(format_string)],
+            )
+        elif source_type == "bigquery":
+            # BigQuery: SAFE.PARSE_TIMESTAMP returns NULL for invalid format
+            try_parse_expr = expressions.Anonymous(
+                this="SAFE.PARSE_TIMESTAMP",
+                expressions=[make_literal_value(format_string), forecast_point_col],
+            )
+        else:
+            # Skip validation for unsupported source types
+            return
+
+        # Query distinct values where parsing fails (result is NULL)
+        query = sql_to_string(
+            expressions.select(expressions.Distinct(expressions=[forecast_point_col]))
+            .from_(table_ref)
+            .where(expressions.Is(this=try_parse_expr, expression=expressions.Null())),
+            source_type,
+        )
+
+        result_df = await db_session.execute_query(query)
+        if result_df is None or result_df.empty:
+            return
+
+        invalid_values = result_df[SpecialColumnName.FORECAST_POINT].dropna().tolist()
+        if invalid_values:
+            raise InvalidForecastPointValueError(
+                f"Forecast point column '{SpecialColumnName.FORECAST_POINT}' contains values "
+                f"that don't match the expected format '{format_string}': "
+                f"{invalid_values[:5]}{'...' if len(invalid_values) > 5 else ''}. "
+                f"Context: '{context.name}'."
+            )
+
     async def validate_materialized_table_and_get_metadata(
         self,
         db_session: BaseSession,
@@ -1109,10 +1198,13 @@ class ObservationTableService(
                 primary_entity_ids
             )
 
-        # Validate forecast timezone values if context has forecast point schema
+        # Validate forecast point schema if context is provided
         if context_id is not None:
             context = await self.context_service.get_document(document_id=context_id)
             await self._validate_forecast_timezone_values(db_session, table_details, context)
+            await self._validate_forecast_point_format_string_values(
+                db_session, table_details, context
+            )
 
         # Perform validation on column info
         if target_namespace_id is not None:

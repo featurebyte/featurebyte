@@ -180,6 +180,12 @@ class InvalidForecastTimezoneValueError(FeatureByteException):
     """
 
 
+class InvalidForecastPointValueError(FeatureByteException):
+    """
+    Raised when forecast point column contains values that don't match the expected format
+    """
+
+
 class TooRecentPointInTimeError(FeatureByteException):
     """
     Raised when the latest point in time value is too recent in historical requests
