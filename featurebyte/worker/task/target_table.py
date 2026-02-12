@@ -228,17 +228,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                         table_with_missing_data,
                     )
 
-            additional_metadata = (
-                await self.observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session,
-                    location.table_details,
-                    feature_store=feature_store,
-                    serving_names_remapping=payload.serving_names_mapping,
-                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
-                    primary_entity_ids=primary_entity_ids,
-                )
-            )
-
+            # Determine context_id before validation
             purpose: Optional[Purpose] = None
             context_id = payload.context_id
             if isinstance(observation_set, ObservationTableModel):
@@ -249,6 +239,18 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 use_case_ids = observation_set.use_case_ids
             else:
                 use_case_ids = []
+
+            additional_metadata = (
+                await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session,
+                    location.table_details,
+                    feature_store=feature_store,
+                    serving_names_remapping=payload.serving_names_mapping,
+                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    primary_entity_ids=primary_entity_ids,
+                    context_id=context_id,
+                )
+            )
 
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,

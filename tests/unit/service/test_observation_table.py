@@ -868,3 +868,238 @@ async def test_validate_columns__no_dtype_validation_when_dtypes_not_provided(
     )
     assert target_namespace_id is None
     assert treatment_id is None
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__valid_iana_timezones(observation_table_service):
+    """
+    Test validation passes when timezone column contains valid IANA timezone names
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session to return valid IANA timezone values
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame({
+        "FORECAST_TIMEZONE": ["America/New_York", "Europe/London", "Asia/Tokyo"]
+    })
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception
+    await observation_table_service._validate_forecast_timezone_values(
+        mock_db_session, table_details, mock_context
+    )
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__invalid_iana_timezone(observation_table_service):
+    """
+    Test validation fails when timezone column contains invalid IANA timezone names
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import InvalidForecastTimezoneValueError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session to return invalid timezone value
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame({
+        "FORECAST_TIMEZONE": ["America/New_York", "Invalid/Timezone", "Europe/London"]
+    })
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    with pytest.raises(InvalidForecastTimezoneValueError) as exc:
+        await observation_table_service._validate_forecast_timezone_values(
+            mock_db_session, table_details, mock_context
+        )
+    assert "Invalid/Timezone" in str(exc.value)
+    assert "IANA timezone names" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__valid_utc_offsets(observation_table_service):
+    """
+    Test validation passes when timezone column contains valid UTC offsets
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with forecast_point_schema that requires offset type timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="offset"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session to return valid UTC offset values
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame({
+        "FORECAST_TIMEZONE": ["+05:30", "-03:00", "+00:00"]
+    })
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception
+    await observation_table_service._validate_forecast_timezone_values(
+        mock_db_session, table_details, mock_context
+    )
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__invalid_utc_offset(observation_table_service):
+    """
+    Test validation fails when timezone column contains invalid UTC offsets
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import InvalidForecastTimezoneValueError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with forecast_point_schema that requires offset type timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="offset"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Mock db_session to return invalid offset value
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "snowflake"
+    mock_db_session.execute_query.return_value = pd.DataFrame({
+        "FORECAST_TIMEZONE": ["+05:30", "invalid_offset", "-03:00"]
+    })
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    with pytest.raises(InvalidForecastTimezoneValueError) as exc:
+        await observation_table_service._validate_forecast_timezone_values(
+            mock_db_session, table_details, mock_context
+        )
+    assert "invalid_offset" in str(exc.value)
+    assert "UTC offsets" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__no_timezone_column(observation_table_service):
+    """
+    Test validation is skipped when forecast_point_schema doesn't have timezone column
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context with forecast_point_schema without timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",  # Global timezone, not a column reference
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception and should not call execute_query
+    await observation_table_service._validate_forecast_timezone_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_timezone_values__no_forecast_point_schema(
+    observation_table_service,
+):
+    """
+    Test validation is skipped when context doesn't have forecast_point_schema
+    """
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.node.schema import TableDetails
+
+    # Create a mock context without forecast_point_schema
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_regular_context"
+    mock_context.forecast_point_schema = None
+
+    mock_db_session = AsyncMock()
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    # Should not raise any exception and should not call execute_query
+    await observation_table_service._validate_forecast_timezone_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_not_called()

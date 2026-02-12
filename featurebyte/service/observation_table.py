@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import pandas as pd
+import pytz
 from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
@@ -16,6 +17,7 @@ from sqlglot.expressions import Expression
 
 from featurebyte import TargetType
 from featurebyte.api.source_table import SourceTable
+from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.enum import (
     DBVarType,
     MaterializedTableNamePrefix,
@@ -24,6 +26,7 @@ from featurebyte.enum import (
 )
 from featurebyte.exception import (
     InvalidForecastTimezoneColumnTypeError,
+    InvalidForecastTimezoneValueError,
     MissingForecastPointColumnError,
     MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
@@ -56,6 +59,7 @@ from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -979,6 +983,75 @@ class ObservationTableService(
             entity_columns_stats=entity_columns_stats,
         )
 
+    async def _validate_forecast_timezone_values(
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        context: ContextModel,
+    ) -> None:
+        """
+        Validate timezone column values against the forecast point schema.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        context: ContextModel
+            Context with forecast point schema
+
+        Raises
+        ------
+        InvalidForecastTimezoneValueError
+            If any timezone value is invalid
+        """
+        forecast_point_schema = context.forecast_point_schema
+        if forecast_point_schema is None or not forecast_point_schema.has_timezone_column:
+            return
+
+        timezone_column = forecast_point_schema.timezone
+        assert isinstance(timezone_column, TimeZoneColumn)
+        timezone_column_name = timezone_column.column_name
+        timezone_type = timezone_column.type
+
+        # Query distinct timezone values from the table
+        query = sql_to_string(
+            expressions.select(
+                expressions.Distinct(expressions=[quoted_identifier(timezone_column_name)])
+            ).from_(get_fully_qualified_table_name(table_details.model_dump())),
+            db_session.source_type,
+        )
+        result_df = await db_session.execute_query(query)
+        if result_df is None or result_df.empty:
+            return
+
+        # Validate each timezone value
+        invalid_values = []
+        for value in result_df[timezone_column_name].dropna().unique():
+            value_str = str(value)
+            try:
+                if timezone_type == "timezone":
+                    # Validate IANA timezone name
+                    pytz.timezone(value_str)
+                elif timezone_type == "offset":
+                    # Validate UTC offset format
+                    validate_timezone_offset_string(value_str)
+            except (pytz.UnknownTimeZoneError, ValueError):
+                invalid_values.append(value_str)
+
+        if invalid_values:
+            expected_format = (
+                "IANA timezone names (e.g., 'America/New_York')"
+                if timezone_type == "timezone"
+                else "UTC offsets (e.g., '+05:30', '-03:00')"
+            )
+            raise InvalidForecastTimezoneValueError(
+                f"Forecast timezone column '{timezone_column_name}' contains invalid values: "
+                f"{invalid_values[:5]}{'...' if len(invalid_values) > 5 else ''}. "
+                f"Expected {expected_format} for context '{context.name}'."
+            )
+
     async def validate_materialized_table_and_get_metadata(
         self,
         db_session: BaseSession,
@@ -989,6 +1062,7 @@ class ObservationTableService(
         primary_entity_ids: Optional[List[PydanticObjectId]] = None,
         target_namespace_id: Optional[PydanticObjectId] = None,
         treatment_id: Optional[PydanticObjectId] = None,
+        context_id: Optional[PydanticObjectId] = None,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -1011,6 +1085,8 @@ class ObservationTableService(
             Target namespace ID
         treatment_id: Optional[PydanticObjectId]
             Treatment ID
+        context_id: Optional[PydanticObjectId]
+            Context ID for forecast point schema validation
 
         Returns
         -------
@@ -1032,6 +1108,11 @@ class ObservationTableService(
             await self.primary_entity_validator.validate_entities_are_primary_entities(
                 primary_entity_ids
             )
+
+        # Validate forecast timezone values if context has forecast point schema
+        if context_id is not None:
+            context = await self.context_service.get_document(document_id=context_id)
+            await self._validate_forecast_timezone_values(db_session, table_details, context)
 
         # Perform validation on column info
         if target_namespace_id is not None:
