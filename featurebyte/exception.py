@@ -168,6 +168,12 @@ class MissingForecastTimezoneColumnError(FeatureByteException):
     """
 
 
+class InvalidForecastTimezoneColumnTypeError(FeatureByteException):
+    """
+    Raised when forecast timezone column type is not VARCHAR
+    """
+
+
 class TooRecentPointInTimeError(FeatureByteException):
     """
     Raised when the latest point in time value is too recent in historical requests

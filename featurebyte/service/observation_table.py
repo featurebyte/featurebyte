@@ -23,6 +23,7 @@ from featurebyte.enum import (
     UploadFileFormat,
 )
 from featurebyte.exception import (
+    InvalidForecastTimezoneColumnTypeError,
     MissingForecastPointColumnError,
     MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
@@ -33,6 +34,7 @@ from featurebyte.exception import (
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
     ObservationTableTargetDefinitionExistsError,
+    UnsupportedForecastPointColumnTypeError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -470,6 +472,7 @@ class ObservationTableService(
         target_column: Optional[str],
         treatment_column: Optional[str],
         context: Optional[ContextModel] = None,
+        column_dtypes: Optional[Dict[str, DBVarType]] = None,
     ) -> Tuple[Optional[ObjectId], Optional[ObjectId]]:
         # Check if required column names are provided
         missing_columns = []
@@ -487,6 +490,16 @@ class ObservationTableService(
                     f"This column is required for forecast context '{context.name}'."
                 )
 
+            # Validate forecast point column dtype matches schema
+            if column_dtypes is not None:
+                forecast_point_dtype = column_dtypes.get(SpecialColumnName.FORECAST_POINT)
+                expected_dtype = forecast_point_schema.dtype
+                if forecast_point_dtype is not None and forecast_point_dtype != expected_dtype:
+                    raise UnsupportedForecastPointColumnTypeError(
+                        f"Forecast point column has type '{forecast_point_dtype}' but expected "
+                        f"'{expected_dtype}' as specified in the forecast point schema for context '{context.name}'."
+                    )
+
             # Check if forecast timezone column is required and present
             if forecast_point_schema.has_timezone_column:
                 timezone_column_name = forecast_point_schema.timezone_column_name
@@ -495,6 +508,15 @@ class ObservationTableService(
                         f"Forecast timezone column not provided: {timezone_column_name}. "
                         f"This column is required by the forecast point schema for context '{context.name}'."
                     )
+
+                # Validate timezone column dtype is VARCHAR
+                if column_dtypes is not None and timezone_column_name:
+                    timezone_dtype = column_dtypes.get(timezone_column_name)
+                    if timezone_dtype is not None and timezone_dtype != DBVarType.VARCHAR:
+                        raise InvalidForecastTimezoneColumnTypeError(
+                            f"Forecast timezone column '{timezone_column_name}' has type '{timezone_dtype}' "
+                            f"but expected 'VARCHAR' for context '{context.name}'."
+                        )
 
         # Check if entity columns are present
         if primary_entity_ids:
@@ -646,11 +668,17 @@ class ObservationTableService(
             # validate columns
             column_names_and_dtypes = await request_input.get_column_names_and_dtypes(db_session)
             available_columns = list(column_names_and_dtypes.keys())
+            column_dtypes: Dict[str, DBVarType] = dict(column_names_and_dtypes)
             columns_rename_mapping = data.request_input.columns_rename_mapping
             if columns_rename_mapping:
                 available_columns = [
                     columns_rename_mapping.get(col, col) for col in available_columns
                 ]
+                # Apply rename mapping to dtypes dict
+                column_dtypes = {
+                    columns_rename_mapping.get(col, col): dtype
+                    for col, dtype in column_dtypes.items()
+                }
 
             # Fetch context for forecast point validation
             context: Optional[ContextModel] = None
@@ -667,6 +695,7 @@ class ObservationTableService(
                 target_column=data.target_column,
                 treatment_column=data.treatment_column,
                 context=context,
+                column_dtypes=column_dtypes,
             )
         elif (
             isinstance(data.request_input, TargetInput) and data.request_input.target_id is not None

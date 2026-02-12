@@ -658,3 +658,213 @@ async def test_validate_columns__non_forecast_context_no_forecast_point_required
     )
     assert target_namespace_id is None
     assert treatment_id is None
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__forecast_point_dtype_mismatch(observation_table_service):
+    """
+    Test validation fails when forecast point column dtype doesn't match schema dtype
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import UnsupportedForecastPointColumnTypeError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+
+    # Create a mock context with forecast_point_schema expecting DATE dtype
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include FORECAST_POINT but with wrong dtype (TIMESTAMP instead of DATE)
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "entity_col"]
+    column_dtypes = {
+        "POINT_IN_TIME": DBVarType.TIMESTAMP,
+        "FORECAST_POINT": DBVarType.TIMESTAMP,  # Should be DATE per schema
+        "entity_col": DBVarType.VARCHAR,
+    }
+
+    with pytest.raises(UnsupportedForecastPointColumnTypeError) as exc:
+        await observation_table_service._validate_columns(
+            available_columns=available_columns,
+            primary_entity_ids=None,
+            target_column=None,
+            treatment_column=None,
+            context=mock_context,
+            column_dtypes=column_dtypes,
+        )
+    assert "TIMESTAMP" in str(exc.value)
+    assert "DATE" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__forecast_point_dtype_match(observation_table_service):
+    """
+    Test validation passes when forecast point column dtype matches schema dtype
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+
+    # Create a mock context with forecast_point_schema expecting DATE dtype
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include FORECAST_POINT with correct dtype
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "entity_col"]
+    column_dtypes = {
+        "POINT_IN_TIME": DBVarType.TIMESTAMP,
+        "FORECAST_POINT": DBVarType.DATE,  # Matches schema
+        "entity_col": DBVarType.VARCHAR,
+    }
+
+    # Should not raise any exception
+    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+        available_columns=available_columns,
+        primary_entity_ids=None,
+        target_column=None,
+        treatment_column=None,
+        context=mock_context,
+        column_dtypes=column_dtypes,
+    )
+    assert target_namespace_id is None
+    assert treatment_id is None
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__timezone_column_dtype_mismatch(observation_table_service):
+    """
+    Test validation fails when timezone column dtype is not VARCHAR
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.exception import InvalidForecastTimezoneColumnTypeError
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include FORECAST_TIMEZONE but with wrong dtype
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
+    column_dtypes = {
+        "POINT_IN_TIME": DBVarType.TIMESTAMP,
+        "FORECAST_POINT": DBVarType.DATE,
+        "FORECAST_TIMEZONE": DBVarType.INT,  # Should be VARCHAR
+        "entity_col": DBVarType.VARCHAR,
+    }
+
+    with pytest.raises(InvalidForecastTimezoneColumnTypeError) as exc:
+        await observation_table_service._validate_columns(
+            available_columns=available_columns,
+            primary_entity_ids=None,
+            target_column=None,
+            treatment_column=None,
+            context=mock_context,
+            column_dtypes=column_dtypes,
+        )
+    assert "FORECAST_TIMEZONE" in str(exc.value)
+    assert "INT" in str(exc.value)
+    assert "VARCHAR" in str(exc.value)
+    assert "test_forecast_context" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__timezone_column_dtype_valid(observation_table_service):
+    """
+    Test validation passes when timezone column dtype is VARCHAR
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+
+    # Create a mock context with forecast_point_schema that requires timezone column
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include all required columns with correct dtypes
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
+    column_dtypes = {
+        "POINT_IN_TIME": DBVarType.TIMESTAMP,
+        "FORECAST_POINT": DBVarType.DATE,
+        "FORECAST_TIMEZONE": DBVarType.VARCHAR,  # Correct type
+        "entity_col": DBVarType.VARCHAR,
+    }
+
+    # Should not raise any exception
+    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+        available_columns=available_columns,
+        primary_entity_ids=None,
+        target_column=None,
+        treatment_column=None,
+        context=mock_context,
+        column_dtypes=column_dtypes,
+    )
+    assert target_namespace_id is None
+    assert treatment_id is None
+
+
+@pytest.mark.asyncio
+async def test_validate_columns__no_dtype_validation_when_dtypes_not_provided(
+    observation_table_service,
+):
+    """
+    Test that dtype validation is skipped when column_dtypes is not provided
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+
+    # Create a mock context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    # Available columns include all required columns (dtypes not provided)
+    available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
+
+    # Should not raise any exception even without dtype info
+    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+        available_columns=available_columns,
+        primary_entity_ids=None,
+        target_column=None,
+        treatment_column=None,
+        context=mock_context,
+        # column_dtypes not provided (None by default)
+    )
+    assert target_namespace_id is None
+    assert treatment_id is None
