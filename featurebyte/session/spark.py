@@ -299,7 +299,7 @@ class SparkSession(BaseSparkSession):
         """
         fields = []
         for row in cursor.description:
-            field_name = row[0]
+            field_name = row[0].strip('"')
             field_type = "_".join(row[1].split("_")[:-1])
             db_var_type = self._convert_to_internal_variable_type(field_type)
             fields.append(

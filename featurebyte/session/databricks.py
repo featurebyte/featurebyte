@@ -140,15 +140,16 @@ class DatabricksSession(BaseSparkSession):
             for column_info in table_info.columns:
                 if column_info.name is None or column_info.type_text is None:
                     continue
+                col_name = column_info.name.strip('"')
                 self._populate_column_spec(
-                    column_info.name,
+                    col_name,
                     column_info.type_text.lower(),
                     column_info.comment,
                     column_name_type_map,
                 )
                 # add partition key information
                 if column_info.partition_index is not None:
-                    column_name_type_map[column_info.name].partition_metadata = PartitionMetadata(
+                    column_name_type_map[col_name].partition_metadata = PartitionMetadata(
                         is_partition_key_candidate=True,
                     )
 
@@ -339,7 +340,7 @@ class DatabricksSession(BaseSparkSession):
         """
         fields = []
         for row in cursor.description:
-            field_name = row[0]
+            field_name = row[0].strip('"')
             field_type = row[1].upper()
             db_var_type = self._convert_to_internal_variable_type(field_type)
             fields.append(

@@ -374,9 +374,10 @@ class BaseSparkSession(BaseSession, ABC):
             metadata_data: DefaultDict[str, List[Tuple[str, str, str]]] = collections.defaultdict(
                 list
             )
-            for _, (column_name, var_info, comment) in schema[
+            for _, (raw_column_name, var_info, comment) in schema[
                 ["col_name", "data_type", "comment"]
             ].iterrows():
+                column_name = raw_column_name.strip('"')
                 # Sometimes describe include metadata after column details with and empty row as a separator.
                 if metadata_data:
                     # If we have metadata lines, we should continue to collect them

@@ -219,6 +219,41 @@ async def test_databricks_session(mock_workspace_client, databricks_session_dict
     pd.testing.assert_frame_equal(df_result, df_expected)
 
 
+@pytest.mark.usefixtures("databricks_connection")
+@patch("featurebyte.session.databricks.WorkspaceClient")
+@pytest.mark.asyncio
+async def test_databricks_session__quoted_column_names(
+    mock_workspace_client, databricks_session_dict
+):
+    """
+    Test DatabricksSession strips double quotes from column names
+    """
+    mock_workspace_client = mock_workspace_client.return_value
+    mock_workspace_client.tables.get.return_value = TableInfo(
+        name="transactions",
+        columns=[
+            ColumnInfo(name='"col_int"', type_text="INT", comment="Int Column"),
+            ColumnInfo(name='"col_string"', type_text="STRING", comment="String Column"),
+            ColumnInfo(name="col_float", type_text="FLOAT", comment="Float Column"),
+        ],
+    )
+    session = DatabricksSession(**databricks_session_dict)
+    result = await session.list_table_schema(
+        database_name="hive_metastore", schema_name="default", table_name="transactions"
+    )
+    assert result == {
+        "col_int": ColumnSpecWithDescription(
+            name="col_int", dtype=DBVarType.INT, description="Int Column"
+        ),
+        "col_string": ColumnSpecWithDescription(
+            name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
+        ),
+        "col_float": ColumnSpecWithDescription(
+            name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
+        ),
+    }
+
+
 @pytest.mark.asyncio
 async def test_databricks_register_table(databricks_session_dict, databricks_connection):
     """
