@@ -1587,6 +1587,11 @@ async def test_validate_metadata__with_forecast_point_stats(
         if "MAX_HORIZON" in query:
             # 7 days in seconds (forecast_horizon will be 7 + 1 = 8)
             return pd.DataFrame({"MAX_HORIZON": [604800]})
+        if "MIN_FORECAST_POINT" in query:
+            return pd.DataFrame({
+                "MIN_FORECAST_POINT": ["2023-01-05"],
+                "MAX_FORECAST_POINT": ["2023-01-20"],
+            })
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(

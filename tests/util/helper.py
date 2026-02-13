@@ -388,6 +388,7 @@ def fb_assert_frame_equal(
         for col in regular_columns:
             if is_numeric_dtype(df_expected[col]):
                 df[col] = df[col].astype(float)
+                df_expected[col] = df_expected[col].astype(float)
         pd.testing.assert_frame_equal(
             df[regular_columns], df_expected[regular_columns], check_dtype=False, rtol=1e-5
         )
