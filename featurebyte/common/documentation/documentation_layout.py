@@ -1271,6 +1271,7 @@ def _get_use_case_layout() -> List[DocLayoutItem]:
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_preview_table"]),
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_eda_table"]),
         DocLayoutItem([USE_CASE, MANAGE, "UseCase.update_description"]),
+        DocLayoutItem([USE_CASE, MANAGE, "UseCase.delete"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_feature_tables"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_deployments"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_observation_tables"]),
@@ -1306,6 +1307,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_preview_table"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_eda_table"]),
         DocLayoutItem([CONTEXT, MANAGE, "Context.update_description"]),
+        DocLayoutItem([CONTEXT, MANAGE, "Context.delete"]),
         DocLayoutItem([CONTEXT, LIST, "Context.list_observation_tables"]),
         DocLayoutItem([CONTEXT, SAVE, "Context.save"]),
     ]

@@ -503,3 +503,15 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         """
 
         super().save(conflict_resolution=conflict_resolution, _id=_id)
+
+    def delete(self) -> None:
+        """
+        Delete a use case from the persistent data store. A use case can only be deleted
+        if it is not referenced by any observation tables.
+
+        Examples
+        --------
+        >>> use_case = fb.UseCase.get("use_case")  # doctest: +SKIP
+        >>> use_case.delete()  # doctest: +SKIP
+        """
+        self._delete()

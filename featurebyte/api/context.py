@@ -12,7 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.request_column import RequestColumn
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
@@ -25,7 +25,7 @@ from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.context import ContextUpdate
 
 
-class Context(SavableApiObject, UseCaseOrContextMixin):
+class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     """
     Context class to represent a Context in FeatureByte.
 
@@ -670,3 +670,15 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         """
 
         super().save(conflict_resolution=conflict_resolution, _id=_id)
+
+    def delete(self) -> None:
+        """
+        Delete a context from the persistent data store. A context can only be deleted
+        if it is not referenced by any use cases or observation tables.
+
+        Examples
+        --------
+        >>> context = fb.Context.get("context")  # doctest: +SKIP
+        >>> context.delete()  # doctest: +SKIP
+        """
+        self._delete()
