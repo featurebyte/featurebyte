@@ -28,6 +28,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
@@ -56,6 +57,7 @@ from featurebyte.query_graph.sql.common import (
     PartitionColumnFilters,
     SQLType,
     construct_cte_sql,
+    get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
 )
@@ -85,6 +87,7 @@ from featurebyte.query_graph.sql.specs import (
     ItemAggregationSpec,
     TileBasedAggregationSpec,
 )
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -327,7 +330,6 @@ class FeatureExecutionPlan:
             "source_info": source_info,
             "is_online_serving": is_online_serving,
             "is_deployment_sql": is_deployment_sql,
-            "forecast_point_schema": forecast_point_schema,
         }
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
@@ -710,6 +712,17 @@ class FeatureExecutionPlan:
                 for col in request_table_columns
                 if col not in exclude_columns
             ]
+
+            if self.forecast_point_schema is not None:
+                # replace point-in-time with original point-in-time column
+                request_table_column_names.append(
+                    expressions.alias_(
+                        get_qualified_column_identifier(InternalName.ORIGINAL_POINT_IN_TIME, "AGG"),
+                        SpecialColumnName.POINT_IN_TIME,
+                        quoted=True,
+                    ).sql()
+                )
+
         else:
             request_table_column_names = []
 
@@ -847,8 +860,7 @@ class FeatureExecutionPlan:
             exclude_columns.update(new_columns)
 
         if self.forecast_point_schema is not None:
-            from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-            from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
+            assert request_table_columns is not None
 
             ts_schema = TimestampSchema(
                 format_string=self.forecast_point_schema.format_string,
@@ -858,17 +870,27 @@ class FeatureExecutionPlan:
             utc_expr = convert_timestamp_to_utc(
                 quoted_identifier(SpecialColumnName.FORECAST_POINT), ts_schema, self.adapter
             )
+            # replace point-in-time with forecast point in utc
             wrapper_expr = select(
-                expressions.Star(),
-                expressions.alias_(utc_expr, InternalName.FORECAST_POINT_UTC, quoted=True),
+                *[
+                    quoted_identifier(col)
+                    for col in request_table_columns
+                    if col != SpecialColumnName.POINT_IN_TIME
+                ],
+                expressions.alias_(
+                    quoted_identifier(SpecialColumnName.POINT_IN_TIME),
+                    InternalName.ORIGINAL_POINT_IN_TIME,
+                    quoted=True,
+                ),
+                expressions.alias_(utc_expr, SpecialColumnName.POINT_IN_TIME, quoted=True),
             ).from_(quoted_identifier(request_table_name))
-            request_table_name = "WITH_FORECAST_POINT_UTC_" + request_table_name
+            request_table_name = "WITH_FORECAST_POINT_AS_PIT_" + request_table_name
             common_tables.append(
                 CommonTable(name=request_table_name, expr=wrapper_expr, quoted=False)
             )
-            if request_table_columns is not None:
-                request_table_columns = request_table_columns + [InternalName.FORECAST_POINT_UTC]
-            exclude_columns.add(InternalName.FORECAST_POINT_UTC)
+            request_table_columns = request_table_columns + [InternalName.ORIGINAL_POINT_IN_TIME]
+            exclude_columns.add(SpecialColumnName.POINT_IN_TIME)
+            exclude_columns.add(InternalName.ORIGINAL_POINT_IN_TIME)
 
         # When possible, generate simplified feature query without left joining with request table
         # for simple queries (no join under deployment sql setting)

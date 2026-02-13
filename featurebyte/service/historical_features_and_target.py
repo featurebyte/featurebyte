@@ -14,6 +14,7 @@ from dateutil import parser as dateutil_parser
 from redis import Redis
 from sqlglot import Expression
 
+from featurebyte import ForecastPointSchema
 from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
@@ -25,7 +26,6 @@ from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.models.tile import OnDemandTileComputeResult
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -558,8 +558,6 @@ async def get_target(
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
-    forecast_point_schema: Optional[ForecastPointSchema]
-        Forecast point schema if the context has one
 
     Returns
     -------

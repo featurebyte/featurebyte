@@ -9,11 +9,11 @@ from typing import Any, List, Optional, cast
 
 import pandas as pd
 
-from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
+from featurebyte import ForecastPointSchema
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
@@ -63,7 +63,7 @@ def get_feature_or_target_preview_sql(
     column_statistics_info: Optional[ColumnStatisticsInfo]
         Column statistics information
     forecast_point_schema: Optional[ForecastPointSchema]
-        Forecast point schema if the context has one
+        Forecast point schema
 
     Returns
     -------
@@ -87,12 +87,8 @@ def get_feature_or_target_preview_sql(
         # prepare request table
         tic = time.time()
         df_request = pd.DataFrame(point_in_time_and_serving_name_list)
-        date_cols: list[str] = [SpecialColumnName.POINT_IN_TIME]
-        if forecast_point_schema is not None and forecast_point_schema.dtype in (
-            DBVarType.DATE,
-            DBVarType.TIMESTAMP,
-            DBVarType.TIMESTAMP_TZ,
-        ):
+        date_cols: List[str] = [SpecialColumnName.POINT_IN_TIME]
+        if forecast_point_schema:
             date_cols.append(SpecialColumnName.FORECAST_POINT)
         request_table_sql = construct_dataframe_sql_expr(df_request, date_cols)
         cte_statements = [CommonTable(request_table_name, request_table_sql, quoted=False)]

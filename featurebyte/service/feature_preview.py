@@ -182,7 +182,10 @@ class FeaturePreviewService(PreviewService):
                 observation_set_dataframe.drop(columns_to_drop, axis=1, inplace=True)
 
             # Check if observation table's context has forecast_point_schema
-            if observation_table.context_id is not None:
+            if (
+                SpecialColumnName.POINT_IN_TIME in observation_set_dataframe
+                and observation_table.context_id is not None
+            ):
                 context = await self.context_service.get_document(
                     document_id=observation_table.context_id
                 )

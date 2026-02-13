@@ -55,7 +55,6 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     event_timestamp_column: Optional[str]
     forward_point_in_time_offset: Optional[str]
     adapter: BaseAdapter
-    point_in_time_column: str = SpecialColumnName.POINT_IN_TIME
 
     def get_expression_for_column(
         self,
@@ -75,7 +74,7 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
         # the event timestamp
         if self.event_timestamp_column is not None:
             point_in_time_expr = get_qualified_column_identifier(
-                self.point_in_time_column,
+                SpecialColumnName.POINT_IN_TIME,
                 main_alias,
             )
 
@@ -220,7 +219,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                     feature_job_setting = snapshots_parameters.feature_job_setting
                 if snapshots_parameters.feature_job_setting is None or specs[0].is_deployment_sql:
                     datetime_expr_to_adjust = get_qualified_column_identifier(
-                        self.target_point_in_time_column, "REQ"
+                        SpecialColumnName.POINT_IN_TIME, "REQ"
                     )
                 else:
                     job_datetime_column_name = get_request_table_job_datetime_column_name(
@@ -277,7 +276,6 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 event_timestamp_column=event_timestamp_column,
                 forward_point_in_time_offset=self.get_forward_point_in_time_offset(specs[0]),
                 adapter=self.adapter,
-                point_in_time_column=self.target_point_in_time_column,
             )
             out.append(result)
 
@@ -463,7 +461,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
         for lookup_specs in self.iterate_grouped_lookup_specs(is_scd=True):
             left_table = Table(
                 expr=table_expr,
-                timestamp_column=self.target_point_in_time_column,
+                timestamp_column=point_in_time_column,
                 timestamp_schema=None,
                 join_keys=[lookup_specs[0].serving_names[0]],
                 input_columns=current_columns,

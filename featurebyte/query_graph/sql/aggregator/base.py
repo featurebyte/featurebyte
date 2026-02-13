@@ -13,9 +13,8 @@ from pydantic import model_validator
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -139,7 +138,6 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         source_info: SourceInfo,
         is_online_serving: bool = False,
         is_deployment_sql: bool = False,
-        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ):
         self.source_info = source_info
         self.adapter = get_sql_adapter(source_info)
@@ -149,21 +147,6 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self.grouped_specs: dict[str, list[AggregationSpecT]] = {}
         self.grouped_agg_result_names: dict[str, set[str]] = {}
         self.is_deployment_sql = is_deployment_sql
-        self.forecast_point_schema = forecast_point_schema
-
-    @property
-    def target_point_in_time_column(self) -> str:
-        """
-        Get the temporal reference column name
-
-        Returns
-        -------
-        str
-            Internal UTC column if forecast schema set, else POINT_IN_TIME
-        """
-        if self.forecast_point_schema:
-            return InternalName.FORECAST_POINT_UTC
-        return SpecialColumnName.POINT_IN_TIME
 
     def get_required_serving_names(self) -> set[str]:
         """

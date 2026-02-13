@@ -4,13 +4,12 @@ Request table processing used by aggregators
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import select
 
-from featurebyte.enum import InternalName, SpecialColumnName
-from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import AggregationSpec
@@ -23,13 +22,8 @@ class RequestTablePlan:
     Responsible for generating a processed request table with distinct serving names
     """
 
-    def __init__(
-        self,
-        is_time_aware: bool,
-        forecast_point_schema: Optional[ForecastPointSchema] = None,
-    ):
+    def __init__(self, is_time_aware: bool):
         self.is_time_aware = is_time_aware
-        self.forecast_point_schema = forecast_point_schema
         self.request_table_names: dict[AggSpecEntityIDs, str] = {}
         self.agg_specs: dict[AggSpecEntityIDs, AggregationSpec] = {}
 
@@ -130,10 +124,7 @@ class RequestTablePlan:
         selected_columns = []
 
         if self.is_time_aware:
-            if self.forecast_point_schema is not None:
-                selected_columns.append(quoted_identifier(InternalName.FORECAST_POINT_UTC))
-            else:
-                selected_columns.append(quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+            selected_columns.append(quoted_identifier(SpecialColumnName.POINT_IN_TIME))
 
         selected_columns.extend([quoted_identifier(x) for x in agg_spec.serving_names])
 

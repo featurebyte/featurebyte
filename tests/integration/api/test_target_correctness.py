@@ -292,7 +292,7 @@ async def test_bool_target(event_table, source_type, session, data_source):
 
 @pytest.mark.asyncio
 async def test_forward_aggregate_with_count_and_forecast_point_available(
-    event_table, session, data_source, user_entity
+    event_table, session, data_source, user_entity, source_type
 ):
     """
     Test that when an observation table is linked to a context with forecast_point_schema,
@@ -317,6 +317,7 @@ async def test_forward_aggregate_with_count_and_forecast_point_available(
     forecast_schema = ForecastPointSchema(
         granularity=TimeIntervalUnit.DAY,
         dtype=DBVarType.TIMESTAMP,
+        is_utc_time=True,
     )
     forecast_context = Context.create(
         name=f"forecast_context_{ObjectId()}",
@@ -361,6 +362,13 @@ async def test_forward_aggregate_with_count_and_forecast_point_available(
     assert len(df_targets) == 1
     target_value = df_targets["count_target_forecast"].iloc[0]
     assert target_value is not None
+
+    # Preview using the observation table (which also triggers the forecast_point path)
+    df_preview = count_target.preview(observation_table)
+    tz_localize_if_needed(df_preview, source_type)
+    assert len(df_preview) == 1
+    preview_target_value = df_preview["count_target_forecast"].iloc[0]
+    assert preview_target_value == target_value
 
     # Also verify by computing with just POINT_IN_TIME as a raw DataFrame (no context).
     # This should use POINT_IN_TIME and give a different result.

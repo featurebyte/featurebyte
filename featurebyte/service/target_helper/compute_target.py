@@ -4,10 +4,10 @@ Get targets module
 
 from __future__ import annotations
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.service.context import ContextService
@@ -65,6 +65,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         """
         # check if observation table is temporary (not persisted to mongo)
         is_temp_observation_table = False
+        forecast_point_schema = None
         if isinstance(executor_params.observation_set, ObservationTableModel):
             try:
                 await self.observation_table_service.get_document(
@@ -73,17 +74,13 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             except DocumentNotFoundError:
                 is_temp_observation_table = True
 
-        # Check if observation table's context has forecast_point_schema
-        forecast_point_schema: ForecastPointSchema | None = None
-        if (
-            isinstance(executor_params.observation_set, ObservationTableModel)
-            and executor_params.observation_set.context_id is not None
-        ):
-            context = await self.context_service.get_document(
-                document_id=executor_params.observation_set.context_id
-            )
-            if context.forecast_point_schema is not None:
-                forecast_point_schema = context.forecast_point_schema
+            if executor_params.observation_set.context_id is not None:
+                column_names = {info.name for info in executor_params.observation_set.columns_info}
+                if SpecialColumnName.POINT_IN_TIME in column_names:
+                    context = await self.context_service.get_document(
+                        executor_params.observation_set.context_id
+                    )
+                    forecast_point_schema = context.forecast_point_schema
 
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
@@ -101,6 +98,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 output_view_details=executor_params.output_table_details,
                 is_target=True,
                 serving_names_mapping=executor_params.serving_names_mapping,
+                forecast_point_schema=forecast_point_schema,
             )
         else:
             features_computation_result = await get_target(
