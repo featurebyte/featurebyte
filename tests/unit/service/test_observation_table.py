@@ -870,6 +870,8 @@ async def test_validate_columns__no_dtype_validation_when_dtypes_not_provided(
     assert treatment_id is None
 
 
+# Tests for timezone validation
+
 @pytest.mark.asyncio
 async def test_validate_forecast_timezone_values__valid_iana_timezones(observation_table_service):
     """
@@ -1413,3 +1415,243 @@ async def test_validate_forecast_point_format_string__spark(observation_table_se
     # Verify the query uses to_timestamp for Spark (inherited from Databricks)
     query_arg = mock_db_session.execute_query.call_args[0][0]
     assert "to_timestamp" in query_arg.lower()
+
+
+# Tests for forecast horizon computation
+
+
+def test_get_max_forecast_horizon_sql_expr__basic(
+    observation_table_service, table_details, adapter
+):
+    """
+    Test get_max_forecast_horizon_sql_expr generates correct SQL for basic case
+    """
+    expr = observation_table_service.get_max_forecast_horizon_sql_expr(table_details, adapter)
+    expr_sql = expr.sql(pretty=True, dialect="snowflake")
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          MAX("HORIZON_SECS") AS "MAX_HORIZON"
+        FROM (
+          SELECT
+            DATEDIFF(MICROSECOND, "POINT_IN_TIME", "FORECAST_POINT") / 1000000 AS "HORIZON_SECS"
+          FROM "fb_database"."fb_schema"."fb_table"
+        )
+        """
+    ).strip()
+    assert expr_sql == expected_query
+
+
+def test_get_max_forecast_horizon_sql_expr__with_varchar_format(
+    observation_table_service, table_details, adapter
+):
+    """
+    Test get_max_forecast_horizon_sql_expr handles VARCHAR type with format string
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="YYYY-MM-DD HH24:MI:SS",
+        is_utc_time=True,
+        timezone="Etc/UTC",
+    )
+    expr = observation_table_service.get_max_forecast_horizon_sql_expr(
+        table_details, adapter, forecast_schema
+    )
+    expr_sql = expr.sql(pretty=True, dialect="snowflake")
+
+    # Verify the SQL includes conversion from string to timestamp
+    assert "TO_TIMESTAMP" in expr_sql or "TRY_TO_TIMESTAMP" in expr_sql
+    assert "YYYY-MM-DD HH24:MI:SS" in expr_sql
+    assert "MAX_HORIZON" in expr_sql
+
+
+def test_get_max_forecast_horizon_sql_expr__with_timezone_conversion(
+    observation_table_service, table_details, adapter
+):
+    """
+    Test get_max_forecast_horizon_sql_expr handles timezone conversion for local time
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        is_utc_time=False,
+        timezone="America/New_York",
+    )
+    expr = observation_table_service.get_max_forecast_horizon_sql_expr(
+        table_details, adapter, forecast_schema
+    )
+    expr_sql = expr.sql(pretty=True, dialect="snowflake")
+
+    # Verify the SQL includes timezone conversion
+    assert "CONVERT_TIMEZONE" in expr_sql
+    assert "America/New_York" in expr_sql
+    assert "UTC" in expr_sql
+    assert "MAX_HORIZON" in expr_sql
+
+
+@pytest.mark.parametrize(
+    "seconds, granularity, expected",
+    [
+        (3600, "HOUR", 1),
+        (7200, "HOUR", 2),
+        (86400, "DAY", 1),
+        (172800, "DAY", 2),
+        (604800, "WEEK", 1),
+        (1209600, "WEEK", 2),
+        (2592000, "MONTH", 1),  # 30 days approximation
+        (60, "MINUTE", 1),
+        (120, "MINUTE", 2),
+        (31536000, "YEAR", 1),  # 365 days approximation
+        (7776000, "QUARTER", 1),  # 90 days approximation
+        # Test rounding (Python uses banker's rounding - rounds to even)
+        (5400, "HOUR", 2),  # 1.5 hours rounds to 2 (even)
+        (43200, "DAY", 0),  # 0.5 days rounds to 0 (even)
+        (129600, "DAY", 2),  # 1.5 days rounds to 2 (even)
+    ],
+)
+def test_convert_seconds_to_granularity(observation_table_service, seconds, granularity, expected):
+    """
+    Test _convert_seconds_to_granularity converts correctly for different granularities
+    """
+    from featurebyte.enum import TimeIntervalUnit
+
+    granularity_enum = TimeIntervalUnit(granularity)
+    result = observation_table_service._convert_seconds_to_granularity(seconds, granularity_enum)
+    assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_validate_metadata__with_forecast_point_stats(
+    observation_table_service,
+    snowflake_feature_store,
+    table_details,
+    cust_id_entity,
+    insert_credential,
+    adapter,
+):
+    """
+    Test validate_materialized_table_and_get_metadata includes forecast point stats when available
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.model.window import CalendarWindow
+
+    _ = cust_id_entity, insert_credential
+
+    # Create a mock context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="Etc/UTC",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.id = ObjectId()
+    mock_context.forecast_point_schema = forecast_schema
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+
+        return {
+            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="TIMESTAMP"),
+            "FORECAST_POINT": ColumnSpecWithDescription(name="FORECAST_POINT", dtype="DATE"),
+            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+        }
+
+    async def execute_query_long_running(*args, **kwargs):
+        query = args[0]
+        _ = kwargs
+        if "stats" in query:
+            return pd.DataFrame(
+                {
+                    "dtype": ["timestamp", "date", "varchar"],
+                    "unique": [5, 3, 2],
+                    "%missing": [0, 0, 0],
+                    "min": ["2023-01-01T10:00:00+00:00", "2023-01-05", 1],
+                    "max": ["2023-01-15T10:00:00+00:00", "2023-01-20", 10],
+                },
+            )
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"row_count": [1000]})
+        if "INTERVAL" in query:
+            return pd.DataFrame({"MIN_INTERVAL": [3600]})
+        if "MAX_HORIZON" in query:
+            # 7 days in seconds (forecast_horizon will be 7 + 1 = 8)
+            return pd.DataFrame({"MAX_HORIZON": [604800]})
+        raise NotImplementedError(f"Unexpected query: {query}")
+
+    mock_db_session = Mock(
+        name="mock_session",
+        spec=BaseSession,
+        list_table_schema=Mock(side_effect=mock_list_table_schema),
+        execute_query_long_running=Mock(side_effect=execute_query_long_running),
+        source_type=SourceType.SNOWFLAKE,
+        schema_name="my_schema",
+        database_name="my_db",
+        adapter=adapter,
+    )
+
+    with (
+        mock.patch(
+            "featurebyte.service.preview.PreviewService._get_feature_store_session"
+        ) as mock_get_feature_store_session,
+        mock.patch.object(
+            observation_table_service.context_service,
+            "get_document",
+            return_value=mock_context,
+        ),
+    ):
+        mock_get_feature_store_session.return_value = (snowflake_feature_store, mock_db_session)
+        metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
+            mock_db_session,
+            table_details,
+            snowflake_feature_store,
+            context_id=mock_context.id,
+        )
+
+        # Verify forecast point stats are included
+        assert "most_recent_forecast_point" in metadata
+        assert "least_recent_forecast_point" in metadata
+        assert "forecast_horizon" in metadata
+
+        # Verify values
+        # 7 days duration + 1 (since FORECAST_POINT indicates beginning of period) = 8 days
+        expected_horizon = CalendarWindow(unit=TimeIntervalUnit.DAY, size=8)
+        assert metadata["forecast_horizon"] == expected_horizon
+
+
+@pytest.mark.asyncio
+async def test_validate_metadata__without_forecast_context(
+    observation_table_service,
+    db_session,
+    table_details,
+    cust_id_entity,
+    snowflake_feature_store,
+    insert_credential,
+):
+    """
+    Test validate_materialized_table_and_get_metadata does not include forecast stats without context
+    """
+    _ = cust_id_entity, insert_credential
+
+    with mock.patch(
+        "featurebyte.service.preview.PreviewService._get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        mock_get_feature_store_session.return_value = (snowflake_feature_store, db_session)
+        metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
+            db_session, table_details, snowflake_feature_store
+        )
+
+        # Verify forecast point stats are NOT included when no context
+        assert "most_recent_forecast_point" not in metadata
+        assert "least_recent_forecast_point" not in metadata
+        assert "forecast_horizon" not in metadata

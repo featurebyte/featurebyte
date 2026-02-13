@@ -540,14 +540,23 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     return await session.execute_query(query)
 
 
-def create_observation_table_by_upload(df):
+def create_observation_table_by_upload(df, context_name=None):
     """
     Create an Observation Table using the upload SDK method
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to upload
+    context_name : Optional[str]
+        Context name to associate with the observation table
     """
     with tempfile.NamedTemporaryFile() as temp_file:
         filename = temp_file.name + ".parquet"
         df.to_parquet(filename, index=False)
-        observation_table = fb.ObservationTable.upload(filename, name=str(ObjectId()))
+        observation_table = fb.ObservationTable.upload(
+            filename, name=str(ObjectId()), context_name=context_name
+        )
     return observation_table
 
 
@@ -1224,14 +1233,27 @@ def feature_query_set_to_string(
     return ";\n\n".join(queries)
 
 
-def check_preview_and_compute_historical_features(feature_list, preview_params, expected):
+def check_preview_and_compute_historical_features(
+    feature_list, preview_params, expected, context_name=None
+):
     """
     Helper function to check preview and compute historical features
+
+    Parameters
+    ----------
+    feature_list : FeatureList
+        Feature list to preview and compute historical features for
+    preview_params : pd.DataFrame
+        DataFrame containing the preview parameters
+    expected : pd.DataFrame
+        Expected results
+    context_name : Optional[str]
+        Context name to associate with the observation table
     """
     df_features = feature_list.preview(preview_params)
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
-    obs_table = create_observation_table_by_upload(preview_params)
+    obs_table = create_observation_table_by_upload(preview_params, context_name=context_name)
     df_feature_table = feature_list.compute_historical_feature_table(obs_table, str(ObjectId()))
     df_features = df_feature_table.to_pandas()
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])

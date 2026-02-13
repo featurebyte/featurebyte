@@ -132,6 +132,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "created_at": json_dict["created_at"],
             "description": None,
             "entity_column_name_to_count": {},
+            "forecast_horizon": None,
             "has_forecast_timezone_column": False,
             "has_row_index": True,
             "has_row_weights": False,

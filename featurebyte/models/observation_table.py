@@ -26,6 +26,7 @@ from featurebyte.models.request_input import (
     SourceTableRequestInput,
     ViewRequestInput,
 )
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.base import BaseSession
 
@@ -195,6 +196,7 @@ class ObservationTableModel(MaterializedTableModel):
     most_recent_forecast_point: Optional[StrictStr] = Field(default=None)
     least_recent_forecast_point: Optional[StrictStr] = Field(default=None)
     has_forecast_timezone_column: Optional[bool] = Field(default=False)
+    forecast_horizon: Optional[CalendarWindow] = Field(default=None)
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()

@@ -49,7 +49,9 @@ def test_forecast_point_hour_feature(user_entity, timestamp_format_string):
     ])
     expected = preview_params.copy()
     expected["forecast_context_hour"] = [0]
-    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    check_preview_and_compute_historical_features(
+        feature_list, preview_params, expected, context_name=forecast_context.name
+    )
 
 
 def test_days_until_forecast_from_latest_event(event_table, timestamp_format_string, user_entity):
@@ -82,7 +84,9 @@ def test_days_until_forecast_from_latest_event(event_table, timestamp_format_str
     ])
     expected = preview_params.copy()
     expected["Days Until Forecast From Latest Event"] = [7.845613]
-    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+    check_preview_and_compute_historical_features(
+        feature_list, preview_params, expected, context_name=forecast_context.name
+    )
 
 
 @pytest.mark.asyncio
