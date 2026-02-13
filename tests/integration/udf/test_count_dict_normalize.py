@@ -2,6 +2,8 @@
 Tests for count dict normalize UDF
 """
 
+import json
+
 import numpy as np
 import pytest
 
@@ -12,6 +14,10 @@ def assert_dict_allclose(actual, expected, rtol=1e-5):
     """
     Assert that two dictionaries have the same keys and values within tolerance.
     """
+    # Parse JSON string if returned as string (e.g., Snowflake VARIANT)
+    if isinstance(actual, str):
+        actual = json.loads(actual)
+
     if expected is None:
         assert actual is None
         return
