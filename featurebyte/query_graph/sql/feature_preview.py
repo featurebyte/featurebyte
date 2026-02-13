@@ -9,11 +9,11 @@ from typing import Any, List, Optional, cast
 
 import pandas as pd
 
-from featurebyte import ForecastPointSchema
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.aggregator.base import CommonTable

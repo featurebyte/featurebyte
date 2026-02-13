@@ -13,7 +13,6 @@ import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
-from featurebyte import ForecastPointSchema
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
@@ -26,6 +25,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (

@@ -884,7 +884,7 @@ class FeatureExecutionPlan:
                 ),
                 expressions.alias_(utc_expr, SpecialColumnName.POINT_IN_TIME, quoted=True),
             ).from_(quoted_identifier(request_table_name))
-            request_table_name = "WITH_FORECAST_POINT_AS_PIT_" + request_table_name
+            request_table_name = "FORECAST_POINT_AS_PIT_" + request_table_name
             common_tables.append(
                 CommonTable(name=request_table_name, expr=wrapper_expr, quoted=False)
             )

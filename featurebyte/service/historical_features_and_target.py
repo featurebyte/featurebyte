@@ -558,6 +558,8 @@ async def get_target(
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    forecast_point_schema: Optional[ForecastPointSchema]
+        Optional forecast point schema to use
 
     Returns
     -------
