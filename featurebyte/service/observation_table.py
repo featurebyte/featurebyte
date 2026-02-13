@@ -1097,28 +1097,10 @@ class ObservationTableService(
         table_ref = get_fully_qualified_table_name(table_details.model_dump())
 
         # Build query to find values that don't match the format
-        # Using TRY_TO_TIMESTAMP (Snowflake) or equivalent for other databases
-        # Returns NULL for values that can't be parsed with the format
-        source_type = db_session.source_type
-        if source_type == "snowflake":
-            # Snowflake: TRY_TO_TIMESTAMP returns NULL for invalid format
-            try_parse_expr = expressions.Anonymous(
-                this="TRY_TO_TIMESTAMP",
-                expressions=[forecast_point_col, make_literal_value(format_string)],
-            )
-        elif source_type in ("databricks", "databricks_unity"):
-            # Databricks: to_timestamp returns NULL for invalid format
-            try_parse_expr = expressions.Anonymous(
-                this="to_timestamp",
-                expressions=[forecast_point_col, make_literal_value(format_string)],
-            )
-        elif source_type == "bigquery":
-            # BigQuery: SAFE.PARSE_TIMESTAMP returns NULL for invalid format
-            try_parse_expr = expressions.Anonymous(
-                this="SAFE.PARSE_TIMESTAMP",
-                expressions=[make_literal_value(format_string), forecast_point_col],
-            )
-        else:
+        # Using adapter's try_to_timestamp_from_string which returns NULL for invalid formats
+        adapter = db_session.adapter
+        try_parse_expr = adapter.try_to_timestamp_from_string(forecast_point_col, format_string)
+        if try_parse_expr is None:
             # Skip validation for unsupported source types
             return
 
@@ -1129,7 +1111,7 @@ class ObservationTableService(
             .from_(table_ref)
             .where(expressions.Is(this=try_parse_expr, expression=expressions.Null()))
             .limit(5),
-            source_type,
+            db_session.source_type,
         )
 
         result_df = await db_session.execute_query(query)

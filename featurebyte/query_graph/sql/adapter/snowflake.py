@@ -663,3 +663,28 @@ class SnowflakeAdapter(BaseAdapter):
             dialect="snowflake",
         )
         return expr
+
+    @classmethod
+    def try_to_timestamp_from_string(
+        cls, expr: Expression, format_string: str
+    ) -> Optional[Expression]:
+        """
+        Try to convert a string to a local timestamp. Returns NULL for invalid format strings.
+
+        Snowflake's TRY_TO_TIMESTAMP returns NULL instead of raising an error for invalid formats.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the string
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Optional[Expression]
+        """
+        return expressions.Anonymous(
+            this="TRY_TO_TIMESTAMP",
+            expressions=[expr, make_literal_value(format_string)],
+        )

@@ -1295,6 +1295,31 @@ class BaseAdapter(ABC):
         )
 
     @classmethod
+    def try_to_timestamp_from_string(
+        cls, expr: Expression, format_string: str
+    ) -> Optional[Expression]:
+        """
+        Try to convert a string to a local timestamp. Returns NULL for invalid format strings
+        instead of raising an error.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the string
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Optional[Expression]
+            Expression that returns NULL for invalid formats, or None if the database
+            does not support this operation
+        """
+        # Default implementation returns None to indicate this operation is not supported
+        # Subclasses should override this to provide database-specific implementations
+        return None
+
+    @classmethod
     @abstractmethod
     def to_string_from_timestamp(cls, expr: Expression) -> Expression:
         """

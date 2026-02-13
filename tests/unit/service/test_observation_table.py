@@ -1114,6 +1114,8 @@ async def test_validate_forecast_point_format_string__valid_values(observation_t
     from featurebyte.models.context import ContextModel
     from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
     from featurebyte.query_graph.node.schema import TableDetails
+    from featurebyte.query_graph.sql.adapter import SnowflakeAdapter
+    from featurebyte.query_graph.sql.source_info import SourceInfo
 
     # Create a mock context with VARCHAR dtype and format_string
     forecast_schema = ForecastPointSchema(
@@ -1130,6 +1132,11 @@ async def test_validate_forecast_point_format_string__valid_values(observation_t
     mock_db_session = AsyncMock()
     mock_db_session.source_type = "snowflake"
     mock_db_session.execute_query.return_value = pd.DataFrame()  # Empty = all valid
+    # Create a real adapter instance for proper SQL generation
+    source_info = SourceInfo(
+        database_name="test_db", schema_name="test_schema", source_type=SourceType.SNOWFLAKE
+    )
+    mock_db_session.adapter = SnowflakeAdapter(source_info)
 
     table_details = TableDetails(
         database_name="test_db",
@@ -1154,6 +1161,8 @@ async def test_validate_forecast_point_format_string__invalid_values(observation
     from featurebyte.models.context import ContextModel
     from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
     from featurebyte.query_graph.node.schema import TableDetails
+    from featurebyte.query_graph.sql.adapter import SnowflakeAdapter
+    from featurebyte.query_graph.sql.source_info import SourceInfo
 
     # Create a mock context with VARCHAR dtype and format_string
     forecast_schema = ForecastPointSchema(
@@ -1172,6 +1181,11 @@ async def test_validate_forecast_point_format_string__invalid_values(observation
     mock_db_session.execute_query.return_value = pd.DataFrame({
         SpecialColumnName.FORECAST_POINT: ["invalid-date", "2024/01/15"]
     })
+    # Create a real adapter instance for proper SQL generation
+    source_info = SourceInfo(
+        database_name="test_db", schema_name="test_schema", source_type=SourceType.SNOWFLAKE
+    )
+    mock_db_session.adapter = SnowflakeAdapter(source_info)
 
     table_details = TableDetails(
         database_name="test_db",
@@ -1272,6 +1286,8 @@ async def test_validate_forecast_point_format_string__databricks(observation_tab
     from featurebyte.models.context import ContextModel
     from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
     from featurebyte.query_graph.node.schema import TableDetails
+    from featurebyte.query_graph.sql.adapter import DatabricksAdapter
+    from featurebyte.query_graph.sql.source_info import SourceInfo
 
     forecast_schema = ForecastPointSchema(
         granularity=TimeIntervalUnit.DAY,
@@ -1286,6 +1302,11 @@ async def test_validate_forecast_point_format_string__databricks(observation_tab
     mock_db_session = AsyncMock()
     mock_db_session.source_type = "databricks"
     mock_db_session.execute_query.return_value = pd.DataFrame()
+    # Create a real adapter instance for proper SQL generation
+    source_info = SourceInfo(
+        database_name="test_db", schema_name="test_schema", source_type=SourceType.DATABRICKS
+    )
+    mock_db_session.adapter = DatabricksAdapter(source_info)
 
     table_details = TableDetails(
         database_name="test_db",
@@ -1311,6 +1332,8 @@ async def test_validate_forecast_point_format_string__bigquery(observation_table
     from featurebyte.models.context import ContextModel
     from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
     from featurebyte.query_graph.node.schema import TableDetails
+    from featurebyte.query_graph.sql.adapter import BigQueryAdapter
+    from featurebyte.query_graph.sql.source_info import SourceInfo
 
     forecast_schema = ForecastPointSchema(
         granularity=TimeIntervalUnit.DAY,
@@ -1325,6 +1348,11 @@ async def test_validate_forecast_point_format_string__bigquery(observation_table
     mock_db_session = AsyncMock()
     mock_db_session.source_type = "bigquery"
     mock_db_session.execute_query.return_value = pd.DataFrame()
+    # Create a real adapter instance for proper SQL generation
+    source_info = SourceInfo(
+        database_name="test_db", schema_name="test_schema", source_type=SourceType.BIGQUERY
+    )
+    mock_db_session.adapter = BigQueryAdapter(source_info)
 
     table_details = TableDetails(
         database_name="test_db",
@@ -1339,3 +1367,49 @@ async def test_validate_forecast_point_format_string__bigquery(observation_table
     # Verify the query uses SAFE.PARSE_TIMESTAMP for BigQuery
     query_arg = mock_db_session.execute_query.call_args[0][0]
     assert "SAFE.PARSE_TIMESTAMP" in query_arg
+
+
+@pytest.mark.asyncio
+async def test_validate_forecast_point_format_string__spark(observation_table_service):
+    """
+    Test validation works with Spark source type (inherits from Databricks adapter)
+    """
+    from featurebyte.enum import TimeIntervalUnit
+    from featurebyte.models.context import ContextModel
+    from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+    from featurebyte.query_graph.node.schema import TableDetails
+    from featurebyte.query_graph.sql.adapter import SparkAdapter
+    from featurebyte.query_graph.sql.source_info import SourceInfo
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        format_string="yyyy-MM-dd",
+        timezone="America/New_York",
+    )
+    mock_context = Mock(spec=ContextModel)
+    mock_context.name = "test_forecast_context"
+    mock_context.forecast_point_schema = forecast_schema
+
+    mock_db_session = AsyncMock()
+    mock_db_session.source_type = "spark"
+    mock_db_session.execute_query.return_value = pd.DataFrame()
+    # Create a real adapter instance for proper SQL generation
+    source_info = SourceInfo(
+        database_name="test_db", schema_name="test_schema", source_type=SourceType.SPARK
+    )
+    mock_db_session.adapter = SparkAdapter(source_info)
+
+    table_details = TableDetails(
+        database_name="test_db",
+        schema_name="test_schema",
+        table_name="test_table",
+    )
+
+    await observation_table_service._validate_forecast_point_format_string_values(
+        mock_db_session, table_details, mock_context
+    )
+    mock_db_session.execute_query.assert_called_once()
+    # Verify the query uses to_timestamp for Spark (inherited from Databricks)
+    query_arg = mock_db_session.execute_query.call_args[0][0]
+    assert "to_timestamp" in query_arg.lower()
