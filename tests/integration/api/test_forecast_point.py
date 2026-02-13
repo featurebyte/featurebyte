@@ -236,8 +236,13 @@ async def test_observation_table_valid_forecast_point_format(
         assert obs_table is not None
         assert obs_table.shape()[0] == 3
     finally:
-        # Cleanup
+        # Cleanup - remove use_case association before deleting observation table
         if obs_table is not None:
+            obs_table.update(
+                update_payload={"use_case_id_to_remove": str(use_case.id)},
+                allow_update_local=False,
+                skip_update_schema_check=True,
+            )
             obs_table.delete()
         await session.drop_table(
             table_name,

@@ -446,7 +446,8 @@ class DatabricksAdapter(BaseAdapter):
         """
         Try to convert a string to a local timestamp. Returns NULL for invalid format strings.
 
-        Databricks/Spark's to_timestamp returns NULL instead of raising an error for invalid formats.
+        Databricks/Spark's try_to_timestamp returns NULL instead of raising an error for invalid
+        formats. Note: to_timestamp throws an error for invalid formats, so we use try_to_timestamp.
 
         Parameters
         ----------
@@ -460,6 +461,6 @@ class DatabricksAdapter(BaseAdapter):
         Optional[Expression]
         """
         return expressions.Anonymous(
-            this="to_timestamp",
+            this="try_to_timestamp",
             expressions=[expr, make_literal_value(format_string)],
         )
