@@ -173,4 +173,63 @@ public class CountDictTransformsTest {
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(6, output.get());
   }
+
+  @Test
+  public void testCountDictNormalize() throws HiveException {
+    CountDictNormalizeV1 udf = new CountDictNormalizeV1();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    // Use a simple test dict with known values for easier verification
+    Map<String, DoubleWritable> testDict = new HashMap<>();
+    testDict.put("a", new DoubleWritable(10));
+    testDict.put("b", new DoubleWritable(20));
+    testDict.put("c", new DoubleWritable(30));
+    testDict.put("d", new DoubleWritable(40));
+    // Total = 100, so normalized values should be 0.1, 0.2, 0.3, 0.4
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(testDict)};
+    Map<Text, DoubleWritable> output = (Map<Text, DoubleWritable>) udf.evaluate(args);
+    assertEquals(0.1, output.get(new Text("a")).get(), 0.0001);
+    assertEquals(0.2, output.get(new Text("b")).get(), 0.0001);
+    assertEquals(0.3, output.get(new Text("c")).get(), 0.0001);
+    assertEquals(0.4, output.get(new Text("d")).get(), 0.0001);
+  }
+
+  @Test
+  public void testCountDictNormalizeNull() throws HiveException {
+    CountDictNormalizeV1 udf = new CountDictNormalizeV1();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(null)};
+    Object output = udf.evaluate(args);
+    assertEquals(null, output);
+  }
+
+  @Test
+  public void testCountDictNormalizeEmptyDict() throws HiveException {
+    CountDictNormalizeV1 udf = new CountDictNormalizeV1();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    Map<String, DoubleWritable> emptyDict = new HashMap<>();
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(emptyDict)};
+    Map<Text, DoubleWritable> output = (Map<Text, DoubleWritable>) udf.evaluate(args);
+    assertEquals(0, output.size());
+  }
+
+  @Test
+  public void testCountDictNormalizeWithNanValues() throws HiveException {
+    CountDictNormalizeV1 udf = new CountDictNormalizeV1();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    // Test dict with NaN values - these should be skipped
+    Map<String, DoubleWritable> testDict = new HashMap<>();
+    testDict.put("a", new DoubleWritable(50));
+    testDict.put("b", new DoubleWritable(50));
+    testDict.put("c", new DoubleWritable(Double.NaN));
+    // Total = 100 (NaN excluded), so normalized values should be 0.5, 0.5
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(testDict)};
+    Map<Text, DoubleWritable> output = (Map<Text, DoubleWritable>) udf.evaluate(args);
+    assertEquals(2, output.size());
+    assertEquals(0.5, output.get(new Text("a")).get(), 0.0001);
+    assertEquals(0.5, output.get(new Text("b")).get(), 0.0001);
+  }
 }

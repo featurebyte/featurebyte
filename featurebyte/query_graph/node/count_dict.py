@@ -152,7 +152,11 @@ class CountDictTransformNode(BaseCountDictOpNode):
         """Parameters"""
 
         transform_type: Literal[
-            "entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"
+            "entropy",
+            "most_frequent",
+            "key_with_highest_value",
+            "key_with_lowest_value",
+            "normalize",
         ]
 
     class UniqueCountParameters(FeatureByteBaseModel):
@@ -172,9 +176,15 @@ class CountDictTransformNode(BaseCountDictOpNode):
         "key_with_lowest_value",
     }
 
+    transform_types_with_object_output: ClassVar[Set[str]] = {
+        "normalize",
+    }
+
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         if self.parameters.transform_type in self.transform_types_with_varchar_output:
             return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
+        if self.parameters.transform_type in self.transform_types_with_object_output:
+            return DBVarTypeInfo(dtype=DBVarType.OBJECT)
         return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
@@ -254,6 +264,39 @@ class CountDictTransformNode(BaseCountDictOpNode):
             )
         return [], ExpressionStr(unique_count_expr)
 
+    @staticmethod
+    def _get_normalize_func_name(
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], str]:
+        statements: List[StatementT] = []
+        func_name = "normalize_dict"
+        if var_name_generator.should_insert_function(function_name=func_name):
+            func_string = f"""
+            def {func_name}(input_dict):
+                if pd.isna(input_dict):
+                    return np.nan
+                if len(input_dict) == 0:
+                    return {{}}
+                total = sum(input_dict.values())
+                if total == 0:
+                    return {{}}
+                return {{k: v / total for k, v in input_dict.items()}}
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
+
+    def _get_normalize(
+        self,
+        count_dict_var_name: str,
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], ExpressionStr]:
+        statements, func_name = self._get_normalize_func_name(var_name_generator)
+        normalize_expr = get_object_class_from_function_call(
+            f"{count_dict_var_name}.apply",
+            ExpressionStr(func_name),
+        )
+        return statements, ExpressionStr(normalize_expr)
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[NodeCodeGenOutput],
@@ -272,6 +315,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
             "key_with_highest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "max"),
             "key_with_lowest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "min"),
             "unique_count": lambda var, gen: self._get_unique_count(var, gen, include_missing),
+            "normalize": self._get_normalize,
         }
         transform_type = self.parameters.transform_type
         op_statements, op_expr = transform_type_to_func[transform_type](
@@ -316,6 +360,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
                 f"len([key for key in {operand} if key != '{MISSING_VALUE_REPLACEMENT}']) "
                 f"if not pd.isna({operand}) else np.nan"
             )
+        elif transform_type == "normalize":
+            statements, func_name = self._get_normalize_func_name(var_name_generator)
+            expr = ExpressionStr(f"{func_name}({operand})")
         else:
             raise ValueError(f"Unsupported transform type: {transform_type}")
         return statements, expr

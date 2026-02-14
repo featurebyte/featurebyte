@@ -587,3 +587,49 @@ class CountDictAccessor:
             output_var_type=DBVarType.FLOAT,
             additional_node_params=additional_node_params,
         )
+
+    def normalize(self) -> Feature:
+        """
+        Normalizes the dictionary values by dividing each value by the sum of all values.
+        If the sum of values is 0 for a row, returns an empty dictionary.
+
+        Returns
+        -------
+        Feature
+            A new Feature object with normalized values.
+
+        Examples
+        --------
+
+        Create a new feature by normalizing the dictionary values:
+
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")  # doctest: +SKIP
+        >>> new_feature = counts.cd.normalize()  # doctest: +SKIP
+        >>> new_feature.name = "CustomerProductGroupCountsNormalized_7d"  # doctest: +SKIP
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])  # doctest: +SKIP
+        >>> df = features.preview(  # doctest: +SKIP
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupCounts_7d"].iloc[0]  # doctest: +SKIP
+        {'Chips et Tortillas': 1, 'Colas, Thés glacés et Sodas': 3, 'Crèmes et Chantilly': 1, 'Pains': 1, 'Œufs': 1}
+
+
+        New feature (values normalized to sum to 1):
+
+        >>> df["CustomerProductGroupCountsNormalized_7d"].iloc[0]  # doctest: +SKIP
+        {'Chips et Tortillas': 0.143, 'Colas, Thés glacés et Sodas': 0.429, 'Crèmes et Chantilly': 0.143, 'Pains': 0.143, 'Œufs': 0.143}
+        """
+        return self._make_operation("normalize", DBVarType.OBJECT)

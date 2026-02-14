@@ -529,7 +529,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 15
+        return 16
 
     @property
     def sql_directory_name(self) -> str:
@@ -660,6 +660,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequencyV1"),
             ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRankV1"),
             ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1"),
+            ("F_COUNT_DICT_NORMALIZE", "com.featurebyte.hive.udf.CountDictNormalizeV1"),
         ]
         for function_name, class_name in udf_functions:
             logger.debug(

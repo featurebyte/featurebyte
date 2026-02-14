@@ -28,7 +28,7 @@ class CountDictTransformNode(ExpressionNode):
     """Node for count dict transform operation (eg. entropy)"""
 
     expr: ExpressionNode
-    transform_type: Literal["entropy", "most_frequent", "unique_count"]
+    transform_type: Literal["entropy", "most_frequent", "unique_count", "normalize"]
     include_missing: bool
     query_node_type = NodeType.COUNT_DICT_TRANSFORM
 
@@ -40,6 +40,7 @@ class CountDictTransformNode(ExpressionNode):
             "key_with_highest_value": "F_COUNT_DICT_MOST_FREQUENT",
             "key_with_lowest_value": "F_COUNT_DICT_LEAST_FREQUENT",
             "unique_count": "F_COUNT_DICT_NUM_UNIQUE",
+            "normalize": "F_COUNT_DICT_NORMALIZE",
         }[self.transform_type]
         if self.include_missing:
             counts_expr = self.expr.sql
