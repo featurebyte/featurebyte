@@ -872,6 +872,7 @@ async def test_validate_columns__no_dtype_validation_when_dtypes_not_provided(
 
 # Tests for timezone validation
 
+
 @pytest.mark.asyncio
 async def test_validate_forecast_timezone_values__valid_iana_timezones(observation_table_service):
     """
@@ -1463,10 +1464,22 @@ def test_get_max_forecast_horizon_sql_expr__with_varchar_format(
     )
     expr_sql = expr.sql(pretty=True, dialect="snowflake")
 
-    # Verify the SQL includes conversion from string to timestamp
-    assert "TO_TIMESTAMP" in expr_sql or "TRY_TO_TIMESTAMP" in expr_sql
-    assert "YYYY-MM-DD HH24:MI:SS" in expr_sql
-    assert "MAX_HORIZON" in expr_sql
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          MAX("HORIZON_SECS") AS "MAX_HORIZON"
+        FROM (
+          SELECT
+            DATEDIFF(
+              MICROSECOND,
+              "POINT_IN_TIME",
+              TO_TIMESTAMP("FORECAST_POINT", 'YYYY-MM-DD HH24:MI:SS')
+            ) / 1000000 AS "HORIZON_SECS"
+          FROM "fb_database"."fb_schema"."fb_table"
+        )
+        """
+    ).strip()
+    assert expr_sql == expected_query
 
 
 def test_get_max_forecast_horizon_sql_expr__with_timezone_conversion(
@@ -1489,11 +1502,22 @@ def test_get_max_forecast_horizon_sql_expr__with_timezone_conversion(
     )
     expr_sql = expr.sql(pretty=True, dialect="snowflake")
 
-    # Verify the SQL includes timezone conversion
-    assert "CONVERT_TIMEZONE" in expr_sql
-    assert "America/New_York" in expr_sql
-    assert "UTC" in expr_sql
-    assert "MAX_HORIZON" in expr_sql
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          MAX("HORIZON_SECS") AS "MAX_HORIZON"
+        FROM (
+          SELECT
+            DATEDIFF(
+              MICROSECOND,
+              "POINT_IN_TIME",
+              CONVERT_TIMEZONE('America/New_York', 'UTC', "FORECAST_POINT")
+            ) / 1000000 AS "HORIZON_SECS"
+          FROM "fb_database"."fb_schema"."fb_table"
+        )
+        """
+    ).strip()
+    assert expr_sql == expected_query
 
 
 @pytest.mark.parametrize(

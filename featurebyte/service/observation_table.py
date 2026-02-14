@@ -62,7 +62,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
-from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -72,7 +72,9 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.timestamp_helper import convert_timezone
+from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_to_utc,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.context import ContextUpdate
@@ -892,6 +894,45 @@ class ObservationTableService(
         )
 
     @staticmethod
+    def _apply_forecast_point_transformations(
+        forecast_point_expr: Expression,
+        adapter: BaseAdapter,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Expression:
+        """
+        Apply VARCHAR-to-timestamp conversion and timezone conversion to FORECAST_POINT expression.
+
+        Parameters
+        ----------
+        forecast_point_expr: Expression
+            The base FORECAST_POINT SQL expression
+        adapter: BaseAdapter
+            Instance of the SQL adapter
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Expression
+            The transformed FORECAST_POINT expression with format string and timezone conversions applied
+        """
+        if forecast_point_schema is None:
+            return forecast_point_expr
+
+        # Convert ForecastPointSchema to TimestampSchema and use convert_timestamp_to_utc
+        # POINT_IN_TIME is always in UTC in FeatureByte, so we need FORECAST_POINT in UTC too
+        timestamp_schema = TimestampSchema(
+            format_string=forecast_point_schema.format_string,
+            is_utc_time=forecast_point_schema.is_utc_time,
+            timezone=forecast_point_schema.timezone,
+        )
+        return convert_timestamp_to_utc(
+            column_expr=forecast_point_expr,
+            timestamp_schema=timestamp_schema,
+            adapter=adapter,
+        )
+
+    @staticmethod
     def get_max_forecast_horizon_sql_expr(
         table_details: TableDetails,
         adapter: BaseAdapter,
@@ -918,25 +959,10 @@ class ObservationTableService(
         point_in_time_quoted = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
         forecast_point_expr: Expression = quoted_identifier(SpecialColumnName.FORECAST_POINT)
 
-        # Handle VARCHAR type - convert to timestamp using format string
-        if forecast_point_schema is not None and forecast_point_schema.format_string is not None:
-            forecast_point_expr = adapter.to_timestamp_from_string(
-                forecast_point_expr, forecast_point_schema.format_string
-            )
-
-        # Handle timezone conversion - convert forecast_point to UTC if it's in local time
-        # POINT_IN_TIME is always in UTC in FeatureByte
-        if (
-            forecast_point_schema is not None
-            and forecast_point_schema.is_utc_time is False
-            and forecast_point_schema.timezone is not None
-        ):
-            forecast_point_expr = convert_timezone(
-                target_tz="utc",
-                timezone_obj=forecast_point_schema.timezone,
-                adapter=adapter,
-                column_expr=forecast_point_expr,
-            )
+        # Apply VARCHAR and timezone transformations
+        forecast_point_expr = ObservationTableService._apply_forecast_point_transformations(
+            forecast_point_expr, adapter, forecast_point_schema
+        )
 
         # Compute FORECAST_POINT - POINT_IN_TIME in microseconds
         datediff_expr = adapter.datediff_microsecond(point_in_time_quoted, forecast_point_expr)
@@ -982,24 +1008,10 @@ class ObservationTableService(
         """
         forecast_point_expr: Expression = quoted_identifier(SpecialColumnName.FORECAST_POINT)
 
-        # Handle VARCHAR type - convert to timestamp using format string
-        if forecast_point_schema is not None and forecast_point_schema.format_string is not None:
-            forecast_point_expr = adapter.to_timestamp_from_string(
-                forecast_point_expr, forecast_point_schema.format_string
-            )
-
-        # Handle timezone conversion - convert forecast_point to UTC if it's in local time
-        if (
-            forecast_point_schema is not None
-            and forecast_point_schema.is_utc_time is False
-            and forecast_point_schema.timezone is not None
-        ):
-            forecast_point_expr = convert_timezone(
-                target_tz="utc",
-                timezone_obj=forecast_point_schema.timezone,
-                adapter=adapter,
-                column_expr=forecast_point_expr,
-            )
+        # Apply VARCHAR and timezone transformations
+        forecast_point_expr = ObservationTableService._apply_forecast_point_transformations(
+            forecast_point_expr, adapter, forecast_point_schema
+        )
 
         aliased_min = expressions.Alias(
             this=expressions.Min(this=forecast_point_expr),
@@ -1507,7 +1519,8 @@ class ObservationTableService(
                 primary_entity_ids
             )
 
-        # Validate forecast point schema if context is provided
+        # Fetch context if context_id is provided (for validation and forecast horizon computation)
+        context: Optional[ContextModel] = None
         if context_id is not None:
             context = await self.context_service.get_document(document_id=context_id)
             await self._validate_forecast_timezone_values(db_session, table_details, context)
@@ -1539,11 +1552,6 @@ class ObservationTableService(
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
             db_session, columns_info, table_details
         )
-
-        # Fetch context if context_id is provided (for forecast horizon computation)
-        context: Optional[ContextModel] = None
-        if context_id is not None:
-            context = await self.context_service.get_document(document_id=context_id)
 
         # Get entity statistics metadata
         observation_table_stats = await self._get_observation_table_stats(
