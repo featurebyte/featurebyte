@@ -438,3 +438,29 @@ class DatabricksAdapter(BaseAdapter):
         if dtype in [DBVarType.FLAT_DICT, DBVarType.DICT]:
             return expressions.Cast(this=expr, to=expressions.DataType.build("TEXT"))
         return expr
+
+    @classmethod
+    def try_to_timestamp_from_string(
+        cls, expr: Expression, format_string: str
+    ) -> Optional[Expression]:
+        """
+        Try to convert a string to a local timestamp. Returns NULL for invalid format strings.
+
+        Databricks/Spark's try_to_timestamp returns NULL instead of raising an error for invalid
+        formats. Note: to_timestamp throws an error for invalid formats, so we use try_to_timestamp.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the string
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Optional[Expression]
+        """
+        return expressions.Anonymous(
+            this="try_to_timestamp",
+            expressions=[expr, make_literal_value(format_string)],
+        )

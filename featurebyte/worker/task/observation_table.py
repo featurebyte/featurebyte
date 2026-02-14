@@ -228,6 +228,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     feature_store=feature_store,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
                     primary_entity_ids=payload.primary_entity_ids,
+                    context_id=context_id,
                 )
 
                 # compute observation table with target column
@@ -449,6 +450,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     primary_entity_ids=payload.primary_entity_ids,
                     target_namespace_id=target_namespace_id,
                     treatment_id=payload.treatment_id,
+                    context_id=context_id,
                 )
             )
 

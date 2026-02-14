@@ -174,6 +174,18 @@ class InvalidForecastTimezoneColumnTypeError(FeatureByteException):
     """
 
 
+class InvalidForecastTimezoneValueError(FeatureByteException):
+    """
+    Raised when forecast timezone column contains invalid timezone values
+    """
+
+
+class InvalidForecastPointValueError(FeatureByteException):
+    """
+    Raised when forecast point column contains values that don't match the expected format
+    """
+
+
 class TooRecentPointInTimeError(FeatureByteException):
     """
     Raised when the latest point in time value is too recent in historical requests

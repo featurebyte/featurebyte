@@ -468,3 +468,30 @@ class BigQueryAdapter(BaseAdapter):
         for key in keys:
             expr = expressions.Dot(this=expr, expression=quoted_identifier(key))
         return expr
+
+    @classmethod
+    def try_to_timestamp_from_string(
+        cls, expr: Expression, format_string: str
+    ) -> Optional[Expression]:
+        """
+        Try to convert a string to a local timestamp. Returns NULL for invalid format strings.
+
+        BigQuery's SAFE.PARSE_TIMESTAMP returns NULL instead of raising an error for invalid formats.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the string
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Optional[Expression]
+        """
+        return cls._ensure_datetime(
+            Anonymous(
+                this="SAFE.PARSE_TIMESTAMP",
+                expressions=[make_literal_value(format_string), expr],
+            )
+        )
