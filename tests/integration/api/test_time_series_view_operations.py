@@ -11,7 +11,9 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
+from featurebyte import CalendarWindow, Context, CronFeatureJobSetting, FeatureList, RequestColumn
+from featurebyte.enum import DBVarType, TimeIntervalUnit
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
@@ -486,3 +488,77 @@ def test_blind_spot(time_series_table):
         3.01,
     ]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+
+
+@pytest.mark.asyncio
+async def test_lookup_target(
+    time_series_table, session, data_source, series_entity, timestamp_format_string
+):
+    """
+    Test that lookup target can be created from TimeSeriesView and computed with forecast point.
+
+    This test verifies that when an observation table is linked to a context with forecast_point_schema,
+    the FORECAST_POINT column is used as the temporal reference for target computation.
+    """
+    view = time_series_table.get_view()
+    lookup_target = view["value_col"].as_target(
+        "time_series_lookup_target",
+        offset=3,
+        fill_value=0,
+    )
+
+    # Create a Context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        is_utc_time=True,
+        format_string=timestamp_format_string,
+    )
+    forecast_context = Context.create(
+        name=f"forecast_context_{ObjectId()}",
+        primary_entity=[series_entity.name],
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Create observation set with FORECAST_POINT different from POINT_IN_TIME.
+    # The FORECAST_POINT determines which reference_datetime row to look up.
+    # With offset=3, the target looks up reference_datetime = FORECAST_POINT + 3 days.
+    # For FORECAST_POINT = "2001-01-07", the target should look up "2001-01-10" -> value 0.09
+    # For FORECAST_POINT = "2001-01-12", the target should look up "2001-01-15" -> value 0.14
+    df_obs = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            "series_id": "S0",
+            "FORECAST_POINT": "2001|01|07",
+        },
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            "series_id": "S0",
+            "FORECAST_POINT": "2001|01|12",
+        },
+    ])
+
+    # Register the dataframe and create observation table linked to the forecast context
+    unique_id = ObjectId()
+    db_table_name = f"df_{unique_id}"
+    await session.register_table(db_table_name, df_obs)
+    source_table = data_source.get_source_table(
+        db_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    observation_table = source_table.create_observation_table(
+        f"obs_table_forecast_{unique_id}",
+        context_name=forecast_context.name,
+    )
+
+    # Compute targets using the observation table (which triggers the forecast_point path)
+    df_targets = lookup_target.compute_targets(observation_table)
+
+    # Verify the target was computed using FORECAST_POINT as temporal reference.
+    # With offset=3 and the reference dates, we expect:
+    # - FORECAST_POINT "2001-01-07" + offset 3 days -> looks up "2001-01-10" -> value 0.09
+    # - FORECAST_POINT "2001-01-12" + offset 3 days -> looks up "2001-01-15" -> value 0.14
+    assert len(df_targets) == 2
+    df_targets_sorted = df_targets.sort_values("FORECAST_POINT").reset_index(drop=True)
+    assert df_targets_sorted["time_series_lookup_target"].tolist() == [0.09, 0.14]
