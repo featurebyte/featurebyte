@@ -292,7 +292,7 @@ async def test_bool_target(event_table, source_type, session, data_source):
 
 @pytest.mark.asyncio
 async def test_forward_aggregate_with_count_and_forecast_point_available(
-    event_table, session, data_source, user_entity, source_type
+    event_table, timestamp_format_string_with_time, session, data_source, user_entity, source_type
 ):
     """
     Test that when an observation table is linked to a context with forecast_point_schema,
@@ -316,8 +316,9 @@ async def test_forward_aggregate_with_count_and_forecast_point_available(
     # Create a Context with forecast_point_schema
     forecast_schema = ForecastPointSchema(
         granularity=TimeIntervalUnit.DAY,
-        dtype=DBVarType.TIMESTAMP,
+        dtype=DBVarType.VARCHAR,
         is_utc_time=True,
+        format_string=timestamp_format_string_with_time,
     )
     forecast_context = Context.create(
         name=f"forecast_context_{ObjectId()}",
@@ -334,7 +335,7 @@ async def test_forward_aggregate_with_count_and_forecast_point_available(
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
             "üser id": 1,
-            "FORECAST_POINT": pd.Timestamp("2001-11-15 10:00:00"),
+            "FORECAST_POINT": pd.Timestamp("2001-11-15 10:00:00").strftime("%Y|%m|%d|%H:%M:%S"),
         },
     ])
 

@@ -9,7 +9,7 @@ from typing import Any, List, Optional, cast
 
 import pandas as pd
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -88,7 +88,7 @@ def get_feature_or_target_preview_sql(
         tic = time.time()
         df_request = pd.DataFrame(point_in_time_and_serving_name_list)
         date_cols: List[str] = [SpecialColumnName.POINT_IN_TIME]
-        if forecast_point_schema:
+        if forecast_point_schema and forecast_point_schema.dtype != DBVarType.VARCHAR:
             date_cols.append(SpecialColumnName.FORECAST_POINT)
         request_table_sql = construct_dataframe_sql_expr(df_request, date_cols)
         cte_statements = [CommonTable(request_table_name, request_table_sql, quoted=False)]
