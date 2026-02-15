@@ -223,7 +223,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                     )
                 else:
                     job_datetime_column_name = get_request_table_job_datetime_column_name(
-                        snapshots_parameters.feature_job_setting, self.adapter.source_type
+                        feature_job_setting, self.adapter.source_type
                     )
                     datetime_expr_to_adjust = get_qualified_column_identifier(
                         job_datetime_column_name, "REQ"
