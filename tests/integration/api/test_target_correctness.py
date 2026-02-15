@@ -10,8 +10,10 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import AggFunc
+from featurebyte import AggFunc, Context
 from featurebyte.common.model_util import parse_duration_string
+from featurebyte.enum import DBVarType, TimeIntervalUnit
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -286,3 +288,112 @@ async def test_bool_target(event_table, source_type, session, data_source):
     df_expected["count_target_bool"] = True
     fb_assert_frame_equal(df_target_table, df_expected)
     assert df_target_table["count_target_bool"].dtype == "bool"
+
+
+@pytest.mark.asyncio
+async def test_forward_aggregate_with_count_and_forecast_point_available(
+    event_table, timestamp_format_string_with_time, session, data_source, user_entity, source_type
+):
+    """
+    Test that when an observation table is linked to a context with forecast_point_schema,
+    the FORECAST_POINT column is used as the temporal reference for target computation
+    instead of POINT_IN_TIME.
+
+    We verify this by:
+    1. Setting POINT_IN_TIME and FORECAST_POINT to different times
+    2. Computing a count target with a 7-day forward window
+    3. Checking the result matches what we'd expect if FORECAST_POINT is the temporal reference
+    """
+    event_view = event_table.get_view()
+    count_target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method=AggFunc.COUNT,
+        value_column=None,
+        window="7d",
+        target_name="count_target_forecast",
+        fill_value=None,
+    )
+
+    # Create a Context with forecast_point_schema
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        is_utc_time=True,
+        format_string=timestamp_format_string_with_time,
+    )
+    forecast_context = Context.create(
+        name=f"forecast_context_{ObjectId()}",
+        primary_entity=[user_entity.name],
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Create observation set with FORECAST_POINT different from POINT_IN_TIME.
+    # POINT_IN_TIME is set to a very early time (where there are no events after it within 7d),
+    # while FORECAST_POINT is set to a time where we know there are events.
+    # If FORECAST_POINT is used as temporal reference, we should see a non-zero count.
+    # If POINT_IN_TIME is used, we should see a different count.
+    df_obs = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            "üser id": 1,
+            "FORECAST_POINT": pd.Timestamp("2001-11-15 10:00:00").strftime("%Y|%m|%d|%H:%M:%S"),
+        },
+    ])
+
+    # Register the dataframe and create observation table linked to the forecast context
+    unique_id = ObjectId()
+    db_table_name = f"df_{unique_id}"
+    await session.register_table(db_table_name, df_obs)
+    source_table = data_source.get_source_table(
+        db_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    observation_table = source_table.create_observation_table(
+        f"obs_table_forecast_{unique_id}",
+        context_name=forecast_context.name,
+    )
+
+    # Compute targets using the observation table (which triggers the forecast_point path)
+    df_targets = count_target.compute_targets(observation_table)
+
+    # Verify the target was computed using FORECAST_POINT as temporal reference.
+    # With FORECAST_POINT = 2001-11-15 10:00:00 and a 7-day forward window,
+    # we should see the count of events for user 1 between 2001-11-15 10:00:00 and 2001-11-22 10:00:00.
+    # If POINT_IN_TIME (2001-01-01 00:00:00) were used instead, the count would be different.
+    assert len(df_targets) == 1
+    target_value = df_targets["count_target_forecast"].iloc[0]
+    assert target_value is not None
+
+    # Preview using the observation table (which also triggers the forecast_point path)
+    df_preview = count_target.preview(observation_table)
+    tz_localize_if_needed(df_preview, source_type)
+    assert len(df_preview) == 1
+    preview_target_value = df_preview["count_target_forecast"].iloc[0]
+    assert preview_target_value == target_value
+
+    # Also verify by computing with just POINT_IN_TIME as a raw DataFrame (no context).
+    # This should use POINT_IN_TIME and give a different result.
+    df_obs_pit_only = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            "üser id": 1,
+        },
+    ])
+    df_targets_pit = count_target.compute_targets(df_obs_pit_only)
+    target_value_from_pit = df_targets_pit["count_target_forecast"].iloc[0]
+
+    # The result using FORECAST_POINT should match what we'd get using the same timestamp
+    # directly as POINT_IN_TIME (since both point to 2001-11-15 10:00:00)
+    assert target_value == target_value_from_pit
+
+    # Verify that using POINT_IN_TIME=2001-01-01 without forecast context gives a different result
+    df_obs_early_pit = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            "üser id": 1,
+        },
+    ])
+    df_targets_early = count_target.compute_targets(df_obs_early_pit)
+    target_value_from_early_pit = df_targets_early["count_target_forecast"].iloc[0]
+    # The count from early POINT_IN_TIME should differ from the FORECAST_POINT-based count
+    assert target_value != target_value_from_early_pit

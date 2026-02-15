@@ -29,6 +29,7 @@ from featurebyte.models.feature_table_cache_metadata import (
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
@@ -416,6 +417,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> FeaturesComputationResult:
         request_column_names = {col.name for col in observation_table.columns_info}
         nodes_only = [node for node, _ in nodes]
@@ -446,6 +448,7 @@ class FeatureTableCacheService:
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
                 system_metrics_service=self.system_metrics_service,
+                forecast_point_schema=forecast_point_schema,
             )
         else:
             return await get_historical_features(
@@ -640,6 +643,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> FeaturesComputationResult:
         # create temporary table with features
         intermediate_table_name = (
@@ -669,6 +673,7 @@ class FeatureTableCacheService:
                 development_dataset=development_dataset,
                 progress_callback=feature_computation_progress_callback,
                 raise_on_error=raise_on_error,
+                forecast_point_schema=forecast_point_schema,
             )
 
             # Update progress for cache insertion phase
@@ -739,6 +744,7 @@ class FeatureTableCacheService:
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
         raise_on_error: bool = True,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> UpdateFeatureTableCacheResult:
         """
         Create or update feature table cache
@@ -769,6 +775,8 @@ class FeatureTableCacheService:
             Optional progress callback function
         raise_on_error: bool
             Whether to raise an error if the computation fails
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Optional forecast point schema to use
 
         Returns
         -------
@@ -815,6 +823,7 @@ class FeatureTableCacheService:
                 development_dataset=development_dataset,
                 progress_callback=progress_callback,
                 raise_on_error=raise_on_error,
+                forecast_point_schema=forecast_point_schema,
             )
         else:
             # No features to compute, everything is cached
@@ -997,6 +1006,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> Tuple[bool, HistoricalFeaturesMetrics]:
         """
         Create or update cache table and create a new view which refers to the cached table
@@ -1022,6 +1032,8 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Optional forecast point schema to use
 
         Returns
         -------
@@ -1043,6 +1055,7 @@ class FeatureTableCacheService:
                 feature_list_id=feature_list_id,
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=progress_callback,
+                forecast_point_schema=forecast_point_schema,
             )
 
         hashes = update_result.hashes

@@ -9,10 +9,11 @@ from typing import Any, List, Optional, cast
 
 import pandas as pd
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
@@ -36,6 +37,7 @@ def get_feature_or_target_preview_sql(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
+    forecast_point_schema: Optional[ForecastPointSchema] = None,
 ) -> str:
     """
     Get SQL code for previewing SQL for features or targets.
@@ -60,6 +62,8 @@ def get_feature_or_target_preview_sql(
         a cron-based feature job setting.
     column_statistics_info: Optional[ColumnStatisticsInfo]
         Column statistics information
+    forecast_point_schema: Optional[ForecastPointSchema]
+        Forecast point schema
 
     Returns
     -------
@@ -71,6 +75,7 @@ def get_feature_or_target_preview_sql(
         is_online_serving=False,
         job_schedule_table_set=job_schedule_table_set,
         column_statistics_info=column_statistics_info,
+        forecast_point_schema=forecast_point_schema,
     )
     execution_plan = planner.generate_plan(nodes)
 
@@ -82,9 +87,10 @@ def get_feature_or_target_preview_sql(
         # prepare request table
         tic = time.time()
         df_request = pd.DataFrame(point_in_time_and_serving_name_list)
-        request_table_sql = construct_dataframe_sql_expr(
-            df_request, [SpecialColumnName.POINT_IN_TIME]
-        )
+        date_cols: List[str] = [SpecialColumnName.POINT_IN_TIME]
+        if forecast_point_schema and forecast_point_schema.dtype != DBVarType.VARCHAR:
+            date_cols.append(SpecialColumnName.FORECAST_POINT)
+        request_table_sql = construct_dataframe_sql_expr(df_request, date_cols)
         cte_statements = [CommonTable(request_table_name, request_table_sql, quoted=False)]
         request_table_columns = cast(List[str], df_request.columns.tolist())
 

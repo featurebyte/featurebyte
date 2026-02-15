@@ -25,6 +25,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
@@ -267,6 +268,7 @@ def get_historical_features_expr(
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     partition_column_filters: Optional[PartitionColumnFilters] = None,
     development_datasets: Optional[DevelopmentDatasets] = None,
+    forecast_point_schema: Optional[ForecastPointSchema] = None,
 ) -> FeatureQueryPlan:
     """Construct the SQL code that extracts historical features
 
@@ -297,6 +299,8 @@ def get_historical_features_expr(
         Partition column filters to apply to the source tables
     development_datasets: Optional[DevelopmentDatasets]
         Development datasets to use when reading the source tables
+    forecast_point_schema: Optional[ForecastPointSchema]
+        Forecast point schema to use
 
     Returns
     -------
@@ -313,6 +317,7 @@ def get_historical_features_expr(
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
         development_datasets=development_datasets,
+        forecast_point_schema=forecast_point_schema,
     )
     plan = planner.generate_plan(nodes)
 
@@ -346,6 +351,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         column_statistics_info: Optional[ColumnStatisticsInfo] = None,
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ):
         self.request_table_name = request_table_name
         self.graph = graph
@@ -362,6 +368,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         self.column_statistics_info = column_statistics_info
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
+        self.forecast_point_schema = forecast_point_schema
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -384,6 +391,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             column_statistics_info=self.column_statistics_info,
             partition_column_filters=self.partition_column_filters,
             development_datasets=self.development_datasets,
+            forecast_point_schema=self.forecast_point_schema,
         )
         feature_query = feature_set_sql.get_feature_query(
             table_name=table_name,
@@ -410,6 +418,7 @@ def get_historical_features_query_set(
     development_datasets: Optional[DevelopmentDatasets] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    forecast_point_schema: Optional[ForecastPointSchema] = None,
 ) -> FeatureQuerySet:
     """Construct the SQL code that extracts historical features
 
@@ -448,6 +457,8 @@ def get_historical_features_query_set(
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
         Customised progress message which will be sent to a client.
+    forecast_point_schema: Optional[ForecastPointSchema]
+        Forecast point schema to use
 
     Returns
     -------
@@ -469,6 +480,7 @@ def get_historical_features_query_set(
         column_statistics_info=column_statistics_info,
         partition_column_filters=partition_column_filters,
         development_datasets=development_datasets,
+        forecast_point_schema=forecast_point_schema,
     )
     feature_query_set = FeatureQuerySet(
         feature_query_generator=feature_query_generator,
