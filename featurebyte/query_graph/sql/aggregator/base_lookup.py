@@ -217,7 +217,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                     feature_job_setting = None
                 else:
                     feature_job_setting = snapshots_parameters.feature_job_setting
-                if snapshots_parameters.feature_job_setting is None or specs[0].is_deployment_sql:
+                if feature_job_setting is None or specs[0].is_deployment_sql:
                     datetime_expr_to_adjust = get_qualified_column_identifier(
                         SpecialColumnName.POINT_IN_TIME, "REQ"
                     )
@@ -238,6 +238,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                         OffsetDirection.FORWARD if specs[0].is_target else OffsetDirection.BACKWARD
                     ),
                     adapter=self.adapter,
+                    allow_exact_match_with_current_interval=specs[0].is_target,
                 )
                 left_table_join_keys = [
                     adjusted_point_in_time_expr,

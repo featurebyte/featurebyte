@@ -192,6 +192,7 @@ def apply_snapshot_adjustment(
     offset_size: Optional[int],
     adapter: BaseAdapter,
     offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
+    allow_exact_match_with_current_interval: bool = False,
 ) -> Expression:
     """
     Apply snapshot adjustments to a datetime expression including truncation, blind spot window,
@@ -214,6 +215,9 @@ def apply_snapshot_adjustment(
         SQL adapter
     offset_direction: OffsetDirection
         Direction of the offset (default: BACKWARD)
+    allow_exact_match_with_current_interval: bool
+        Whether to allow exact match with the current interval. This is used when looking up
+        snapshot targets, where feature job setting / incomplete interval is irrelevant.
 
     Returns
     -------
@@ -232,11 +236,12 @@ def apply_snapshot_adjustment(
     )
 
     # Adjust by one time interval to avoid using the current incomplete interval
-    time_interval_window = CalendarWindow(
-        unit=time_interval.unit,
-        size=time_interval.value,
-    )
-    adjusted_datetime_expr = _subtract_window(adjusted_datetime_expr, time_interval_window)
+    if not allow_exact_match_with_current_interval:
+        time_interval_window = CalendarWindow(
+            unit=time_interval.unit,
+            size=time_interval.value,
+        )
+        adjusted_datetime_expr = _subtract_window(adjusted_datetime_expr, time_interval_window)
 
     if feature_job_setting is not None:
         blind_spot_window = feature_job_setting.get_blind_spot_calendar_window()
