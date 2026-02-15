@@ -25,6 +25,7 @@ from tests.util.helper import (
     check_observation_table_creation_query,
     check_sdk_code_generation,
     compare_pydantic_obj,
+    get_node,
 )
 
 
@@ -518,3 +519,62 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
         assert view["col_int"].shape() == (1000, 1)
         # Check that the correct query was executed
         assert mock_execute_query.call_args[0][0] == expected_call_view_column
+
+
+def test_time_series_view_as_target(snowflake_time_series_table, cust_id_entity):
+    """
+    Test TimeSeriesView as_target configures additional parameters
+    """
+    snowflake_time_series_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_time_series_table.get_view()
+    target = view["col_float"].as_target(
+        "FloatTarget",
+        fill_value=0,
+        offset=7,
+    )
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node == {
+        "name": "lookup_target_1",
+        "type": NodeType.LOOKUP_TARGET,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatTarget"],
+            "entity_column": "col_int",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": {
+                "snapshot_datetime_column": "date",
+                "time_interval": {"unit": "DAY", "value": 1},
+                "snapshot_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD HH24:MI:SS",
+                        "is_utc_time": None,
+                        "timezone": "Etc/UTC",
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "feature_job_setting": None,
+                "offset_size": 7,
+            },
+            "offset": None,
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_time_series_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        target,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_time_series_table.id: {
+                "name": snowflake_time_series_table.name,
+                "record_creation_timestamp_column": snowflake_time_series_table.record_creation_timestamp_column,
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+    target.save()

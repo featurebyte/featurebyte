@@ -9,10 +9,12 @@ from typing import Any, ClassVar, Optional, cast
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
+from featurebyte.api.snapshots_helper import validate_offset_for_view
 from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
@@ -164,9 +166,22 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
     def get_additional_lookup_parameters(
         self, offset: Optional[OffsetType] = None
     ) -> dict[str, Any]:
-        _ = offset
+        if offset is not None:
+            assert isinstance(offset, int)
+            offset_size = offset
+        else:
+            offset_size = None
         return {
-            "time_series_parameters": {
-                "reference_datetime_column": self.reference_datetime_column,
+            "snapshots_parameters": {
+                "snapshot_datetime_column": self.reference_datetime_column,
+                "time_interval": self.time_interval,
+                "snapshot_datetime_metadata": DBVarTypeMetadata(
+                    timestamp_schema=self.reference_datetime_schema,
+                ),
+                "feature_job_setting": self.default_feature_job_setting,
+                "offset_size": offset_size,
             }
         }
+
+    def validate_offset(self, offset: Optional[OffsetType]) -> None:
+        validate_offset_for_view(offset, view_type_name="TimeSeriesView")
