@@ -22,6 +22,7 @@ from featurebyte.enum import (
     DBVarType,
     MaterializedTableNamePrefix,
     SpecialColumnName,
+    TimeIntervalUnit,
     UploadFileFormat,
 )
 from featurebyte.exception import (
@@ -60,7 +61,9 @@ from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -68,6 +71,9 @@ from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
     sql_to_string,
+)
+from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_to_utc,
 )
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
@@ -110,6 +116,18 @@ class PointInTimeStats:
 
 
 @dataclass
+class ForecastPointStats:
+    """
+    Forecast point stats
+    """
+
+    least_recent: str
+    most_recent: str
+    percentage_missing: float
+    forecast_horizon: Optional[CalendarWindow]
+
+
+@dataclass
 class EntityColumnStats:
     """
     Entity column stats
@@ -129,6 +147,7 @@ class ObservationTableStats:
 
     point_in_time_stats: PointInTimeStats
     entity_columns_stats: List[EntityColumnStats]
+    forecast_point_stats: Optional[ForecastPointStats] = None
 
     @property
     def column_name_to_count(self) -> dict[str, int]:
@@ -161,6 +180,11 @@ class ObservationTableStats:
         out = []
         if self.point_in_time_stats.percentage_missing > 0:
             out.append(SpecialColumnName.POINT_IN_TIME.value)
+        if (
+            self.forecast_point_stats is not None
+            and self.forecast_point_stats.percentage_missing > 0
+        ):
+            out.append(SpecialColumnName.FORECAST_POINT.value)
         for entity_stats in self.entity_columns_stats:
             if (
                 entity_ids_to_check is not None
@@ -869,6 +893,247 @@ class ObservationTableService(
             )
         )
 
+    @staticmethod
+    def _apply_forecast_point_transformations(
+        forecast_point_expr: Expression,
+        adapter: BaseAdapter,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Expression:
+        """
+        Apply VARCHAR-to-timestamp conversion and timezone conversion to FORECAST_POINT expression.
+
+        Parameters
+        ----------
+        forecast_point_expr: Expression
+            The base FORECAST_POINT SQL expression
+        adapter: BaseAdapter
+            Instance of the SQL adapter
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Expression
+            The transformed FORECAST_POINT expression with format string and timezone conversions applied
+        """
+        if forecast_point_schema is None:
+            return forecast_point_expr
+
+        # Convert ForecastPointSchema to TimestampSchema and use convert_timestamp_to_utc
+        # POINT_IN_TIME is always in UTC in FeatureByte, so we need FORECAST_POINT in UTC too
+        timestamp_schema = TimestampSchema(
+            format_string=forecast_point_schema.format_string,
+            is_utc_time=forecast_point_schema.is_utc_time,
+            timezone=forecast_point_schema.timezone,
+        )
+        return convert_timestamp_to_utc(
+            column_expr=forecast_point_expr,
+            timestamp_schema=timestamp_schema,
+            adapter=adapter,
+        )
+
+    @staticmethod
+    def get_max_forecast_horizon_sql_expr(
+        table_details: TableDetails,
+        adapter: BaseAdapter,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Expression:
+        """
+        Get the SQL expression to compute the maximum forecast horizon in seconds.
+
+        The forecast horizon is the duration between FORECAST_POINT and POINT_IN_TIME.
+
+        Parameters
+        ----------
+        table_details: TableDetails
+            Table details of the materialized table
+        adapter: BaseAdapter
+            Instance of the SQL adapter
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Expression
+        """
+        point_in_time_quoted = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+        forecast_point_expr: Expression = quoted_identifier(SpecialColumnName.FORECAST_POINT)
+
+        # Apply VARCHAR and timezone transformations
+        forecast_point_expr = ObservationTableService._apply_forecast_point_transformations(
+            forecast_point_expr, adapter, forecast_point_schema
+        )
+
+        # Compute FORECAST_POINT - POINT_IN_TIME in microseconds
+        datediff_expr = adapter.datediff_microsecond(point_in_time_quoted, forecast_point_expr)
+        # Convert microseconds to seconds
+        horizon_secs_expr = expressions.Div(
+            this=datediff_expr, expression=make_literal_value(1000000)
+        )
+        aliased_horizon = expressions.Alias(
+            this=horizon_secs_expr, alias=quoted_identifier("HORIZON_SECS")
+        )
+        inner_query = expressions.select(aliased_horizon).from_(
+            get_fully_qualified_table_name(table_details.model_dump())
+        )
+
+        # Get the maximum horizon
+        aliased_max = expressions.Alias(
+            this=expressions.Max(this=quoted_identifier("HORIZON_SECS")),
+            alias=quoted_identifier("MAX_HORIZON"),
+        )
+        return expressions.select(aliased_max).from_(inner_query.subquery())
+
+    @staticmethod
+    def get_forecast_point_min_max_sql_expr(
+        table_details: TableDetails,
+        adapter: BaseAdapter,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Expression:
+        """
+        Get the SQL expression to compute the min and max FORECAST_POINT values.
+
+        Parameters
+        ----------
+        table_details: TableDetails
+            Table details of the materialized table
+        adapter: BaseAdapter
+            Instance of the SQL adapter
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Expression
+        """
+        forecast_point_expr: Expression = quoted_identifier(SpecialColumnName.FORECAST_POINT)
+
+        # Apply VARCHAR and timezone transformations
+        forecast_point_expr = ObservationTableService._apply_forecast_point_transformations(
+            forecast_point_expr, adapter, forecast_point_schema
+        )
+
+        aliased_min = expressions.Alias(
+            this=expressions.Min(this=forecast_point_expr),
+            alias=quoted_identifier("MIN_FORECAST_POINT"),
+        )
+        aliased_max = expressions.Alias(
+            this=expressions.Max(this=forecast_point_expr),
+            alias=quoted_identifier("MAX_FORECAST_POINT"),
+        )
+        return expressions.select(aliased_min, aliased_max).from_(
+            get_fully_qualified_table_name(table_details.model_dump())
+        )
+
+    async def _get_forecast_point_min_max(
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Get the min and max FORECAST_POINT values as ISO format strings.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Tuple[Optional[str], Optional[str]]
+            (min_forecast_point, max_forecast_point) as ISO format strings, None if no valid rows
+        """
+        sql_expr = self.get_forecast_point_min_max_sql_expr(
+            table_details, db_session.adapter, forecast_point_schema
+        )
+        sql_string = sql_to_string(sql_expr, db_session.source_type)
+        result_df = await db_session.execute_query_long_running(sql_string)
+        assert result_df is not None
+
+        min_value = result_df.iloc[0]["MIN_FORECAST_POINT"]
+        max_value = result_df.iloc[0]["MAX_FORECAST_POINT"]
+
+        min_str = (
+            _convert_ts_to_str(min_value)
+            if min_value is not None and not pd.isna(min_value)
+            else None
+        )
+        max_str = (
+            _convert_ts_to_str(max_value)
+            if max_value is not None and not pd.isna(max_value)
+            else None
+        )
+
+        return min_str, max_str
+
+    async def _get_max_forecast_horizon_secs(
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
+    ) -> Optional[float]:
+        """
+        Get the maximum forecast horizon in seconds.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Schema describing the forecast point column (for VARCHAR parsing and timezone handling)
+
+        Returns
+        -------
+        Optional[float]
+            Maximum forecast horizon in seconds, None if no valid rows
+        """
+        sql_expr = self.get_max_forecast_horizon_sql_expr(
+            table_details, db_session.adapter, forecast_point_schema
+        )
+        sql_string = sql_to_string(sql_expr, db_session.source_type)
+        max_horizon_df = await db_session.execute_query_long_running(sql_string)
+        assert max_horizon_df is not None
+        value = max_horizon_df.iloc[0]["MAX_HORIZON"]
+        if value is None or pd.isna(value):
+            return None
+        return float(value)
+
+    @staticmethod
+    def _convert_seconds_to_granularity(secs: float, granularity: TimeIntervalUnit) -> int:
+        """
+        Convert seconds to the specified granularity unit.
+
+        Parameters
+        ----------
+        secs: float
+            Duration in seconds
+        granularity: TimeIntervalUnit
+            Target granularity unit
+
+        Returns
+        -------
+        int
+            Duration in the specified granularity unit (rounded)
+        """
+        conversion_factors = {
+            TimeIntervalUnit.MINUTE: 60,
+            TimeIntervalUnit.HOUR: 3600,
+            TimeIntervalUnit.DAY: 86400,
+            TimeIntervalUnit.WEEK: 604800,
+            TimeIntervalUnit.MONTH: 2592000,  # 30 days approximation
+            TimeIntervalUnit.QUARTER: 7776000,  # 90 days approximation
+            TimeIntervalUnit.YEAR: 31536000,  # 365 days approximation
+        }
+        factor = conversion_factors.get(granularity, 86400)  # Default to DAY
+        return int(round(secs / factor))
+
     async def _get_min_interval_secs_between_entities(
         self,
         db_session: BaseSession,
@@ -912,6 +1177,8 @@ class ObservationTableService(
         feature_store: FeatureStoreModel,
         table_details: TableDetails,
         columns_info: List[ColumnSpecWithEntityId],
+        db_session: Optional[BaseSession] = None,
+        context: Optional[ContextModel] = None,
     ) -> ObservationTableStats:
         """
         Get statistics of point in time and entity columns
@@ -927,10 +1194,19 @@ class ObservationTableService(
             Table details of the materialized table
         columns_info: List[ColumnSpecWithEntityId]
             List of column specs with entity id
+        db_session: Optional[BaseSession]
+            Database session (required for computing forecast horizon)
+        context: Optional[ContextModel]
+            Context document (used to get forecast_point_schema)
 
         Returns
         -------
         ObservationTableStats
+
+        Raises
+        ------
+        ValueError
+            If FORECAST_POINT column has missing values or min/max could not be computed
         """
 
         # Get describe statistics
@@ -979,9 +1255,68 @@ class ObservationTableService(
             most_recent=most_recent_time_str,
             percentage_missing=percentage_missing,
         )
+
+        # Compute forecast point stats if FORECAST_POINT column exists
+        forecast_point_stats: Optional[ForecastPointStats] = None
+        column_names = {col.name for col in columns_info}
+        if SpecialColumnName.FORECAST_POINT in column_names:
+            forecast_percentage_missing = describe_stats_dataframe.loc[
+                "%missing", SpecialColumnName.FORECAST_POINT
+            ]
+            # Check for missing values early - FORECAST_POINT must not have any missing values
+            if forecast_percentage_missing > 0:
+                raise ValueError(
+                    f"Column '{SpecialColumnName.FORECAST_POINT}' must not contain any missing values"
+                )
+
+            # Compute forecast point min/max using SQL with proper VARCHAR parsing
+            forecast_point_schema = context.forecast_point_schema if context is not None else None
+            forecast_least_recent_str: Optional[str] = None
+            forecast_most_recent_str: Optional[str] = None
+            if db_session is not None:
+                (
+                    forecast_least_recent_str,
+                    forecast_most_recent_str,
+                ) = await self._get_forecast_point_min_max(
+                    db_session, table_details, forecast_point_schema
+                )
+            # Validate that min/max were computed successfully
+            if forecast_least_recent_str is None or forecast_most_recent_str is None:
+                raise ValueError(
+                    f"Could not compute min/max for column '{SpecialColumnName.FORECAST_POINT}'"
+                )
+
+            # Compute forecast horizon (max duration between forecast_point and point_in_time)
+            forecast_horizon: Optional[CalendarWindow] = None
+            if db_session is not None:
+                max_horizon_secs = await self._get_max_forecast_horizon_secs(
+                    db_session, table_details, forecast_point_schema
+                )
+                if max_horizon_secs is not None and forecast_point_schema is not None:
+                    forecast_granularity = forecast_point_schema.granularity
+                    # Add 1 because FORECAST_POINT indicates the beginning of a period
+                    # e.g., if POINT_IN_TIME is day 1 and FORECAST_POINT is day 8,
+                    # the horizon is 8 (not 7)
+                    horizon_size = (
+                        self._convert_seconds_to_granularity(max_horizon_secs, forecast_granularity)
+                        + 1
+                    )
+                    forecast_horizon = CalendarWindow(
+                        unit=forecast_granularity,
+                        size=horizon_size,
+                    )
+
+            forecast_point_stats = ForecastPointStats(
+                least_recent=forecast_least_recent_str,
+                most_recent=forecast_most_recent_str,
+                percentage_missing=forecast_percentage_missing,
+                forecast_horizon=forecast_horizon,
+            )
+
         return ObservationTableStats(
             point_in_time_stats=point_in_time_stats,
             entity_columns_stats=entity_columns_stats,
+            forecast_point_stats=forecast_point_stats,
         )
 
     async def _validate_forecast_timezone_values(
@@ -1161,7 +1496,7 @@ class ObservationTableService(
         treatment_id: Optional[PydanticObjectId]
             Treatment ID
         context_id: Optional[PydanticObjectId]
-            Context ID for forecast point schema validation
+            Context ID (used to get forecast_point_schema for validation and computing forecast horizon)
 
         Returns
         -------
@@ -1184,7 +1519,8 @@ class ObservationTableService(
                 primary_entity_ids
             )
 
-        # Validate forecast point schema if context is provided
+        # Fetch context if context_id is provided (for validation and forecast horizon computation)
+        context: Optional[ContextModel] = None
         if context_id is not None:
             context = await self.context_service.get_document(document_id=context_id)
             await self._validate_forecast_timezone_values(db_session, table_details, context)
@@ -1216,9 +1552,10 @@ class ObservationTableService(
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
             db_session, columns_info, table_details
         )
+
         # Get entity statistics metadata
         observation_table_stats = await self._get_observation_table_stats(
-            feature_store, table_details, columns_info
+            feature_store, table_details, columns_info, db_session=db_session, context=context
         )
         point_in_time_stats = observation_table_stats.point_in_time_stats
         columns_with_missing_values = observation_table_stats.get_columns_with_missing_values(
@@ -1230,7 +1567,8 @@ class ObservationTableService(
                 f"{', '.join(columns_with_missing_values)}"
             )
 
-        return {
+        # Build result dictionary
+        result: Dict[str, Any] = {
             "columns_info": columns_info,
             "num_rows": num_rows,
             "most_recent_point_in_time": point_in_time_stats.most_recent,
@@ -1238,6 +1576,19 @@ class ObservationTableService(
             "entity_column_name_to_count": observation_table_stats.column_name_to_count,
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
+
+        # Add forecast point stats if available
+        forecast_point_stats = observation_table_stats.forecast_point_stats
+        if forecast_point_stats is not None:
+            result["most_recent_forecast_point"] = forecast_point_stats.most_recent
+            result["least_recent_forecast_point"] = forecast_point_stats.least_recent
+            result["forecast_horizon"] = forecast_point_stats.forecast_horizon
+            if context is not None and context.forecast_point_schema is not None:
+                result["has_forecast_timezone_column"] = (
+                    context.forecast_point_schema.has_timezone_column
+                )
+
+        return result
 
     async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate
