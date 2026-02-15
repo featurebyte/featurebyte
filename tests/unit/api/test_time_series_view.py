@@ -578,3 +578,18 @@ def test_time_series_view_as_target(snowflake_time_series_table, cust_id_entity)
         },
     )
     target.save()
+
+
+def test_time_series_view_as_features_not_supported(snowflake_time_series_table, cust_id_entity):
+    """
+    Test that as_features raises NotImplementedError for TimeSeriesView
+    """
+    snowflake_time_series_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_time_series_table.get_view()
+
+    with pytest.raises(NotImplementedError) as exc:
+        view.as_features(
+            column_names=["col_float"],
+            feature_names=["FloatFeature"],
+        )
+    assert "as_features is not supported for TimeSeriesView" in str(exc.value)

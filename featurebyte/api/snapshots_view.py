@@ -318,10 +318,5 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         offset: Optional[OffsetType]
             Offset for lookup feature / target. For SnapshotsView, should be an integer
             specifying the number of time interval steps.
-
-        Raises
-        ------
-        ValueError
-            If offset is invalid for SnapshotsView
         """
         validate_offset_for_view(offset, view_type_name="SnapshotsView")

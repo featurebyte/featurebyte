@@ -4,10 +4,11 @@ TimeSeriesView class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 from pydantic import Field
 
+from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.snapshots_helper import validate_offset_for_view
 from featurebyte.api.view import GroupByMixin, RawMixin, View
@@ -185,3 +186,28 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
 
     def validate_offset(self, offset: Optional[OffsetType]) -> None:
         validate_offset_for_view(offset, view_type_name="TimeSeriesView")
+
+    def as_features(
+        self,
+        column_names: List[str],
+        feature_names: List[str],
+        offset: Optional[OffsetType] = None,
+    ) -> FeatureGroup:
+        """
+        Not supported for TimeSeriesView.
+
+        Parameters
+        ----------
+        column_names: List[str]
+            Not used, as_features is not supported for TimeSeriesView
+        feature_names: List[str]
+            Not used, as_features is not supported for TimeSeriesView
+        offset: Optional[OffsetType]
+            Not used, as_features is not supported for TimeSeriesView
+
+        Raises
+        ------
+        NotImplementedError
+            Always raised as as_features is not supported for TimeSeriesView
+        """
+        raise NotImplementedError("as_features is not supported for TimeSeriesView")
