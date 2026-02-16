@@ -252,7 +252,10 @@ def test_lookup_target(snapshots_table):
     ])
 
     expected = preview_params.copy()
-    expected["snapshot_lookup_target"] = [0.11, 0.16]
+    # With offset=3 and allow_exact_match_with_current_interval for targets:
+    # POINT_IN_TIME "2001-01-10 10:00:00" truncated to "2001-01-10" + offset 3 -> "2001-01-13" -> 0.12
+    # POINT_IN_TIME "2001-01-15 10:00:00" truncated to "2001-01-15" + offset 3 -> "2001-01-18" -> 0.17
+    expected["snapshot_lookup_target"] = [0.12, 0.17]
 
     df_targets = lookup_target.compute_targets(preview_params)
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
