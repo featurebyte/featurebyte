@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Optional, cast
 from pydantic import Field
 
 from featurebyte.api.lag import LaggableViewColumn
+from featurebyte.api.snapshots_helper import validate_offset_for_view
 from featurebyte.api.view import GroupByMixin, RawMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -317,21 +318,5 @@ class SnapshotsView(View, GroupByMixin, RawMixin):
         offset: Optional[OffsetType]
             Offset for lookup feature / target. For SnapshotsView, should be an integer
             specifying the number of time interval steps.
-
-        Raises
-        ------
-        ValueError
-            If offset is invalid for SnapshotsView
         """
-        if offset is None:
-            return
-        if isinstance(offset, str):
-            raise ValueError(
-                "String offset is not supported for SnapshotsView. Use integer offset instead."
-            )
-        if not isinstance(offset, int):
-            raise ValueError(
-                "Offset for SnapshotsView must be an integer specifying the number of time interval steps."
-            )
-        if offset < 0:
-            raise ValueError("Offset for SnapshotsView must be a non-negative integer.")
+        validate_offset_for_view(offset, view_type_name="SnapshotsView")

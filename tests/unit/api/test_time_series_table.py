@@ -1379,11 +1379,11 @@ def test_create_time_series_table_without_series_id_column(
     output = time_series_table.model_dump(by_alias=True)
     assert output["series_id_column"] is None
 
-    # expect lookup feature to be unsuccessful
+    # expect lookup feature to be unsuccessful (as_features is not supported for TimeSeriesView)
     event_view = time_series_table.get_view()
-    with pytest.raises(AssertionError) as exc:
+    with pytest.raises(NotImplementedError) as exc:
         event_view.col_text.as_feature("some feature")
-    assert "Series ID column is not available." in str(exc.value)
+    assert "as_features is not supported for TimeSeriesView" in str(exc.value)
 
     # expect subset to work
     _ = event_view[["col_text", "col_int"]]
