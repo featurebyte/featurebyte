@@ -21,7 +21,7 @@ from featurebyte import (
     TreatmentType,
     UseCase,
 )
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.models.context import UserProvidedColumn
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.query_graph.node.schema import DummyTableDetails
@@ -236,23 +236,43 @@ def test_user_provided_columns(catalog, cust_id_entity, target_table):
         name="test_context",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "annual_income", "dtype": DBVarType.FLOAT},
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+            ),
         ],
     )
 
     assert context.user_provided_columns == [
-        UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT, description=None),
+        UserProvidedColumn(
+            name="annual_income",
+            dtype=DBVarType.FLOAT,
+            feature_type=FeatureType.NUMERIC,
+            description=None,
+        ),
     ]
 
     # test add user-provided columns
     context.add_user_provided_column(
         name="credit_score",
         dtype=DBVarType.INT,
+        feature_type=FeatureType.NUMERIC,
     )
 
     assert context.user_provided_columns == [
-        UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT, description=None),
-        UserProvidedColumn(name="credit_score", dtype=DBVarType.INT, description=None),
+        UserProvidedColumn(
+            name="annual_income",
+            dtype=DBVarType.FLOAT,
+            feature_type=FeatureType.NUMERIC,
+            description=None,
+        ),
+        UserProvidedColumn(
+            name="credit_score",
+            dtype=DBVarType.INT,
+            feature_type=FeatureType.NUMERIC,
+            description=None,
+        ),
     ]
 
     # test add user-provided columns with name conflict
@@ -260,6 +280,7 @@ def test_user_provided_columns(catalog, cust_id_entity, target_table):
         context.add_user_provided_column(
             name="credit_score",
             dtype=DBVarType.FLOAT,
+            feature_type=FeatureType.NUMERIC,
         )
     assert str(exc.value) == "User-provided column with name 'credit_score' already exists"
 
@@ -275,8 +296,17 @@ def test_get_user_provided_feature(catalog, cust_id_entity):
         name="test_context_features",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "annual_income", "dtype": DBVarType.FLOAT, "description": "Customer income"},
-            {"name": "credit_score", "dtype": DBVarType.INT},
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+                description="Customer income",
+            ),
+            UserProvidedColumn(
+                name="credit_score",
+                dtype=DBVarType.INT,
+                feature_type=FeatureType.NUMERIC,
+            ),
         ],
     )
 
@@ -312,8 +342,12 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
         name="test_context_derived",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "income", "dtype": DBVarType.FLOAT},
-            {"name": "expenses", "dtype": DBVarType.FLOAT},
+            UserProvidedColumn(
+                name="income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="expenses", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
 
@@ -331,7 +365,7 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
         name="test_context_derived_2",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "tax", "dtype": DBVarType.FLOAT},
+            UserProvidedColumn(name="tax", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC),
         ],
     )
     tax = context_2.get_user_provided_feature("tax")
@@ -350,7 +384,9 @@ def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
         name="test_context_1",
         primary_entity_ids=[cust_id_entity.id],
         user_provided_columns=[
-            UserProvidedColumn(name="income1", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="income1", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
     context1.save()
@@ -358,7 +394,9 @@ def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
         name="test_context_2",
         primary_entity_ids=[cust_id_entity.id],
         user_provided_columns=[
-            UserProvidedColumn(name="income2", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="income2", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
     context2.save()

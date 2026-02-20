@@ -6,7 +6,7 @@ from datetime import datetime
 
 from bson import ObjectId
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.models.context import ContextModel, UserProvidedColumn
 
 
@@ -39,38 +39,55 @@ class TestUserProvidedColumn:
 
     def test_user_provided_column__basic(self):
         """Test basic UserProvidedColumn creation"""
-        col = UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT)
+        col = UserProvidedColumn(
+            name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+        )
         assert col.name == "annual_income"
         assert col.dtype == DBVarType.FLOAT
+        assert col.feature_type == FeatureType.NUMERIC
         assert col.description is None
 
     def test_user_provided_column__with_description(self):
         """Test UserProvidedColumn with description"""
         col = UserProvidedColumn(
-            name="credit_score", dtype=DBVarType.INT, description="Customer's credit score"
+            name="credit_score",
+            dtype=DBVarType.INT,
+            feature_type=FeatureType.NUMERIC,
+            description="Customer's credit score",
         )
         assert col.name == "credit_score"
         assert col.dtype == DBVarType.INT
+        assert col.feature_type == FeatureType.NUMERIC
         assert col.description == "Customer's credit score"
 
     def test_user_provided_column__serialization(self):
         """Test UserProvidedColumn serialization"""
         col = UserProvidedColumn(
-            name="annual_income", dtype=DBVarType.FLOAT, description="Annual income"
+            name="annual_income",
+            dtype=DBVarType.FLOAT,
+            feature_type=FeatureType.NUMERIC,
+            description="Annual income",
         )
         col_dict = col.model_dump()
         assert col_dict == {
             "name": "annual_income",
             "dtype": "FLOAT",
+            "feature_type": "numeric",
             "description": "Annual income",
         }
 
     def test_user_provided_column__from_dict(self):
         """Test UserProvidedColumn deserialization"""
-        col_dict = {"name": "credit_score", "dtype": "INT", "description": "Credit score"}
+        col_dict = {
+            "name": "credit_score",
+            "dtype": "INT",
+            "feature_type": "numeric",
+            "description": "Credit score",
+        }
         col = UserProvidedColumn(**col_dict)
         assert col.name == "credit_score"
         assert col.dtype == DBVarType.INT
+        assert col.feature_type == FeatureType.NUMERIC
         assert col.description == "Credit score"
 
 
@@ -93,9 +110,14 @@ class TestContextModelWithUserProvidedColumns:
         """Test ContextModel with user_provided_columns"""
         entity_id = ObjectId("651e2429604674470bacc80c")
         user_provided_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
             UserProvidedColumn(
-                name="credit_score", dtype=DBVarType.INT, description="Credit score"
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="credit_score",
+                dtype=DBVarType.INT,
+                feature_type=FeatureType.NUMERIC,
+                description="Credit score",
             ),
         ]
         context = ContextModel(
@@ -109,14 +131,18 @@ class TestContextModelWithUserProvidedColumns:
         assert len(context.user_provided_columns) == 2
         assert context.user_provided_columns[0].name == "annual_income"
         assert context.user_provided_columns[0].dtype == DBVarType.FLOAT
+        assert context.user_provided_columns[0].feature_type == FeatureType.NUMERIC
         assert context.user_provided_columns[1].name == "credit_score"
         assert context.user_provided_columns[1].dtype == DBVarType.INT
+        assert context.user_provided_columns[1].feature_type == FeatureType.NUMERIC
 
     def test_context_model__serialization_with_user_provided_columns(self):
         """Test ContextModel serialization with user_provided_columns"""
         entity_id = ObjectId("651e2429604674470bacc80c")
         user_provided_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         context = ContextModel(
             _id=ObjectId("651e2429604674470bacc80e"),
@@ -128,5 +154,10 @@ class TestContextModelWithUserProvidedColumns:
         )
         context_dict = context.model_dump()
         assert context_dict["user_provided_columns"] == [
-            {"name": "annual_income", "dtype": "FLOAT", "description": None}
+            {
+                "name": "annual_income",
+                "dtype": "FLOAT",
+                "feature_type": "numeric",
+                "description": None,
+            }
         ]

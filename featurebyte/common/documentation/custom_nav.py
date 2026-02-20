@@ -140,6 +140,7 @@ class BetaWave3Nav(Nav):
         LINEAGE,
         ENUMS,
         CLEANING_OPERATION,
+        CONTEXT,
         REQUEST_COLUMN,
         USER_DEFINED_FUNCTION,
     ]

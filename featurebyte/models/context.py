@@ -2,13 +2,14 @@
 This module contains context related models.
 """
 
-from typing import Any, List, Optional
+from typing import Any, ClassVar, List, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -22,14 +23,72 @@ from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSch
 
 class UserProvidedColumn(FeatureByteBaseModel):
     """
-    Schema for user-provided column definition.
+    Defines a user-provided column that will be supplied in observation tables during feature
+    materialization. These columns can be accessed as Features through the Context.
 
-    User-provided columns are columns that users will provide as part of the observation table
-    during feature materialization. These columns can be accessed as Features through the Context.
+    User-provided columns allow you to incorporate external data (such as customer-provided
+    information or real-time inputs) into your feature engineering workflow without requiring
+    them to be stored in source tables.
+
+    Parameters
+    ----------
+    name : str
+        The name of the column. This must match the column name that will be provided
+        in the observation table during materialization.
+    dtype : DBVarType
+        The data type of the column (e.g., ``DBVarType.FLOAT``, ``DBVarType.INT``,
+        ``DBVarType.VARCHAR``).
+    feature_type : FeatureType
+        The semantic type of the feature (e.g., ``FeatureType.NUMERIC``,
+        ``FeatureType.CATEGORICAL``, ``FeatureType.TIMESTAMP``).
+    description : str, optional
+        A description of the column for documentation purposes.
+
+    Examples
+    --------
+    **Create a context with user-provided columns:**
+
+    ```python
+    context = fb.Context.create(
+        name="loan_application_context",
+        primary_entity=["customer"],
+        user_provided_columns=[
+            fb.UserProvidedColumn(
+                name="annual_income",
+                dtype=fb.DBVarType.FLOAT,
+                feature_type=fb.FeatureType.NUMERIC,
+                description="Customer's self-reported annual income",
+            ),
+            fb.UserProvidedColumn(
+                name="employment_status",
+                dtype=fb.DBVarType.VARCHAR,
+                feature_type=fb.FeatureType.CATEGORICAL,
+            ),
+        ],
+    )
+    ```
+
+    **Access user-provided columns as features:**
+
+    ```python
+    income_feature = context.get_user_provided_feature("annual_income")
+    ```
+
+    See Also
+    --------
+    - [Context.create](/reference/featurebyte.api.context.Context.create/):
+        Create a Context with user-provided columns.
+    - [Context.add_user_provided_column](/reference/featurebyte.api.context.Context.add_user_provided_column/):
+        Add a user-provided column to an existing Context.
+    - [Context.get_user_provided_feature](/reference/featurebyte.api.context.Context.get_user_provided_feature/):
+        Get a Feature from a user-provided column.
     """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UserProvidedColumn")
 
     name: StrictStr
     dtype: DBVarType
+    feature_type: FeatureType
     description: Optional[StrictStr] = Field(default=None)
 
 
