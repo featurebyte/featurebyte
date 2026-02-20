@@ -236,11 +236,11 @@ def test_user_provided_columns(catalog, cust_id_entity, target_table):
         name="test_context",
         primary_entity=entity_names,
         user_provided_columns=[
-            {
-                "name": "annual_income",
-                "dtype": DBVarType.FLOAT,
-                "feature_type": FeatureType.NUMERIC,
-            },
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+            ),
         ],
     )
 
@@ -296,13 +296,17 @@ def test_get_user_provided_feature(catalog, cust_id_entity):
         name="test_context_features",
         primary_entity=entity_names,
         user_provided_columns=[
-            {
-                "name": "annual_income",
-                "dtype": DBVarType.FLOAT,
-                "feature_type": FeatureType.NUMERIC,
-                "description": "Customer income",
-            },
-            {"name": "credit_score", "dtype": DBVarType.INT, "feature_type": FeatureType.NUMERIC},
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+                description="Customer income",
+            ),
+            UserProvidedColumn(
+                name="credit_score",
+                dtype=DBVarType.INT,
+                feature_type=FeatureType.NUMERIC,
+            ),
         ],
     )
 
@@ -338,8 +342,12 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
         name="test_context_derived",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "income", "dtype": DBVarType.FLOAT, "feature_type": FeatureType.NUMERIC},
-            {"name": "expenses", "dtype": DBVarType.FLOAT, "feature_type": FeatureType.NUMERIC},
+            UserProvidedColumn(
+                name="income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="expenses", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
 
@@ -357,7 +365,7 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
         name="test_context_derived_2",
         primary_entity=entity_names,
         user_provided_columns=[
-            {"name": "tax", "dtype": DBVarType.FLOAT, "feature_type": FeatureType.NUMERIC},
+            UserProvidedColumn(name="tax", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC),
         ],
     )
     tax = context_2.get_user_provided_feature("tax")

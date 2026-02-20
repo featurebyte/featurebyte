@@ -46,29 +46,33 @@ class UserProvidedColumn(FeatureByteBaseModel):
 
     Examples
     --------
-    Create a context with user-provided columns:
+    **Create a context with user-provided columns:**
 
-    >>> context = fb.Context.create(
-    ...     name="loan_application_context",
-    ...     primary_entity=["customer"],
-    ...     user_provided_columns=[
-    ...         fb.UserProvidedColumn(
-    ...             name="annual_income",
-    ...             dtype=fb.DBVarType.FLOAT,
-    ...             feature_type=fb.FeatureType.NUMERIC,
-    ...             description="Customer's self-reported annual income",
-    ...         ),
-    ...         fb.UserProvidedColumn(
-    ...             name="employment_status",
-    ...             dtype=fb.DBVarType.VARCHAR,
-    ...             feature_type=fb.FeatureType.CATEGORICAL,
-    ...         ),
-    ...     ],
-    ... )
+    ```python
+    context = fb.Context.create(
+        name="loan_application_context",
+        primary_entity=["customer"],
+        user_provided_columns=[
+            fb.UserProvidedColumn(
+                name="annual_income",
+                dtype=fb.DBVarType.FLOAT,
+                feature_type=fb.FeatureType.NUMERIC,
+                description="Customer's self-reported annual income",
+            ),
+            fb.UserProvidedColumn(
+                name="employment_status",
+                dtype=fb.DBVarType.VARCHAR,
+                feature_type=fb.FeatureType.CATEGORICAL,
+            ),
+        ],
+    )
+    ```
 
-    Access user-provided columns as features:
+    **Access user-provided columns as features:**
 
-    >>> income_feature = context.get_user_provided_feature("annual_income")
+    ```python
+    income_feature = context.get_user_provided_feature("annual_income")
+    ```
 
     See Also
     --------

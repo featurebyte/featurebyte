@@ -150,7 +150,7 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         primary_entity: List[str],
         description: Optional[str] = None,
         treatment_name: Optional[str] = None,
-        user_provided_columns: Optional[List[Dict[str, Any]]] = None,
+        user_provided_columns: Optional[List[UserProvidedColumn]] = None,
         forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> "Context":
         """
@@ -166,11 +166,8 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             Description of the Context.
         treatment_name: Optional[str]
             treatment name if this is a causal modeling context.
-        user_provided_columns: Optional[List[Dict[str, Any]]]
-            List of user-provided column definitions. Each column should have:
-            - name: str - Name of the column
-            - dtype: DBVarType - Data type of the column
-            - description: Optional[str] - Description of the column
+        user_provided_columns: Optional[List[UserProvidedColumn]]
+            List of user-provided column definitions.
         forecast_point_schema: Optional[ForecastPointSchema]
             Schema for forecast point column if this is a forecasting context.
             Defines the granularity (day, week, etc.) and timezone handling.
@@ -193,8 +190,16 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         ...     name="loan_approval_context",
         ...     primary_entity=["customer"],
         ...     user_provided_columns=[
-        ...         {"name": "annual_income", "dtype": fb.DBVarType.FLOAT},
-        ...         {"name": "credit_score", "dtype": fb.DBVarType.INT},
+        ...         fb.UserProvidedColumn(
+        ...             name="annual_income",
+        ...             dtype=fb.DBVarType.FLOAT,
+        ...             feature_type=fb.FeatureType.NUMERIC,
+        ...         ),
+        ...         fb.UserProvidedColumn(
+        ...             name="credit_score",
+        ...             dtype=fb.DBVarType.INT,
+        ...             feature_type=fb.FeatureType.NUMERIC,
+        ...         ),
         ...     ],
         ... )
 
@@ -247,18 +252,12 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         if treatment_name:
             treatment_id = Treatment.get(treatment_name).id
 
-        # Convert user_provided_columns dicts to UserProvidedColumn objects
-        user_provided_column_objs: List[UserProvidedColumn] = []
-        if user_provided_columns:
-            for col in user_provided_columns:
-                user_provided_column_objs.append(UserProvidedColumn(**col))
-
         context = Context(
             name=name,
             primary_entity_ids=entity_ids,
             description=description,
             treatment_id=treatment_id,
-            user_provided_columns=user_provided_column_objs,
+            user_provided_columns=user_provided_columns or [],
             forecast_point_schema=forecast_point_schema,
         )
         context.save()
