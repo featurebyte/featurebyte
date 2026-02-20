@@ -68,6 +68,7 @@ from featurebyte.docker.manager import stop_app as _stop_app
 from featurebyte.enum import (
     AggFunc,
     DBVarType,
+    FeatureType,
     SourceType,
     StorageType,
     TargetType,
@@ -77,6 +78,7 @@ from featurebyte.enum import (
 from featurebyte.exception import FeatureByteException, InvalidSettingsError
 from featurebyte.list_utility import list_deployments, list_unsaved_features
 from featurebyte.logging import get_logger
+from featurebyte.models.context import UserProvidedColumn
 from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
@@ -565,6 +567,7 @@ __all__ = [
     "AggFunc",
     "FeatureListRole",
     "FeatureListStatus",
+    "FeatureType",
     "Purpose",
     "SourceType",
     "StorageType",
@@ -603,6 +606,7 @@ __all__ = [
     "TreatmentTime",
     "TreatmentTimeStructure",
     "UseCaseType",
+    "UserProvidedColumn",
     # services
     "start",
     "stop",

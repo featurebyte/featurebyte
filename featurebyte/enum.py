@@ -393,6 +393,7 @@ class FeatureType(StrEnum):
     TEXT = "text"
     DICT = "dictionary"
     EMBEDDING = "embedding"
+    TIMESTAMP = "timestamp"
     OTHERS = "others"
 
     @classmethod
@@ -404,7 +405,15 @@ class FeatureType(StrEnum):
         -------
         set[FeatureType]
         """
-        return {cls.NUMERIC, cls.CATEGORICAL, cls.DICT, cls.EMBEDDING, cls.TEXT, cls.OTHERS}
+        return {
+            cls.NUMERIC,
+            cls.CATEGORICAL,
+            cls.DICT,
+            cls.EMBEDDING,
+            cls.TEXT,
+            cls.TIMESTAMP,
+            cls.OTHERS,
+        }
 
     @classmethod
     def valid_categorical_dtypes(cls) -> set[DBVarType]:
@@ -463,6 +472,17 @@ class FeatureType(StrEnum):
         set[DBVarType]
         """
         return {DBVarType.EMBEDDING}
+
+    @classmethod
+    def valid_timestamp_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for timestamp features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE}
 
 
 class TargetType(StrEnum):

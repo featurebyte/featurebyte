@@ -16,7 +16,7 @@ from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObj
 from featurebyte.api.treatment import Treatment
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import ConflictResolution, DBVarType, SpecialColumnName
+from featurebyte.enum import ConflictResolution, DBVarType, FeatureType, SpecialColumnName
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel, UserProvidedColumn
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
@@ -442,6 +442,7 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         self,
         name: str,
         dtype: DBVarType,
+        feature_type: FeatureType,
         description: Optional[str] = None,
     ) -> None:
         """
@@ -457,6 +458,8 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             Name of the column
         dtype: DBVarType
             Data type of the column
+        feature_type: FeatureType
+            Feature type of the column
         description: Optional[str]
             Description of the column
 
@@ -471,6 +474,7 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> context.add_user_provided_column(  # doctest: +SKIP
         ...     name="annual_income",
         ...     dtype=fb.DBVarType.FLOAT,
+        ...     feature_type=fb.FeatureType.NUMERIC,
         ...     description="Customer's annual income",
         ... )
         """
@@ -480,7 +484,9 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             raise ValueError(f"User-provided column with name '{name}' already exists")
 
         # Create updated list with new column
-        new_column = UserProvidedColumn(name=name, dtype=dtype, description=description)
+        new_column = UserProvidedColumn(
+            name=name, dtype=dtype, feature_type=feature_type, description=description
+        )
         updated_columns = list(self.user_provided_columns) + [new_column]
 
         # Update via API
