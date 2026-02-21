@@ -23,10 +23,12 @@ from featurebyte.schema.observation_table import (
     ObservationTableList,
     ObservationTableModelResponse,
     ObservationTableServiceUpdate,
+    ObservationTableSplit,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
 from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.observation_table import SplitObservationTableTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -242,6 +244,40 @@ class ObservationTableController(
             updated_at=observation_table.updated_at,
             description=observation_table.description,
         )
+
+    async def split_observation_table(
+        self, observation_table_id: ObjectId, data: ObservationTableSplit
+    ) -> Task:
+        """
+        Split an observation table into multiple non-overlapping tables
+
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            Source ObservationTable document ID
+        data: ObservationTableSplit
+            Split configuration with splits (name/ratio pairs) and seed
+
+        Returns
+        -------
+        Task
+            Task for creating all split tables atomically
+        """
+        # Get source observation table
+        source_table = await self.service.get_document(document_id=observation_table_id)
+
+        # Create a single task payload for all splits
+        payload = SplitObservationTableTaskPayload(
+            user_id=self.service.user.id,
+            catalog_id=self.service.catalog_id,
+            source_observation_table_id=observation_table_id,
+            splits=data.splits,
+            seed=data.seed,
+            feature_store_id=source_table.location.feature_store_id,
+        )
+
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
 
     async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableUpdate

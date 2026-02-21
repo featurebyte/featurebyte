@@ -569,3 +569,187 @@ async def test_materialize__with_sample_timestamp_with_tz(
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
+
+
+class TestSplitInfo:
+    """Tests for SplitInfo model validation"""
+
+    def test_split_info_valid_two_way_split(self):
+        """Test valid 2-way split"""
+        from featurebyte.models.request_input import SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        assert split_info.split_index == 0
+        assert split_info.split_ratios == [0.7, 0.3]
+        assert split_info.seed == 42
+
+    def test_split_info_valid_three_way_split(self):
+        """Test valid 3-way split"""
+        from featurebyte.models.request_input import SplitInfo
+
+        split_info = SplitInfo(split_index=1, split_ratios=[0.6, 0.2, 0.2], seed=1234)
+        assert split_info.split_index == 1
+        assert split_info.split_ratios == [0.6, 0.2, 0.2]
+
+    def test_split_info_default_seed(self):
+        """Test default seed value"""
+        from featurebyte.models.request_input import SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.5, 0.5])
+        assert split_info.seed == 1234
+
+    def test_split_info_invalid_ratios_not_sum_to_one(self):
+        """Test that ratios must sum to 1.0"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[0.5, 0.3])
+        assert "Split ratios must sum to 1.0" in str(exc.value)
+
+    def test_split_info_invalid_ratio_zero(self):
+        """Test that ratio cannot be zero"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[0.0, 1.0])
+        assert "Each split ratio must be between 0 and 1" in str(exc.value)
+
+    def test_split_info_invalid_ratio_negative(self):
+        """Test that ratio cannot be negative"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[-0.3, 1.3])
+        assert "Each split ratio must be between 0 and 1" in str(exc.value)
+
+    def test_split_info_invalid_ratio_greater_than_one(self):
+        """Test that ratio cannot be greater than 1"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[1.5, -0.5])
+        assert "Each split ratio must be between 0 and 1" in str(exc.value)
+
+    def test_split_info_invalid_split_index_out_of_range(self):
+        """Test that split_index must be less than number of splits"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=2, split_ratios=[0.7, 0.3])
+        assert "split_index (2) must be less than number of splits (2)" in str(exc.value)
+
+    def test_split_info_invalid_too_few_ratios(self):
+        """Test that at least 2 ratios are required"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[1.0])
+        assert "List should have at least 2 items" in str(exc.value)
+
+    def test_split_info_invalid_too_many_ratios(self):
+        """Test that at most 3 ratios are allowed"""
+        from featurebyte.models.request_input import SplitInfo
+
+        with pytest.raises(ValueError) as exc:
+            SplitInfo(split_index=0, split_ratios=[0.25, 0.25, 0.25, 0.25])
+        assert "List should have at most 3 items" in str(exc.value)
+
+
+class TestGetSplitSql:
+    """Tests for get_split_sql SQL generation"""
+
+    def test_get_split_sql_two_way_first_split(self, adapter):
+        """Test SQL generation for the first split of a 2-way split"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="a"), "a"),
+            expressions.alias_(expressions.Column(this="b"), "b"),
+        ).from_("my_table")
+
+        result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
+        sql = result.sql(pretty=True, dialect="snowflake")
+
+        # First split should be: prob < 0.7
+        assert '"__fb_split_prob" < 0.7' in sql
+        # Should select original columns
+        assert '"a"' in sql
+        assert '"b"' in sql
+        # Prob column appears in inner select (creation) and WHERE clause
+        assert sql.count('"__fb_split_prob"') == 2
+        # Final SELECT should only have original columns (not prob)
+        first_select = sql.split("FROM")[0]
+        assert "__fb_split_prob" not in first_select
+
+    def test_get_split_sql_two_way_second_split(self, adapter):
+        """Test SQL generation for the second split of a 2-way split"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        split_info = SplitInfo(split_index=1, split_ratios=[0.7, 0.3], seed=42)
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="a"), "a"),
+            expressions.alias_(expressions.Column(this="b"), "b"),
+        ).from_("my_table")
+
+        result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
+        sql = result.sql(pretty=True, dialect="snowflake")
+
+        # Second split should be: 0.7 <= prob < 1.0
+        assert '"__fb_split_prob" >= 0.7' in sql
+        assert '"__fb_split_prob" < 1.0' in sql
+
+    def test_get_split_sql_three_way_splits(self, adapter):
+        """Test SQL generation for all splits of a 3-way split"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="x"), "x"),
+        ).from_("data_table")
+
+        # Split 0: prob < 0.6
+        split_info_0 = SplitInfo(split_index=0, split_ratios=[0.6, 0.2, 0.2], seed=1234)
+        result_0 = BaseRequestInput.get_split_sql(adapter, select_expr, split_info_0)
+        sql_0 = result_0.sql(pretty=True, dialect="snowflake")
+        assert '"__fb_split_prob" < 0.6' in sql_0
+
+        # Split 1: 0.6 <= prob < 0.8
+        split_info_1 = SplitInfo(split_index=1, split_ratios=[0.6, 0.2, 0.2], seed=1234)
+        result_1 = BaseRequestInput.get_split_sql(adapter, select_expr, split_info_1)
+        sql_1 = result_1.sql(pretty=True, dialect="snowflake")
+        assert '"__fb_split_prob" >= 0.6' in sql_1
+        assert '"__fb_split_prob" < 0.8' in sql_1
+
+        # Split 2: 0.8 <= prob < 1.0
+        split_info_2 = SplitInfo(split_index=2, split_ratios=[0.6, 0.2, 0.2], seed=1234)
+        result_2 = BaseRequestInput.get_split_sql(adapter, select_expr, split_info_2)
+        sql_2 = result_2.sql(pretty=True, dialect="snowflake")
+        assert '"__fb_split_prob" >= 0.8' in sql_2
+        assert '"__fb_split_prob" < 1.0' in sql_2
+
+    def test_get_split_sql_preserves_columns(self, adapter):
+        """Test that split SQL preserves all original columns"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.5, 0.5], seed=42)
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="col1"), "col1"),
+            expressions.alias_(expressions.Column(this="col2"), "col2"),
+            expressions.alias_(expressions.Column(this="col3"), "col3"),
+        ).from_("source")
+
+        result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
+        sql = result.sql(pretty=True, dialect="snowflake")
+
+        # All original columns should be in the SELECT
+        assert '"col1"' in sql
+        assert '"col2"' in sql
+        assert '"col3"' in sql
