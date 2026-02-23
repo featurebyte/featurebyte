@@ -731,6 +731,52 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
+    def get_deterministic_split_prob_expr(cls, row_id_expr: Expression, seed: int) -> Expression:
+        """
+        Construct an expression that returns a deterministic value between 0 and 1 based on
+        the hash of a row identifier and seed.
+
+        This is used for splitting tables into partitions in a reproducible way. Unlike
+        get_uniform_distribution_expr which generates random values that may differ across
+        query executions, this method produces the same value for the same row_id and seed
+        combination.
+
+        Parameters
+        ----------
+        row_id_expr: Expression
+            Expression representing a unique row identifier (e.g., row index column)
+        seed: int
+            Seed value to combine with the row identifier
+
+        Returns
+        -------
+        Expression
+            An expression that evaluates to a value in [0, 1)
+        """
+        # Default implementation using HASH function
+        # Subclasses may override with platform-specific implementations
+        hash_input = expressions.Concat(
+            expressions=[
+                expressions.Cast(
+                    this=row_id_expr,
+                    to=expressions.DataType.build("VARCHAR"),
+                ),
+                make_literal_value(f"_{seed}"),
+            ]
+        )
+        hash_expr = expressions.Anonymous(this="HASH", expressions=[hash_input])
+        # Use modulo to get a positive value, then divide to normalize to [0, 1)
+        modulo_value = 1000000000
+        normalized_expr = expressions.Div(
+            this=expressions.Mod(
+                this=expressions.Abs(this=hash_expr),
+                expression=make_literal_value(modulo_value),
+            ),
+            expression=make_literal_value(float(modulo_value)),
+        )
+        return normalized_expr
+
+    @classmethod
     def create_table_as(
         cls,
         table_details: TableDetails,

@@ -430,15 +430,15 @@ class BaseRequestInput(FeatureByteBaseModel):
         """
         Construct query to filter rows for a specific split partition.
 
-        The split is determined by assigning each row a random value (seeded for reproducibility)
-        and filtering based on cumulative ratio ranges.
+        The split is determined by assigning each row a deterministic hash value based on
+        the TABLE_ROW_INDEX column and seed, then filtering based on cumulative ratio ranges.
 
         Parameters
         ----------
         adapter: BaseAdapter
             SQL adapter
         select_expr: Select
-            Table to split
+            Table to split (must contain TABLE_ROW_INDEX column)
         split_info: SplitInfo
             Split configuration including index, ratios, and seed
 
@@ -451,9 +451,14 @@ class BaseRequestInput(FeatureByteBaseModel):
             for col_expr in select_expr.expressions
         ]
 
-        # Add a deterministic random value column based on the seed
+        # Exclude TABLE_ROW_INDEX from output columns
+        output_cols = [col for col in original_cols if col.name != InternalName.TABLE_ROW_INDEX]
+
+        # Add a deterministic value column based on TABLE_ROW_INDEX hash and seed
         prob_expr = expressions.alias_(
-            adapter.get_uniform_distribution_expr(split_info.seed),
+            adapter.get_deterministic_split_prob_expr(
+                quoted_identifier(InternalName.TABLE_ROW_INDEX), split_info.seed
+            ),
             alias="__fb_split_prob",
             quoted=True,
         )
@@ -493,9 +498,9 @@ class BaseRequestInput(FeatureByteBaseModel):
                 ]
             )
 
-        # Return only the original columns (without the prob column)
+        # Return only the output columns (without the prob column and row_index_column)
         output = (
-            expressions.select(*original_cols)
+            expressions.select(*output_cols)
             .from_(expr_with_prob.subquery())
             .where(filter_condition)
         )
@@ -543,10 +548,17 @@ class BaseRequestInput(FeatureByteBaseModel):
         # Get the base query and column info
         query_expr = await self.get_query_expr(session=session, feature_store=feature_store)
 
+        # Build list of additional columns needed for processing
+        additional_columns: List[str] = []
+        if downsampling_info:
+            additional_columns.append(downsampling_info.target_column)
+        if split_info:
+            additional_columns.append(InternalName.TABLE_ROW_INDEX)
+
         # Derive output column names and dtypes
         input_columns, output_column_names_and_dtypes = await self.get_output_columns_and_dtypes(
             session=session,
-            additional_columns=[downsampling_info.target_column] if downsampling_info else None,
+            additional_columns=additional_columns if additional_columns else None,
         )
         output_columns = list(output_column_names_and_dtypes.keys())
 

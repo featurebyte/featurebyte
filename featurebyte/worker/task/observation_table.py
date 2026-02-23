@@ -324,7 +324,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             sample_to_timestamp = max_timestamp
 
         request_input: ObservationInput
-        split_info = None
         if isinstance(payload.request_input, ObservationTableObservationInput):
             # for observation input, materialize using source table request input without column filters or remapping
             source_observation_table = await self.observation_table_service.get_document(
@@ -345,7 +344,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             context_id = source_observation_table.context_id
             use_case_ids = source_observation_table.use_case_ids
             downsampling_info = payload.request_input.downsampling_info
-            split_info = payload.request_input.split_info
             # sample rate column will be inherited from source observation table
             output_table_has_row_weights = source_observation_table.has_row_weights
         else:
@@ -417,7 +415,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 downsampling_info=downsampling_info_with_target_column,
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
                 missing_data_table_details=missing_data_table_details,
-                split_info=split_info,
             )
             is_view = False
 
@@ -719,8 +716,8 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
         """
         Create a temp table with partition index column.
 
-        The partition index (0, 1, 2, ...) is assigned based on seeded random values
-        and cumulative ratio ranges.
+        The partition index (0, 1, 2, ...) is assigned based on deterministic hash values
+        derived from TABLE_ROW_INDEX and seed, ensuring reproducible splits.
 
         Parameters
         ----------
@@ -778,11 +775,13 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
         )
 
         # Build the CREATE TABLE AS SELECT query
-        # SELECT *, partition_index FROM (SELECT *, random(seed) as __fb_split_prob FROM source)
+        # SELECT *, partition_index FROM (SELECT *, hash(row_index, seed) as __fb_split_prob FROM source)
         inner_select = expressions.select(
             expressions.Star(),
             expressions.alias_(
-                adapter.get_uniform_distribution_expr(seed),
+                adapter.get_deterministic_split_prob_expr(
+                    quoted_identifier(InternalName.TABLE_ROW_INDEX), seed
+                ),
                 alias="__fb_split_prob",
                 quoted=True,
             ),

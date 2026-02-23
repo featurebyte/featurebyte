@@ -668,6 +668,9 @@ class TestGetSplitSql:
         select_expr = expressions.select(
             expressions.alias_(expressions.Column(this="a"), "a"),
             expressions.alias_(expressions.Column(this="b"), "b"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
         ).from_("my_table")
 
         result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
@@ -675,14 +678,15 @@ class TestGetSplitSql:
 
         # First split should be: prob < 0.7
         assert '"__fb_split_prob" < 0.7' in sql
-        # Should select original columns
+        # Should select original columns (excluding row index)
         assert '"a"' in sql
         assert '"b"' in sql
         # Prob column appears in inner select (creation) and WHERE clause
         assert sql.count('"__fb_split_prob"') == 2
-        # Final SELECT should only have original columns (not prob)
+        # Final SELECT should only have original columns (not prob or row index)
         first_select = sql.split("FROM")[0]
         assert "__fb_split_prob" not in first_select
+        assert "__FB_TABLE_ROW_INDEX" not in first_select
 
     def test_get_split_sql_two_way_second_split(self, adapter):
         """Test SQL generation for the second split of a 2-way split"""
@@ -694,6 +698,9 @@ class TestGetSplitSql:
         select_expr = expressions.select(
             expressions.alias_(expressions.Column(this="a"), "a"),
             expressions.alias_(expressions.Column(this="b"), "b"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
         ).from_("my_table")
 
         result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
@@ -711,6 +718,9 @@ class TestGetSplitSql:
 
         select_expr = expressions.select(
             expressions.alias_(expressions.Column(this="x"), "x"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
         ).from_("data_table")
 
         # Split 0: prob < 0.6
@@ -734,7 +744,7 @@ class TestGetSplitSql:
         assert '"__fb_split_prob" < 1.0' in sql_2
 
     def test_get_split_sql_preserves_columns(self, adapter):
-        """Test that split SQL preserves all original columns"""
+        """Test that split SQL preserves all original columns except row index"""
         from sqlglot import expressions
 
         from featurebyte.models.request_input import BaseRequestInput, SplitInfo
@@ -744,12 +754,68 @@ class TestGetSplitSql:
             expressions.alias_(expressions.Column(this="col1"), "col1"),
             expressions.alias_(expressions.Column(this="col2"), "col2"),
             expressions.alias_(expressions.Column(this="col3"), "col3"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
         ).from_("source")
 
         result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
         sql = result.sql(pretty=True, dialect="snowflake")
 
-        # All original columns should be in the SELECT
+        # All original columns should be in the SELECT (except row index)
         assert '"col1"' in sql
         assert '"col2"' in sql
         assert '"col3"' in sql
+        # Row index should be excluded from output
+        first_select = sql.split("FROM")[0]
+        assert "__FB_TABLE_ROW_INDEX" not in first_select
+
+    def test_get_split_sql_uses_deterministic_hash(self, adapter):
+        """Test that split uses deterministic hash based on TABLE_ROW_INDEX"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.7, 0.3], seed=42)
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="a"), "a"),
+            expressions.alias_(expressions.Column(this="b"), "b"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
+        ).from_("my_table")
+
+        result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
+        sql = result.sql(pretty=True, dialect="snowflake")
+
+        # Should use HASH function for deterministic splitting
+        assert "HASH" in sql
+        # Should reference the row index column in the hash
+        assert "__FB_TABLE_ROW_INDEX" in sql
+        # The prob condition should still be present
+        assert '"__fb_split_prob" < 0.7' in sql
+
+    def test_get_split_sql_excludes_row_index_from_output(self, adapter):
+        """Test that TABLE_ROW_INDEX is excluded from output columns"""
+        from sqlglot import expressions
+
+        from featurebyte.models.request_input import BaseRequestInput, SplitInfo
+
+        split_info = SplitInfo(split_index=0, split_ratios=[0.5, 0.5], seed=42)
+        select_expr = expressions.select(
+            expressions.alias_(expressions.Column(this="col1"), "col1"),
+            expressions.alias_(expressions.Column(this="col2"), "col2"),
+            expressions.alias_(
+                expressions.Column(this="__FB_TABLE_ROW_INDEX"), "__FB_TABLE_ROW_INDEX"
+            ),
+        ).from_("source")
+
+        result = BaseRequestInput.get_split_sql(adapter, select_expr, split_info)
+        sql = result.sql(pretty=True, dialect="snowflake")
+
+        # First SELECT clause (output) should have col1 and col2 but NOT __FB_TABLE_ROW_INDEX
+        first_select_end = sql.find("FROM")
+        first_select = sql[:first_select_end]
+        assert '"col1"' in first_select
+        assert '"col2"' in first_select
+        assert "__FB_TABLE_ROW_INDEX" not in first_select

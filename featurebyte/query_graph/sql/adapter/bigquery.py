@@ -105,6 +105,30 @@ class BigQueryAdapter(BaseAdapter):
         return expressions.Anonymous(this="RAND", expressions=[])
 
     @classmethod
+    def get_deterministic_split_prob_expr(cls, row_id_expr: Expression, seed: int) -> Expression:
+        # BigQuery uses FARM_FINGERPRINT instead of HASH
+        hash_input = expressions.Concat(
+            expressions=[
+                expressions.Cast(
+                    this=row_id_expr,
+                    to=expressions.DataType.build("STRING"),
+                ),
+                make_literal_value(f"_{seed}"),
+            ]
+        )
+        hash_expr = expressions.Anonymous(this="FARM_FINGERPRINT", expressions=[hash_input])
+        # Use modulo to get a positive value, then divide to normalize to [0, 1)
+        modulo_value = 1000000000
+        normalized_expr = expressions.Div(
+            this=expressions.Mod(
+                this=expressions.Abs(this=hash_expr),
+                expression=make_literal_value(modulo_value),
+            ),
+            expression=make_literal_value(float(modulo_value)),
+        )
+        return normalized_expr
+
+    @classmethod
     def count_if(cls, condition: Expression) -> Expression:
         return expressions.Anonymous(this="COUNTIF", expressions=[condition])
 
