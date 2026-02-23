@@ -8,7 +8,8 @@ from bson import ObjectId
 
 import featurebyte as fb
 from featurebyte import Feature, FeatureList
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
+from featurebyte.models.context import UserProvidedColumn
 from featurebyte.query_graph.node.schema import DummyTableDetails
 
 
@@ -40,8 +41,15 @@ def test_user_provided_feature_save_and_list(event_table, user_entity):
         name=context_name,
         primary_entity=[user_entity.name],
         user_provided_columns=[
-            {"name": "annual_income", "dtype": DBVarType.FLOAT, "description": "Annual income"},
-            {"name": "credit_score", "dtype": DBVarType.INT},
+            UserProvidedColumn(
+                name="annual_income",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+                description="Annual income",
+            ),
+            UserProvidedColumn(
+                name="credit_score", dtype=DBVarType.INT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
 
@@ -91,7 +99,9 @@ def test_user_provided_feature_in_feature_list(event_table, user_entity):
         name=context_name,
         primary_entity=[user_entity.name],
         user_provided_columns=[
-            {"name": "risk_score", "dtype": DBVarType.FLOAT},
+            UserProvidedColumn(
+                name="risk_score", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
 
@@ -155,7 +165,9 @@ def test_user_provided_features_different_contexts(user_entity):
         name=context_a_name,
         primary_entity=[user_entity.name],
         user_provided_columns=[
-            {"name": "score", "dtype": DBVarType.FLOAT},
+            UserProvidedColumn(
+                name="score", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ],
     )
 
@@ -164,7 +176,7 @@ def test_user_provided_features_different_contexts(user_entity):
         name=context_b_name,
         primary_entity=[user_entity.name],
         user_provided_columns=[
-            {"name": "score", "dtype": DBVarType.INT},
+            UserProvidedColumn(name="score", dtype=DBVarType.INT, feature_type=FeatureType.NUMERIC),
         ],
     )
 

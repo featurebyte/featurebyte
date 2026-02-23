@@ -41,6 +41,7 @@ class FeatureTypeService:
             FeatureType.TEXT: FeatureType.valid_text_dtypes(),
             FeatureType.DICT: FeatureType.valid_dict_dtypes(),
             FeatureType.EMBEDDING: FeatureType.valid_embedding_dtypes(),
+            FeatureType.TIMESTAMP: FeatureType.valid_timestamp_dtypes(),
         }
 
     @cached_property

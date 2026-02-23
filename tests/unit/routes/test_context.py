@@ -678,7 +678,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{doc_id}",
             json={
                 "user_provided_columns": [
-                    {"name": "annual_income", "dtype": "FLOAT"},
+                    {"name": "annual_income", "dtype": "FLOAT", "feature_type": "numeric"},
                 ]
             },
         )
@@ -708,7 +708,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{doc_id}",
             json={
                 "user_provided_columns": [
-                    {"name": "annual_income", "dtype": "FLOAT"},
+                    {"name": "annual_income", "dtype": "FLOAT", "feature_type": "numeric"},
                 ]
             },
         )
@@ -737,6 +737,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
                     {
                         "name": "annual_income",
                         "dtype": "FLOAT",
+                        "feature_type": "numeric",
                         "description": "Customer's annual income",
                     },
                 ]

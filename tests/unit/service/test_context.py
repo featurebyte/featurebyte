@@ -5,7 +5,7 @@ Test ContextService
 import pytest
 import pytest_asyncio
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.context import UserProvidedColumn
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -292,7 +292,9 @@ class TestUserProvidedColumnsUpdate:
 
         # Add first column
         new_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         updated_context = await context_service.update_document(
             document_id=context.id,
@@ -304,8 +306,12 @@ class TestUserProvidedColumnsUpdate:
 
         # Add another column
         new_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
-            UserProvidedColumn(name="credit_score", dtype=DBVarType.INT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="credit_score", dtype=DBVarType.INT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         updated_context = await context_service.update_document(
             document_id=context.id,
@@ -321,8 +327,12 @@ class TestUserProvidedColumnsUpdate:
 
         # First add columns
         initial_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
-            UserProvidedColumn(name="credit_score", dtype=DBVarType.INT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="credit_score", dtype=DBVarType.INT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         await context_service.update_document(
             document_id=context.id,
@@ -331,7 +341,9 @@ class TestUserProvidedColumnsUpdate:
 
         # Try to remove a column
         new_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         with pytest.raises(DocumentUpdateError) as exc:
             await context_service.update_document(
@@ -348,7 +360,9 @@ class TestUserProvidedColumnsUpdate:
 
         # First add column
         initial_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         await context_service.update_document(
             document_id=context.id,
@@ -358,7 +372,7 @@ class TestUserProvidedColumnsUpdate:
         # Try to change dtype
         new_columns = [
             UserProvidedColumn(
-                name="annual_income", dtype=DBVarType.INT
+                name="annual_income", dtype=DBVarType.INT, feature_type=FeatureType.NUMERIC
             ),  # Changed from FLOAT to INT
         ]
         with pytest.raises(DocumentUpdateError) as exc:
@@ -379,7 +393,9 @@ class TestUserProvidedColumnsUpdate:
 
         # First add column without description
         initial_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         await context_service.update_document(
             document_id=context.id,
@@ -391,6 +407,7 @@ class TestUserProvidedColumnsUpdate:
             UserProvidedColumn(
                 name="annual_income",
                 dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
                 description="Customer's annual income",
             ),
         ]
@@ -406,9 +423,14 @@ class TestUserProvidedColumnsUpdate:
 
         # First add columns
         initial_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
             UserProvidedColumn(
-                name="employment_status", dtype=DBVarType.VARCHAR, description="Initial description"
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
+            UserProvidedColumn(
+                name="employment_status",
+                dtype=DBVarType.VARCHAR,
+                feature_type=FeatureType.CATEGORICAL,
+                description="Initial description",
             ),
         ]
         await context_service.update_document(
@@ -443,6 +465,7 @@ class TestUserProvidedColumnsUpdate:
             UserProvidedColumn(
                 name="annual_income",
                 dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
                 description="Customer's annual income",
             ),
         ]
@@ -467,7 +490,9 @@ class TestUserProvidedColumnsUpdate:
 
         # First add a column
         initial_columns = [
-            UserProvidedColumn(name="annual_income", dtype=DBVarType.FLOAT),
+            UserProvidedColumn(
+                name="annual_income", dtype=DBVarType.FLOAT, feature_type=FeatureType.NUMERIC
+            ),
         ]
         await context_service.update_document(
             document_id=context.id,
