@@ -14,17 +14,19 @@ from pandas.testing import assert_frame_equal
 from typeguard import TypeCheckError
 
 from featurebyte import list_deployments
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
-from featurebyte.enum import InternalName
+from featurebyte.enum import DBVarType, FeatureType, InternalName
 from featurebyte.exception import (
     RecordCreationException,
     RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
 )
+from featurebyte.models.context import UserProvidedColumn
 from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -1488,3 +1490,59 @@ def test_feature_list_entity_relationship_validation(
         "Consider excluding 'another_feature' from the Feature List to fix the error."
     )
     assert expected_msg in str(exc.value)
+
+
+def test_user_provided_feature_validation(
+    cust_id_entity, snowflake_event_table_with_entity, arbitrary_default_feature_job_setting
+):
+    """Test user provided feature"""
+    event_view = snowflake_event_table_with_entity.get_view()
+    event_view_by_customer = event_view.groupby(["cust_id"], category="col_text")
+    feat = event_view_by_customer.aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+        feature_names=["sum_by_cust_id"],
+    )["sum_by_cust_id"]
+    feat1 = feat.cd.get_value(key="test_key")
+    feat1.name = "sum_by_cust_id_test_key"
+    feat1.save()
+
+    context = Context.create(
+        name="context_with_user_provided_column",
+        primary_entity=["customer"],
+        user_provided_columns=[
+            UserProvidedColumn(
+                name="user_provided_column",
+                dtype=DBVarType.FLOAT,
+                feature_type=FeatureType.NUMERIC,
+            )
+        ],
+    )
+    feat2 = context.get_user_provided_feature("user_provided_column", "user_provided_feature")
+    feature = feat1 - feat2
+    feature.name = "derived_feature"
+    feature_list = FeatureList([feat1, feat2, feature], name="test_feature_list")
+
+    # expect preview to fail due to missing user provided column
+    with pytest.raises(RecordRetrievalException) as exc:
+        feature_list.preview(
+            pd.DataFrame([
+                {"POINT_IN_TIME": "2001-11-15 10:00:00", "cust_id": 1},
+            ])
+        )
+    assert str(exc.value) == (
+        "Observation table missing required user-provided columns: ['user_provided_column']"
+    )
+
+    # expect get historical feature to fail due to missing user provided column
+    with pytest.raises(RecordCreationException) as exc:
+        feature_list.compute_historical_features(
+            pd.DataFrame([
+                {"POINT_IN_TIME": "2001-11-15 10:00:00", "cust_id": 1},
+            ])
+        )
+    assert str(exc.value) == (
+        "Observation table missing required user-provided columns: ['user_provided_column']"
+    )

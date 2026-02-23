@@ -244,3 +244,17 @@ class RequestColumnNode(BaseNode):
             is_databricks_udf=True,
             source_type=config.source_type,
         )
+
+    @property
+    def is_user_provided_column(self) -> bool:
+        """
+        Is node a user provided column
+
+        Returns
+        -------
+        bool
+        """
+        return self.parameters.column_name not in {
+            SpecialColumnName.POINT_IN_TIME,
+            SpecialColumnName.FORECAST_POINT,
+        }

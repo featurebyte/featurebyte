@@ -683,3 +683,7 @@ class DeploymentSqlGenerationError(BaseUnprocessableEntityError):
     """
     Raise when there is an error during deployment SQL generation
     """
+
+
+class MissingUserProvidedColumnsError(BaseUnprocessableEntityError):
+    """Raised when required user-provided columns are missing from observation table"""

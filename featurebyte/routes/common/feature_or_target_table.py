@@ -26,6 +26,7 @@ from featurebyte.routes.common.base import PaginatedDocument
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
+from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.info import (
     BaseFeatureOrTargetTableInfo,
     HistoricalFeatureTableInfo,
@@ -206,6 +207,14 @@ class FeatureOrTargetTableController(
             request_column_names = set(observation_set_dataframe.columns)
 
         validation_parameters = await self.get_validation_parameters(data)
+
+        if isinstance(data, HistoricalFeatureTableCreate):
+            # check if required user provided columns are provided
+            validation_parameters.graph.check_user_provided_column_requirements(
+                nodes=validation_parameters.nodes,
+                request_column_names=request_column_names,
+            )
+
         await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
             graph_nodes=(validation_parameters.graph, validation_parameters.nodes),
             feature_list_model=validation_parameters.feature_list_model,
