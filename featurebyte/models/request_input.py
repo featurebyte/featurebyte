@@ -460,15 +460,10 @@ class BaseRequestInput(FeatureByteBaseModel):
         # Get the base query and column info
         query_expr = await self.get_query_expr(session=session, feature_store=feature_store)
 
-        # Build list of additional columns needed for processing
-        additional_columns: List[str] = []
-        if downsampling_info:
-            additional_columns.append(downsampling_info.target_column)
-
         # Derive output column names and dtypes
         input_columns, output_column_names_and_dtypes = await self.get_output_columns_and_dtypes(
             session=session,
-            additional_columns=additional_columns if additional_columns else None,
+            additional_columns=[downsampling_info.target_column] if downsampling_info else None,
         )
         output_columns = list(output_column_names_and_dtypes.keys())
 
