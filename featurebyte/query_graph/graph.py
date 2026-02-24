@@ -716,7 +716,7 @@ class QueryGraph(QueryGraphModel):
             required_columns.update(self._get_user_provided_column_requirements(node))
 
         # Validate all required user provided columns are available in request column names
-        missing = [col for col, _ in required_columns if col not in request_column_names]
+        missing = sorted([col for col, _ in required_columns if col not in request_column_names])
         if missing:
             raise MissingUserProvidedColumnsError(
                 f"Observation table missing required user-provided columns: {missing}"
