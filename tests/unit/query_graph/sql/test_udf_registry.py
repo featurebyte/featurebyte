@@ -5,8 +5,10 @@ Tests for udf_registry module
 import os
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.common import JAR_PATH_PLACEHOLDER
 from featurebyte.query_graph.sql.udf_registry import (
     SOURCE_TYPE_TO_SQL_DIRECTORY,
+    SPARK_UDF_CLASS_MAPPING,
     get_available_udfs,
     get_udf_registration_sql,
 )
@@ -83,6 +85,34 @@ class TestGetAvailableUdfs:
         assert "OBJECT_DELETE" in udfs
         # The file path should end with F_OBJECT_DELETE.sql
         assert udfs["OBJECT_DELETE"].endswith("F_OBJECT_DELETE.sql")
+
+    def test_spark_udfs_are_jar_based(self):
+        """Test that Spark UDFs return class names instead of file paths"""
+        udfs = get_available_udfs(SourceType.SPARK)
+        assert isinstance(udfs, dict)
+        assert len(udfs) > 0
+        # Check that common UDFs are present
+        assert "F_COUNT_DICT_ENTROPY" in udfs
+        assert "F_TIMESTAMP_TO_INDEX" in udfs
+        # Values should be class names, not file paths
+        assert udfs["F_COUNT_DICT_ENTROPY"] == "com.featurebyte.hive.udf.CountDictEntropyV3"
+        assert udfs["F_TIMESTAMP_TO_INDEX"] == "com.featurebyte.hive.udf.TimestampToIndexV1"
+
+    def test_databricks_udfs_are_jar_based(self):
+        """Test that Databricks UDFs return class names instead of file paths"""
+        udfs = get_available_udfs(SourceType.DATABRICKS)
+        assert isinstance(udfs, dict)
+        assert len(udfs) > 0
+        # Should have same UDFs as Spark
+        assert "F_COUNT_DICT_ENTROPY" in udfs
+        assert udfs["F_COUNT_DICT_ENTROPY"] == "com.featurebyte.hive.udf.CountDictEntropyV3"
+
+    def test_spark_udfs_match_class_mapping(self):
+        """Test that all Spark UDFs in class mapping are available"""
+        udfs = get_available_udfs(SourceType.SPARK)
+        for udf_name, class_name in SPARK_UDF_CLASS_MAPPING.items():
+            assert udf_name.upper() in udfs
+            assert udfs[udf_name.upper()] == class_name
 
 
 class TestGetUdfRegistrationSql:
@@ -196,3 +226,39 @@ class TestGetUdfRegistrationSql:
         assert len(sqls) == 3
         # Dependency should come first
         assert "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE" in sqls[0]
+
+    def test_spark_udf_registration_generates_jar_sql(self):
+        """Test Spark UDF registration generates JAR-based SQL"""
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.SPARK,
+            udf_names={"F_COUNT_DICT_ENTROPY"},
+        )
+        assert len(sqls) == 1
+        assert "CREATE OR REPLACE FUNCTION F_COUNT_DICT_ENTROPY" in sqls[0]
+        assert "AS 'com.featurebyte.hive.udf.CountDictEntropyV3'" in sqls[0]
+        assert f"USING JAR '{JAR_PATH_PLACEHOLDER}'" in sqls[0]
+
+    def test_databricks_udf_registration_generates_jar_sql(self):
+        """Test Databricks UDF registration generates JAR-based SQL"""
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.DATABRICKS,
+            udf_names={"F_TIMESTAMP_TO_INDEX"},
+        )
+        assert len(sqls) == 1
+        assert "CREATE OR REPLACE FUNCTION F_TIMESTAMP_TO_INDEX" in sqls[0]
+        assert "AS 'com.featurebyte.hive.udf.TimestampToIndexV1'" in sqls[0]
+        assert f"USING JAR '{JAR_PATH_PLACEHOLDER}'" in sqls[0]
+
+    def test_spark_multiple_udfs_registration(self):
+        """Test Spark registration with multiple UDFs"""
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.SPARK,
+            udf_names={"F_COUNT_DICT_ENTROPY", "F_TIMESTAMP_TO_INDEX"},
+        )
+        assert len(sqls) == 2
+        # Should be sorted by name
+        assert "F_COUNT_DICT_ENTROPY" in sqls[0]
+        assert "F_TIMESTAMP_TO_INDEX" in sqls[1]
+        # Both should have JAR reference
+        for sql in sqls:
+            assert f"USING JAR '{JAR_PATH_PLACEHOLDER}'" in sql
