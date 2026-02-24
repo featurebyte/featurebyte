@@ -1,6 +1,12 @@
 {
     "feature_table_sqls": [
         {
+            "feature_job_setting": {
+                "blind_spot": "0s",
+                "execution_buffer": "0s",
+                "offset": "0s",
+                "period": "86400s"
+            },
             "feature_names": [
                 "complex_parent_child_feature"
             ],
