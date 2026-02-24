@@ -403,21 +403,19 @@ class TestObservationTableSplit:
 
         # Create mock observation tables for the split results
         mock_train_table = AsyncMock()
-        mock_train_table.name = "source_table_for_split_split_0"
+        mock_train_table.name = "source_table_for_split_split_0_70pct"
         mock_train_table.purpose = Purpose.TRAINING
 
         mock_test_table = AsyncMock()
-        mock_test_table.name = "source_table_for_split_split_1"
+        mock_test_table.name = "source_table_for_split_split_1_30pct"
         mock_test_table.purpose = Purpose.VALIDATION_TEST
 
         with (
             patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
-            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+            patch.object(ObservationTable, "get") as mock_get,
         ):
-            mock_post_async_task.return_value = {
-                "output_document_ids": [str(train_id), str(test_id)]
-            }
-            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+            mock_post_async_task.return_value = {"output_url": None}
+            mock_get.side_effect = [mock_train_table, mock_test_table]
 
             train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
 
@@ -426,9 +424,14 @@ class TestObservationTableSplit:
             call_args = mock_post_async_task.call_args
             assert f"/observation_table/{observation_table.id}/split" in call_args.kwargs["route"]
 
+            # Verify get was called with correct names
+            assert mock_get.call_count == 2
+            mock_get.assert_any_call("source_table_for_split_split_0_70pct")
+            mock_get.assert_any_call("source_table_for_split_split_1_30pct")
+
         # Check auto-generated names
-        assert train_table.name == "source_table_for_split_split_0"
-        assert test_table.name == "source_table_for_split_split_1"
+        assert train_table.name == "source_table_for_split_split_0_70pct"
+        assert test_table.name == "source_table_for_split_split_1_30pct"
 
         # Check purpose assignment
         assert train_table.purpose == Purpose.TRAINING
@@ -466,17 +469,19 @@ class TestObservationTableSplit:
 
         with (
             patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
-            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+            patch.object(ObservationTable, "get") as mock_get,
         ):
-            mock_post_async_task.return_value = {
-                "output_document_ids": [str(train_id), str(test_id)]
-            }
-            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+            mock_post_async_task.return_value = {"output_url": None}
+            mock_get.side_effect = [mock_train_table, mock_test_table]
 
             train_table, test_table = observation_table.split(
                 split_ratios=[0.8, 0.2],
                 names=["training_data", "testing_data"],
             )
+
+            # Verify get was called with the custom names
+            mock_get.assert_any_call("training_data")
+            mock_get.assert_any_call("testing_data")
 
         assert train_table.name == "training_data"
         assert test_table.name == "testing_data"
@@ -520,12 +525,10 @@ class TestObservationTableSplit:
 
         with (
             patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
-            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+            patch.object(ObservationTable, "get") as mock_get,
         ):
-            mock_post_async_task.return_value = {
-                "output_document_ids": [str(train_id), str(val_id), str(test_id)]
-            }
-            mock_get_by_id.side_effect = [mock_train_table, mock_val_table, mock_test_table]
+            mock_post_async_task.return_value = {"output_url": None}
+            mock_get.side_effect = [mock_train_table, mock_val_table, mock_test_table]
 
             train_table, val_table, test_table = observation_table.split(
                 split_ratios=[0.6, 0.2, 0.2],
@@ -615,12 +618,10 @@ class TestObservationTableSplit:
 
         with (
             patch.object(ObservationTable, "post_async_task") as mock_post_async_task,
-            patch.object(ObservationTable, "get_by_id") as mock_get_by_id,
+            patch.object(ObservationTable, "get") as mock_get,
         ):
-            mock_post_async_task.return_value = {
-                "output_document_ids": [str(train_id), str(test_id)]
-            }
-            mock_get_by_id.side_effect = [mock_train_table, mock_test_table]
+            mock_post_async_task.return_value = {"output_url": None}
+            mock_get.side_effect = [mock_train_table, mock_test_table]
 
             train_table, test_table = observation_table.split(split_ratios=[0.7, 0.3])
 

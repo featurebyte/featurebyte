@@ -66,3 +66,14 @@ class SplitObservationTableTaskPayload(BaseTaskPayload):
     feature_store_id: PydanticObjectId = Field(description="Feature store ID for the split tables")
     # Output document IDs for each split (populated during task execution)
     output_document_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+
+    @property
+    def task_output_path(self) -> Optional[str]:
+        """
+        Split task creates multiple documents, so there is no single output path.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return None

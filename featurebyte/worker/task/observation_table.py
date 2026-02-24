@@ -35,6 +35,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 from featurebyte.query_graph.sql.materialisation import (
     get_source_count_expr,
 )
+from featurebyte.schema.observation_table import get_split_names
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.observation_table import (
     ObservationTableTaskPayload,
@@ -585,10 +586,8 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
 
         # Prepare split ratios and names
         split_ratios = [split.ratio for split in payload.splits]
-        split_names = [
-            split.name if split.name is not None else f"{source_table.name}_split_{i}"
-            for i, split in enumerate(payload.splits)
-        ]
+        assert source_table.name is not None
+        split_names = get_split_names(payload.splits, source_table.name)
 
         created_table_ids = []
         created_table_details = []
@@ -796,7 +795,9 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
         final_cols = [
             col
             for col in outer_select.expressions
-            if not (hasattr(col, "alias") and col.alias in ("__fb_split_prob", "__fb_split_partition"))
+            if not (
+                hasattr(col, "alias") and col.alias in ("__fb_split_prob", "__fb_split_partition")
+            )
         ]
         final_select = expressions.select(*final_cols).from_(outer_select.subquery())
 

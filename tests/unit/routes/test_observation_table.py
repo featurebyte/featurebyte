@@ -1799,7 +1799,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         # Query observation tables by name to verify creation
         source_name = source_observation_table["name"]
-        expected_names = [f"{source_name}_split_0", f"{source_name}_split_1"]
+        expected_names = [f"{source_name}_split_0_70pct", f"{source_name}_split_1_30pct"]
         expected_purposes = ["training", "validation_test"]
 
         for i, expected_name in enumerate(expected_names):

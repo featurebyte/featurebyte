@@ -44,6 +44,7 @@ from featurebyte.schema.observation_table import (
     ObservationTableUpdate,
     ObservationTableUpload,
     SplitDefinition,
+    get_split_names,
 )
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
@@ -689,15 +690,16 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         ]
 
         payload = ObservationTableSplit(splits=splits, seed=seed)
+        assert self.name is not None
+        split_names = get_split_names(payload.splits, self.name)
 
-        # Call the split route - returns a single task that creates all splits
-        result = ObservationTable.post_async_task(
+        # Call the split route - creates multiple tables, no single output document
+        ObservationTable.post_async_task(
             route=f"{self._route}/{self.id}/split",
             payload=payload.json_dict(),
+            has_output_url=False,
+            retrieve_result=False,
         )
 
-        # The task output contains the IDs of all created observation tables
-        output_document_ids = result.get("output_document_ids", [])
-
-        # Return the created observation tables in order
-        return [ObservationTable.get_by_id(doc_id) for doc_id in output_document_ids]
+        # Retrieve the created observation tables by name
+        return [ObservationTable.get(name) for name in split_names]

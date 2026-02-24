@@ -98,6 +98,29 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     use_case_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
+def get_split_names(splits: List[SplitDefinition], source_table_name: str) -> List[str]:
+    """
+    Get the resolved names for each split.
+
+    Parameters
+    ----------
+    splits: List[SplitDefinition]
+        List of split definitions
+    source_table_name: str
+        Name of the source observation table (used for auto-generated names)
+
+    Returns
+    -------
+    List[str]
+    """
+    return [
+        split.name
+        if split.name is not None
+        else f"{source_table_name}_split_{i}_{int(split.ratio * 100)}pct"
+        for i, split in enumerate(splits)
+    ]
+
+
 class SplitDefinition(FeatureByteBaseModel):
     """
     Definition of a single split with name and ratio
@@ -148,3 +171,18 @@ class ObservationTableSplit(FeatureByteBaseModel):
         if abs(total - 1.0) > 1e-9:
             raise ValueError(f"Split ratios must sum to 1.0, got {total}")
         return self
+
+    def get_split_names(self, source_table_name: str) -> List[str]:
+        """
+        Get the resolved names for each split.
+
+        Parameters
+        ----------
+        source_table_name: str
+            Name of the source observation table (used for auto-generated names)
+
+        Returns
+        -------
+        List[str]
+        """
+        return get_split_names(self.splits, source_table_name)
