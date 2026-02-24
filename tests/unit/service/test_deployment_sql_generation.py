@@ -348,6 +348,52 @@ async def deployed_not_supported_feature_list(
     return feature_list
 
 
+def _check_sql_files(
+    sql_codes_dir: str,
+    actual_sqls: list[str],
+    prefix: str,
+    label: str,
+    update_fixtures: bool,
+) -> None:
+    """
+    Check or update SQL fixture files.
+
+    Parameters
+    ----------
+    sql_codes_dir: str
+        Directory containing SQL fixture files
+    actual_sqls: list[str]
+        List of actual SQL strings to check/write
+    prefix: str
+        Filename prefix (e.g., "" for feature SQLs, "udf_" for UDF SQLs)
+    label: str
+        Label for error messages (e.g., "SQL codes", "UDF registration SQLs")
+    update_fixtures: bool
+        Whether to update fixtures or check against them
+    """
+    if update_fixtures:
+        for idx, sql in enumerate(actual_sqls):
+            with open(os.path.join(sql_codes_dir, f"{prefix}{idx}.sql"), "w") as file:
+                file.write(sql)
+    else:
+        expected_sqls = []
+        for filename in sorted(os.listdir(sql_codes_dir)):
+            if prefix:
+                if not filename.startswith(prefix):
+                    continue
+            else:
+                if filename.startswith("udf_"):
+                    continue
+            with open(os.path.join(sql_codes_dir, filename), "r") as file:
+                expected_sqls.append(file.read())
+        if len(expected_sqls) != len(actual_sqls):
+            raise AssertionError(
+                f"Number of {label} mismatch: expected {len(expected_sqls)}, got {len(actual_sqls)}"
+            )
+        for expected_sql, actual_sql in zip(expected_sqls, actual_sqls):
+            assert actual_sql.strip() == expected_sql.strip()
+
+
 def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixtures):
     """
     Check deployment SQL against fixture
@@ -375,56 +421,27 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
     expected_dict_filename = os.path.join(fixture_dir, "deployment_sql.json")
     assert_equal_json_fixture(actual_dict, expected_dict_filename, update_fixtures)
 
-    # Check or update SQL code
+    # Check or update SQL files
     expected_sql_codes_dir = os.path.join(fixture_dir, "sql_codes")
     if update_fixtures:
         Path(expected_sql_codes_dir).mkdir(parents=True, exist_ok=True)
         for filename in os.listdir(expected_sql_codes_dir):
             os.remove(os.path.join(expected_sql_codes_dir, filename))
-        for idx, sql_code in enumerate(actual_sql_codes):
-            with open(os.path.join(expected_sql_codes_dir, f"{idx}.sql"), "w") as file:
-                file.write(sql_code)
-        # Write UDF registration SQLs
-        for idx, udf_sql in enumerate(actual_udf_sqls):
-            with open(os.path.join(expected_sql_codes_dir, f"udf_{idx}.sql"), "w") as file:
-                file.write(udf_sql)
-    else:
-        expected_sql_codes = []
-        for filename in sorted(
-            os.listdir(expected_sql_codes_dir),
-            key=lambda x: int(x.split(".")[0].replace("udf_", "")),
-        ):
-            if filename.startswith("udf_"):
-                continue  # Skip UDF files in this loop
-            with open(os.path.join(expected_sql_codes_dir, filename), "r") as file:
-                expected_sql = file.read()
-            expected_sql_codes.append(expected_sql)
-        if len(expected_sql_codes) != len(actual_sql_codes):
-            raise AssertionError(
-                f"Number of SQL codes mismatch: expected {len(expected_sql_codes)}, "
-                f"got {len(actual_sql_codes)}"
-            )
-        for expected_sql, actual_sql in zip(expected_sql_codes, actual_sql_codes):
-            assert actual_sql.strip() == expected_sql.strip()
 
-        # Check UDF registration SQLs
-        expected_udf_sqls = []
-        for filename in sorted(
-            os.listdir(expected_sql_codes_dir),
-            key=lambda x: int(x.split(".")[0].replace("udf_", "")) if x.startswith("udf_") else -1,
-        ):
-            if not filename.startswith("udf_"):
-                continue
-            with open(os.path.join(expected_sql_codes_dir, filename), "r") as file:
-                expected_udf_sql = file.read()
-            expected_udf_sqls.append(expected_udf_sql)
-        if len(expected_udf_sqls) != len(actual_udf_sqls):
-            raise AssertionError(
-                f"Number of UDF registration SQLs mismatch: expected {len(expected_udf_sqls)}, "
-                f"got {len(actual_udf_sqls)}"
-            )
-        for expected_udf_sql, actual_udf_sql in zip(expected_udf_sqls, actual_udf_sqls):
-            assert actual_udf_sql.strip() == expected_udf_sql.strip()
+    _check_sql_files(
+        sql_codes_dir=expected_sql_codes_dir,
+        actual_sqls=actual_sql_codes,
+        prefix="",
+        label="SQL codes",
+        update_fixtures=update_fixtures,
+    )
+    _check_sql_files(
+        sql_codes_dir=expected_sql_codes_dir,
+        actual_sqls=actual_udf_sqls,
+        prefix="udf_",
+        label="UDF registration SQLs",
+        update_fixtures=update_fixtures,
+    )
 
 
 @pytest.fixture
