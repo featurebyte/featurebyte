@@ -1,6 +1,21 @@
 {
     "feature_table_sqls": [
         {
+            "feature_job_setting": {
+                "blind_spot": {
+                    "size": 1,
+                    "unit": "MONTH"
+                },
+                "crontab": {
+                    "day_of_month": 1,
+                    "day_of_week": "*",
+                    "hour": 8,
+                    "minute": 0,
+                    "month_of_year": "*"
+                },
+                "reference_timezone": null,
+                "timezone": "Etc/UTC"
+            },
             "feature_names": [
                 "col_float_sum_3month"
             ],

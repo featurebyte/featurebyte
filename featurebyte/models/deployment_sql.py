@@ -2,7 +2,7 @@
 Deployment SQL model
 """
 
-from typing import List
+from typing import List, Optional
 
 from pymongo import IndexModel
 
@@ -12,6 +12,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 
 
 class FeatureTableSql(FeatureByteBaseModel):
@@ -22,6 +23,7 @@ class FeatureTableSql(FeatureByteBaseModel):
     feature_ids: List[PydanticObjectId]
     feature_names: List[str]
     sql_code: str
+    feature_job_setting: Optional[FeatureJobSettingUnion] = None
 
 
 class DeploymentSqlModel(FeatureByteCatalogBaseDocumentModel):

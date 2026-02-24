@@ -303,6 +303,7 @@ class DeploymentSqlGenerationService:
                     feature_ids=[feature.id for feature in features],
                     feature_names=[feature.name for feature in features],
                     sql_code=feature_query_str,
+                    feature_job_setting=ingest_graph.feature_job_setting,
                 )
             )
         deployment_sql_model = DeploymentSqlModel(
