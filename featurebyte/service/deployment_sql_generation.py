@@ -8,7 +8,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
@@ -320,7 +320,7 @@ class DeploymentSqlGenerationService:
         all_referenced_udfs: set[str] = set()
 
         for expr in feature_query_exprs:
-            udfs = extract_udfs_from_expression(expr, available_udfs, source_type)
+            udfs = extract_udfs_from_expression(expr, available_udfs)
             all_referenced_udfs.update(udfs)
 
         # Generate UDF registration SQL

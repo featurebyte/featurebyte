@@ -34,6 +34,7 @@ TEST_CASES_MAPPING = {
     "internal_parent_child_relationships": (
         "deployed_feature_with_internal_parent_child_relationships"
     ),
+    "cosine_similarity_feature": "deployed_cosine_similarity_feature_list",
 }
 
 
@@ -291,6 +292,32 @@ async def deployed_feature_with_internal_parent_child_relationships(
         app_container,
         [feature_with_internal_parent_child_relationships],
         feature_list_name=f"feature_list_{ObjectId()}",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_cosine_similarity_feature_list(
+    app_container,
+    count_per_category_feature_group,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed cosine similarity feature (uses UDFs)
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    counts_30m = count_per_category_feature_group["counts_30m"]
+    counts_1d = count_per_category_feature_group["counts_1d"]
+    cosine_sim_feature = counts_30m.cd.cosine_similarity(counts_1d)
+    cosine_sim_feature.name = "cosine_similarity_30m_vs_1d"
+    feature_list = await deploy_feature(
+        app_container,
+        cosine_sim_feature,
+        return_type="feature_list",
         deployment_id=deployment_id,
     )
     return feature_list

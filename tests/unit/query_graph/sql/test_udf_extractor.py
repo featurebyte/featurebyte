@@ -2,10 +2,10 @@
 Tests for udf_extractor module
 """
 
-import pytest
 import sqlglot
 
-from featurebyte.enum import SourceType
+import pytest
+
 from featurebyte.query_graph.sql.udf_extractor import extract_udfs_from_expression
 
 
@@ -13,7 +13,7 @@ class TestExtractUdfsFromExpression:
     """Tests for extract_udfs_from_expression function"""
 
     @pytest.fixture
-    def snowflake_available_udfs(self):
+    def available_udfs(self):
         """Sample available UDFs for testing"""
         return {
             "F_COUNT_DICT_ENTROPY": "/path/to/F_COUNT_DICT_ENTROPY.sql",
@@ -22,14 +22,14 @@ class TestExtractUdfsFromExpression:
             "OBJECT_DELETE": "/path/to/F_OBJECT_DELETE.sql",
         }
 
-    def test_simple_udf_reference(self, snowflake_available_udfs):
+    def test_simple_udf_reference(self, available_udfs):
         """Test detecting a simple UDF reference"""
         sql = "SELECT F_COUNT_DICT_ENTROPY(counts) FROM table1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_multiple_udf_references(self, snowflake_available_udfs):
+    def test_multiple_udf_references(self, available_udfs):
         """Test detecting multiple UDF references"""
         sql = """
         SELECT
@@ -38,35 +38,35 @@ class TestExtractUdfsFromExpression:
         FROM table1
         """
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY", "F_TIMESTAMP_TO_INDEX"}
 
-    def test_nested_udf_references(self, snowflake_available_udfs):
+    def test_nested_udf_references(self, available_udfs):
         """Test detecting nested UDF references"""
         sql = "SELECT F_GET_VALUE(F_COUNT_DICT_ENTROPY(counts), 'key') FROM table1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY", "F_GET_VALUE"}
 
-    def test_no_udf_references(self, snowflake_available_udfs):
+    def test_no_udf_references(self, available_udfs):
         """Test SQL without UDF references"""
         sql = "SELECT col1, SUM(col2) FROM table1 GROUP BY col1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == set()
 
-    def test_udf_not_in_available_list(self, snowflake_available_udfs):
+    def test_udf_not_in_available_list(self, available_udfs):
         """Test UDF not in available list is not detected"""
         sql = "SELECT F_UNKNOWN_UDF(col1) FROM table1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == set()
 
-    def test_object_delete_special_case(self, snowflake_available_udfs):
+    def test_object_delete_special_case(self, available_udfs):
         """Test OBJECT_DELETE without F_ prefix is detected"""
         sql = "SELECT OBJECT_DELETE(obj, 'key') FROM table1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"OBJECT_DELETE"}
 
     def test_bigquery_fully_qualified_udf(self):
@@ -76,7 +76,7 @@ class TestExtractUdfsFromExpression:
         }
         sql = "SELECT `project`.`dataset`.F_COUNT_DICT_ENTROPY(counts) FROM table1"
         expr = sqlglot.parse_one(sql, read="bigquery")
-        udfs = extract_udfs_from_expression(expr, available_udfs, SourceType.BIGQUERY)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
     def test_bigquery_multiple_qualified_udfs(self):
@@ -92,17 +92,17 @@ class TestExtractUdfsFromExpression:
         FROM table1
         """
         expr = sqlglot.parse_one(sql, read="bigquery")
-        udfs = extract_udfs_from_expression(expr, available_udfs, SourceType.BIGQUERY)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY", "F_GET_VALUE"}
 
-    def test_case_insensitive_matching(self, snowflake_available_udfs):
+    def test_case_insensitive_matching(self, available_udfs):
         """Test that UDF matching is case insensitive"""
         sql = "SELECT f_count_dict_entropy(counts) FROM table1"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_udf_in_subquery(self, snowflake_available_udfs):
+    def test_udf_in_subquery(self, available_udfs):
         """Test detecting UDF in subquery"""
         sql = """
         SELECT * FROM (
@@ -110,10 +110,10 @@ class TestExtractUdfsFromExpression:
         ) subq
         """
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_udf_in_cte(self, snowflake_available_udfs):
+    def test_udf_in_cte(self, available_udfs):
         """Test detecting UDF in CTE"""
         sql = """
         WITH cte AS (
@@ -122,26 +122,26 @@ class TestExtractUdfsFromExpression:
         SELECT * FROM cte
         """
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_udf_in_where_clause(self, snowflake_available_udfs):
+    def test_udf_in_where_clause(self, available_udfs):
         """Test detecting UDF in WHERE clause"""
         sql = "SELECT * FROM table1 WHERE F_COUNT_DICT_ENTROPY(counts) > 0.5"
         expr = sqlglot.parse_one(sql, read="snowflake")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SNOWFLAKE)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_databricks_source_type(self, snowflake_available_udfs):
-        """Test UDF detection for Databricks source type"""
+    def test_databricks_dialect(self, available_udfs):
+        """Test UDF detection with Databricks dialect"""
         sql = "SELECT F_COUNT_DICT_ENTROPY(counts) FROM table1"
         expr = sqlglot.parse_one(sql, read="databricks")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.DATABRICKS)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
 
-    def test_spark_source_type(self, snowflake_available_udfs):
-        """Test UDF detection for Spark source type"""
+    def test_spark_dialect(self, available_udfs):
+        """Test UDF detection with Spark dialect"""
         sql = "SELECT F_COUNT_DICT_ENTROPY(counts) FROM table1"
         expr = sqlglot.parse_one(sql, read="spark")
-        udfs = extract_udfs_from_expression(expr, snowflake_available_udfs, SourceType.SPARK)
+        udfs = extract_udfs_from_expression(expr, available_udfs)
         assert udfs == {"F_COUNT_DICT_ENTROPY"}
