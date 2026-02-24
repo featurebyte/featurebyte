@@ -792,11 +792,11 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
             expressions.alias_(partition_expr, alias="__fb_split_partition", quoted=True),
         ).from_(inner_select.subquery())
 
-        # Exclude the prob column from final output
+        # Exclude the prob column from final output (partition column is already included via Star())
         final_cols = [
             col
             for col in outer_select.expressions
-            if not (hasattr(col, "alias") and col.alias == "__fb_split_prob")
+            if not (hasattr(col, "alias") and col.alias in ("__fb_split_prob", "__fb_split_partition"))
         ]
         final_select = expressions.select(*final_cols).from_(outer_select.subquery())
 
@@ -849,7 +849,11 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
 
         # Build select query excluding the partition column
         if columns_result is not None:
-            columns = [col for col in columns_result.columns if col != "__fb_split_partition"]
+            columns = [
+                col
+                for col in columns_result.columns
+                if col not in ("__fb_split_partition", InternalName.TABLE_ROW_INDEX)
+            ]
             select_query = (
                 expressions.select(*[quoted_identifier(col) for col in columns])
                 .from_(temp_table_expr)
