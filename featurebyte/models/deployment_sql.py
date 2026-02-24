@@ -31,6 +31,7 @@ class DeploymentSqlModel(FeatureByteCatalogBaseDocumentModel):
 
     deployment_id: PydanticObjectId
     feature_table_sqls: List[FeatureTableSql]
+    udf_registration_sqls: List[str] = []
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

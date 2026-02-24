@@ -325,7 +325,9 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
     """
     Check deployment SQL against fixture
     """
-    actual_dict = actual.model_dump(by_alias=True, include={"feature_table_sqls"})
+    actual_dict = actual.model_dump(
+        by_alias=True, include={"feature_table_sqls", "udf_registration_sqls"}
+    )
 
     # Sanitize dynamic fields
     actual_sql_codes = []
@@ -334,6 +336,13 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
         actual_sql_codes.append(replace_objectid_suffix(feature_table_sql["sql_code"]))
         expected_sql_filename = f"{idx}.sql"
         feature_table_sql["sql_code"] = f"<redacted: see {expected_sql_filename}>"
+
+    # Handle UDF registration SQLs - store them separately if present
+    actual_udf_sqls = actual_dict.get("udf_registration_sqls", [])
+    if actual_udf_sqls:
+        actual_dict["udf_registration_sqls"] = [
+            f"<redacted: see udf_{idx}.sql>" for idx in range(len(actual_udf_sqls))
+        ]
 
     # Check or update overall dict
     expected_dict_filename = os.path.join(fixture_dir, "deployment_sql.json")
@@ -348,11 +357,17 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
         for idx, sql_code in enumerate(actual_sql_codes):
             with open(os.path.join(expected_sql_codes_dir, f"{idx}.sql"), "w") as file:
                 file.write(sql_code)
+        # Write UDF registration SQLs
+        for idx, udf_sql in enumerate(actual_udf_sqls):
+            with open(os.path.join(expected_sql_codes_dir, f"udf_{idx}.sql"), "w") as file:
+                file.write(udf_sql)
     else:
         expected_sql_codes = []
         for filename in sorted(
-            os.listdir(expected_sql_codes_dir), key=lambda x: int(x.split(".")[0])
+            os.listdir(expected_sql_codes_dir), key=lambda x: int(x.split(".")[0].replace("udf_", ""))
         ):
+            if filename.startswith("udf_"):
+                continue  # Skip UDF files in this loop
             with open(os.path.join(expected_sql_codes_dir, filename), "r") as file:
                 expected_sql = file.read()
             expected_sql_codes.append(expected_sql)
@@ -363,6 +378,25 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
             )
         for expected_sql, actual_sql in zip(expected_sql_codes, actual_sql_codes):
             assert actual_sql.strip() == expected_sql.strip()
+
+        # Check UDF registration SQLs
+        expected_udf_sqls = []
+        for filename in sorted(
+            os.listdir(expected_sql_codes_dir),
+            key=lambda x: int(x.split(".")[0].replace("udf_", "")) if x.startswith("udf_") else -1,
+        ):
+            if not filename.startswith("udf_"):
+                continue
+            with open(os.path.join(expected_sql_codes_dir, filename), "r") as file:
+                expected_udf_sql = file.read()
+            expected_udf_sqls.append(expected_udf_sql)
+        if len(expected_udf_sqls) != len(actual_udf_sqls):
+            raise AssertionError(
+                f"Number of UDF registration SQLs mismatch: expected {len(expected_udf_sqls)}, "
+                f"got {len(actual_udf_sqls)}"
+            )
+        for expected_udf_sql, actual_udf_sql in zip(expected_udf_sqls, actual_udf_sqls):
+            assert actual_udf_sql.strip() == expected_udf_sql.strip()
 
 
 @pytest.fixture

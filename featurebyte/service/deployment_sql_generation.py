@@ -6,8 +6,9 @@ from typing import Optional
 
 from bson import ObjectId
 from sqlglot import expressions
+from sqlglot.expressions import Expression
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models import EntityModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
@@ -23,6 +24,8 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
+from featurebyte.query_graph.sql.udf_extractor import extract_udfs_from_expression
+from featurebyte.query_graph.sql.udf_registry import get_available_udfs, get_udf_registration_sql
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.deployment import DeploymentService
@@ -135,7 +138,8 @@ class DeploymentSqlGenerationService:
         )
         graph_container = OfflineIngestGraphContainer.build_from_feature_infos(feature_infos)
         entity_mapping: dict[ObjectId, EntityModel] = {}
-        feature_table_sqls = []
+        feature_table_sqls: list[FeatureTableSql] = []
+        feature_query_exprs: list[Expression] = []
 
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
             features = graph_container.offline_store_table_name_to_features[table_name]
@@ -295,6 +299,9 @@ class DeploymentSqlGenerationService:
                     quoted=True,
                 )
             )
+            # Collect the expression for UDF extraction before converting to string
+            feature_query_exprs.append(feature_query_expr)
+
             feature_query_str = sql_to_string(
                 feature_query_expr, source_type=feature_store_model.type
             )
@@ -306,10 +313,30 @@ class DeploymentSqlGenerationService:
                     feature_job_setting=ingest_graph.feature_job_setting,
                 )
             )
+
+        # Extract UDFs from all feature query expressions
+        source_type = feature_store_model.type
+        available_udfs = get_available_udfs(source_type)
+        all_referenced_udfs: set[str] = set()
+
+        for expr in feature_query_exprs:
+            udfs = extract_udfs_from_expression(expr, available_udfs, source_type)
+            all_referenced_udfs.update(udfs)
+
+        # Generate UDF registration SQL
+        source_info = feature_store_model.get_source_info()
+        udf_registration_sqls = get_udf_registration_sql(
+            source_type=source_type,
+            udf_names=all_referenced_udfs,
+            database_name=source_info.database_name,
+            schema_name=source_info.schema_name,
+        )
+
         deployment_sql_model = DeploymentSqlModel(
             _id=output_document_id,
             deployment_id=deployment_id,
             feature_table_sqls=feature_table_sqls,
+            udf_registration_sqls=udf_registration_sqls,
             catalog_id=catalog_model.id,
         )
         return deployment_sql_model
