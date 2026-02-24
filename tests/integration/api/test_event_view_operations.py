@@ -1272,6 +1272,27 @@ def check_numeric_operations(event_view, limit=100):
     event_view["AMOUNT_ATAN"] = event_view["AMOUNT_COS"].atan()
     df = event_view.preview(limit=limit)
 
+    # Cast numeric columns to float to avoid Decimal vs float comparison issues (BigQuery)
+    numeric_cols = [
+        "ÀMOUNT",
+        "AMOUNT_ABS",
+        "AMOUNT_SQRT",
+        "AMOUNT_POW_2",
+        "AMOUNT_FLOOR",
+        "AMOUNT_CEIL",
+        "AMOUNT_LOG",
+        "AMOUNT_LOG_EXP",
+        "ONE_MINUS_AMOUNT",
+        "AMOUNT_COS",
+        "AMOUNT_SIN",
+        "AMOUNT_TAN",
+        "AMOUNT_ACOS",
+        "AMOUNT_ASIN",
+        "AMOUNT_ATAN",
+    ]
+    for col in numeric_cols:
+        df[col] = df[col].astype(float)
+
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["ÀMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["ÀMOUNT"].pow(2), check_names=False)
