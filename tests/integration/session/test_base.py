@@ -30,6 +30,68 @@ from featurebyte.session.base import QueryMetadata
 from tests.util.helper import fb_assert_frame_equal, truncate_timestamps
 
 
+async def register_sleep_udf(session):
+    """
+    Register a sleep UDF for the session's source type.
+
+    This creates a function that busy-waits for the specified number of seconds,
+    which is useful for testing query timeout and cancellation behavior.
+    """
+    if session.source_type == SourceType.SNOWFLAKE:
+        await session.execute_query("""
+            CREATE OR REPLACE FUNCTION TEST_SLEEP_SECONDS(seconds FLOAT)
+            RETURNS FLOAT
+            LANGUAGE JAVASCRIPT
+            AS $$
+                var start = Date.now();
+                var ms = SECONDS * 1000;
+                while (Date.now() - start < ms) {}
+                return SECONDS;
+            $$
+        """)
+    elif session.source_type == SourceType.DATABRICKS_UNITY:
+        await session.execute_query("""
+            CREATE OR REPLACE FUNCTION TEST_SLEEP_SECONDS(seconds FLOAT)
+            RETURNS FLOAT
+            LANGUAGE PYTHON
+            AS $$
+                import time
+                time.sleep(seconds)
+                return seconds
+            $$
+        """)
+    # BigQuery and Spark don't need pre-registration - handled inline in get_sleep_query
+
+
+def get_sleep_query(session, sleep_seconds: float, output_table_name: str) -> str:
+    """
+    Get a query that sleeps for the specified duration and creates an output table.
+    """
+    if session.source_type == SourceType.BIGQUERY:
+        # BigQuery needs inline temp function with JavaScript busy-wait
+        return f"""
+            CREATE TEMP FUNCTION TEST_SLEEP_SECONDS(seconds FLOAT64)
+            RETURNS FLOAT64
+            LANGUAGE js AS '''
+                var start = Date.now();
+                var ms = seconds * 1000;
+                while (Date.now() - start < ms) {{}}
+                return seconds;
+            ''';
+            CREATE TABLE {output_table_name} AS SELECT TEST_SLEEP_SECONDS({sleep_seconds}) AS result
+        """
+    elif session.source_type == SourceType.SPARK:
+        # For Spark, use reflect to call Java's Thread.sleep()
+        sleep_ms = int(sleep_seconds * 1000)
+        return f"""
+            CREATE TABLE {output_table_name} AS
+            SELECT reflect('java.lang.Thread', 'sleep', CAST({sleep_ms} AS BIGINT)) AS result
+        """
+    else:
+        # Snowflake and Databricks Unity use the registered UDF
+        return f"CREATE TABLE {output_table_name} AS SELECT TEST_SLEEP_SECONDS({sleep_seconds}) AS result"
+
+
 def sample_dataframe():
     """
     Test dataframe
@@ -109,9 +171,7 @@ async def test_session_fixture(session_without_datasets):
             temporary=False,
         )
 
-    await session_without_datasets.register_table(
-        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(100000))})
-    )
+    await register_sleep_udf(session_without_datasets)
     yield session_without_datasets
 
 
@@ -486,14 +546,10 @@ async def test_session_timeout_cancels_query(config, test_session):
     """
     _ = config
     session = test_session
-    table_name = session.get_fully_qualified_table_name("job_cancel_test")
     output_table_name = session.get_fully_qualified_table_name("job_timeout_test_output")
+    sleep_query = get_sleep_query(session, sleep_seconds=3.0, output_table_name=output_table_name)
     with pytest.raises(QueryExecutionTimeOut):
-        await session.execute_query(
-            f"CREATE TABLE {output_table_name} AS SELECT A.* "
-            f"FROM {table_name} AS A CROSS JOIN {table_name} AS B",
-            timeout=0.1,
-        )
+        await session.execute_query(sleep_query, timeout=1.0)
     await check_table_does_not_exist_or_empty(session, "job_timeout_test_output")
 
 
@@ -505,14 +561,10 @@ async def test_task_cancellation_cancels_query(config, test_session):
     """
     _ = config
     session = test_session
-    table_name = session.get_fully_qualified_table_name("job_cancel_test")
     output_table_name = session.get_fully_qualified_table_name("job_cancel_test_output")
+    sleep_query = get_sleep_query(session, sleep_seconds=10.0, output_table_name=output_table_name)
     with pytest.raises(asyncio.exceptions.CancelledError):
-        coro = session.execute_query(
-            f"CREATE TABLE {output_table_name} AS SELECT A.* "
-            f"FROM {table_name} AS A CROSS JOIN {table_name} AS B",
-            timeout=10,
-        )
+        coro = session.execute_query(sleep_query, timeout=30.0)
         task = asyncio.create_task(coro)
         await asyncio.sleep(1)
         task.cancel()
