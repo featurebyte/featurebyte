@@ -4,9 +4,6 @@ Tests for udf_registry module
 
 import os
 
-import pytest
-
-from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.udf_registry import (
     SOURCE_TYPE_TO_SQL_DIRECTORY,
@@ -160,3 +157,42 @@ class TestGetUdfRegistrationSql:
         )
         assert len(sqls) == 1
         assert "F_COUNT_DICT_ENTROPY" in sqls[0]
+
+    def test_udf_dependencies_included(self):
+        """Test that UDF dependencies are automatically included"""
+        # F_COUNT_DICT_MOST_FREQUENT depends on F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.SNOWFLAKE,
+            udf_names={"F_COUNT_DICT_MOST_FREQUENT"},
+        )
+        # Should include both the requested UDF and its dependency
+        assert len(sqls) == 2
+        # Check both UDFs are present
+        sql_content = "\n".join(sqls)
+        assert "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE" in sql_content
+        assert "F_COUNT_DICT_MOST_FREQUENT" in sql_content
+
+    def test_udf_dependencies_ordered_correctly(self):
+        """Test that dependencies are ordered before dependents"""
+        # F_COUNT_DICT_MOST_FREQUENT depends on F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.SNOWFLAKE,
+            udf_names={"F_COUNT_DICT_MOST_FREQUENT"},
+        )
+        assert len(sqls) == 2
+        # Dependency should come first
+        assert "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE" in sqls[0]
+        assert "F_COUNT_DICT_MOST_FREQUENT" in sqls[1]
+
+    def test_multiple_udfs_with_shared_dependency(self):
+        """Test multiple UDFs sharing the same dependency"""
+        # Both F_COUNT_DICT_MOST_FREQUENT and F_COUNT_DICT_LEAST_FREQUENT
+        # depend on F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE
+        sqls = get_udf_registration_sql(
+            source_type=SourceType.SNOWFLAKE,
+            udf_names={"F_COUNT_DICT_MOST_FREQUENT", "F_COUNT_DICT_LEAST_FREQUENT"},
+        )
+        # Should include 3 UDFs: 2 requested + 1 shared dependency
+        assert len(sqls) == 3
+        # Dependency should come first
+        assert "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE" in sqls[0]

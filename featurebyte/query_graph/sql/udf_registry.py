@@ -22,6 +22,19 @@ SOURCE_TYPE_TO_SQL_DIRECTORY: dict[SourceType, Optional[str]] = {
     SourceType.DATABRICKS: "spark",
 }
 
+# UDFs that are dependencies of other UDFs (must be registered first)
+# These are listed in the order they should be registered
+DEPENDENCY_UDFS: list[str] = [
+    "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE",
+]
+
+# UDF dependencies: UDF -> list of UDFs it depends on
+UDF_DEPENDENCIES: dict[str, list[str]] = {
+    "F_COUNT_DICT_MOST_FREQUENT": ["F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE"],
+    "F_COUNT_DICT_LEAST_FREQUENT": ["F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE"],
+    "F_COUNT_DICT_MOST_FREQUENT_VALUE": ["F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE"],
+}
+
 
 def get_available_udfs(source_type: SourceType) -> dict[str, str]:
     """
@@ -62,6 +75,47 @@ def get_available_udfs(source_type: SourceType) -> dict[str, str]:
     return udfs
 
 
+def _resolve_udf_dependencies(udf_names: set[str], available_udfs: dict[str, str]) -> list[str]:
+    """
+    Resolve UDF dependencies and return UDFs in correct order.
+
+    Parameters
+    ----------
+    udf_names: set[str]
+        Set of UDF names requested
+    available_udfs: dict[str, str]
+        Mapping of available UDF names to file paths
+
+    Returns
+    -------
+    list[str]
+        List of UDF names with dependencies first
+    """
+    # Collect all UDFs including dependencies
+    all_udfs: set[str] = set()
+    for udf in udf_names:
+        udf_upper = udf.upper()
+        if udf_upper not in available_udfs:
+            continue
+        all_udfs.add(udf_upper)
+        # Add dependencies
+        for dep in UDF_DEPENDENCIES.get(udf_upper, []):
+            if dep.upper() in available_udfs:
+                all_udfs.add(dep.upper())
+
+    # Output dependency UDFs first (in defined order), then remaining UDFs (sorted)
+    ordered: list[str] = []
+    for dep_udf in DEPENDENCY_UDFS:
+        if dep_udf in all_udfs:
+            ordered.append(dep_udf)
+            all_udfs.remove(dep_udf)
+
+    # Add remaining UDFs in sorted order
+    ordered.extend(sorted(all_udfs))
+
+    return ordered
+
+
 def get_udf_registration_sql(
     source_type: SourceType,
     udf_names: set[str],
@@ -70,6 +124,9 @@ def get_udf_registration_sql(
 ) -> list[str]:
     """
     Generate UDF registration SQL statements for the requested UDFs.
+
+    UDF dependencies are automatically resolved and included, with dependencies
+    ordered before the UDFs that depend on them.
 
     Parameters
     ----------
@@ -85,20 +142,17 @@ def get_udf_registration_sql(
     Returns
     -------
     list[str]
-        List of CREATE FUNCTION statements
+        List of CREATE FUNCTION statements in dependency order
     """
     if not udf_names:
         return []
 
     available_udfs = get_available_udfs(source_type)
+    ordered_udfs = _resolve_udf_dependencies(udf_names, available_udfs)
     registration_sqls: list[str] = []
 
-    for udf_name in sorted(udf_names):
-        udf_name_upper = udf_name.upper()
-        if udf_name_upper not in available_udfs:
-            continue
-
-        file_path = available_udfs[udf_name_upper]
+    for udf_name in ordered_udfs:
+        file_path = available_udfs[udf_name]
         with open(file_path, "r") as f:
             sql_content = f.read()
 

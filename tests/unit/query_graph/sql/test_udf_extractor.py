@@ -2,9 +2,8 @@
 Tests for udf_extractor module
 """
 
-import sqlglot
-
 import pytest
+import sqlglot
 
 from featurebyte.query_graph.sql.udf_extractor import extract_udfs_from_expression
 

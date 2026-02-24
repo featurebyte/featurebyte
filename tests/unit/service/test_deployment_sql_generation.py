@@ -391,7 +391,8 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
     else:
         expected_sql_codes = []
         for filename in sorted(
-            os.listdir(expected_sql_codes_dir), key=lambda x: int(x.split(".")[0].replace("udf_", ""))
+            os.listdir(expected_sql_codes_dir),
+            key=lambda x: int(x.split(".")[0].replace("udf_", "")),
         ):
             if filename.startswith("udf_"):
                 continue  # Skip UDF files in this loop
