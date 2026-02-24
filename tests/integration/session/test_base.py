@@ -565,9 +565,10 @@ async def test_task_cancellation_cancels_query(config, test_session):
     _ = config
     session = test_session
     output_table_name = session.get_fully_qualified_table_name("job_cancel_test_output")
+    # Sleep for 10 seconds to ensure the query is definitely running when cancel is called at 1 second
     sleep_query = get_sleep_query(session, sleep_seconds=10.0, output_table_name=output_table_name)
     with pytest.raises(asyncio.exceptions.CancelledError):
-        coro = session.execute_query(sleep_query, timeout=10.0)
+        coro = session.execute_query(sleep_query, timeout=30.0)
         task = asyncio.create_task(coro)
         await asyncio.sleep(1)
         task.cancel()
