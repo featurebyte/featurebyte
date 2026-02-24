@@ -28,7 +28,7 @@ from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.table import Table
-from featurebyte.enum import DBVarType, FeatureType, SourceType
+from featurebyte.enum import DBVarType, FeatureType, SourceType, TimeIntervalUnit
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -48,7 +48,9 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     TableCleaningOperation,
@@ -2258,9 +2260,16 @@ def test_user_provided_feature_validation(
                 feature_type=FeatureType.NUMERIC,
             )
         ],
+        forecast_point_schema=ForecastPointSchema(
+            granularity=TimeIntervalUnit.DAY,
+            dtype=DBVarType.DATE,
+            is_utc_time=False,
+            timezone=TimeZoneColumn(column_name="FORECAST_TIMEZONE", type="timezone"),
+        ),
     )
     feat2 = context.get_user_provided_feature("user_provided_column", "user_provided_feature")
     feature = feat1 - feat2
+    forecast_point_feature = context.get_forecast_point_feature()
 
     # expect preview to fail due to missing user provided column
     with pytest.raises(RecordRetrievalException) as exc:
@@ -2271,4 +2280,15 @@ def test_user_provided_feature_validation(
         )
     assert str(exc.value) == (
         "Observation table missing required user-provided columns: ['user_provided_column']"
+    )
+
+    # expect preview to fail due to missing forecast point and timezone columns
+    with pytest.raises(RecordRetrievalException) as exc:
+        forecast_point_feature.preview(
+            pd.DataFrame([
+                {"POINT_IN_TIME": "2001-11-15 10:00:00", "cust_id": 1},
+            ])
+        )
+    assert str(exc.value) == (
+        "Observation table missing required user-provided columns: ['FORECAST_POINT', 'FORECAST_TIMEZONE']"
     )

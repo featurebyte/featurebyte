@@ -254,7 +254,4 @@ class RequestColumnNode(BaseNode):
         -------
         bool
         """
-        return self.parameters.column_name not in {
-            SpecialColumnName.POINT_IN_TIME,
-            SpecialColumnName.FORECAST_POINT,
-        }
+        return self.parameters.column_name != SpecialColumnName.POINT_IN_TIME
