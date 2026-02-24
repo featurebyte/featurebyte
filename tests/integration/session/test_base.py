@@ -81,7 +81,10 @@ def get_sleep_query(session, sleep_seconds: float, output_table_name: str) -> st
             CREATE TABLE {output_table_name} AS SELECT TEST_SLEEP_SECONDS({sleep_seconds}) AS result
         """
     elif session.source_type == SourceType.SPARK:
-        # For Spark, use reflect to call Java's Thread.sleep()
+        # For Spark, use the reflect() function to invoke Java's Thread.sleep().
+        # reflect(class, method, args...) calls a static Java method, so
+        # reflect('java.lang.Thread', 'sleep', 3000) calls Thread.sleep(3000ms).
+        # Thread.sleep() returns void, so the result column will be null.
         sleep_ms = int(sleep_seconds * 1000)
         return f"""
             CREATE TABLE {output_table_name} AS
