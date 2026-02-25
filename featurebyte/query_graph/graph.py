@@ -23,11 +23,14 @@ from pydantic import Field
 from typing_extensions import Literal
 
 from featurebyte.common.singleton import SingletonMeta
+from featurebyte.enum import DBVarType
+from featurebyte.exception import MissingUserProvidedColumnsError
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import TableIdFeatureJobSetting
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.cleaning_operation import (
@@ -51,6 +54,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.node.nested import BaseGraphNode, BaseViewGraphNodeParameters
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.decompose_point import (
     DecomposePointExtractor,
     DecomposePointState,
@@ -650,6 +654,73 @@ class QueryGraph(QueryGraphModel):
                 input_nodes=input_nodes,
             ),
         )
+
+    def _get_user_provided_column_requirements(self, node: Node) -> List[Tuple[str, DBVarType]]:
+        """
+        Extract all user-provided column requirements from the graph.
+
+        Parameters
+        ----------
+        node: Node
+            Input node to the graph node
+
+        Returns
+        -------
+        List[Tuple[str, DBVarType]]
+        """
+        request_columns = []
+        for req_node in self.iterate_nodes(node, NodeType.REQUEST_COLUMN):
+            assert isinstance(req_node, RequestColumnNode)
+            if req_node.is_user_provided_column:
+                request_columns.append((
+                    req_node.parameters.column_name,
+                    req_node.parameters.dtype_info.dtype,
+                ))
+
+                # include timezone column if specified
+                if req_node.parameters.dtype_info.metadata is not None:
+                    metadata = req_node.parameters.dtype_info.metadata
+                    if (
+                        metadata is not None
+                        and metadata.timestamp_schema is not None
+                        and metadata.timestamp_schema.timezone is not None
+                    ):
+                        if isinstance(metadata.timestamp_schema.timezone, TimeZoneColumn):
+                            request_columns.append((
+                                metadata.timestamp_schema.timezone.column_name,
+                                DBVarType.VARCHAR,
+                            ))
+
+        return request_columns
+
+    def check_user_provided_column_requirements(
+        self, nodes: List[Node], request_column_names: Set[str]
+    ) -> None:
+        """
+        Check if all user-provided column requirements are available in requested column names.
+
+        Parameters
+        ----------
+        nodes: List[Node]
+            List of nodes to check
+        request_column_names: Set[str]
+            Request column names
+
+        Raises
+        ------
+        MissingUserProvidedColumnsError
+            If the user provided column requirements are not available in requested columns
+        """
+        required_columns = set()
+        for node in nodes:
+            required_columns.update(self._get_user_provided_column_requirements(node))
+
+        # Validate all required user provided columns are available in request column names
+        missing = sorted([col for col, _ in required_columns if col not in request_column_names])
+        if missing:
+            raise MissingUserProvidedColumnsError(
+                f"Observation table missing required user-provided columns: {missing}"
+            )
 
 
 class GraphState(TypedDict):

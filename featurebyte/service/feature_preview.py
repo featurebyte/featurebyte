@@ -300,6 +300,13 @@ class FeaturePreviewService(PreviewService):
         )
 
         request_column_names = set(point_in_time_and_serving_name_list[0].keys())
+
+        # check if required user provided columns are provided
+        graph.check_user_provided_column_requirements(
+            nodes=[feature_node],
+            request_column_names=request_column_names,
+        )
+
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=node_name,
@@ -444,6 +451,13 @@ class FeaturePreviewService(PreviewService):
         group_join_keys = list(point_in_time_and_serving_name_list[0].keys())
         for feature_cluster in feature_clusters:
             request_column_names = set(group_join_keys)
+
+            # check if required user provided columns are provided
+            feature_cluster.graph.check_user_provided_column_requirements(
+                nodes=feature_cluster.nodes,
+                request_column_names=request_column_names,
+            )
+
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id
             )

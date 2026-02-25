@@ -284,8 +284,17 @@ async def get_historical_features(
     """
     if isinstance(observation_set, ObservationTableModel):
         observation_table_model = observation_set
+        request_column_names = set(col.name for col in observation_set.columns_info)
     else:
         observation_table_model = None
+        request_column_names = set(observation_set.columns.tolist())
+
+    # check if required user provided columns are provided
+    graph.check_user_provided_column_requirements(
+        nodes=nodes,
+        request_column_names=request_column_names,
+    )
+
     output_include_row_index = (
         observation_table_model is not None and observation_table_model.has_row_index is True
     )
