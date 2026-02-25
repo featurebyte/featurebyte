@@ -980,3 +980,50 @@ async def test_get_feature_query__empty_hashes(
         "tests/fixtures/feature_table_cache/feature_query_empty_hashes.sql",
         update_fixtures,
     )
+
+
+@patch(
+    "featurebyte.service.feature_table_cache_metadata.FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS",
+    2,
+)
+@pytest.mark.asyncio
+async def test_get_feature_query__duplicate_additional_columns(
+    feature_store,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    mock_snowflake_session,
+    observation_table,
+):
+    """
+    Test that additional_columns overlapping with feature output column names are excluded
+    to avoid duplicate column names in the query (e.g. user-provided columns that share a
+    name with a feature).
+    """
+    cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
+        num_columns_to_insert=1,
+        session=mock_snowflake_session,
+    )
+    await feature_table_cache_metadata_service.update_feature_table_cache(
+        cache_metadata_id=cache_metadata.id,
+        feature_definitions=[
+            CachedFeatureDefinition(
+                definition_hash="hash_1",
+                feature_name="col_hash_1",
+            ),
+        ],
+    )
+
+    # "featureA" appears in both output_column_names and additional_columns
+    feature_query = await feature_table_cache_service.get_feature_query(
+        db_session=mock_snowflake_session,
+        observation_table=observation_table,
+        hashes=["hash_1"],
+        output_column_names=["featureA"],
+        additional_columns=["cust_id", "featureA"],
+    )
+    query_sql = feature_query.sql(pretty=True)
+
+    # "featureA" should appear exactly once in the SELECT clause (as the aliased feature column)
+    select_clause = query_sql.split("FROM")[0]
+    assert select_clause.count('"featureA"') == 1
