@@ -691,6 +691,11 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
                     )
                 except Exception:
                     pass
+            for table_id in created_table_ids:
+                try:
+                    await self.observation_table_service.delete_document(document_id=table_id)
+                except Exception:
+                    pass
             raise e
         finally:
             # Step 3: Drop the temp table
