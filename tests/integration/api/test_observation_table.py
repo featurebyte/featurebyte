@@ -616,3 +616,78 @@ async def test_observation_table_downsampling(
         observation_table.download(download_path)
         downloaded_df = pd.read_parquet(download_path)
         assert "__FB_TABLE_ROW_WEIGHT" in downloaded_df.columns
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_observation_table_split(
+    data_source, session, source_type, catalog, normal_user_id_entity
+):
+    """
+    Test splitting an observation table into non-overlapping partitions
+    """
+    _ = catalog, normal_user_id_entity
+
+    # Create source observation table
+    source_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="ORIGINAL_OBSERVATION_TABLE",
+    )
+    source_observation_table = source_table.create_observation_table(
+        f"SOURCE_OBSERVATION_TABLE_FOR_SPLIT_{source_type}",
+        sample_rows=100,
+    )
+    source_row_count = source_observation_table.shape()[0]
+    assert source_row_count == 100
+
+    # Split into train/test (70/30)
+    train_table, test_table = source_observation_table.split(
+        split_ratios=[0.7, 0.3],
+        names=[f"train_split_{source_type}", f"test_split_{source_type}"],
+        seed=42,
+    )
+
+    # Verify split tables were created
+    assert train_table.name == f"train_split_{source_type}"
+    assert test_table.name == f"test_split_{source_type}"
+
+    # Verify row counts are approximately correct (allow for rounding)
+    train_count = train_table.shape()[0]
+    test_count = test_table.shape()[0]
+    assert train_count + test_count == source_row_count
+    assert 60 <= train_count <= 80  # ~70% of 100
+    assert 20 <= test_count <= 40  # ~30% of 100
+
+    # Verify splits are non-overlapping by checking row indices
+    train_df = train_table.to_pandas()
+    test_df = test_table.to_pandas()
+
+    # Merge on all columns to check for overlap
+    merged = train_df.merge(test_df, how="inner")
+    assert len(merged) == 0, "Split tables should not have overlapping rows"
+
+    # Verify reproducibility - same seed should give same results
+    train_table_2, test_table_2 = source_observation_table.split(
+        split_ratios=[0.7, 0.3],
+        names=[f"train_split_2_{source_type}", f"test_split_2_{source_type}"],
+        seed=42,
+    )
+    train_df_2 = train_table_2.to_pandas()
+    test_df_2 = test_table_2.to_pandas()
+
+    # Sort and compare - should be identical with same seed
+    train_df_sorted = train_df.sort_values(by=list(train_df.columns)).reset_index(drop=True)
+    train_df_2_sorted = train_df_2.sort_values(by=list(train_df_2.columns)).reset_index(drop=True)
+    pd.testing.assert_frame_equal(train_df_sorted, train_df_2_sorted)
+
+    test_df_sorted = test_df.sort_values(by=list(test_df.columns)).reset_index(drop=True)
+    test_df_2_sorted = test_df_2.sort_values(by=list(test_df_2.columns)).reset_index(drop=True)
+    pd.testing.assert_frame_equal(test_df_sorted, test_df_2_sorted)
+
+    # Cleanup
+    train_table.delete()
+    test_table.delete()
+    train_table_2.delete()
+    test_table_2.delete()
+    source_observation_table.delete()

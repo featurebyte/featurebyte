@@ -35,7 +35,10 @@ from featurebyte.worker.task.feature_materialize_sync import FeatureMaterializeS
 from featurebyte.worker.task.feature_store_table_cleanup import FeatureStoreTableCleanupTask
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
-from featurebyte.worker.task.observation_table import ObservationTableTask
+from featurebyte.worker.task.observation_table import (
+    ObservationTableTask,
+    SplitObservationTableTask,
+)
 from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
@@ -56,6 +59,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_BACKTEST: FeatureJobSettingAnalysisBacktestTask,
     WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE: HistoricalFeatureTableTask,
     WorkerCommand.OBSERVATION_TABLE_CREATE: ObservationTableTask,
+    WorkerCommand.OBSERVATION_TABLE_SPLIT: SplitObservationTableTask,
     WorkerCommand.OBSERVATION_TABLE_UPLOAD: ObservationTableUploadTask,
     WorkerCommand.DEPLOYMENT_CREATE_UPDATE: DeploymentCreateUpdateTask,
     WorkerCommand.BATCH_REQUEST_TABLE_CREATE: BatchRequestTableTask,

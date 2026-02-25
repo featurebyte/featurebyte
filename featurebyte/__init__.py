@@ -95,7 +95,7 @@ from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.periodic_task import Crontab
-from featurebyte.models.request_input import DownSamplingInfo, TargetValueSamplingRate
+from featurebyte.models.request_input import DownSamplingInfo, SplitInfo, TargetValueSamplingRate
 from featurebyte.models.treatment import (
     AssignmentDesign,
     AssignmentSource,
@@ -599,6 +599,7 @@ __all__ = [
     "CalendarWindow",
     "TargetValueSamplingRate",
     "DownSamplingInfo",
+    "SplitInfo",
     "AssignmentDesign",
     "AssignmentSource",
     "Propensity",

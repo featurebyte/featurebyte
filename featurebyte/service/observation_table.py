@@ -652,6 +652,12 @@ class ObservationTableService(
             # no need to perform entity validation checks since we are copying from existing observation table
             data.skip_entity_validation_checks = True
 
+            # split_info is not allowed via the API - users should use the /split endpoint instead
+            if data.request_input.split_info is not None:
+                raise ObservationTableInvalidSamplingError(
+                    "split_info cannot be set directly. Use the /split endpoint to split an observation table."
+                )
+
             if (
                 data.request_input.downsampling_info is not None
                 and data.request_input.downsampling_info.sampling_rate_per_target_value

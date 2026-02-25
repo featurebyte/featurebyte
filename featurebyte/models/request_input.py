@@ -110,6 +110,61 @@ class DownSamplingInfoWithTargetColumn(DownSamplingInfo):
     target_column: str
 
 
+class SplitInfo(FeatureByteBaseModel):
+    """
+    Information for splitting a table into multiple parts based on percentages.
+
+    This is used internally when creating split observation tables.
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SplitInfo")
+
+    split_index: int = Field(ge=0, description="The index of this split (0-based)")
+    split_ratios: List[float] = Field(
+        min_length=2,
+        max_length=3,
+        description="List of ratios for each split. Must sum to 1.0.",
+    )
+    seed: int = Field(default=1234, description="Random seed for reproducible splits")
+
+    @field_validator("split_ratios")
+    @classmethod
+    def _validate_split_ratios(cls, values: List[float]) -> List[float]:
+        # ensure ratios are valid (0 < ratio < 1)
+        for ratio in values:
+            if ratio <= 0 or ratio > 1:
+                raise ValueError(
+                    f"Each split ratio must be between 0 and 1 (exclusive), got {ratio}"
+                )
+        # ensure ratios sum to 1
+        total = sum(values)
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
+        return values
+
+    @model_validator(mode="after")
+    def validate_split_index(self) -> "SplitInfo":
+        """
+        Validate that split_index is within the valid range.
+
+        Raises
+        ------
+        ValueError
+            If split_index is greater than or equal to the number of split ratios.
+
+        Returns
+        -------
+        SplitInfo
+            The validated SplitInfo instance.
+        """
+        if self.split_index >= len(self.split_ratios):
+            raise ValueError(
+                f"split_index ({self.split_index}) must be less than number of splits ({len(self.split_ratios)})"
+            )
+        return self
+
+
 class BaseRequestInput(FeatureByteBaseModel):
     """
     BaseRequestInput is the base class for all RequestInput types

@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -96,3 +96,93 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     """
 
     use_case_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+
+
+def get_split_names(splits: List[SplitDefinition], source_table_name: str) -> List[str]:
+    """
+    Get the resolved names for each split.
+
+    Parameters
+    ----------
+    splits: List[SplitDefinition]
+        List of split definitions
+    source_table_name: str
+        Name of the source observation table (used for auto-generated names)
+
+    Returns
+    -------
+    List[str]
+    """
+    return [
+        split.name
+        if split.name is not None
+        else f"{source_table_name}_split_{i}_{int(split.ratio * 100)}pct"
+        for i, split in enumerate(splits)
+    ]
+
+
+class SplitDefinition(FeatureByteBaseModel):
+    """
+    Definition of a single split with name and ratio
+    """
+
+    name: Optional[StrictStr] = Field(
+        default=None,
+        description="Name for this split. If not provided, will be auto-generated as '{source_table_name}_split_{index}'.",
+    )
+    ratio: float = Field(
+        gt=0,
+        le=1,
+        description="Ratio of rows for this split (must be between 0 exclusive and 1 inclusive).",
+    )
+
+
+class ObservationTableSplit(FeatureByteBaseModel):
+    """
+    Schema for splitting an observation table into multiple non-overlapping tables
+    """
+
+    splits: List[SplitDefinition] = Field(
+        min_length=2,
+        max_length=3,
+        description="List of split definitions. Each split has a name (optional) and ratio. Ratios must sum to 1.0.",
+    )
+    seed: int = Field(
+        default=1234,
+        description="Random seed for reproducible splits",
+    )
+
+    @model_validator(mode="after")
+    def _validate_split_ratios_sum(self) -> "ObservationTableSplit":
+        """
+        Validate that ratios sum to 1.0
+
+        Returns
+        -------
+        ObservationTableSplit
+            Validated model instance
+
+        Raises
+        ------
+        ValueError
+            If ratios don't sum to 1.0
+        """
+        total = sum(split.ratio for split in self.splits)
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"Split ratios must sum to 1.0, got {total}")
+        return self
+
+    def get_split_names(self, source_table_name: str) -> List[str]:
+        """
+        Get the resolved names for each split.
+
+        Parameters
+        ----------
+        source_table_name: str
+            Name of the source observation table (used for auto-generated names)
+
+        Returns
+        -------
+        List[str]
+        """
+        return get_split_names(self.splits, source_table_name)
