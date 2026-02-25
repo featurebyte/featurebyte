@@ -273,7 +273,14 @@ class FeatureTableCacheService:
         internal_feature_columns = [InternalName.TABLE_ROW_INDEX]
         if observation_table.has_row_weights:
             internal_feature_columns.append(InternalName.TABLE_ROW_WEIGHT)
-        non_feature_columns = internal_feature_columns + additional_columns
+        # Exclude additional columns that overlap with feature output column names
+        # to avoid duplicate columns in the query (e.g. user-provided columns that
+        # share a name with a feature)
+        output_column_names_set = set(output_column_names)
+        filtered_additional_columns = [
+            col for col in additional_columns if col not in output_column_names_set
+        ]
+        non_feature_columns = internal_feature_columns + filtered_additional_columns
 
         table_name_to_alias = {}
         for i, table_name in enumerate(sorted(required_cache_tables)):
