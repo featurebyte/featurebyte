@@ -117,14 +117,19 @@ class BigQueryAdapter(BaseAdapter):
             ]
         )
         hash_expr = expressions.Anonymous(this="FARM_FINGERPRINT", expressions=[hash_input])
-        # Use modulo to get a positive value, then divide to normalize to [0, 1)
-        modulo_value = 1000000000
+        # Use bitmask to extract lower 30 bits, avoiding modulo bias.
+        # Bitwise AND with a mask that doesn't include the sign bit always produces
+        # non-negative results, so ABS is not needed.
+        bitmask_value = (1 << 30) - 1  # 1073741823
         normalized_expr = expressions.Div(
-            this=expressions.Mod(
-                this=expressions.Abs(this=hash_expr),
-                expression=make_literal_value(modulo_value),
+            this=expressions.Cast(
+                this=expressions.BitwiseAnd(
+                    this=hash_expr,
+                    expression=make_literal_value(bitmask_value),
+                ),
+                to=expressions.DataType.build("DOUBLE"),
             ),
-            expression=make_literal_value(float(modulo_value)),
+            expression=make_literal_value(float(1 << 30)),  # 1073741824.0
         )
         return normalized_expr
 

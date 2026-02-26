@@ -41,6 +41,16 @@ class TestSparkAdapter(BaseAdapterTest):
         "STRUCT": "STRING",
     }
 
+    @classmethod
+    def get_expected_deterministic_split_prob_sql(cls) -> str:
+        """
+        Get expected SQL for Spark's get_deterministic_split_prob_expr (uses XXHASH64)
+        """
+        return (
+            "CAST(BITAND(XXHASH64(CONCAT(CAST(\"__FB_TABLE_ROW_INDEX\" AS TEXT), '_42')), "
+            "1073741823) AS DOUBLE) / 1073741824.0"
+        )
+
     def test_dateadd_seconds(self):
         """
         Test dateadd_second method for spark adapter

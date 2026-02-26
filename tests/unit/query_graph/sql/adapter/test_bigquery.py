@@ -62,6 +62,16 @@ class TestBigQueryAdapter(BaseAdapterTest):
         """
         ).strip()
 
+    @classmethod
+    def get_expected_deterministic_split_prob_sql(cls) -> str:
+        """
+        Get expected SQL for BigQuery's get_deterministic_split_prob_expr
+        """
+        return (
+            "CAST(FARM_FINGERPRINT(CONCAT(CAST(\"__FB_TABLE_ROW_INDEX\" AS TEXT), '_42')) "
+            "& 1073741823 AS DOUBLE) / 1073741824.0"
+        )
+
 
 def test_random_sample(update_fixtures):
     """

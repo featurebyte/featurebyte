@@ -42,6 +42,16 @@ class TestDatabricksUnityAdapter(BaseAdapterTest):
         "STRUCT": "STRING",
     }
 
+    @classmethod
+    def get_expected_deterministic_split_prob_sql(cls) -> str:
+        """
+        Get expected SQL for Databricks's get_deterministic_split_prob_expr (uses XXHASH64)
+        """
+        return (
+            "CAST(BITAND(XXHASH64(CONCAT(CAST(\"__FB_TABLE_ROW_INDEX\" AS TEXT), '_42')), "
+            "1073741823) AS DOUBLE) / 1073741824.0"
+        )
+
 
 @pytest.mark.parametrize(
     "udf_name,params",
