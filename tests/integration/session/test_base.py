@@ -109,8 +109,10 @@ async def test_session_fixture(session_without_datasets):
             temporary=False,
         )
 
+    # Use larger table for Snowflake since it processes queries faster
+    job_cancel_test_size = 300000 if session_without_datasets.source_type == SourceType.SNOWFLAKE else 100000
     await session_without_datasets.register_table(
-        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(100000))})
+        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(job_cancel_test_size))})
     )
     yield session_without_datasets
 
