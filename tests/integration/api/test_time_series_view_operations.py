@@ -490,6 +490,32 @@ def test_blind_spot(time_series_table):
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
+def test_forward_aggregate_asat(time_series_table):
+    """
+    Test that forward_aggregate_asat target can be created from TimeSeriesView
+    """
+    view = time_series_table.get_view()
+    target = view.groupby("user_id_col").forward_aggregate_asat(
+        value_column="value_col",
+        method="sum",
+        target_name="ts_forward_asat_target",
+        offset=3,
+        fill_value=0.0,
+    )
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": dt,
+            "üser id": 3,
+        }
+        for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
+    ])
+    df_targets = target.compute_targets(preview_params)
+    assert len(df_targets) == 2
+    assert "ts_forward_asat_target" in df_targets.columns
+    # Values should not be NaN since we have data at these dates and fill_value=0
+    assert df_targets["ts_forward_asat_target"].notna().all()
+
+
 @pytest.mark.asyncio
 async def test_lookup_target(
     time_series_table, session, data_source, series_entity, timestamp_format_string

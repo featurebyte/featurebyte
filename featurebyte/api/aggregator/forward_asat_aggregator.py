@@ -4,20 +4,24 @@ This module contains forward as at aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.base_asat_aggregator import BaseAsAtAggregator
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.scd_view import SCDView
+from featurebyte.api.snapshots_view import SnapshotsView
 from featurebyte.api.target import Target
+from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.common.validator import validate_target_type
 from featurebyte.enum import AggFunc, TargetType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.node.agg_func import construct_agg_func
-from featurebyte.typing import OptionalScalar
+from featurebyte.query_graph.node.generic import SnapshotsLookupParameters
+from featurebyte.typing import OffsetType, OptionalScalar
 
 
 class ForwardAsAtAggregator(BaseAsAtAggregator):
@@ -27,7 +31,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SCDView]
+        return [SCDView, SnapshotsView, TimeSeriesView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -43,13 +47,13 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         value_column: Optional[str],
         method: str,
         target_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[OffsetType] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         target_type: Optional[TargetType] = None,
     ) -> Target:
         """
-        Aggregate a column in SlowlyChangingView as at a point in time to produce a Target
+        Aggregate a column as at a point in time to produce a Target
 
         Parameters
         ----------
@@ -59,20 +63,15 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
             Aggregation method
         target_name: str
             Output target name
-        offset: Optional[str]
+        offset: Optional[OffsetType]
             Optional offset to apply to the point in time column in the feature request. The
-            aggregation result will be as at the point in time adjusted by this offset. Format of
-            offset is "{size}{unit}", where size is a positive integer and unit is one of the
-            following:
+            aggregation result will be as at the point in time adjusted by this offset.
 
-            "ns": nanosecond
-            "us": microsecond
-            "ms": millisecond
-            "s": second
-            "m": minute
-            "h": hour
-            "d": day
-            "w": week
+            For SCDView, the format is "{size}{unit}", where size is a positive integer and unit
+            is one of: "ns", "us", "ms", "s", "m", "h", "d", "w".
+
+            For SnapshotsView and TimeSeriesView, the offset should be an integer specifying the
+            number of time interval steps.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
         skip_fill_na: bool
@@ -82,7 +81,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
 
         Returns
         -------
-        Feature
+        Target
         """
         skip_fill_na = conditional_set_skip_fill_na(skip_fill_na, fill_value)
         self._validate_parameters(
@@ -93,8 +92,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
             skip_fill_na=skip_fill_na,
         )
 
-        view = cast(SCDView, self.view)
-        node_params = {
+        node_params: dict[str, Any] = {
             "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
@@ -102,9 +100,36 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
             "name": target_name,
-            "offset": offset,
-            **view.get_common_scd_parameters().model_dump(),
+            "offset": offset if isinstance(offset, str) else None,
         }
+        if isinstance(self.view, SCDView):
+            node_params.update(**self.view.get_common_scd_parameters().model_dump())
+        elif isinstance(self.view, (SnapshotsView, TimeSeriesView)):
+            if offset is not None:
+                assert isinstance(offset, int)
+                offset_size = offset
+            else:
+                offset_size = None
+
+            if isinstance(self.view, SnapshotsView):
+                snapshot_datetime_column = self.view.snapshot_datetime_column
+                snapshot_datetime_schema = self.view.snapshot_datetime_schema
+            else:
+                snapshot_datetime_column = self.view.reference_datetime_column
+                snapshot_datetime_schema = self.view.reference_datetime_schema
+
+            snapshots_lookup_parameters = SnapshotsLookupParameters(
+                snapshot_datetime_column=snapshot_datetime_column,
+                time_interval=self.view.time_interval,
+                snapshot_datetime_metadata=DBVarTypeMetadata(
+                    timestamp_schema=snapshot_datetime_schema,
+                ),
+                feature_job_setting=self.view.default_feature_job_setting,
+                offset_size=offset_size,
+            ).model_dump()
+            node_params["effective_timestamp_column"] = snapshot_datetime_column
+            node_params["snapshots_parameters"] = snapshots_lookup_parameters
+
         node = self.view.graph.add_operation(
             node_type=NodeType.FORWARD_AGGREGATE_AS_AT,
             node_params=node_params,

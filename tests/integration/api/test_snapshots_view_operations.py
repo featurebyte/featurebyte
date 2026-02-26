@@ -261,6 +261,32 @@ def test_lookup_target(snapshots_table):
     fb_assert_frame_equal(df_targets, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
+def test_forward_aggregate_asat(snapshots_table):
+    """
+    Test that forward_aggregate_asat target can be created from SnapshotsView
+    """
+    view = snapshots_table.get_view()
+    target = view.groupby("user_id_col").forward_aggregate_asat(
+        value_column="value_col",
+        method="sum",
+        target_name="forward_asat_target",
+        offset=3,
+        fill_value=0.0,
+    )
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": dt,
+            "üser id": 3,
+        }
+        for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
+    ])
+    df_targets = target.compute_targets(preview_params)
+    assert len(df_targets) == 2
+    assert "forward_asat_target" in df_targets.columns
+    # Values should not be NaN since we have data at these dates and fill_value=0
+    assert df_targets["forward_asat_target"].notna().all()
+
+
 def test_aggregate_as_at_feature(client, snapshots_table):
     """
     Test that aggregate as at feature can be created from SnapshotsView

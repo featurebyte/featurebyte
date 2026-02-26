@@ -10,6 +10,7 @@ from typing import List, Optional, Type
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.snapshots_view import SnapshotsView
+from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.enum import AggFunc
 from featurebyte.typing import OffsetType, OptionalScalar
@@ -22,7 +23,7 @@ class BaseAsAtAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [SCDView, SnapshotsView]
+        return [SCDView, SnapshotsView, TimeSeriesView]
 
     @property
     @abstractmethod
@@ -53,10 +54,12 @@ class BaseAsAtAggregator(BaseAggregator):
         if isinstance(self.view, SCDView):
             forbidden_key = self.view.natural_key_column
             forbidden_key_name = "Natural key column"
-        else:
-            assert isinstance(self.view, SnapshotsView)
+        elif isinstance(self.view, (SnapshotsView, TimeSeriesView)):
             forbidden_key = self.view.series_id_column
-            forbidden_key_name = "Snapshot ID column"
+            forbidden_key_name = "Series ID column"
+        else:
+            forbidden_key = None
+            forbidden_key_name = None
 
         for key in self.keys:
             if key == forbidden_key:

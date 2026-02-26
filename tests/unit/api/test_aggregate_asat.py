@@ -262,6 +262,5 @@ def test_aggregate_asat_snapshots_view_invalid_key(snowflake_snapshots_table_wit
             offset="7d",
         )
     assert (
-        str(exc_info.value)
-        == "Snapshot ID column cannot be used as a groupby key in aggregate_asat"
+        str(exc_info.value) == "Series ID column cannot be used as a groupby key in aggregate_asat"
     )
