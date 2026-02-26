@@ -160,6 +160,37 @@ class BaseAdapterTest:
         expr = adapter.haversine(lat_node_1_expr, lon_node_1_expr, lat_node_2_expr, lon_node_2_expr)
         assert expr.sql(pretty=True) == self.get_expected_haversine_sql()
 
+    @classmethod
+    def get_expected_deterministic_split_prob_sql(cls) -> str:
+        """
+        Get expected SQL for get_deterministic_split_prob_expr
+        """
+        return (
+            "CAST(BITAND(HASH(CONCAT(CAST(\"__FB_TABLE_ROW_INDEX\" AS VARCHAR), '_42')), "
+            "1073741823) AS DOUBLE) / 1073741824.0"
+        )
+
+    def test_deterministic_split_prob_expr(self):
+        """
+        Test get_deterministic_split_prob_expr produces correct SQL with bitmask normalization
+        """
+        adapter = self.adapter
+        row_id_expr = quoted_identifier("__FB_TABLE_ROW_INDEX")
+        expr = adapter.get_deterministic_split_prob_expr(row_id_expr, seed=42)
+        assert expr.sql() == self.get_expected_deterministic_split_prob_sql()
+
+    def test_deterministic_split_prob_expr_different_seeds(self):
+        """
+        Test that different seeds produce different SQL expressions
+        """
+        adapter = self.adapter
+        row_id_expr = quoted_identifier("__FB_TABLE_ROW_INDEX")
+        expr_seed_1 = adapter.get_deterministic_split_prob_expr(row_id_expr, seed=1)
+        expr_seed_2 = adapter.get_deterministic_split_prob_expr(row_id_expr, seed=2)
+        assert expr_seed_1.sql() != expr_seed_2.sql()
+        assert "'_1'" in expr_seed_1.sql()
+        assert "'_2'" in expr_seed_2.sql()
+
     def test_get_physical_type_from_dtype(self):
         """
         Test get_physical_type_from_dtype

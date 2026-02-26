@@ -337,6 +337,34 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
 
     @classmethod
+    def get_deterministic_split_prob_expr(cls, row_id_expr: Expression, seed: int) -> Expression:
+        # Use xxhash64 instead of HASH for Spark/Databricks. Spark's HASH is MurmurHash3
+        # (32-bit), while xxhash64 produces a 64-bit hash with better distribution when
+        # extracting 30 bits via bitmask.
+        hash_input = expressions.Concat(
+            expressions=[
+                expressions.Cast(
+                    this=row_id_expr,
+                    to=expressions.DataType.build("STRING"),
+                ),
+                make_literal_value(f"_{seed}"),
+            ]
+        )
+        hash_expr = expressions.Anonymous(this="XXHASH64", expressions=[hash_input])
+        bitmask_value = (1 << 30) - 1  # 1073741823
+        normalized_expr = expressions.Div(
+            this=expressions.Cast(
+                this=expressions.Anonymous(
+                    this="BITAND",
+                    expressions=[hash_expr, make_literal_value(bitmask_value)],
+                ),
+                to=expressions.DataType.build("DOUBLE"),
+            ),
+            expression=make_literal_value(float(1 << 30)),  # 1073741824.0
+        )
+        return normalized_expr
+
+    @classmethod
     def convert_timezone_to_utc(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
