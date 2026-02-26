@@ -34,6 +34,7 @@ TEST_CASES_MAPPING = {
     "internal_parent_child_relationships": (
         "deployed_feature_with_internal_parent_child_relationships"
     ),
+    "cosine_similarity_feature": "deployed_cosine_similarity_feature_list",
 }
 
 
@@ -297,6 +298,32 @@ async def deployed_feature_with_internal_parent_child_relationships(
 
 
 @pytest_asyncio.fixture
+async def deployed_cosine_similarity_feature_list(
+    app_container,
+    count_per_category_feature_group,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deployed cosine similarity feature (uses UDFs)
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    counts_30m = count_per_category_feature_group["counts_30m"]
+    counts_1d = count_per_category_feature_group["counts_1d"]
+    cosine_sim_feature = counts_30m.cd.cosine_similarity(counts_1d)
+    cosine_sim_feature.name = "cosine_similarity_30m_vs_1d"
+    feature_list = await deploy_feature(
+        app_container,
+        cosine_sim_feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
 async def deployed_not_supported_feature_list(
     app_container,
     snapshots_lookup_feature,
@@ -321,11 +348,59 @@ async def deployed_not_supported_feature_list(
     return feature_list
 
 
+def _check_sql_files(
+    sql_codes_dir: str,
+    actual_sqls: list[str],
+    prefix: str,
+    label: str,
+    update_fixtures: bool,
+) -> None:
+    """
+    Check or update SQL fixture files.
+
+    Parameters
+    ----------
+    sql_codes_dir: str
+        Directory containing SQL fixture files
+    actual_sqls: list[str]
+        List of actual SQL strings to check/write
+    prefix: str
+        Filename prefix (e.g., "" for feature SQLs, "udf_" for UDF SQLs)
+    label: str
+        Label for error messages (e.g., "SQL codes", "UDF registration SQLs")
+    update_fixtures: bool
+        Whether to update fixtures or check against them
+    """
+    if update_fixtures:
+        for idx, sql in enumerate(actual_sqls):
+            with open(os.path.join(sql_codes_dir, f"{prefix}{idx}.sql"), "w") as file:
+                file.write(sql)
+    else:
+        expected_sqls = []
+        for filename in sorted(os.listdir(sql_codes_dir)):
+            if prefix:
+                if not filename.startswith(prefix):
+                    continue
+            else:
+                if filename.startswith("udf_"):
+                    continue
+            with open(os.path.join(sql_codes_dir, filename), "r") as file:
+                expected_sqls.append(file.read())
+        if len(expected_sqls) != len(actual_sqls):
+            raise AssertionError(
+                f"Number of {label} mismatch: expected {len(expected_sqls)}, got {len(actual_sqls)}"
+            )
+        for expected_sql, actual_sql in zip(expected_sqls, actual_sqls):
+            assert actual_sql.strip() == expected_sql.strip()
+
+
 def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixtures):
     """
     Check deployment SQL against fixture
     """
-    actual_dict = actual.model_dump(by_alias=True, include={"feature_table_sqls"})
+    actual_dict = actual.model_dump(
+        by_alias=True, include={"feature_table_sqls", "udf_registration_sqls"}
+    )
 
     # Sanitize dynamic fields
     actual_sql_codes = []
@@ -335,34 +410,38 @@ def check_deployment_sql(actual: DeploymentSqlModel, fixture_dir, update_fixture
         expected_sql_filename = f"{idx}.sql"
         feature_table_sql["sql_code"] = f"<redacted: see {expected_sql_filename}>"
 
+    # Handle UDF registration SQLs - store them separately if present
+    actual_udf_sqls = actual_dict.get("udf_registration_sqls", [])
+    if actual_udf_sqls:
+        actual_dict["udf_registration_sqls"] = [
+            f"<redacted: see udf_{idx}.sql>" for idx in range(len(actual_udf_sqls))
+        ]
+
     # Check or update overall dict
     expected_dict_filename = os.path.join(fixture_dir, "deployment_sql.json")
     assert_equal_json_fixture(actual_dict, expected_dict_filename, update_fixtures)
 
-    # Check or update SQL code
+    # Check or update SQL files
     expected_sql_codes_dir = os.path.join(fixture_dir, "sql_codes")
     if update_fixtures:
         Path(expected_sql_codes_dir).mkdir(parents=True, exist_ok=True)
         for filename in os.listdir(expected_sql_codes_dir):
             os.remove(os.path.join(expected_sql_codes_dir, filename))
-        for idx, sql_code in enumerate(actual_sql_codes):
-            with open(os.path.join(expected_sql_codes_dir, f"{idx}.sql"), "w") as file:
-                file.write(sql_code)
-    else:
-        expected_sql_codes = []
-        for filename in sorted(
-            os.listdir(expected_sql_codes_dir), key=lambda x: int(x.split(".")[0])
-        ):
-            with open(os.path.join(expected_sql_codes_dir, filename), "r") as file:
-                expected_sql = file.read()
-            expected_sql_codes.append(expected_sql)
-        if len(expected_sql_codes) != len(actual_sql_codes):
-            raise AssertionError(
-                f"Number of SQL codes mismatch: expected {len(expected_sql_codes)}, "
-                f"got {len(actual_sql_codes)}"
-            )
-        for expected_sql, actual_sql in zip(expected_sql_codes, actual_sql_codes):
-            assert actual_sql.strip() == expected_sql.strip()
+
+    _check_sql_files(
+        sql_codes_dir=expected_sql_codes_dir,
+        actual_sqls=actual_sql_codes,
+        prefix="",
+        label="SQL codes",
+        update_fixtures=update_fixtures,
+    )
+    _check_sql_files(
+        sql_codes_dir=expected_sql_codes_dir,
+        actual_sqls=actual_udf_sqls,
+        prefix="udf_",
+        label="UDF registration SQLs",
+        update_fixtures=update_fixtures,
+    )
 
 
 @pytest.fixture

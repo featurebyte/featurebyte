@@ -12,5 +12,6 @@
             ],
             "sql_code": "<redacted: see 0.sql>"
         }
-    ]
+    ],
+    "udf_registration_sqls": []
 }
