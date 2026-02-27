@@ -54,6 +54,8 @@ class BaseAdapter(ABC):
 
     TABLESAMPLE_SUPPORTS_VIEW = True
     TIMEZONE_DATE_FORMAT_EXPRESSIONS: List[str] = []
+    _deterministic_hash_function: str = "HASH"
+    _deterministic_hash_cast_type: str = "VARCHAR"
 
     ISO_FORMAT_STRING = ""
     ZIPPED_TIMESTAMP_FIELD = "timestamp"
@@ -731,6 +733,28 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
+    def _build_bitwise_and_expr(cls, expr: Expression, mask: int) -> Expression:
+        """
+        Build a bitwise AND expression. Override for platforms that use operator syntax
+        instead of a BITAND function (e.g. BigQuery uses the ``&`` operator).
+
+        Parameters
+        ----------
+        expr: Expression
+            Left operand (typically a hash expression)
+        mask: int
+            Bitmask value
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(
+            this="BITAND",
+            expressions=[expr, make_literal_value(mask)],
+        )
+
+    @classmethod
     def get_deterministic_split_prob_expr(cls, row_id_expr: Expression, seed: int) -> Expression:
         """
         Construct an expression that returns a deterministic value between 0 and 1 based on
@@ -740,6 +764,10 @@ class BaseAdapter(ABC):
         get_uniform_distribution_expr which generates random values that may differ across
         query executions, this method produces the same value for the same row_id and seed
         combination.
+
+        Subclasses can customise behaviour by setting class attributes
+        ``_deterministic_hash_function`` and ``_deterministic_hash_cast_type``, or by
+        overriding ``_build_bitwise_and_expr``.
 
         Parameters
         ----------
@@ -753,28 +781,25 @@ class BaseAdapter(ABC):
         Expression
             An expression that evaluates to a value in [0, 1)
         """
-        # Default implementation using HASH function
-        # Subclasses may override with platform-specific implementations
         hash_input = expressions.Concat(
             expressions=[
                 expressions.Cast(
                     this=row_id_expr,
-                    to=expressions.DataType.build("VARCHAR"),
+                    to=expressions.DataType.build(cls._deterministic_hash_cast_type),
                 ),
                 make_literal_value(f"_{seed}"),
             ]
         )
-        hash_expr = expressions.Anonymous(this="HASH", expressions=[hash_input])
+        hash_expr = expressions.Anonymous(
+            this=cls._deterministic_hash_function, expressions=[hash_input]
+        )
         # Use bitmask to extract lower 30 bits, avoiding modulo bias.
         # BITAND with a mask that doesn't include the sign bit always produces
         # non-negative results, so ABS is not needed.
         bitmask_value = (1 << 30) - 1  # 1073741823
         normalized_expr = expressions.Div(
             this=expressions.Cast(
-                this=expressions.Anonymous(
-                    this="BITAND",
-                    expressions=[hash_expr, make_literal_value(bitmask_value)],
-                ),
+                this=cls._build_bitwise_and_expr(hash_expr, bitmask_value),
                 to=expressions.DataType.build("DOUBLE"),
             ),
             expression=make_literal_value(float(1 << 30)),  # 1073741824.0

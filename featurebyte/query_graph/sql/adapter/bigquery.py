@@ -31,6 +31,8 @@ class BigQueryAdapter(BaseAdapter):
     source_type = SourceType.BIGQUERY
 
     TABLESAMPLE_SUPPORTS_VIEW = False
+    _deterministic_hash_function = "FARM_FINGERPRINT"
+    _deterministic_hash_cast_type = "STRING"
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["%z", "%Z", "%Ez"]
@@ -105,33 +107,12 @@ class BigQueryAdapter(BaseAdapter):
         return expressions.Anonymous(this="RAND", expressions=[])
 
     @classmethod
-    def get_deterministic_split_prob_expr(cls, row_id_expr: Expression, seed: int) -> Expression:
-        # BigQuery uses FARM_FINGERPRINT instead of HASH
-        hash_input = expressions.Concat(
-            expressions=[
-                expressions.Cast(
-                    this=row_id_expr,
-                    to=expressions.DataType.build("STRING"),
-                ),
-                make_literal_value(f"_{seed}"),
-            ]
+    def _build_bitwise_and_expr(cls, expr: Expression, mask: int) -> Expression:
+        # BigQuery uses the & operator instead of a BITAND function
+        return expressions.BitwiseAnd(
+            this=expr,
+            expression=make_literal_value(mask),
         )
-        hash_expr = expressions.Anonymous(this="FARM_FINGERPRINT", expressions=[hash_input])
-        # Use bitmask to extract lower 30 bits, avoiding modulo bias.
-        # Bitwise AND with a mask that doesn't include the sign bit always produces
-        # non-negative results, so ABS is not needed.
-        bitmask_value = (1 << 30) - 1  # 1073741823
-        normalized_expr = expressions.Div(
-            this=expressions.Cast(
-                this=expressions.BitwiseAnd(
-                    this=hash_expr,
-                    expression=make_literal_value(bitmask_value),
-                ),
-                to=expressions.DataType.build("DOUBLE"),
-            ),
-            expression=make_literal_value(float(1 << 30)),  # 1073741824.0
-        )
-        return normalized_expr
 
     @classmethod
     def count_if(cls, condition: Expression) -> Expression:
