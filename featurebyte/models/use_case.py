@@ -9,6 +9,7 @@ import pymongo
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
@@ -31,6 +32,13 @@ class UseCaseType(StrEnum):
     DESCRIPTIVE = "descriptive", "Use case focused on summarizing and understanding historical data"
     CAUSAL = "causal", "Use case focused on measuring causal effects and relationships"
     FORECAST = "forecast", "Use case focused on forecasting future values at specific future dates"
+
+
+class ForecastedColumn(FeatureByteBaseModel):
+    """Stores the table id and column name of the forecasted column."""
+
+    table_id: PydanticObjectId
+    column_name: str
 
 
 class BaseUseCaseModel(FeatureByteCatalogBaseDocumentModel):
@@ -88,3 +96,4 @@ class UseCaseModel(BaseUseCaseModel):
     target_id: Optional[PydanticObjectId] = None
     target_namespace_id: PydanticObjectId
     higher_prediction_is_better: bool = True
+    forecasted_column: Optional[ForecastedColumn] = None

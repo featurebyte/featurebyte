@@ -24,7 +24,7 @@ from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.use_case import UseCaseModel, UseCaseType
+from featurebyte.models.use_case import ForecastedColumn, UseCaseModel, UseCaseType
 from featurebyte.schema.use_case import UseCaseUpdate
 
 
@@ -101,6 +101,18 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         UseCaseType
         """
         return self.cached_model.use_case_type
+
+    @property
+    def forecasted_column(self) -> Optional[ForecastedColumn]:
+        """
+        Returns the forecasted column information for forecast use cases.
+
+        Returns
+        -------
+        Optional[ForecastedColumn]
+            The table id and column name of the forecasted column, or None if not applicable.
+        """
+        return self.cached_model.forecasted_column
 
     @typechecked
     def update_higher_prediction_is_better(self, higher_prediction_is_better: bool) -> None:
