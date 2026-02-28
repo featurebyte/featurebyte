@@ -1296,35 +1296,31 @@ def check_numeric_operations(event_view, limit=100):
     for col in numeric_cols:
         df[col] = df[col].astype(float)
 
-    pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["ÀMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["ÀMOUNT"].pow(2), check_names=False)
+    # Use tolerance to account for floating-point differences between database engines and Python
+    _kwargs = dict(check_names=False, atol=1e-10)
+    pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["ÀMOUNT"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["ÀMOUNT"].pow(2), **_kwargs)
     pd.testing.assert_series_equal(
-        df["AMOUNT_FLOOR"], np.floor(df["ÀMOUNT"]), check_names=False, check_dtype=False
+        df["AMOUNT_FLOOR"], np.floor(df["ÀMOUNT"]), check_dtype=False, **_kwargs
     )
     pd.testing.assert_series_equal(
-        df["AMOUNT_CEIL"], np.ceil(df["ÀMOUNT"]), check_names=False, check_dtype=False
+        df["AMOUNT_CEIL"], np.ceil(df["ÀMOUNT"]), check_dtype=False, **_kwargs
     )
     pd.testing.assert_series_equal(
         df["AMOUNT_INT_MOD_5"].astype(int), df["ÀMOUNT"].astype(int) % 5, check_names=False
     )
-    pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["ÀMOUNT"] + 1), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["ÀMOUNT"] + 1), **_kwargs)
     pd.testing.assert_series_equal(
-        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), check_names=False
+        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), **_kwargs
     )
-    pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_COS"], np.cos(df["ÀMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_SIN"], np.sin(df["ÀMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_TAN"], np.tan(df["ÀMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(
-        df["AMOUNT_ACOS"], np.arccos(df["AMOUNT_COS"]), check_names=False
-    )
-    pd.testing.assert_series_equal(
-        df["AMOUNT_ASIN"], np.arcsin(df["AMOUNT_COS"]), check_names=False
-    )
-    pd.testing.assert_series_equal(
-        df["AMOUNT_ATAN"], np.arctan(df["AMOUNT_COS"]), check_names=False
-    )
+    pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_COS"], np.cos(df["ÀMOUNT"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_SIN"], np.sin(df["ÀMOUNT"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_TAN"], np.tan(df["ÀMOUNT"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_ACOS"], np.arccos(df["AMOUNT_COS"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_ASIN"], np.arcsin(df["AMOUNT_COS"]), **_kwargs)
+    pd.testing.assert_series_equal(df["AMOUNT_ATAN"], np.arctan(df["AMOUNT_COS"]), **_kwargs)
 
 
 def check_day_of_week_counts(event_view, preview_param):
