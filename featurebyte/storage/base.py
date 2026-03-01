@@ -11,7 +11,7 @@ import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, List, Optional
 
 import aiofiles
 import pandas as pd
@@ -329,7 +329,12 @@ class Storage(ABC):
             dataframe.to_parquet(file_obj.name)
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_dataframe(self, remote_path: Path, cache_key: Any = None) -> DataFrame:
+    async def get_dataframe(
+        self,
+        remote_path: Path,
+        cache_key: Any = None,
+        columns: Optional[List[str]] = None,
+    ) -> DataFrame:
         """
         Download dataframe from storage parquet file
 
@@ -339,6 +344,8 @@ class Storage(ABC):
             Path of remote file to be downloaded
         cache_key: Any
             Cache key for storing downloaded file (if provided, the result will be cached)
+        columns: Optional[List[str]]
+            List of column names to read. If None, all columns are read.
 
         Returns
         -------
@@ -347,4 +354,4 @@ class Storage(ABC):
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as file_obj:
             await self.get(remote_path, Path(str(file_obj.name)), cache_key=cache_key)
-            return pd.read_parquet(file_obj.name)
+            return pd.read_parquet(file_obj.name, columns=columns)
