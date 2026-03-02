@@ -10,7 +10,8 @@ from sqlglot.expressions import Expression
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DeploymentSqlGenerationError
-from featurebyte.models import EntityModel
+from featurebyte.models import EntityModel, FeatureListModel, FeatureModel, FeatureStoreModel
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.deployment_sql import DeploymentSqlModel, FeatureTableSql
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
@@ -105,6 +106,11 @@ class DeploymentSqlGenerationService:
         if output_document_id is None:
             output_document_id = ObjectId()
 
+        catalog_model = await self.catalog_service.get_document(self.catalog_id)
+        feature_store_model = await self.feature_store_service.get_document(
+            catalog_model.default_feature_store_ids[0]
+        )
+
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
         feature_mapping = {}
@@ -113,6 +119,57 @@ class DeploymentSqlGenerationService:
         ):
             feature_mapping[feature_model.id] = feature_model
 
+        entity_mapping: dict[ObjectId, EntityModel] = {}
+        feature_table_sqls: list[FeatureTableSql] = []
+        feature_query_exprs: list[Expression] = []
+
+        await self._process_features(
+            feature_mapping=feature_mapping,
+            feature_store_model=feature_store_model,
+            deployment=deployment,
+            feature_list=feature_list,
+            entity_mapping=entity_mapping,
+            feature_table_sqls=feature_table_sqls,
+            feature_query_exprs=feature_query_exprs,
+        )
+
+        # Extract UDFs from all feature query expressions
+        source_type = feature_store_model.type
+        available_udfs = get_available_udfs(source_type)
+        all_referenced_udfs: set[str] = set()
+
+        for expr in feature_query_exprs:
+            udfs = extract_udfs_from_expression(expr, available_udfs)
+            all_referenced_udfs.update(udfs)
+
+        # Generate UDF registration SQL
+        source_info = feature_store_model.get_source_info()
+        udf_registration_sqls = get_udf_registration_sql(
+            source_type=source_type,
+            udf_names=all_referenced_udfs,
+            database_name=source_info.database_name,
+            schema_name=source_info.schema_name,
+        )
+
+        deployment_sql_model = DeploymentSqlModel(
+            _id=output_document_id,
+            deployment_id=deployment_id,
+            feature_table_sqls=feature_table_sqls,
+            udf_registration_sqls=udf_registration_sqls,
+            catalog_id=catalog_model.id,
+        )
+        return deployment_sql_model
+
+    async def _process_features(
+        self,
+        feature_mapping: dict[ObjectId, FeatureModel],
+        feature_store_model: FeatureStoreModel,
+        deployment: DeploymentModel,
+        feature_list: FeatureListModel,
+        entity_mapping: dict[ObjectId, EntityModel],
+        feature_table_sqls: list[FeatureTableSql],
+        feature_query_exprs: list[Expression],
+    ) -> None:
         feature_infos = []
         for feature_model in feature_mapping.values():
             # dry_run should be False to set up the table names which is required for
@@ -132,14 +189,7 @@ class DeploymentSqlGenerationService:
                 )
             feature_infos.append((feature_model, info))
 
-        catalog_model = await self.catalog_service.get_document(self.catalog_id)
-        feature_store_model = await self.feature_store_service.get_document(
-            catalog_model.default_feature_store_ids[0]
-        )
         graph_container = OfflineIngestGraphContainer.build_from_feature_infos(feature_infos)
-        entity_mapping: dict[ObjectId, EntityModel] = {}
-        feature_table_sqls: list[FeatureTableSql] = []
-        feature_query_exprs: list[Expression] = []
 
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
             features = graph_container.offline_store_table_name_to_features[table_name]
@@ -313,33 +363,6 @@ class DeploymentSqlGenerationService:
                     feature_job_setting=ingest_graph.feature_job_setting,
                 )
             )
-
-        # Extract UDFs from all feature query expressions
-        source_type = feature_store_model.type
-        available_udfs = get_available_udfs(source_type)
-        all_referenced_udfs: set[str] = set()
-
-        for expr in feature_query_exprs:
-            udfs = extract_udfs_from_expression(expr, available_udfs)
-            all_referenced_udfs.update(udfs)
-
-        # Generate UDF registration SQL
-        source_info = feature_store_model.get_source_info()
-        udf_registration_sqls = get_udf_registration_sql(
-            source_type=source_type,
-            udf_names=all_referenced_udfs,
-            database_name=source_info.database_name,
-            schema_name=source_info.schema_name,
-        )
-
-        deployment_sql_model = DeploymentSqlModel(
-            _id=output_document_id,
-            deployment_id=deployment_id,
-            feature_table_sqls=feature_table_sqls,
-            udf_registration_sqls=udf_registration_sqls,
-            catalog_id=catalog_model.id,
-        )
-        return deployment_sql_model
 
     async def _get_entities(
         self, entity_mapping: dict[ObjectId, EntityModel], entity_ids: list[ObjectId]
