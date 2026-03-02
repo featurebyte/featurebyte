@@ -12,11 +12,9 @@ from redis import Redis
 from featurebyte.enum import TargetType
 from featurebyte.exception import DocumentCreationError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.target import TargetModel
-from featurebyte.models.use_case import ForecastedColumn, UseCaseModel, UseCaseType
+from featurebyte.models.target import ForecastedColumn
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.generic import LookupTargetNode
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -118,47 +116,21 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             data.use_case_type = UseCaseType.CAUSAL
         elif context.forecast_point_schema:
             data.use_case_type = UseCaseType.FORECAST
-            if data.target_id:
-                data.forecasted_column = await self._derive_forecasted_column(
-                    target_id=data.target_id,
-                )
 
         use_case = await self.create_document(data=data)
 
+        if use_case.use_case_type == UseCaseType.FORECAST and data.target_id:
+            forecasted_column = await self._derive_forecasted_column(
+                target_id=data.target_id,
+            )
+            if forecasted_column:
+                await self.update_documents(
+                    query_filter={"_id": use_case.id},
+                    update={"$set": {"forecasted_column": forecasted_column.model_dump()}},
+                )
+                use_case.forecasted_column = forecasted_column
+
         return use_case
-
-    @staticmethod
-    def _extract_forecasted_column(target: TargetModel) -> Optional[ForecastedColumn]:
-        """
-        Extract the forecasted column from a target's query graph.
-        Returns the table_id and column_name used in the as_target() call
-        if the target has a LookupTargetNode (i.e., was created via as_target).
-
-        Parameters
-        ----------
-        target: TargetModel
-            The target model to extract the forecasted column from
-
-        Returns
-        -------
-        Optional[ForecastedColumn]
-        """
-        if target.internal_graph is None:
-            return None
-
-        target_node = target.graph.get_node_by_name(target.node_name)
-        for node in target.graph.iterate_nodes(
-            target_node=target_node, node_type=NodeType.LOOKUP_TARGET
-        ):
-            assert isinstance(node, LookupTargetNode)
-            input_column_name = str(node.parameters.input_column_names[0])
-            for table_id_col_names in target.table_id_column_names:
-                if input_column_name in table_id_col_names.column_names:
-                    return ForecastedColumn(
-                        table_id=table_id_col_names.table_id,
-                        column_name=input_column_name,
-                    )
-        return None
 
     async def _derive_forecasted_column(
         self, target_id: PydanticObjectId
@@ -176,7 +148,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         Optional[ForecastedColumn]
         """
         target = await self.target_service.get_document(document_id=target_id)
-        return self._extract_forecasted_column(target)
+        return target.get_forecasted_column()
 
     async def update_use_case(
         self,

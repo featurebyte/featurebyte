@@ -6,7 +6,6 @@ import pytest
 
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.service.use_case import UseCaseService
 
 
 @pytest.mark.skip(reason="Target namespace is not implemented yet.")
@@ -64,34 +63,34 @@ async def test_derive_window(float_target, lookup_target, app_container):
 
 
 @pytest.mark.asyncio
-async def test_extract_forecasted_column__lookup_target(lookup_target, app_container):
+async def test_get_forecasted_column__lookup_target(lookup_target, app_container):
     """
-    Test that _extract_forecasted_column extracts the correct column from a lookup target.
+    Test that get_forecasted_column extracts the correct column from a lookup target.
     """
     lookup_target.save()
     target_doc = await app_container.target_service.get_document(document_id=lookup_target.id)
-    result = UseCaseService._extract_forecasted_column(target_doc)
+    result = target_doc.get_forecasted_column()
     assert result is not None
     assert result.column_name == "col_float"
     assert result.table_id in [tid.table_id for tid in target_doc.table_id_column_names]
 
 
 @pytest.mark.asyncio
-async def test_extract_forecasted_column__forward_aggregate_target(float_target, app_container):
+async def test_get_forecasted_column__forward_aggregate_target(float_target, app_container):
     """
-    Test that _extract_forecasted_column returns None for a forward_aggregate target
+    Test that get_forecasted_column returns None for a forward_aggregate target
     (not created via as_target).
     """
     float_target.save()
     target_doc = await app_container.target_service.get_document(document_id=float_target.id)
-    result = UseCaseService._extract_forecasted_column(target_doc)
+    result = target_doc.get_forecasted_column()
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_extract_forecasted_column__no_graph(snowflake_event_view_with_entity, app_container):
+async def test_get_forecasted_column__no_graph(snowflake_event_view_with_entity, app_container):
     """
-    Test that _extract_forecasted_column returns None when target has no graph.
+    Test that get_forecasted_column returns None when target has no graph.
     """
     # Create a lookup target but modify the persisted doc to have no graph
     target = snowflake_event_view_with_entity["col_float"].as_target(
@@ -101,5 +100,5 @@ async def test_extract_forecasted_column__no_graph(snowflake_event_view_with_ent
     target_doc = await app_container.target_service.get_document(document_id=target.id)
     # Override internal_graph to simulate a target with no recipe
     object.__setattr__(target_doc, "internal_graph", None)
-    result = UseCaseService._extract_forecasted_column(target_doc)
+    result = target_doc.get_forecasted_column()
     assert result is None

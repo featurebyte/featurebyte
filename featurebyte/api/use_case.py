@@ -24,7 +24,8 @@ from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.use_case import ForecastedColumn, UseCaseModel, UseCaseType
+from featurebyte.models.target import ForecastedColumn
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.schema.use_case import UseCaseUpdate
 
 

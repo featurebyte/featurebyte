@@ -7,7 +7,7 @@ from typing import Any, List, Literal, Optional
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.use_case import ForecastedColumn, UseCaseModel, UseCaseType
+from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -26,7 +26,6 @@ class UseCaseCreate(FeatureByteBaseModel):
         Field(default=UseCaseType.PREDICTIVE)
     )
     higher_prediction_is_better: bool = Field(default=True)
-    forecasted_column: Optional[ForecastedColumn] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
