@@ -99,11 +99,6 @@ class DeploymentSqlGenerationService:
         -------
         DeploymentSqlModel
             The generated deployment SQL model.
-
-        Raises
-        ------
-        DeploymentSqlGenerationError
-            If deployment SQL generation fails.
         """
         if output_document_id is None:
             output_document_id = ObjectId()
@@ -179,6 +174,18 @@ class DeploymentSqlGenerationService:
         Features with the same aggregation source can be computed together in the same aggregation
         query without joins. This is done to limit the complexities of the generated SQL queries for
         each feature table.
+
+        Parameters
+        ----------
+        features: list[FeatureModel]
+            List of features to group.
+        source_info: SourceInfo
+            Source info for SQL generation.
+
+        Returns
+        -------
+        list[list[FeatureModel]]
+            List of feature groups, where each group contains features with the same aggregation source.
         """
         groups: dict[Tuple[str, ...], list[FeatureModel]] = {}
         for feature in features:
@@ -213,6 +220,28 @@ class DeploymentSqlGenerationService:
         """
         Process a group of features and generate a list feature table sql models. Update the
         feature_table_sqls and feature_query_exprs lists in place.
+
+        Parameters
+        ----------
+        feature_mapping: dict[ObjectId, FeatureModel]
+            Mapping from feature IDs to feature models.
+        feature_store_model: FeatureStoreModel
+            The feature store model.
+        deployment: DeploymentModel
+            The deployment model.
+        feature_list: FeatureListModel
+            The feature list model.
+        entity_mapping: dict[ObjectId, EntityModel]
+            Mapping from entity IDs to entity models (updated in place).
+        feature_table_sqls: list[FeatureTableSql]
+            List of feature table SQL models (updated in place).
+        feature_query_exprs: list[Expression]
+            List of feature query expressions (updated in place).
+
+        Raises
+        ------
+        DeploymentSqlGenerationError
+            If deployment SQL generation is not supported for a feature.
         """
         feature_infos = []
         for feature_model in feature_mapping.values():
