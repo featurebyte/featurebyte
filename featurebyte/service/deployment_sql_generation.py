@@ -115,7 +115,7 @@ class DeploymentSqlGenerationService:
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
             features.append(feature_model)
-        grouped_features = await self._group_features_by_aggregation_source(
+        grouped_features = self._group_features_by_aggregation_source(
             features=features, source_info=feature_store_model.get_source_info()
         )
 
@@ -163,7 +163,7 @@ class DeploymentSqlGenerationService:
         return deployment_sql_model
 
     @classmethod
-    async def _group_features_by_aggregation_source(
+    def _group_features_by_aggregation_source(
         cls,
         features: list[FeatureModel],
         source_info: SourceInfo,
@@ -256,11 +256,11 @@ class DeploymentSqlGenerationService:
                     deployment_sql_generation=True,
                 )
             )
-        if info.is_decomposed:
-            raise DeploymentSqlGenerationError(
-                f"Deployment SQL generation is not supported for feature: {feature_model.name}"
-            )
-        feature_infos.append((feature_model, info))
+            if info.is_decomposed:
+                raise DeploymentSqlGenerationError(
+                    f"Deployment SQL generation is not supported for feature: {feature_model.name}"
+                )
+            feature_infos.append((feature_model, info))
 
         graph_container = OfflineIngestGraphContainer.build_from_feature_infos(feature_infos)
 
