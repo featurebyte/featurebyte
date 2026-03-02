@@ -2,7 +2,7 @@
 DeploymentSqlGenerationService
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -24,7 +24,9 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.deployment import get_deployment_feature_query_plan
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.partition_filter_helper import get_partition_filters_from_graph
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.udf_extractor import extract_udfs_from_expression
 from featurebyte.query_graph.sql.udf_registry import get_available_udfs, get_udf_registration_sql
 from featurebyte.service.catalog import CatalogService
@@ -113,25 +115,30 @@ class DeploymentSqlGenerationService:
 
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
-        feature_mapping = {}
+        features = []
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
-            feature_mapping[feature_model.id] = feature_model
+            features.append(feature_model)
+        grouped_features = await self._group_features_by_aggregation_source(
+            features=features, source_info=feature_store_model.get_source_info()
+        )
 
         entity_mapping: dict[ObjectId, EntityModel] = {}
         feature_table_sqls: list[FeatureTableSql] = []
         feature_query_exprs: list[Expression] = []
 
-        await self._process_features(
-            feature_mapping=feature_mapping,
-            feature_store_model=feature_store_model,
-            deployment=deployment,
-            feature_list=feature_list,
-            entity_mapping=entity_mapping,
-            feature_table_sqls=feature_table_sqls,
-            feature_query_exprs=feature_query_exprs,
-        )
+        for features in grouped_features:
+            feature_mapping = {feature.id: feature for feature in features}
+            await self._process_features(
+                feature_mapping=feature_mapping,
+                feature_store_model=feature_store_model,
+                deployment=deployment,
+                feature_list=feature_list,
+                entity_mapping=entity_mapping,
+                feature_table_sqls=feature_table_sqls,
+                feature_query_exprs=feature_query_exprs,
+            )
 
         # Extract UDFs from all feature query expressions
         source_type = feature_store_model.type
@@ -160,6 +167,39 @@ class DeploymentSqlGenerationService:
         )
         return deployment_sql_model
 
+    @classmethod
+    async def _group_features_by_aggregation_source(
+        cls,
+        features: list[FeatureModel],
+        source_info: SourceInfo,
+    ) -> list[list[FeatureModel]]:
+        """
+        Group features by their aggregation source.
+
+        Features with the same aggregation source can be computed together in the same aggregation
+        query without joins. This is done to limit the complexities of the generated SQL queries for
+        each feature table.
+        """
+        groups: dict[Tuple[str, ...], list[FeatureModel]] = {}
+        for feature in features:
+            graph = feature.graph
+            planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
+            mapped_node = planner.graph.get_node_by_name(planner.node_name_map[feature.node.name])
+            agg_specs = planner.get_aggregation_specs(mapped_node)
+            key_parts = []
+            for agg_spec in agg_specs:
+                key_parts.append(
+                    sql_to_string(
+                        agg_spec.aggregation_source.expr,
+                        source_type=source_info.source_type,
+                    )
+                )
+            key = tuple(sorted(key_parts))
+            if key not in groups:
+                groups[key] = []
+            groups[key].append(feature)
+        return list(groups.values())
+
     async def _process_features(
         self,
         feature_mapping: dict[ObjectId, FeatureModel],
@@ -170,6 +210,10 @@ class DeploymentSqlGenerationService:
         feature_table_sqls: list[FeatureTableSql],
         feature_query_exprs: list[Expression],
     ) -> None:
+        """
+        Process a group of features and generate a list feature table sql models. Update the
+        feature_table_sqls and feature_query_exprs lists in place.
+        """
         feature_infos = []
         for feature_model in feature_mapping.values():
             # dry_run should be False to set up the table names which is required for
@@ -183,11 +227,11 @@ class DeploymentSqlGenerationService:
                     deployment_sql_generation=True,
                 )
             )
-            if info.is_decomposed:
-                raise DeploymentSqlGenerationError(
-                    f"Deployment SQL generation is not supported for feature: {feature_model.name}"
-                )
-            feature_infos.append((feature_model, info))
+        if info.is_decomposed:
+            raise DeploymentSqlGenerationError(
+                f"Deployment SQL generation is not supported for feature: {feature_model.name}"
+            )
+        feature_infos.append((feature_model, info))
 
         graph_container = OfflineIngestGraphContainer.build_from_feature_infos(feature_infos)
 
