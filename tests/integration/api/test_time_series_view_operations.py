@@ -510,10 +510,12 @@ def test_forward_aggregate_asat(time_series_table):
         for dt in pd.to_datetime(["2001-01-10 10:00:00", "2001-01-15 10:00:00"])
     ])
     df_targets = target.compute_targets(preview_params)
-    assert len(df_targets) == 2
-    assert "ts_forward_asat_target" in df_targets.columns
-    # Values should not be NaN since we have data at these dates and fill_value=0
-    assert df_targets["ts_forward_asat_target"].notna().all()
+    expected = preview_params.copy()
+    # offset=3 shifts the lookup 3 days forward from each POINT_IN_TIME:
+    # - 2001-01-10 + 3d = 2001-01-13: user_id=3 has value 1.12 (S1)
+    # - 2001-01-15 + 3d = 2001-01-18: user_id=3 has no data, fill_value=0.0
+    expected["ts_forward_asat_target"] = [1.12, 0.0]
+    fb_assert_frame_equal(df_targets, expected)
 
 
 @pytest.mark.asyncio
