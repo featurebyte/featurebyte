@@ -27,6 +27,9 @@ MISSING_VALUE_REPLACEMENT = "__MISSING__"
 # Placeholder for the current timestamp in deployment SQL, to be replaced at query time
 CURRENT_TIMESTAMP_PLACEHOLDER = expressions.Identifier(this="{{ CURRENT_TIMESTAMP }}")
 
+# Placeholder for JAR path in generated UDF registration SQL (Spark/Databricks)
+JAR_PATH_PLACEHOLDER = "{{ JAR_PATH }}"
+
 CteStatement = Tuple[Union[str, Expression], Expression]
 CteStatements = Sequence[CteStatement]
 

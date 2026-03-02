@@ -3,12 +3,16 @@ Tests for DeploymentSqlGenerationService
 """
 
 import os
+from contextlib import nullcontext
 from pathlib import Path
+from typing import NamedTuple, Optional
+from unittest import mock
 
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.enum import SourceType
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models.deployment_sql import DeploymentSqlModel
 from tests.util.helper import (
@@ -18,23 +22,34 @@ from tests.util.helper import (
     replace_objectid_suffix,
 )
 
+
+class TestCase(NamedTuple):
+    """Test case configuration for deployment SQL generation tests."""
+
+    fixture_name: str
+    source_type: Optional[SourceType] = None
+
+
 TEST_CASES_MAPPING = {
-    "float_feature": "deployed_float_feature_list_cust_id_use_case",
-    "scd_lookup_feature": "deployed_scd_lookup_feature_list",
-    "snapshots_lookup_feature": "deployed_snapshot_feature_list",
-    "time_series_feature": "deployed_time_series_feature_list",
-    "time_since_latest_event_timestamp_feature": (
+    "float_feature": TestCase("deployed_float_feature_list_cust_id_use_case"),
+    "scd_lookup_feature": TestCase("deployed_scd_lookup_feature_list"),
+    "snapshots_lookup_feature": TestCase("deployed_snapshot_feature_list"),
+    "time_series_feature": TestCase("deployed_time_series_feature_list"),
+    "time_since_latest_event_timestamp_feature": TestCase(
         "deployed_time_since_latest_event_timestamp_feature_list"
     ),
-    "float_feature_via_transaction": "deployed_float_feature_list_transaction_use_case",
-    "aggregate_asat_feature": "deployed_aggregate_asat_feature_list",
-    "aggregate_asat_offset_feature": "deployed_aggregate_asat_offset_feature_list",
-    "snapshots_aggregate_asat_feature": "deployed_snapshots_aggregate_asat_feature_list",
-    "multiple_feature_tables": "deployed_multiple_feature_tables_feature_list",
-    "internal_parent_child_relationships": (
+    "float_feature_via_transaction": TestCase("deployed_float_feature_list_transaction_use_case"),
+    "aggregate_asat_feature": TestCase("deployed_aggregate_asat_feature_list"),
+    "aggregate_asat_offset_feature": TestCase("deployed_aggregate_asat_offset_feature_list"),
+    "snapshots_aggregate_asat_feature": TestCase("deployed_snapshots_aggregate_asat_feature_list"),
+    "multiple_feature_tables": TestCase("deployed_multiple_feature_tables_feature_list"),
+    "internal_parent_child_relationships": TestCase(
         "deployed_feature_with_internal_parent_child_relationships"
     ),
-    "cosine_similarity_feature": "deployed_cosine_similarity_feature_list",
+    "cosine_similarity_feature": TestCase("deployed_cosine_similarity_feature_list"),
+    "cosine_similarity_feature_spark": TestCase(
+        "deployed_cosine_similarity_feature_list", SourceType.SPARK
+    ),
 }
 
 
@@ -449,9 +464,46 @@ def setup_deployment_case(request, test_case_name):
     """
     Fixture to setup deployment case. Deliberately not async to allow parametrization.
     """
-    fixture_name = TEST_CASES_MAPPING[test_case_name]
+    test_case = TEST_CASES_MAPPING[test_case_name]
     # This can be an async fixture, pytest-asyncio will handle it here safely
-    request.getfixturevalue(fixture_name)
+    request.getfixturevalue(test_case.fixture_name)
+
+
+def _create_source_type_patch(deployment_sql_generation_service, source_type_override):
+    """
+    Create a context manager that patches the feature store source type.
+
+    Parameters
+    ----------
+    deployment_sql_generation_service: DeploymentSqlGenerationService
+        The service instance
+    source_type_override: Optional[SourceType]
+        The source type to patch to, or None for no patching
+
+    Returns
+    -------
+    ContextManager
+        A context manager that patches the source type if needed
+    """
+    if source_type_override is None:
+        # No patching needed, return a no-op context manager
+        return nullcontext()
+
+    # Capture the bound method before patching the instance attribute.
+    original_get_document = deployment_sql_generation_service.feature_store_service.get_document
+
+    async def patched_get_document(document_id):
+        doc = await original_get_document(document_id)
+        # Create a copy with the overridden source type
+        doc_dict = doc.model_dump()
+        doc_dict["type"] = source_type_override
+        return doc.__class__(**doc_dict)
+
+    return mock.patch.object(
+        deployment_sql_generation_service.feature_store_service,
+        "get_document",
+        new=mock.AsyncMock(side_effect=patched_get_document),
+    )
 
 
 @pytest.mark.parametrize(
@@ -470,7 +522,13 @@ async def test_deployment_sql(
     Test single feature deployment SQL generation
     """
     _ = setup_deployment_case
-    deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    test_case = TEST_CASES_MAPPING[test_case_name]
+
+    with _create_source_type_patch(deployment_sql_generation_service, test_case.source_type):
+        deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(
+            deployment_id
+        )
+
     check_deployment_sql(
         deployment_sql,
         f"tests/fixtures/deployment_sql/{test_case_name}",

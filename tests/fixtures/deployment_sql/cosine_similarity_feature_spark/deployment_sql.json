@@ -1,0 +1,19 @@
+{
+    "feature_table_sqls": [
+        {
+            "feature_job_setting": {
+                "blind_spot": "600s",
+                "execution_buffer": "0s",
+                "offset": "300s",
+                "period": "1800s"
+            },
+            "feature_names": [
+                "cosine_similarity_30m_vs_1d"
+            ],
+            "sql_code": "<redacted: see 0.sql>"
+        }
+    ],
+    "udf_registration_sqls": [
+        "<redacted: see udf_0.sql>"
+    ]
+}

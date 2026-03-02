@@ -32,16 +32,16 @@ def extract_udfs_from_expression(
     matched_udfs: set[str] = set()
 
     for node in expr.walk():
-        udf_name = _extract_udf_name_from_node(node)
-        if udf_name and udf_name.upper() in available_udfs:
-            matched_udfs.add(udf_name.upper())
+        func_name = _extract_function_name_from_node(node)
+        if func_name and func_name.upper() in available_udfs:
+            matched_udfs.add(func_name.upper())
 
     return matched_udfs
 
 
-def _extract_udf_name_from_node(node: Expression) -> str | None:
+def _extract_function_name_from_node(node: Expression) -> str | None:
     """
-    Extract a UDF name from a node if it represents a UDF call.
+    Extract a function name from a node if it represents an anonymous function call.
 
     UDFs appear as Anonymous nodes in sqlglot. For BigQuery with fully qualified
     names (e.g., `project.dataset.F_COUNT_DICT_ENTROPY`), the Anonymous node is
@@ -55,14 +55,12 @@ def _extract_udf_name_from_node(node: Expression) -> str | None:
     Returns
     -------
     str | None
-        The UDF name if found, None otherwise
+        The function name if it's an Anonymous node, None otherwise.
+        The caller filters this against available_udfs to identify actual UDFs.
     """
     if isinstance(node, expressions.Anonymous):
         func_name = node.this
-        if isinstance(func_name, str) and func_name.upper().startswith("F_"):
-            return func_name
-        # Handle OBJECT_DELETE which doesn't have F_ prefix
-        if isinstance(func_name, str) and func_name.upper() == "OBJECT_DELETE":
+        if isinstance(func_name, str):
             return func_name
 
     return None

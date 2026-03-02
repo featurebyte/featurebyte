@@ -22,6 +22,7 @@ from featurebyte.query_graph.model.dtype import NestedFieldMetadata, PartitionMe
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.udf_registry import SPARK_UDF_CLASS_MAPPING
 from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     NESTED_FIELD_DELIMITER,
@@ -633,36 +634,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         # Note that Spark does not seem to be able to reload the same class until the spark app is restarted.
         # To ensure functionality is updated for a function we should create a new class
         # and re-register the function with the new class
-        udf_functions = [
-            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarityV1"),
-            ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMaxV1"),
-            ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSumV1"),
-            ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverageV1"),
-            (
-                "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
-                "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
-            ),
-            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDeleteV1"),
-            ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndexV1"),
-            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),
-            (
-                "F_COUNT_DICT_COSINE_SIMILARITY",
-                "com.featurebyte.hive.udf.CountDictCosineSimilarityV2",
-            ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV3"),
-            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
-            (
-                "F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                "com.featurebyte.hive.udf.CountDictMostFrequentValueV1",
-            ),
-            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequentV1"),
-            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUniqueV1"),
-            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequencyV1"),
-            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRankV1"),
-            ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1"),
-            ("F_COUNT_DICT_NORMALIZE", "com.featurebyte.hive.udf.CountDictNormalizeV1"),
-        ]
-        for function_name, class_name in udf_functions:
+        for function_name, class_name in SPARK_UDF_CLASS_MAPPING.items():
             logger.debug(
                 "Register UDF",
                 extra={

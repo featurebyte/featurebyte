@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION F_COUNT_DICT_COSINE_SIMILARITY AS 'com.featurebyte.hive.udf.CountDictCosineSimilarityV2' USING JAR '{{ JAR_PATH }}'

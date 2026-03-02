@@ -12,6 +12,7 @@ from typing import Optional
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.common import JAR_PATH_PLACEHOLDER
 
 # Mapping from SourceType to SQL directory name
 SOURCE_TYPE_TO_SQL_DIRECTORY: dict[SourceType, Optional[str]] = {
@@ -22,13 +23,42 @@ SOURCE_TYPE_TO_SQL_DIRECTORY: dict[SourceType, Optional[str]] = {
     SourceType.DATABRICKS: "spark",
 }
 
+# Source types that use JAR-based UDFs instead of SQL files
+JAR_BASED_SOURCE_TYPES: set[SourceType] = {
+    SourceType.SPARK,
+    SourceType.DATABRICKS,
+}
+
+# Mapping of UDF names to Java class names for JAR-based UDFs (Spark/Databricks)
+SPARK_UDF_CLASS_MAPPING: dict[str, str] = {
+    "F_VECTOR_COSINE_SIMILARITY": "com.featurebyte.hive.udf.VectorCosineSimilarityV1",
+    "VECTOR_AGGREGATE_MAX": "com.featurebyte.hive.udf.VectorAggregateMaxV1",
+    "VECTOR_AGGREGATE_SUM": "com.featurebyte.hive.udf.VectorAggregateSumV1",
+    "VECTOR_AGGREGATE_AVG": "com.featurebyte.hive.udf.VectorAggregateAverageV1",
+    "VECTOR_AGGREGATE_SIMPLE_AVERAGE": "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
+    "OBJECT_DELETE": "com.featurebyte.hive.udf.ObjectDeleteV1",
+    "F_TIMESTAMP_TO_INDEX": "com.featurebyte.hive.udf.TimestampToIndexV1",
+    "F_INDEX_TO_TIMESTAMP": "com.featurebyte.hive.udf.IndexToTimestampV1",
+    "F_COUNT_DICT_COSINE_SIMILARITY": "com.featurebyte.hive.udf.CountDictCosineSimilarityV2",
+    "F_COUNT_DICT_ENTROPY": "com.featurebyte.hive.udf.CountDictEntropyV3",
+    "F_COUNT_DICT_MOST_FREQUENT": "com.featurebyte.hive.udf.CountDictMostFrequentV1",
+    "F_COUNT_DICT_MOST_FREQUENT_VALUE": "com.featurebyte.hive.udf.CountDictMostFrequentValueV1",
+    "F_COUNT_DICT_LEAST_FREQUENT": "com.featurebyte.hive.udf.CountDictLeastFrequentV1",
+    "F_COUNT_DICT_NUM_UNIQUE": "com.featurebyte.hive.udf.CountDictNumUniqueV1",
+    "F_GET_RELATIVE_FREQUENCY": "com.featurebyte.hive.udf.CountDictRelativeFrequencyV1",
+    "F_GET_RANK": "com.featurebyte.hive.udf.CountDictRankV1",
+    "F_TIMEZONE_OFFSET_TO_SECOND": "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1",
+    "F_COUNT_DICT_NORMALIZE": "com.featurebyte.hive.udf.CountDictNormalizeV1",
+}
+
 # UDFs that are dependencies of other UDFs (must be registered first)
 # These are listed in the order they should be registered
 DEPENDENCY_UDFS: list[str] = [
     "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE",
 ]
 
-# UDF dependencies: UDF -> list of UDFs it depends on
+# UDF dependencies: UDF -> list of UDFs it depends on (SQL-based sources only).
+# For Spark/Databricks, the Java implementations are self-contained and don't call other SQL UDFs.
 UDF_DEPENDENCIES: dict[str, list[str]] = {
     "F_COUNT_DICT_MOST_FREQUENT": ["F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE"],
     "F_COUNT_DICT_LEAST_FREQUENT": ["F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE"],
@@ -38,7 +68,10 @@ UDF_DEPENDENCIES: dict[str, list[str]] = {
 
 def get_available_udfs(source_type: SourceType) -> dict[str, str]:
     """
-    Scan the SQL directory for a source type and return available UDFs.
+    Get available UDFs for a source type.
+
+    For Spark/Databricks, returns UDFs from the JAR class mapping.
+    For other source types, scans the SQL directory for .sql files.
 
     Parameters
     ----------
@@ -48,8 +81,12 @@ def get_available_udfs(source_type: SourceType) -> dict[str, str]:
     Returns
     -------
     dict[str, str]
-        Mapping of UDF name (uppercase) to file path
+        Mapping of UDF name (uppercase) to file path (SQL-based) or class name (JAR-based)
     """
+    # For Spark/Databricks, return JAR-based UDFs
+    if source_type in JAR_BASED_SOURCE_TYPES:
+        return dict(SPARK_UDF_CLASS_MAPPING)
+
     sql_directory = SOURCE_TYPE_TO_SQL_DIRECTORY.get(source_type)
     if sql_directory is None:
         return {}
@@ -128,6 +165,9 @@ def get_udf_registration_sql(
     UDF dependencies are automatically resolved and included, with dependencies
     ordered before the UDFs that depend on them.
 
+    For Spark/Databricks, generates CREATE FUNCTION statements that reference a JAR file.
+    The JAR path placeholder {{ JAR_PATH }} should be substituted by the user.
+
     Parameters
     ----------
     source_type: SourceType
@@ -152,15 +192,25 @@ def get_udf_registration_sql(
     registration_sqls: list[str] = []
 
     for udf_name in ordered_udfs:
-        file_path = available_udfs[udf_name]
-        with open(file_path, "r") as f:
-            sql_content = f.read()
+        # For Spark/Databricks, generate JAR-based registration SQL
+        if source_type in JAR_BASED_SOURCE_TYPES:
+            class_name = available_udfs[udf_name]
+            sql_content = (
+                f"CREATE OR REPLACE FUNCTION {udf_name} AS '{class_name}' "
+                f"USING JAR '{JAR_PATH_PLACEHOLDER}'"
+            )
+            registration_sqls.append(sql_content)
+        else:
+            # For other source types, read from SQL file
+            file_path = available_udfs[udf_name]
+            with open(file_path, "r") as f:
+                sql_content = f.read()
 
-        # For BigQuery, substitute placeholders
-        if source_type == SourceType.BIGQUERY and database_name and schema_name:
-            sql_content = sql_content.replace("{project}", database_name)
-            sql_content = sql_content.replace("{dataset}", schema_name)
+            # For BigQuery, substitute placeholders
+            if source_type == SourceType.BIGQUERY and database_name and schema_name:
+                sql_content = sql_content.replace("{project}", database_name)
+                sql_content = sql_content.replace("{dataset}", schema_name)
 
-        registration_sqls.append(sql_content.strip())
+            registration_sqls.append(sql_content.strip())
 
     return registration_sqls
