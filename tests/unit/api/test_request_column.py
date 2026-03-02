@@ -145,10 +145,11 @@ def test_internal_create_request_column_with_context_id():
         ("is_active", DBVarType.BOOL),
     ],
 )
-def test_internal_create_request_column_various_dtypes(column_name, column_dtype):
+def test_internal_create_request_column_various_dtypes(column_name, column_dtype, catalog):
     """
     Test internal _create_request_column works with various dtypes
     """
+    _ = catalog
     request_col = RequestColumn._create_request_column(column_name, column_dtype)
     assert isinstance(request_col, RequestColumn)
     assert request_col.name == column_name
