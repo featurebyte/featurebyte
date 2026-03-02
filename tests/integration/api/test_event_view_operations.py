@@ -1231,9 +1231,12 @@ def check_cast_operations(event_view, source_type, limit=100):
             check_names=False,
         )
     elif source_type == SourceType.BIGQUERY:
+        # BigQuery's CAST produces cleaner string representations than Python's str()
+        # Use g format to avoid floating point artifacts (e.g., 1.59 vs 1.5899999999999999)
+        expected_str = df["ÀMOUNT"].apply(lambda x: f"{x:.10g}" if pd.notna(x) else str(x))
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"],
-            df["ÀMOUNT"].astype(str).str.replace(".0$", "", regex=True),
+            expected_str.str.replace(r"\.0$", "", regex=True),
             check_names=False,
         )
     else:
