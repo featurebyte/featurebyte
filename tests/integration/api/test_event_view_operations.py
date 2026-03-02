@@ -1236,7 +1236,7 @@ def check_cast_operations(event_view, source_type, limit=100):
         expected_str = df["ÀMOUNT"].apply(lambda x: f"{x:.10g}" if pd.notna(x) else str(x))
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"],
-            expected_str.str.replace(r"\.0$", "", regex=True),
+            expected_str,
             check_names=False,
         )
     else:
