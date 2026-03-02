@@ -124,7 +124,6 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
                 snapshot_datetime_metadata=DBVarTypeMetadata(
                     timestamp_schema=snapshot_datetime_schema,
                 ),
-                feature_job_setting=self.view.default_feature_job_setting,
                 offset_size=offset_size,
             ).model_dump()
             node_params["effective_timestamp_column"] = snapshot_datetime_column
