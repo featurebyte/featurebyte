@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_ingest_query import (
@@ -316,7 +317,8 @@ class OfflineStoreInfoInitializationService:
                 output_dtype_info=DBVarTypeInfo(dtype=feature.dtype),
                 primary_entity_ids=feature.primary_entity_ids,
                 primary_entity_dtypes=[
-                    entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids
+                    entity_id_to_dtype.get(entity_id, DBVarType.UNKNOWN)
+                    for entity_id in feature.primary_entity_ids
                 ],
                 null_filling_value=null_filling_value,
             )

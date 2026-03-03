@@ -360,6 +360,8 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
     assert savings.context_id == context.id  # derived features inherit context_id
     assert savings.dtype == DBVarType.FLOAT
 
+    savings.save()
+
     # Derived feature from features with different context is prohibited
     context_2 = Context.create(
         name="test_context_derived_2",
