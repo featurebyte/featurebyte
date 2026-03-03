@@ -6,6 +6,7 @@ from featurebyte import (
     AssignmentDesign,
     AssignmentSource,
     Context,
+    Entity,
     ForecastPointSchema,
     ObservationTable,
     Propensity,
@@ -207,6 +208,76 @@ def test_create_use_case_with_forecast_point_schema(catalog, cust_id_entity):
     )
     assert use_case.target_namespace_id == namespace.id
     assert use_case.use_case_type == UseCaseType.FORECAST
+    # No target with recipe, so forecasted_column should be None
+    assert use_case.forecasted_column is None
+
+
+def test_create_forecast_use_case_with_lookup_target(catalog, snowflake_event_view_with_entity):
+    """
+    Test that forecasted_column is populated when creating a forecast use case
+    with a target created via as_target().
+    """
+    _ = catalog
+
+    # Create a lookup target via as_target()
+    target = snowflake_event_view_with_entity["col_float"].as_target(
+        "forecast_lookup_target", "7d", fill_value=None
+    )
+    target.save()
+    target.update_target_type(TargetType.REGRESSION)
+
+    # Create a forecast context with matching entities from the target
+    target_namespace = TargetNamespace.get(target.name)
+    entity_names = [Entity.get_by_id(eid).name for eid in target_namespace.entity_ids]
+
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.DATE,
+        timezone="America/New_York",
+    )
+    context = Context.create(
+        name="forecast_context_with_lookup",
+        primary_entity=entity_names,
+        description="forecast context for lookup target",
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Create the forecast use case
+    use_case = UseCase.create(
+        name="forecast_use_case_with_lookup",
+        target_name=target.name,
+        context_name=context.name,
+        description="test forecast use case with lookup target",
+    )
+
+    assert use_case.use_case_type == UseCaseType.FORECAST
+    assert use_case.forecasted_column is not None
+    assert use_case.forecasted_column.column_name == "col_float"
+    assert use_case.forecasted_column.table_id is not None
+
+
+def test_create_predictive_use_case_forecasted_column_is_none(catalog, float_target, context):
+    """
+    Test that forecasted_column is None for a non-forecast (predictive) use case.
+    """
+    _ = catalog
+
+    if not context.saved:
+        context.save()
+
+    if not float_target.saved:
+        float_target.save()
+        float_target.update_target_type(TargetType.REGRESSION)
+
+    use_case = UseCase.create(
+        name="predictive_use_case_no_forecast",
+        target_name=float_target.name,
+        context_name=context.name,
+        description="predictive use case - no forecasted_column",
+    )
+
+    assert use_case.use_case_type == UseCaseType.PREDICTIVE
+    assert use_case.forecasted_column is None
 
 
 def test_add_and_remove_observation_table(use_case, target_table):

@@ -11,6 +11,8 @@ from redis import Redis
 
 from featurebyte.enum import TargetType
 from featurebyte.exception import DocumentCreationError
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.target import ForecastedColumn
 from featurebyte.models.use_case import UseCaseModel, UseCaseType
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -117,7 +119,36 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
 
         use_case = await self.create_document(data=data)
 
+        if use_case.use_case_type == UseCaseType.FORECAST and data.target_id:
+            forecasted_column = await self._derive_forecasted_column(
+                target_id=data.target_id,
+            )
+            if forecasted_column:
+                await self.update_documents(
+                    query_filter={"_id": use_case.id},
+                    update={"$set": {"forecasted_column": forecasted_column.model_dump()}},
+                )
+                use_case.forecasted_column = forecasted_column
+
         return use_case
+
+    async def _derive_forecasted_column(
+        self, target_id: PydanticObjectId
+    ) -> Optional[ForecastedColumn]:
+        """
+        Derive the forecasted column from the target's query graph.
+
+        Parameters
+        ----------
+        target_id: PydanticObjectId
+            The target id to derive the forecasted column from
+
+        Returns
+        -------
+        Optional[ForecastedColumn]
+        """
+        target = await self.target_service.get_document(document_id=target_id)
+        return target.get_forecasted_column()
 
     async def update_use_case(
         self,

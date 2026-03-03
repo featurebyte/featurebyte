@@ -14,6 +14,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.target import ForecastedColumn
 
 
 class UseCaseType(StrEnum):
@@ -88,3 +89,4 @@ class UseCaseModel(BaseUseCaseModel):
     target_id: Optional[PydanticObjectId] = None
     target_namespace_id: PydanticObjectId
     higher_prediction_is_better: bool = True
+    forecasted_column: Optional[ForecastedColumn] = None
