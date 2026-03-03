@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.cron import get_request_table_job_datetime_column_name
+from featurebyte.query_graph.sql.offset import OffsetDirection
 from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
 
 
@@ -36,9 +37,14 @@ class SnapshotsRequestTablePlan:
     Responsible for generating a process request table ready to be joined with snapshots tables
     """
 
-    def __init__(self, adapter: BaseAdapter):
+    def __init__(
+        self,
+        adapter: BaseAdapter,
+        offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
+    ):
         self.entries: dict[str, ProcessedRequestTableEntry] = {}
         self.adapter = adapter
+        self.offset_direction = offset_direction
 
     def add_snapshots_parameters(
         self, snapshots_parameters: SnapshotsLookupParameters, serving_names: list[str]
@@ -150,24 +156,31 @@ class SnapshotsRequestTablePlan:
         expressions.Select
         """
         snapshots_parameters = entry.snapshots_parameters
+        is_target = self.offset_direction == OffsetDirection.FORWARD
 
         # Distinct point-in-time table: Map distinct POINT_IN_TIME values to snapshot adjusted
         # POINT_IN_TIME values
-        if snapshots_parameters.feature_job_setting is None:
+        if is_target or snapshots_parameters.feature_job_setting is None:
+            # For targets, ignore feature job setting (no blind spot adjustment needed)
             job_datetime_column_name = None
             datetime_expr_to_adjust = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+            feature_job_setting = None
         else:
             job_datetime_column_name = get_request_table_job_datetime_column_name(
                 snapshots_parameters.feature_job_setting, self.adapter.source_type
             )
             datetime_expr_to_adjust = quoted_identifier(job_datetime_column_name)
+            feature_job_setting = snapshots_parameters.feature_job_setting
+
         adjusted_point_in_time_expr = apply_snapshot_adjustment(
             datetime_expr=datetime_expr_to_adjust,
             time_interval=snapshots_parameters.time_interval,
-            feature_job_setting=snapshots_parameters.feature_job_setting,
+            feature_job_setting=feature_job_setting,
             format_string=snapshots_parameters.snapshot_timestamp_format_string,
             offset_size=snapshots_parameters.offset_size,
             adapter=self.adapter,
+            offset_direction=self.offset_direction,
+            allow_exact_match_with_current_interval=is_target,
         )
         distinct_point_in_time_to_adjusted_expr = expressions.select(
             quoted_identifier(SpecialColumnName.POINT_IN_TIME),

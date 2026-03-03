@@ -2165,7 +2165,12 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
         value_column = ValueStr.create(self.parameters.parent)
         method = ValueStr.create(self.parameters.agg_func)
         target_name = ValueStr.create(self.parameters.name)
-        offset = ValueStr.create(self.parameters.offset)
+        offset: Optional[OffsetType]
+        if self.parameters.snapshots_parameters is not None:
+            offset = self.parameters.snapshots_parameters.offset_size
+        else:
+            offset = self.parameters.offset
+        offset = ValueStr.create(offset)
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"forward_aggregate_asat(value_column={value_column}, "

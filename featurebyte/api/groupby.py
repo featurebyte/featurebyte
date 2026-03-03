@@ -558,7 +558,7 @@ class GroupBy:
         value_column: Optional[str],
         method: Union[AggFunc, str],
         target_name: str,
-        offset: Optional[str] = None,
+        offset: Optional[OffsetType] = None,
         fill_value: Union[OptionalScalar, Unset] = UNSET,
         skip_fill_na: Optional[bool] = None,
         target_type: Optional[TargetType] = None,
@@ -568,17 +568,15 @@ class GroupBy:
         Target object. The object aggregates data from the column specified by the value_column
         parameter using the aggregation method provided by the method parameter. By default, the
         aggrgegation is done on rows active at the point-in-time indicated in the feature request.
-        The primary entity of the Feature is determined by the grouping key of the GroupBy instance,
-        These aggregation operations are exclusively available for Slowly Changing Dimension (SCD)
-        views, and the grouping key used in the GroupBy instance should not be the natural key of
-        the SCD view.
+        The primary entity of the Feature is determined by the grouping key of the GroupBy instance.
+        These aggregation operations are available for Slowly Changing Dimension (SCD) views,
+        Snapshots views, and Time Series views.
 
-        For instance, a possible example of an aggregate ‘as at’ target from a Credit Cards table
-        could be the count of credit cards held by a customer at the point-in-time indicated in the
-        target request.
+        For SCD views, the grouping key should not be the natural key of the SCD view.
+        For Snapshots and Time Series views, the grouping key should not be the series ID column.
 
-        If an offset is defined, the aggregation uses the active rows of the SCD view's data at the
-        point-in-time indicated in the feature request, plus the specified offset.
+        If an offset is defined, the aggregation uses the active rows at the point-in-time
+        indicated in the feature request, plus the specified offset.
 
         If the GroupBy instance involves computation across a categorical column, the returned
         Target object is a Cross Aggregate "as at" Target. In this scenario, the target value
@@ -598,20 +596,15 @@ class GroupBy:
             Aggregation method
         target_name: str
             Output feature name
-        offset: Optional[str]
+        offset: Optional[OffsetType]
             Optional offset to apply to the point in time column in the target request. The
-            aggregation result will be as at the point in time adjusted by this offset. Format of
-            offset is "{size}{unit}", where size is a positive integer and unit is one of the
-            following:
+            aggregation result will be as at the point in time adjusted by this offset.
 
-            "ns": nanosecond
-            "us": microsecond
-            "ms": millisecond
-            "s": second
-            "m": minute
-            "h": hour
-            "d": day
-            "w": week
+            For SCDView, the format is "{size}{unit}", where size is a positive integer and unit
+            is one of: "ns", "us", "ms", "s", "m", "h", "d", "w".
+
+            For SnapshotsView and TimeSeriesView, the offset should be an integer specifying
+            the number of time interval steps.
 
         fill_value: Union[OptionalScalar, Unset]
             Value to fill if the value in the column is empty
@@ -623,7 +616,7 @@ class GroupBy:
 
         Returns
         -------
-        Feature
+        Target
 
         Raises
         ------

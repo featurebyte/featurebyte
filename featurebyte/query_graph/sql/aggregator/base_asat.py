@@ -50,7 +50,10 @@ class BaseAsAtAggregator(Aggregator[AsAtSpecT]):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
-        self.snapshots_request_table_plan = SnapshotsRequestTablePlan(adapter=self.adapter)
+        self.snapshots_request_table_plan = SnapshotsRequestTablePlan(
+            adapter=self.adapter,
+            offset_direction=self.get_offset_direction(),
+        )
 
     @classmethod
     @abstractmethod
