@@ -549,9 +549,9 @@ class ObservationTableInvalidSamplingError(BaseUnprocessableEntityError):
     """
 
 
-class ObservationTableEmptyError(BaseUnprocessableEntityError):
+class ObservationTableValidationError(BaseUnprocessableEntityError):
     """
-    Raise when observation table has no rows after sampling or filtering
+    Raise when observation table fails validation checks
     """
 
 

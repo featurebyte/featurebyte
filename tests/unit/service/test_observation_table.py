@@ -13,8 +13,8 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
-    ObservationTableEmptyError,
     ObservationTableInvalidSamplingError,
+    ObservationTableValidationError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
@@ -328,7 +328,7 @@ async def test_validate__point_in_time_no_missing_values(
         "featurebyte.service.preview.PreviewService._get_feature_store_session"
     ) as mock_get_feature_store_session:
         mock_get_feature_store_session.return_value = (snowflake_feature_store, db_session)
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ObservationTableValidationError) as exc_info:
             await observation_table_service.validate_materialized_table_and_get_metadata(
                 db_session, table_details, snowflake_feature_store
             )
@@ -374,7 +374,7 @@ async def test_validate__empty_observation_table(
         adapter=adapter,
     )
 
-    with pytest.raises(ObservationTableEmptyError) as exc_info:
+    with pytest.raises(ObservationTableValidationError) as exc_info:
         await observation_table_service.validate_materialized_table_and_get_metadata(
             mock_db_session, table_details, snowflake_feature_store
         )

@@ -32,7 +32,6 @@ from featurebyte.exception import (
     MissingForecastPointColumnError,
     MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
-    ObservationTableEmptyError,
     ObservationTableInvalidContextError,
     ObservationTableInvalidSamplingError,
     ObservationTableInvalidTargetNameError,
@@ -40,6 +39,7 @@ from featurebyte.exception import (
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
     ObservationTableTargetDefinitionExistsError,
+    ObservationTableValidationError,
     UnsupportedForecastPointColumnTypeError,
     UnsupportedPointInTimeColumnTypeError,
 )
@@ -1511,10 +1511,8 @@ class ObservationTableService(
 
         Raises
         ------
-        ObservationTableEmptyError
-            If the observation table has no rows
-        ValueError
-            If the observation table fails any of the validation
+        ObservationTableValidationError
+            If the observation table fails validation (e.g., no rows, missing values)
         """
         # Get column info and number of row metadata
         columns_info, num_rows = await self.get_columns_info_and_num_rows(
@@ -1525,7 +1523,7 @@ class ObservationTableService(
 
         # Check for empty table
         if num_rows == 0:
-            raise ObservationTableEmptyError(
+            raise ObservationTableValidationError(
                 "The observation table has no rows. This may occur when sampling or filtering "
                 "conditions result in an empty dataset. Please adjust your parameters such as "
                 "time range, sample size, or filtering conditions."
@@ -1580,7 +1578,7 @@ class ObservationTableService(
             primary_entity_ids
         )
         if columns_with_missing_values:
-            raise ValueError(
+            raise ObservationTableValidationError(
                 "These columns in the observation table must not contain any missing values: "
                 f"{', '.join(columns_with_missing_values)}"
             )
