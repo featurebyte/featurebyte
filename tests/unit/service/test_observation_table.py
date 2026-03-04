@@ -13,6 +13,7 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
+    ObservationTableEmptyError,
     ObservationTableInvalidSamplingError,
     UnsupportedPointInTimeColumnTypeError,
 )
@@ -334,6 +335,51 @@ async def test_validate__point_in_time_no_missing_values(
     assert str(exc_info.value) == (
         "These columns in the observation table must not contain any missing values: POINT_IN_TIME"
     )
+
+
+@pytest.mark.asyncio
+async def test_validate__empty_observation_table(
+    observation_table_service,
+    table_details,
+    snowflake_feature_store,
+    adapter,
+):
+    """
+    Test validation fails when observation table has zero rows
+    """
+
+    async def mock_list_table_schema(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {
+            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="TIMESTAMP"),
+            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+        }
+
+    async def execute_query_long_running(*args, **kwargs):
+        query = args[0]
+        _ = kwargs
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"row_count": [0]})  # Empty table
+        raise NotImplementedError(f"Unexpected query: {query}")
+
+    mock_db_session = Mock(
+        name="mock_session",
+        spec=BaseSession,
+        list_table_schema=Mock(side_effect=mock_list_table_schema),
+        execute_query_long_running=Mock(side_effect=execute_query_long_running),
+        source_type=SourceType.SNOWFLAKE,
+        schema_name="my_schema",
+        database_name="my_db",
+        adapter=adapter,
+    )
+
+    with pytest.raises(ObservationTableEmptyError) as exc_info:
+        await observation_table_service.validate_materialized_table_and_get_metadata(
+            mock_db_session, table_details, snowflake_feature_store
+        )
+    assert "observation table has no rows" in str(exc_info.value)
+    assert "time range" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

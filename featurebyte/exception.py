@@ -549,6 +549,12 @@ class ObservationTableInvalidSamplingError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableEmptyError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table has no rows after sampling or filtering
+    """
+
+
 class ObservationTableTargetDefinitionExistsError(BaseUnprocessableEntityError):
     """
     Raise when observation table specifies a target name that already has a definition
