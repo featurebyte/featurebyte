@@ -39,6 +39,7 @@ from featurebyte.exception import (
     ObservationTableInvalidUseCaseError,
     ObservationTableMissingColumnsError,
     ObservationTableTargetDefinitionExistsError,
+    ObservationTableValidationError,
     UnsupportedForecastPointColumnTypeError,
     UnsupportedPointInTimeColumnTypeError,
 )
@@ -1510,8 +1511,8 @@ class ObservationTableService(
 
         Raises
         ------
-        ValueError
-            If the observation table fails any of the validation
+        ObservationTableValidationError
+            If the observation table fails validation (e.g., no rows, missing values)
         """
         # Get column info and number of row metadata
         columns_info, num_rows = await self.get_columns_info_and_num_rows(
@@ -1519,6 +1520,15 @@ class ObservationTableService(
             table_details=table_details,
             serving_names_remapping=serving_names_remapping,
         )
+
+        # Check for empty table
+        if num_rows == 0:
+            raise ObservationTableValidationError(
+                "The observation table has no rows. This may occur when sampling or filtering "
+                "conditions result in an empty dataset. Please adjust your parameters such as "
+                "time range, sample size, or filtering conditions."
+            )
+
         # Perform validation on primary entity IDs. We always perform this check if the primary entity IDs exist.
         if primary_entity_ids is not None:
             await self.primary_entity_validator.validate_entities_are_primary_entities(
@@ -1568,7 +1578,7 @@ class ObservationTableService(
             primary_entity_ids
         )
         if columns_with_missing_values:
-            raise ValueError(
+            raise ObservationTableValidationError(
                 "These columns in the observation table must not contain any missing values: "
                 f"{', '.join(columns_with_missing_values)}"
             )
