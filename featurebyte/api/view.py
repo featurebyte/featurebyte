@@ -329,8 +329,10 @@ class ViewColumn(Series, SampleMixin):
         ----------
         target_name: str
             Name of the target to create.
-        offset: str
-            When specified, retrieve target value as of this offset after the point-in-time.
+        offset: Optional[OffsetType]
+            When specified, retrieve target value as of this offset after the point-in-time. For
+            lookup targets derived from SnapshotsView or TimeSeriesView, the offset should be an
+            integer specifying the number of time interval steps.
         target_type: Optional[TargetType]
             Type of the target
         fill_value: Union[OptionalScalar, Unset]
@@ -1755,7 +1757,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         if isinstance(offset, str):
             validate_offset(offset)
         elif isinstance(offset, int):
-            raise ValueError("Integer offset is only supported for SnapshotsView")
+            raise ValueError("Integer offset is only supported for SnapshotsView or TimeSeriesView")
         else:
             raise ValueError("Invalid offset type")
 
@@ -1790,8 +1792,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             Feature names corresponding to column_names
         offset: Optional[OffsetType]
             When specified, retrieve feature values as of this offset prior to the point-in-time.
-            For lookup features derived from SnapshotsView, the offset should be an integer specifying
-            the number of time interval steps.
+            For lookup features derived from SnapshotsView, the offset should be an integer
+            specifying the number of time interval steps.
 
         Returns
         -------
