@@ -195,6 +195,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
         "is_deleted": False,
         "datetime_partition_column": None,
         "datetime_partition_schema": None,
+        "is_global_series": False,
     }
 
 
@@ -439,6 +440,7 @@ def test_info(saved_time_series_table, cust_id_entity):
             "table_name": "time_series_table",
         },
         "catalog_name": "catalog",
+        "is_global_series": False,
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert info_dict["updated_at"] is not None, info_dict["updated_at"]
@@ -818,6 +820,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             ("UPDATE", 'update: "sf_time_series_table"'),
             ("UPDATE", 'update: "sf_time_series_table"'),
             ("UPDATE", 'update: "sf_time_series_table"'),
+            ("UPDATE", 'update: "sf_time_series_table"'),
             ("INSERT", 'insert: "sf_time_series_table"'),
         ],
         columns=["action_type", "name"],
@@ -1009,6 +1012,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
         "datetime_partition_schema.format_string",
         "datetime_partition_schema.is_utc_time",
         "datetime_partition_schema.timezone",
+        "is_global_series",
     }
 
 
