@@ -48,7 +48,7 @@ def column_statistics_service_fixture(app_container):
 @pytest_asyncio.fixture(name="table_model")
 async def table_model_fixture(document_service, feature_store):
     """
-    Time series table model fixture
+    Time series table model fixture (non-global: has series_id_column)
     """
     payload = TimeSeriesTableCreate(
         name="my_time_series_table",
@@ -78,6 +78,35 @@ async def table_model_fixture(document_service, feature_store):
     return await document_service.create_document(payload)
 
 
+@pytest_asyncio.fixture(name="global_table_model")
+async def global_table_model_fixture(document_service, feature_store):
+    """
+    Time series table model fixture (global: no series_id_column)
+    """
+    payload = TimeSeriesTableCreate(
+        name="my_global_time_series_table",
+        tabular_source=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="my_db",
+                schema_name="my_schema",
+                table_name="my_table",
+            ),
+        ),
+        columns_info=[
+            ColumnSpecWithDescription(
+                name="snapshot_date",
+                dtype=DBVarType.VARCHAR,
+            ),
+        ],
+        reference_datetime_column="snapshot_date",
+        reference_datetime_schema=TimestampSchema(format_string="%Y-%m-%d"),
+        series_id_column=None,
+        time_interval=TimeInterval(unit="DAY", value=1),
+    )
+    return await document_service.create_document(payload)
+
+
 @pytest.mark.asyncio
 async def test_validate_and_update(
     table_validation_service,
@@ -88,7 +117,7 @@ async def test_validate_and_update(
     update_fixtures,
 ):
     """
-    Test validate_and_update
+    Test validate_and_update for non-global time series table (series_id_column is set)
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
         "snapshot_date": [100]
@@ -113,6 +142,9 @@ async def test_validate_and_update(
         "task_id": None,
     }
 
+    # Non-global: series_id_column is set, so is_global_series should be False
+    assert updated_table_model.is_global_series is False
+
     # Check column statistics
     column_statistics = await column_statistics_service.get_column_statistics_info()
     assert len(column_statistics.all_column_statistics) == 1
@@ -125,3 +157,45 @@ async def test_validate_and_update(
         "column_name": "snapshot_date",
         "stats": {"distinct_count": 100},
     }
+
+
+@pytest.mark.asyncio
+async def test_validate_and_update_global_series(
+    table_validation_service,
+    column_statistics_service,
+    document_service,
+    global_table_model,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test validate_and_update for global time series table (no series_id_column, unique datetimes)
+    """
+    # format string validation returns non-empty; global detection returns empty (unique datetimes)
+    mock_snowflake_session.execute_query_long_running.side_effect = [
+        pd.DataFrame({"snapshot_date": [100]}),  # format string validation query
+        pd.DataFrame(),  # global detection query returns empty => is_global_series=True
+        pd.DataFrame({"snapshot_date": [50]}),  # column statistics query
+    ]
+    await table_validation_service.validate_and_update(global_table_model.id)
+
+    # Check executed queries
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/time_series_table_validation_service/validate_and_update_global.sql",
+        update_fixtures,
+    )
+
+    # Check table model validation status
+    updated_table_model = await document_service.get_document(global_table_model.id)
+    updated_table_model_dict = updated_table_model.dict()
+    assert updated_table_model_dict["validation"].pop("updated_at") is not None
+    assert updated_table_model_dict["validation"] == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+    }
+
+    # Global: no series_id_column and empty duplicate check => is_global_series=True
+    assert updated_table_model.is_global_series is True

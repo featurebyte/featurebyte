@@ -57,6 +57,8 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         Time interval between consecutive records in each series
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
+    is_global_series : Optional[bool]
+        Whether this is a global time series (no entity grouping, unique reference datetime per time point)
     status : TableStatus
         Status of the TimeSeriesTable
     created_at : Optional[datetime]
@@ -66,6 +68,7 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
     """
 
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
+    is_global_series: Optional[bool] = Field(default=None)
     _table_data_class: ClassVar[Type[TimeSeriesTableData]] = TimeSeriesTableData
 
     # pydantic validators

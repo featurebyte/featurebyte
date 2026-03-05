@@ -72,6 +72,7 @@ class TimeSeriesTable(TableApiObject):
     internal_reference_datetime_schema: TimestampSchema = Field(alias="reference_datetime_schema")
     internal_time_interval: TimeInterval = Field(alias="time_interval")
     internal_series_id_column: Optional[StrictStr] = Field(alias="series_id_column", default=None)
+    internal_is_global_series: Optional[bool] = Field(alias="is_global_series", default=None)
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -233,6 +234,20 @@ class TimeSeriesTable(TableApiObject):
             return self.cached_model.series_id_column
         except RecordRetrievalException:
             return self.internal_series_id_column
+
+    @property
+    def is_global_series(self) -> Optional[bool]:
+        """
+        Whether this is a global time series (no entity grouping, unique reference datetime per time point)
+
+        Returns
+        -------
+        Optional[bool]
+        """
+        try:
+            return self.cached_model.is_global_series
+        except RecordRetrievalException:
+            return self.internal_is_global_series
 
     @property
     def reference_datetime_column(self) -> str:

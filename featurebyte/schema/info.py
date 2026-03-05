@@ -255,6 +255,7 @@ class TimeSeriesTableInfo(TableInfo):
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
+    is_global_series: Optional[bool] = Field(default=None)
 
 
 class SnapshotsTableInfo(TableInfo):
