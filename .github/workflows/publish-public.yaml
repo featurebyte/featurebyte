@@ -54,7 +54,7 @@ jobs:
       - name: Check User
         run: |-
           # TODO: Change the allowed deployment user methodology
-          if [[ "${{ github.event.sender.login }}" != "bushwhackr" && "${{ github.event.sender.login }}" != "admin-featurebyte" ]]; then
+          if [[ "${{ github.event.sender.login }}" != "irfanhakim-as" && "${{ github.event.sender.login }}" != "admin-featurebyte" ]]; then
             exit 1
           fi
       - name: Check Version
