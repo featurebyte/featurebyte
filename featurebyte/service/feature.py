@@ -27,7 +27,8 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
 )
-from featurebyte.service.base_feature_service import BaseFeatureService
+from featurebyte.service.base_feature_service import BaseFeatureService, FeatureOrTargetDerivedData
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -60,6 +61,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         namespace_handler: NamespaceHandler,
         entity_serving_names_service: EntityServingNamesService,
         offline_store_info_initialization_service: OfflineStoreInfoInitializationService,
+        context_service: ContextService,
         storage: Storage,
         redis: Redis[Any],
     ):
@@ -78,6 +80,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
+        self.context_service = context_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -112,6 +115,29 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             graph=prepared_graph, node_name=prepared_node_name
         )
 
+        # For user-provided column features the query graph contains no aggregation nodes that
+        # introduce entity IDs, so primary_entity_ids will be empty. In that case, fall back to
+        # the context's primary_entity_ids as the authoritative source of entity scope.
+        context_entity_ids: Optional[List[ObjectId]] = None
+        if not derived_data.primary_entity_ids and data.context_id:
+            context = await self.context_service.get_document(data.context_id)
+            context_entity_ids = list(context.primary_entity_ids)
+            extractor = self.entity_relationship_extractor_service
+            entity_id_to_entity = await extractor.get_entity_id_to_entity(
+                entity_ids=context_entity_ids
+            )
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=context_entity_ids, entity_id_to_entity=entity_id_to_entity
+            )
+            relationships_info = await extractor.extract_relationship_from_primary_entity(
+                entity_ids=context_entity_ids, primary_entity_ids=primary_entity_ids
+            )
+            derived_data = FeatureOrTargetDerivedData(
+                primary_entity_ids=primary_entity_ids,
+                entity_id_to_entity=entity_id_to_entity,
+                relationships_info=relationships_info,
+            )
+
         feature_dict = {
             **{
                 **data_dict,
@@ -120,6 +146,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 "readiness": FeatureReadiness.DRAFT,
                 "primary_entity_ids": derived_data.primary_entity_ids,
                 "relationships_info": derived_data.relationships_info,
+                **({"entity_ids": context_entity_ids} if context_entity_ids is not None else {}),
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
