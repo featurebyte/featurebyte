@@ -25,7 +25,7 @@ def test_event_table_sample(event_table, source_type):
     """
     Test event table sample & event table column sample
     """
-    sample_kwargs = {"from_timestamp": "2001-01-01", "to_timestamp": "2001-02-01"}
+    sample_kwargs = {"size": 100, "from_timestamp": "2001-01-01", "to_timestamp": "2001-02-01"}
     event_table_df = event_table.sample(**sample_kwargs)
 
     ts_col = "ËVENT_TIMESTAMP"
@@ -36,7 +36,7 @@ def test_event_table_sample(event_table, source_type):
         pd.testing.assert_frame_equal(event_table_df[[ts_col]], ev_ts)
 
     # check the sample result
-    assert ev_ts.shape[0] == 10
+    assert ev_ts.shape[0] == 100
     assert maybe_tz_convert(event_table_df[ts_col].min()) >= pd.Timestamp(
         sample_kwargs["from_timestamp"]
     )
