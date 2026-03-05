@@ -50,6 +50,9 @@ TEST_CASES_MAPPING = {
     "cosine_similarity_feature_spark": TestCase(
         "deployed_cosine_similarity_feature_list", SourceType.SPARK
     ),
+    "same_entity_different_sources": TestCase(
+        "deployed_same_entity_different_sources_feature_list"
+    ),
 }
 
 
@@ -333,6 +336,45 @@ async def deployed_cosine_similarity_feature_list(
         app_container,
         cosine_sim_feature,
         return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_same_entity_different_sources_feature_list(
+    app_container,
+    snowflake_event_table_with_entity,
+    feature_group_feature_job_setting,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for features with same entity but different aggregation sources
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    view = snowflake_event_table_with_entity.get_view()
+    view_1 = view[view["col_float"] > 100]
+    view_2 = view[view["col_float"] < 10]
+
+    def _get_feature(feature_view, feature_name):
+        return feature_view.groupby("cust_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            windows=["1d"],
+            feature_job_setting=feature_group_feature_job_setting,
+            feature_names=[feature_name],
+        )[feature_name]
+
+    feature_1 = _get_feature(view_1, "sum_1d_gt_100")
+    feature_2 = _get_feature(view_2, "sum_1d_lt_10")
+
+    feature_list = await deploy_features(
+        app_container,
+        [feature_1, feature_2],
+        feature_list_name=f"feature_list_{ObjectId()}",
         deployment_id=deployment_id,
     )
     return feature_list
