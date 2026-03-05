@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.4.0 (2026-03-05)
+
+### 💡 Enhancements
+
++ `service` Support using nested fields in structured data types as regular columns
++ `service` Allow only target with type and positive label specified to used for use case creation.
+
 ## v3.3.1 (2025-12-04)
 
 ### 💡 Enhancements
