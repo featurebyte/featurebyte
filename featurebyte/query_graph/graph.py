@@ -269,7 +269,7 @@ class QueryGraph(QueryGraphModel):
                 if node.parameters.entity_ids:
                     output.extend(node.parameters.keys)
             elif isinstance(node, (LookupNode, LookupTargetNode)):
-                output.append(node.parameters.entity_column)
+                output.extend(node.parameters.get_entity_columns())
         return sorted(set(output))
 
     def iterate_group_by_node_and_table_id_pairs(

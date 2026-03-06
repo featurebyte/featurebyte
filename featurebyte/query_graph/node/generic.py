@@ -1173,12 +1173,48 @@ class LookupParameters(FeatureByteBaseModel):
 
     input_column_names: List[InColumnStr]
     feature_names: List[OutColumnStr]
-    entity_column: InColumnStr
+    entity_column: Optional[InColumnStr]
+    entity_columns: Optional[List[InColumnStr]] = Field(default=None)
     serving_name: str
-    entity_id: PydanticObjectId
+    serving_names: Optional[List[str]] = Field(default=None)
+    entity_id: PydanticObjectId  # TODO: also need entity_ids?
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
     snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
+
+    def get_entity_columns(self) -> List[InColumnStr]:
+        """
+        Get entity columns. This method is more preferred than directly accessing the
+        `entity_column` or `entity_columns` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[InColumnStr]
+        """
+        if self.entity_columns is not None:
+            return self.entity_columns
+        elif self.entity_column is not None:
+            return [self.entity_column]
+        # A valid lookup feature / target must have the entity column(s) sepcified
+        raise ValueError("Either entity_column or entity_columns must be provided")
+
+    def get_serving_names(self) -> List[str]:
+        """
+        Get serving names. This method is more preferred than directly accessing the
+        `serving_name` or `serving_names` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[str]
+        """
+        if self.serving_names is not None:
+            return self.serving_names
+        elif self.serving_name is not None:
+            return [self.serving_name]
+        # A valid lookup feature / target must have the serving name(s) specified
+        raise ValueError("Either serving_name or serving_names must be provided")
 
     @model_validator(mode="before")
     @classmethod
@@ -1240,7 +1276,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=feature_name,
                 method=None,
-                keys=[self.parameters.entity_column],
+                keys=self.parameters.get_entity_columns(),
                 window=None,
                 category=None,
                 offset=offset,
@@ -1257,7 +1293,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         ]
 
     def _exclude_source_columns(self) -> List[str]:
-        return [self.parameters.entity_column]
+        return [str(col) for col in self.parameters.get_entity_columns()]
 
     def normalize_and_recreate_node(
         self,

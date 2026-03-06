@@ -552,17 +552,23 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         else:
             aggregate_input_expr = self.aggregate_input_expr
 
+        entity_columns = [str(col) for col in node.parameters.get_entity_columns()]
         universe_expr = (
             select(
-                expressions.alias_(
-                    quoted_identifier(node.parameters.entity_column),
-                    alias=node.parameters.serving_name,
-                    quoted=True,
-                )
+                *[
+                    expressions.alias_(
+                        quoted_identifier(entity_column),
+                        alias=serving_name,
+                        quoted=True,
+                    )
+                    for (entity_column, serving_name) in zip(
+                        entity_columns, node.parameters.get_serving_names()
+                    )
+                ],
             )
             .distinct()
             .from_(aggregate_input_expr.subquery())
-            .where(columns_not_null([node.parameters.entity_column]))
+            .where(columns_not_null(entity_columns))
         )
         return [universe_expr]
 
