@@ -199,19 +199,18 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
         out = []
 
         for specs in self.iterate_grouped_lookup_specs(is_scd=False):
-            entity_column = specs[0].entity_column
-            serving_name = specs[0].serving_names[0]
+            entity_columns = specs[0].entity_columns
+            serving_names = specs[0].serving_names
             source_expr = specs[0].source_expr
 
             snapshots_parameters = specs[0].snapshots_parameters
             if snapshots_parameters is None:
-                join_keys = [serving_name]
+                join_keys = serving_names[:]
                 left_table_join_keys = None
             else:
                 join_keys = [
                     snapshots_parameters.snapshot_datetime_column,
-                    serving_name,
-                ]
+                ] + serving_names
                 if specs[0].is_target:
                     # No need to apply blind spot when adjusting for snapshots when computing target
                     feature_job_setting = None
@@ -242,11 +241,20 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 )
                 left_table_join_keys = [
                     adjusted_point_in_time_expr,
-                    get_qualified_column_identifier(serving_name, "REQ"),
+                ] + [
+                    get_qualified_column_identifier(serving_name, "REQ")
+                    for serving_name in serving_names
                 ]
 
             agg_expr = select(
-                alias_(quoted_identifier(entity_column), alias=serving_name, quoted=True),
+                *(
+                    alias_(
+                        quoted_identifier(entity_column),
+                        alias=serving_name,
+                        quoted=True,
+                    )
+                    for entity_column, serving_name in zip(entity_columns, serving_names)
+                ),
                 *(
                     [quoted_identifier(snapshots_parameters.snapshot_datetime_column)]
                     if snapshots_parameters
@@ -331,9 +339,10 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
 
         groupby_keys = [
             GroupbyKey(
-                expr=get_qualified_column_identifier(spec.entity_column, "SCD"),
-                name=spec.serving_names[0],
+                expr=get_qualified_column_identifier(key, "SCD"),
+                name=serving_name,
             )
+            for (key, serving_name) in zip(spec.entity_columns, spec.serving_names)
         ]
         groupby_columns = [
             GroupbyColumn(
@@ -464,7 +473,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 expr=table_expr,
                 timestamp_column=point_in_time_column,
                 timestamp_schema=None,
-                join_keys=[lookup_specs[0].serving_names[0]],
+                join_keys=lookup_specs[0].serving_names,
                 input_columns=current_columns,
                 output_columns=current_columns,
             )
@@ -476,7 +485,7 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 expr=lookup_specs[0].source_expr,
                 timestamp_column=scd_parameters.effective_timestamp_column,
                 timestamp_schema=scd_parameters.effective_timestamp_schema,
-                join_keys=[lookup_specs[0].entity_column],
+                join_keys=lookup_specs[0].entity_columns,
                 input_columns=[spec.input_column_name for spec in lookup_specs],
                 output_columns=agg_result_names,
                 end_timestamp_column=scd_parameters.end_timestamp_column,

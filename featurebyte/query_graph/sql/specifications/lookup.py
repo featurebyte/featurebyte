@@ -51,7 +51,7 @@ class LookupSpec(BaseLookupSpec):
                 node_name=node.name,
                 input_column_name=input_column_name,
                 feature_name=feature_name,
-                entity_column=params.entity_column,
+                entity_columns=[params.entity_column],
                 entity_ids=[params.entity_id],
                 serving_names=[params.serving_name],
                 serving_names_mapping=serving_names_mapping,
