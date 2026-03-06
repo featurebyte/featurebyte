@@ -44,6 +44,7 @@ time_series_table = TimeSeriesTable(
     ],
     record_creation_timestamp_column=None,
     series_id_column="col_int",
+    series_id_columns=["col_int"],
     reference_datetime_column="date",
     reference_datetime_schema=TimestampSchema(
         format_string="YYYY-MM-DD HH24:MI:SS",

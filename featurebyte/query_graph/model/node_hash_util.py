@@ -196,6 +196,26 @@ def handle_time_series_window_aggregate_node_parameters(node_parameters: Dict[st
         feature_job_setting.pop("blind_spot", None)
 
 
+def handle_time_series_input_node_parameters(node_parameters: Dict[str, Any]) -> None:
+    """
+    Handle time series input node parameters for hash computation.
+
+    Excludes ``id_columns`` from the hash when it is None or when it equals ``[id_column]``
+    (the auto-populated single-column case), to maintain backward-compatible hashes for existing
+    features.
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters
+    """
+    id_columns = node_parameters.get("id_columns")
+    id_column = node_parameters.get("id_column")
+    single_col_equivalent = [id_column] if id_column is not None else None
+    if id_columns is None or id_columns == single_col_equivalent:
+        node_parameters.pop("id_columns", None)
+
+
 def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
     """
     Handle lookup node parameters

@@ -4,7 +4,7 @@ TimeSeriesTable API payload schema
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Sequence
+from typing import List, Literal, Optional, Sequence
 
 from pydantic import Field, StrictStr, field_validator
 
@@ -25,6 +25,7 @@ class TimeSeriesTableCreate(TableCreate):
 
     type: Literal[TableDataType.TIME_SERIES_TABLE] = TableDataType.TIME_SERIES_TABLE
     series_id_column: Optional[StrictStr]
+    series_id_columns: Optional[List[StrictStr]] = None
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval

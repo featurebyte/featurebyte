@@ -73,6 +73,9 @@ class TimeSeriesTable(TableApiObject):
     internal_time_interval: TimeInterval = Field(alias="time_interval")
     internal_series_id_column: Optional[StrictStr] = Field(alias="series_id_column", default=None)
     internal_is_global_series: Optional[bool] = Field(alias="is_global_series", default=None)
+    internal_series_id_columns: Optional[List[StrictStr]] = Field(
+        alias="series_id_columns", default=None
+    )
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -194,6 +197,7 @@ class TimeSeriesTable(TableApiObject):
             node_name=inserted_graph_node.name,
             default_feature_job_setting=self.default_feature_job_setting,
             series_id_column=self.series_id_column,
+            series_id_columns=self.series_id_columns,
         )
 
     @property
@@ -248,6 +252,20 @@ class TimeSeriesTable(TableApiObject):
             return self.cached_model.is_global_series
         except RecordRetrievalException:
             return self.internal_is_global_series
+
+    @property
+    def series_id_columns(self) -> Optional[List[str]]:
+        """
+        Composite series ID column names of the TimeSeriesTable
+
+        Returns
+        -------
+        Optional[List[str]]
+        """
+        try:
+            return self.cached_model.series_id_columns
+        except RecordRetrievalException:
+            return self.internal_series_id_columns
 
     @property
     def reference_datetime_column(self) -> str:

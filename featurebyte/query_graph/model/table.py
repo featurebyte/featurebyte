@@ -665,9 +665,16 @@ class TimeSeriesTableData(BaseTableData):
     type: Literal[TableDataType.TIME_SERIES_TABLE] = TableDataType.TIME_SERIES_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     series_id_column: Optional[StrictStr]
+    series_id_columns: Optional[List[StrictStr]] = None
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval
+
+    @model_validator(mode="after")
+    def _populate_series_id_columns(self) -> "TimeSeriesTableData":
+        if self.series_id_columns is None and self.series_id_column is not None:
+            self.series_id_columns = [self.series_id_column]
+        return self
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -689,6 +696,7 @@ class TimeSeriesTableData(BaseTableData):
             parameters={
                 "id": self.id,
                 "id_column": self.series_id_column,
+                "id_columns": self.series_id_columns,
                 "feature_store_details": {"type": feature_store_details.type},
                 "reference_datetime_column": self.reference_datetime_column,
                 "reference_datetime_schema": self.reference_datetime_schema,

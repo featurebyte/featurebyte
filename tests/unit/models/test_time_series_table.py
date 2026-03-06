@@ -112,6 +112,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
         },
         "columns_info": columns_info,
         "series_id_column": "series_id",
+        "series_id_columns": ["series_id"],
         "reference_datetime_column": "date",
         "reference_datetime_schema": {
             "format_string": None,

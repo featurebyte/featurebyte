@@ -66,6 +66,11 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
         frozen=True,
         description="Returns the name of the column representing the series key of the Time Series view.",
     )
+    series_id_columns: Optional[List[str]] = Field(
+        frozen=True,
+        default=None,
+        description="Returns the names of the columns representing the composite series key of the Time Series view.",
+    )
 
     @property
     def timestamp_column(self) -> str:
@@ -153,6 +158,7 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
         params.update({
             "default_feature_job_setting": self.default_feature_job_setting,
             "series_id_column": self.series_id_column,
+            "series_id_columns": self.series_id_columns,
         })
         return params
 

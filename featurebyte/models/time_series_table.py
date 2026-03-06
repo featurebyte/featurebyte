@@ -49,6 +49,8 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         List of time series table columns
     series_id_column: Optional[str]
         Series ID column name
+    series_id_columns: Optional[List[str]]
+        Composite series ID column names
     reference_datetime_column: str
         Reference datetime column name
     reference_datetime_schema: TimestampSchema
@@ -96,11 +98,11 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
 
     @property
     def special_columns(self) -> List[str]:
-        cols = [
-            self.reference_datetime_column,
-            self.series_id_column,
-            self.record_creation_timestamp_column,
-        ]
+        cols: List[Optional[str]] = [self.reference_datetime_column]
+        cols.extend(
+            self.series_id_columns or ([self.series_id_column] if self.series_id_column else [])
+        )
+        cols.append(self.record_creation_timestamp_column)
         return [col for col in cols if col]
 
     def create_view_graph_node(

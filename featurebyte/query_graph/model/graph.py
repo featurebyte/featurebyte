@@ -18,6 +18,7 @@ from featurebyte.query_graph.model.node_hash_util import (
     exclude_non_aggregation_with_timestamp_node_timestamp_metadata,
     exclude_partition_metadata_from_node_parameters,
     handle_lookup_node_parameters,
+    handle_time_series_input_node_parameters,
     handle_time_series_window_aggregate_node_parameters,
 )
 from featurebyte.query_graph.node import Node, construct_node
@@ -267,6 +268,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         if node.type == NodeType.REQUEST_COLUMN:
             if node_parameters.get("context_id") is None:
                 node_parameters.pop("context_id", None)
+        if node.type == NodeType.INPUT:
+            if node_parameters.get("type") == TableDataType.TIME_SERIES_TABLE:
+                handle_time_series_input_node_parameters(node_parameters)
         if node.type in NodeType.aggregation_and_lookup_node_types():
             exclude_aggregation_and_lookup_node_timestamp_metadata(
                 node_type=node.type, node_parameters=node_parameters

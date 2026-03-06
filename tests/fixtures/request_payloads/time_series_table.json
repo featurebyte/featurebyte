@@ -115,6 +115,9 @@
         "timezone": "Etc/UTC"
     },
     "series_id_column": "col_int",
+    "series_id_columns": [
+        "col_int"
+    ],
     "tabular_source": {
         "feature_store_id": "646f6c190ed28a5271fb02a1",
         "table_details": {
