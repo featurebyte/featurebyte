@@ -1298,6 +1298,28 @@ def snowflake_time_series_table_id_fixture():
     return ObjectId("6337f9651050ee7d5980662f")
 
 
+@pytest.fixture(name="snowflake_time_series_table_composite_series_id")
+def snowflake_time_series_table_composite_series_id_fixture(
+    snowflake_database_time_series_table,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """TimeSeriesTable object fixture with composite series ID (series_id_columns)"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    time_series_table = snowflake_database_time_series_table.create_time_series_table(
+        name="sf_time_series_table_composite",
+        series_id_columns=["col_int", "store_id"],
+        reference_datetime_column="date",
+        reference_datetime_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
+        time_interval=TimeInterval(value=1, unit="DAY"),
+        record_creation_timestamp_column="created_at",
+        description="test time series table with composite series id",
+    )
+    yield time_series_table
+
+
 @pytest.fixture(name="snowflake_snapshots_table_id")
 def snowflake_snapshots_table_id_fixture():
     """Snowflake snapshots table ID"""

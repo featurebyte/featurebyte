@@ -613,8 +613,11 @@ def test_extract_definition__lookup_on_assign(global_graph, lookup_assign_featur
                 "feat_97c9784cb6aee097a5fc6590c82aa72da6a46275_column_c75864236e441dfade8987dcfaeec31166850b0c"
             ],
             "entity_column": "column_2e659eb6bcbf83ef47f54dc5b316d5aa657b9fed",
+            "entity_columns": None,
             "serving_name": "CUSTOMER_ID",
+            "serving_names": None,
             "entity_id": entity_id,
+            "entity_ids": None,
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
@@ -889,7 +892,9 @@ def test_extract_definition__scd_lookup(
         definition_scd_lookup_node.parameters,
         expected={
             "entity_column": "cust_id",
+            "entity_columns": None,
             "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+            "entity_ids": None,
             "event_parameters": None,
             "feature_names": ["feat_7508cdc215a29f57609fdb31d6221be00462fdcd_membership_status"],
             "input_column_names": ["membership_status"],
@@ -903,6 +908,7 @@ def test_extract_definition__scd_lookup(
                 "offset": None,
             },
             "serving_name": "CUSTOMER_ID",
+            "serving_names": None,
             "snapshots_parameters": None,
         },
     )
@@ -939,7 +945,9 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
         definition_event_lookup_node.parameters,
         expected={
             "entity_column": "order_id",
+            "entity_columns": None,
             "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+            "entity_ids": None,
             "event_parameters": {
                 "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
                 "event_timestamp_metadata": None,
@@ -948,6 +956,7 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
             "input_column_names": ["order_method"],
             "scd_parameters": None,
             "serving_name": "ORDER_ID",
+            "serving_names": None,
             "snapshots_parameters": None,
         },
     )

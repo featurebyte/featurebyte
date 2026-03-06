@@ -765,8 +765,11 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
             "input_column_names": ["col_float"],
             "feature_names": ["FloatFeature"],
             "entity_column": "col_int",
+            "entity_columns": None,
             "serving_name": "cust_id",
+            "serving_names": None,
             "entity_id": cust_id_entity.id,
+            "entity_ids": None,
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": {
@@ -840,8 +843,11 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
             "input_column_names": ["col_float"],
             "feature_names": ["FloatTarget"],
             "entity_column": "col_int",
+            "entity_columns": None,
             "serving_name": "cust_id",
+            "serving_names": None,
             "entity_id": cust_id_entity.id,
+            "entity_ids": None,
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": {

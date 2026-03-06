@@ -313,7 +313,7 @@ class OfflineStoreFeatureTableConstructionService:
         if isinstance(node.parameters, BaseGroupbyParameters):
             node_entity_ids = node.parameters.entity_ids
         elif isinstance(node, LookupNode):
-            node_entity_ids = [node.parameters.entity_id]
+            node_entity_ids = node.parameters.get_entity_ids()
         assert node_entity_ids is not None
         return [
             entity_id

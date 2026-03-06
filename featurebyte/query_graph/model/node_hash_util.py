@@ -261,3 +261,4 @@ def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
         node_parameters.pop("snapshots_parameters", None)
     _normalize_plural_to_singular(node_parameters, "entity_columns", "entity_column")
     _normalize_plural_to_singular(node_parameters, "serving_names", "serving_name")
+    _normalize_plural_to_singular(node_parameters, "entity_ids", "entity_id")

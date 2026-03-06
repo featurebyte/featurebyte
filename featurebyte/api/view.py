@@ -1032,11 +1032,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         -------
         set[str]
         """
-        additional_columns = self._get_additional_inherited_columns()
-        join_col = self._get_join_column()
-        if not join_col:
-            return additional_columns
-        return {join_col}.union(self._get_additional_inherited_columns())
+        columns = set()
+        columns.update(self._get_additional_inherited_columns())
+        columns.update(self.get_lookup_entity_columns() or [])
+        return columns
 
     @cached_property
     def _reference_column_map(self) -> dict[str, list[str]]:
@@ -1685,6 +1684,27 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         return node_before_projection
 
+    def get_lookup_entity_columns(self) -> Optional[list[str]]:
+        """
+        Get the list of columns that should be used for entity lookup in as_features() or
+        as_target().
+
+        Currently, only time series view's as_target supports lookup using composite entity columns,
+        though composite key lookup is supported in general in query graph.
+
+        The default implementation defaults to returning a single item list based on
+        _get_join_column() (not get_join_column() because that is fallible). This can be cleaned up
+        once join node also supports composite key lookup.
+
+        Returns
+        -------
+        Optional[list[str]]
+        """
+        col = self._get_join_column()
+        if col is None:
+            return None
+        return [col]
+
     def get_lookup_node_params(
         self,
         column_names: List[str],
@@ -1713,28 +1733,47 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         ValueError
             If the entity_column is not found in the columns_info
         """
-        # Get entity_column
-        entity_column = self.get_join_column()
+        # Get entity_columns
+        entity_columns = self.get_lookup_entity_columns()
+        if not entity_columns:
+            raise ValueError("Lookup feature / target is not supported for this view")
 
-        # Get serving_name
+        # Get entity related parameters (entity_column, serving_name, entity_id)
         columns_info = self.columns_info
         column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
-        if entity_column not in column_entity_map:
-            raise ValueError(f'Column "{entity_column}" is not an entity!')
-        entity_id = column_entity_map[entity_column]
-        entity = Entity.get_by_id(entity_id)
-        serving_name = entity.serving_name
+        entity_ids = []
+        serving_names = []
+        for entity_column in entity_columns:
+            if entity_column not in column_entity_map:
+                raise ValueError(f'Column "{entity_column}" is not an entity!')
+            entity_id = column_entity_map[entity_column]
+            entity = Entity.get_by_id(entity_id)
+            entity_ids.append(entity_id)
+            serving_names.append(entity.serving_name)
+
+        if len(entity_columns) == 1:
+            # Fallback to old style parameters for backward compatibility if there's only one entity
+            # column, though the new format is also supported.
+            entity_params = {
+                "entity_column": entity_columns[0],
+                "serving_name": serving_names[0],
+                "entity_id": entity_ids[0],
+            }
+        else:
+            entity_params = {
+                "entity_columns": entity_columns,
+                "serving_names": serving_names,
+                "entity_ids": entity_ids,
+            }
 
         # Set up Lookup node
         additional_params = self.get_additional_lookup_parameters(offset=offset)
         return {
             "input_column_names": column_names,
             "feature_names": feature_names,
-            "entity_column": entity_column,
-            "serving_name": serving_name,
-            "entity_id": entity_id,
             # CalendarWindow offset is handled in SnapshotsLookupParameters
             "offset": offset if isinstance(offset, str) else None,
+            **entity_params,
             **additional_params,
         }
 

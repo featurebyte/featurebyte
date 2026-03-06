@@ -1395,6 +1395,72 @@ def test_create_time_series_table_without_series_id_column(
     _ = event_view[["col_text", "col_int"]]
 
 
+def test_create_time_series_table_with_composite_series_id(
+    snowflake_time_series_table_composite_series_id,
+):
+    """
+    Test TimeSeriesTable creation with composite series_id_columns
+    """
+    time_series_table = snowflake_time_series_table_composite_series_id
+
+    # check that node parameter is set properly
+    node_params = time_series_table.frame.node.parameters
+    assert node_params.id == time_series_table.id
+    assert node_params.type == TableDataType.TIME_SERIES_TABLE
+
+    # check series_id_column is None and series_id_columns is set
+    assert time_series_table.series_id_column is None
+    assert time_series_table.series_id_columns == ["col_int", "store_id"]
+
+    output = time_series_table.model_dump(by_alias=True)
+    assert output["series_id_column"] is None
+    assert output["series_id_columns"] == ["col_int", "store_id"]
+
+
+def test_create_time_series_table_with_composite_series_id__cannot_use_both(
+    snowflake_database_time_series_table, catalog
+):
+    """
+    Test TimeSeriesTable creation fails when both series_id_column and series_id_columns are provided
+    """
+    _ = catalog
+
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_time_series_table.create_time_series_table(
+            name="sf_time_series_table_composite",
+            series_id_column="col_int",
+            series_id_columns=["col_int", "store_id"],
+            reference_datetime_column="date",
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
+            time_interval=TimeInterval(value=1, unit="DAY"),
+        )
+    assert "Only one of series_id_column or series_id_columns can be specified" in str(exc.value)
+
+
+def test_create_time_series_table_with_composite_series_id__must_set_one(
+    snowflake_database_time_series_table, catalog
+):
+    """
+    Test TimeSeriesTable creation fails when neither series_id_column nor series_id_columns is provided
+    """
+    _ = catalog
+
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_time_series_table.create_time_series_table(
+            name="sf_time_series_table_composite",
+            reference_datetime_column="date",
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
+            time_interval=TimeInterval(value=1, unit="DAY"),
+        )
+    assert "Exactly one of series_id_column or series_id_columns must be explicitly set" in str(
+        exc.value
+    )
+
+
 def test_create_new_version(snowflake_time_series_table, ts_window_aggregate_feature):
     """Test creating a new version of a feature created from a time series table"""
     table_id_fjs = ts_window_aggregate_feature.table_id_feature_job_settings

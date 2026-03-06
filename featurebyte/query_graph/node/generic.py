@@ -1173,14 +1173,32 @@ class LookupParameters(FeatureByteBaseModel):
 
     input_column_names: List[InColumnStr]
     feature_names: List[OutColumnStr]
-    entity_column: Optional[InColumnStr]
+    entity_column: Optional[InColumnStr] = Field(default=None)
     entity_columns: Optional[List[InColumnStr]] = Field(default=None)
-    serving_name: str
+    serving_name: Optional[str] = Field(default=None)
     serving_names: Optional[List[str]] = Field(default=None)
-    entity_id: PydanticObjectId  # TODO: also need entity_ids?
+    entity_id: Optional[PydanticObjectId] = None
+    entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
     snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
+
+    def get_entity_ids(self) -> List[PydanticObjectId]:
+        """
+        Get entity ids. This method is more preferred than directly accessing the
+        `entity_id` or `entity_ids` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        if self.entity_ids is not None:
+            return self.entity_ids
+        elif self.entity_id is not None:
+            return [self.entity_id]
+        # A valid lookup feature / target must have the entity id(s) specified
+        raise ValueError("Either entity_id or entity_ids must be provided")
 
     def get_entity_columns(self) -> List[InColumnStr]:
         """

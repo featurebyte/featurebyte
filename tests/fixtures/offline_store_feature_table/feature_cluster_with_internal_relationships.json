@@ -258,9 +258,11 @@
                 "output_type": "frame",
                 "parameters": {
                     "entity_column": "col_text",
+                    "entity_columns": null,
                     "entity_id": {
                         "$oid": "63f94ed6ea1f050131379214"
                     },
+                    "entity_ids": null,
                     "event_parameters": null,
                     "feature_names": [
                         "some_lookup_feature"
@@ -278,6 +280,7 @@
                         "offset": null
                     },
                     "serving_name": "cust_id",
+                    "serving_names": null,
                     "snapshots_parameters": null
                 },
                 "type": "lookup"

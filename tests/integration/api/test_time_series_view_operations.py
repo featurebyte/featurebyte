@@ -11,9 +11,18 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import CalendarWindow, Context, CronFeatureJobSetting, FeatureList, RequestColumn
+from featurebyte import (
+    CalendarWindow,
+    Context,
+    CronFeatureJobSetting,
+    Entity,
+    FeatureList,
+    RequestColumn,
+)
 from featurebyte.enum import DBVarType, TimeIntervalUnit
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     check_preview_and_compute_historical_features,
@@ -590,3 +599,154 @@ async def test_lookup_target(
     assert len(df_targets) == 2
     df_targets_sorted = df_targets.sort_values("FORECAST_POINT").reset_index(drop=True)
     assert df_targets_sorted["time_series_lookup_target"].tolist() == [0.09, 0.14]
+
+
+@pytest.mark.asyncio
+async def test_lookup_target_with_composite_series_id(
+    session, data_source, catalog, timestamp_format_string
+):
+    """
+    Test that lookup target can be created from a TimeSeriesView with composite series_id_columns
+    and computed correctly using an observation table with a ForecastPointSchema context.
+
+    The table tracks daily sales per (store, sku) pair. Two stores (STORE_1, STORE_2) each
+    carry two SKUs (SKU_A, SKU_B), so neither store alone nor sku alone uniquely identifies
+    a series. The composite key (store, sku) is required for a unique lookup.
+
+    Data layout (daily, Jan 5–7; day 7 is the target lookup date):
+      store   | sku   | date       | value
+      --------|-------|------------|-------
+      STORE_1 | SKU_A | 2001-01-07 | 70.0   <- target row for observation 1
+      STORE_1 | SKU_B | 2001-01-07 | 700.0  <- target row for observation 2
+      STORE_2 | SKU_A | 2001-01-07 | 71.0   <- false match if only sku="SKU_A" were used
+      STORE_2 | SKU_B | 2001-01-07 | 701.0  <- false match if only sku="SKU_B" were used
+
+    POINT_IN_TIME (2001-01-01) is before FORECAST_POINT (2001-01-07), reflecting a realistic
+    forecasting scenario. The target looks up the value directly at FORECAST_POINT:
+      (STORE_1, SKU_A) -> 70.0
+      (STORE_1, SKU_B) -> 700.0
+      (STORE_2, SKU_A) -> 71.0
+      (STORE_2, SKU_B) -> 701.0
+    """
+    _ = catalog
+
+    unique_id = ObjectId()
+    suffix = unique_id.binary.hex()[:8].upper()
+
+    # Only the composite key (store, sku) uniquely identifies each series.
+    df = pd.DataFrame([
+        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-05"), "val": 50.0},
+        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-06"), "val": 60.0},
+        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-07"), "val": 70.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-05"), "val": 500.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-06"), "val": 600.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-07"), "val": 700.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-05"), "val": 51.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-06"), "val": 61.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-07"), "val": 71.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-05"), "val": 501.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-06"), "val": 601.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-07"), "val": 701.0},
+    ])
+
+    table_name = f"COMPOSITE_SERIES_TS_{suffix}"
+    await session.register_table(table_name, df)
+
+    source_table = data_source.get_source_table(
+        table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+
+    # Create two separate entities for the composite key columns
+    entity_store = Entity(name=f"CompositeStore_{suffix}", serving_names=[f"store_{suffix}"])
+    entity_store.save()
+    entity_sku = Entity(name=f"CompositeSKU_{suffix}", serving_names=[f"sku_{suffix}"])
+    entity_sku.save()
+
+    # Create TimeSeriesTable with composite series_id_columns (ts column is TIMESTAMP type,
+    # so no format_string is needed)
+    ts_table = source_table.create_time_series_table(
+        name=f"composite_series_ts_{suffix}",
+        series_id_columns=["store", "sku"],
+        reference_datetime_column="ts",
+        reference_datetime_schema=TimestampSchema(is_utc_time=True),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+    )
+    ts_table["store"].as_entity(entity_store.name)
+    ts_table["sku"].as_entity(entity_sku.name)
+
+    view = ts_table.get_view()
+    lookup_target = view["val"].as_target(
+        f"composite_lookup_target_{suffix}",
+        fill_value=0,
+    )
+
+    # Create a Context with forecast_point_schema and composite primary entities.
+    # The FORECAST_POINT column will be used as the temporal reference for target computation.
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        is_utc_time=True,
+        format_string=timestamp_format_string,
+    )
+    forecast_context = Context.create(
+        name=f"forecast_context_composite_{unique_id}",
+        primary_entity=[entity_store.name, entity_sku.name],
+        forecast_point_schema=forecast_schema,
+    )
+
+    # One observation per (store, sku) combination. POINT_IN_TIME (2001-01-01) is before
+    # FORECAST_POINT (2001-01-07). The target looks up the value directly at FORECAST_POINT.
+    # Using store alone would return two SKUs per store; using sku alone would return two stores
+    # per SKU — only the composite key uniquely identifies each row.
+    target_col = f"composite_lookup_target_{suffix}"
+    df_obs = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            f"store_{suffix}": "STORE_1",
+            f"sku_{suffix}": "SKU_A",
+            "FORECAST_POINT": "2001|01|07",
+            target_col: 70.0,
+        },
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            f"store_{suffix}": "STORE_1",
+            f"sku_{suffix}": "SKU_B",
+            "FORECAST_POINT": "2001|01|07",
+            target_col: 700.0,
+        },
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            f"store_{suffix}": "STORE_2",
+            f"sku_{suffix}": "SKU_A",
+            "FORECAST_POINT": "2001|01|07",
+            target_col: 71.0,
+        },
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-01 00:00:00"),
+            f"store_{suffix}": "STORE_2",
+            f"sku_{suffix}": "SKU_B",
+            "FORECAST_POINT": "2001|01|07",
+            target_col: 701.0,
+        },
+    ])
+    obs_table_name = f"COMPOSITE_OBS_{suffix}"
+    await session.register_table(obs_table_name, df_obs.drop(columns=[target_col]))
+    obs_source_table = data_source.get_source_table(
+        obs_table_name,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    observation_table = obs_source_table.create_observation_table(
+        f"obs_composite_{unique_id}",
+        context_name=forecast_context.name,
+    )
+
+    df_targets = lookup_target.compute_targets(observation_table)
+
+    fb_assert_frame_equal(
+        df_targets,
+        df_obs,
+        sort_by_columns=[f"store_{suffix}", f"sku_{suffix}"],
+    )

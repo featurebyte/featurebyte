@@ -178,8 +178,11 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
             "input_column_names": ["col_float"],
             "feature_names": ["FloatFeature"],
             "entity_column": "col_text",
+            "entity_columns": None,
             "serving_name": "cust_id",
+            "serving_names": None,
             "entity_id": cust_id_entity.id,
+            "entity_ids": None,
             "scd_parameters": {
                 "effective_timestamp_column": "effective_timestamp",
                 "effective_timestamp_metadata": None,
@@ -248,8 +251,11 @@ def test_scd_view_as_feature__special_column(
         "input_column_names": ["effective_timestamp"],
         "feature_names": ["Latest Record Change Date"],
         "entity_column": "col_text",
+        "entity_columns": None,
         "serving_name": "cust_id",
+        "serving_names": None,
         "entity_id": cust_id_entity.id,
+        "entity_ids": None,
         "scd_parameters": {
             "effective_timestamp_column": "effective_timestamp",
             "effective_timestamp_metadata": None,

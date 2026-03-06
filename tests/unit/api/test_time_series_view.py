@@ -542,8 +542,11 @@ def test_time_series_view_as_target(snowflake_time_series_table, cust_id_entity)
             "input_column_names": ["col_float"],
             "feature_names": ["FloatTarget"],
             "entity_column": "col_int",
+            "entity_columns": None,
             "serving_name": "cust_id",
+            "serving_names": None,
             "entity_id": cust_id_entity.id,
+            "entity_ids": None,
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": {
@@ -578,6 +581,35 @@ def test_time_series_view_as_target(snowflake_time_series_table, cust_id_entity)
         },
     )
     target.save()
+
+
+def test_time_series_view_as_target_composite_series_id(
+    snowflake_time_series_table_composite_series_id, catalog, cust_id_entity, transaction_entity
+):
+    """
+    Test TimeSeriesView as_target with composite series_id_columns uses entity_columns / entity_ids
+    / serving_names rather than the single-entity fields.
+    """
+    _ = catalog
+    ts_table = snowflake_time_series_table_composite_series_id
+    ts_table["col_int"].as_entity(cust_id_entity.name)
+    ts_table["store_id"].as_entity(transaction_entity.name)
+
+    view = ts_table.get_view()
+    target = view["col_float"].as_target(
+        "FloatTargetComposite",
+        fill_value=0,
+        offset=7,
+    )
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node["parameters"]["entity_column"] is None
+    assert lookup_node["parameters"]["entity_columns"] == ["col_int", "store_id"]
+    assert lookup_node["parameters"]["entity_id"] is None
+    assert lookup_node["parameters"]["entity_ids"] == [cust_id_entity.id, transaction_entity.id]
+    assert lookup_node["parameters"]["serving_names"] == ["cust_id", "transaction_id"]
+    assert lookup_node["parameters"]["serving_name"] is None
+    assert lookup_node["parameters"]["snapshots_parameters"]["offset_size"] == 7
 
 
 def test_time_series_view_as_features_not_supported(snowflake_time_series_table, cust_id_entity):

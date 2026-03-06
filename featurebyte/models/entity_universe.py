@@ -523,11 +523,11 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
 
     def get_serving_names(self) -> List[str]:
         node = cast(LookupNode, self.node)
-        return [node.parameters.serving_name]
+        return [str(col) for col in node.parameters.get_serving_names()]
 
     def get_required_columns(self) -> Optional[list[str]]:
         node = cast(LookupNode, self.node)
-        return [str(node.parameters.entity_column)]
+        return [str(col) for col in node.parameters.get_serving_names()]
 
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(LookupNode, self.node)

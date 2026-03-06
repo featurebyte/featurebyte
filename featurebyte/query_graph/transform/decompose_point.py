@@ -378,7 +378,7 @@ class DecomposePointState:
             aggregation_info.primary_entity_ids = node.parameters.entity_ids or []
         elif isinstance(node, (LookupNode, LookupTargetNode)):
             # primary entity ids introduced by lookup node family
-            aggregation_info.primary_entity_ids = [node.parameters.entity_id]
+            aggregation_info.primary_entity_ids = node.parameters.get_entity_ids()
 
         if not extract_primary_entity_ids_only:
             aggregation_info = self._update_more_aggregation_info(

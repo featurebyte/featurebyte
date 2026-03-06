@@ -190,6 +190,13 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
             }
         }
 
+    def get_lookup_entity_columns(self) -> Optional[list[str]]:
+        if self.series_id_columns is not None:
+            return self.series_id_columns
+        if self.series_id_column is not None:
+            return [self.series_id_column]
+        return None
+
     def validate_offset(self, offset: Optional[OffsetType]) -> None:
         validate_offset_for_view(offset, view_type_name="TimeSeriesView")
 

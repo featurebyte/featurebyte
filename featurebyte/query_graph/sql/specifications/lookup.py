@@ -52,7 +52,7 @@ class LookupSpec(BaseLookupSpec):
                 input_column_name=input_column_name,
                 feature_name=feature_name,
                 entity_columns=[str(col) for col in params.get_entity_columns()],
-                entity_ids=[params.entity_id],
+                entity_ids=params.get_entity_ids(),
                 serving_names=params.get_serving_names(),
                 serving_names_mapping=serving_names_mapping,
                 aggregation_source=aggregation_source,
