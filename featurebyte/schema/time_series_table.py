@@ -66,3 +66,5 @@ class TimeSeriesTableServiceUpdate(TimeSeriesTableUpdateMixin, TableServiceUpdat
     """
     TimeSeriesTable service update schema
     """
+
+    is_global_series: Optional[bool] = Field(default=None)

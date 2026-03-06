@@ -155,6 +155,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         assert output.pop("updated_at") is None
         output["validation"].pop("updated_at")
         output["catalog_id"] = str(default_catalog_id)
+        output["is_global_series"] = False
         return output
 
     @pytest.fixture(name="data_update_dict")
@@ -216,8 +217,9 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         response = test_api_client.get(f"/time_series_table/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 4
+        assert results["total"] == 5
         assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
             "UPDATE",
             "UPDATE",
             "UPDATE",
@@ -239,6 +241,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "reference_timezone": None,
                 "blind_spot": None,
             },
+            None,
             None,
             None,
             None,
@@ -275,6 +278,48 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "reference_timezone": None,
                 "blind_spot": None,
             },
+        ]
+
+    def test_update_status_only(self, test_api_client_persistent, data_response):
+        """
+        Override to account for the extra audit record from detect_additional_properties
+        """
+        from datetime import datetime
+        from http import HTTPStatus
+
+        test_api_client, _ = test_api_client_persistent
+        current_data = data_response.json()
+        assert current_data.pop("status") == "PUBLIC_DRAFT"
+        assert current_data.pop("updated_at") is not None
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{current_data['_id']}",
+            json={"status": "PUBLISHED"},
+        )
+        assert response.status_code == HTTPStatus.OK
+        updated_data = response.json()
+        updated_at = datetime.fromisoformat(updated_data.pop("updated_at"))
+        assert updated_at > datetime.fromisoformat(updated_data["created_at"])
+        assert updated_data.pop("status") == "PUBLISHED"
+        assert updated_data == current_data
+
+        response = test_api_client.get(f"{self.base_route}/audit/{current_data['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()
+        assert results["total"] == 5
+        assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
+            "UPDATE",
+            "UPDATE",
+            "UPDATE",
+            "INSERT",
+        ]
+        assert [record["previous_values"].get("status") for record in results["data"]] == [
+            "PUBLIC_DRAFT",
+            None,
+            None,
+            None,
+            None,
         ]
 
     def test_update_excludes_unsupported_fields(

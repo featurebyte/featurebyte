@@ -110,7 +110,32 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             table_id,
             self.table_document_service.document_update_class(validation=new_validation_state),
         )
+        if new_validation_state.status == TableValidationStatus.PASSED:
+            await self.detect_additional_properties(session, table_model, metadata)  # type: ignore
         await self.compute_column_statistics(session, table_model)  # type: ignore
+
+    async def detect_additional_properties(
+        self,
+        session: BaseSession,
+        table_model: Document,
+        metadata: ExtendedSourceMetadata,
+    ) -> None:
+        """
+        Detect and persist additional properties for the table. Called after validation status is
+        updated. Subclasses can override this to run extra queries and update the table model.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        table_model: Document
+            Table model
+        metadata: ExtendedSourceMetadata
+            Extended source metadata
+        """
+        _ = session
+        _ = table_model
+        _ = metadata
 
     @classmethod
     def table_needs_validation(
