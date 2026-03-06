@@ -15,7 +15,11 @@ from redis.lock import Lock
 from featurebyte.common.model_util import get_version
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
-from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentError,
+    DocumentInconsistencyError,
+    DocumentNotFoundError,
+)
 from featurebyte.logging import get_logger
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
@@ -294,6 +298,36 @@ class FeatureListService(
         }
         return derived_output
 
+    @staticmethod
+    def _validate_naive_prediction(
+        naive_prediction: Optional[ObjectId], features: List[FeatureModel]
+    ) -> None:
+        """
+        Validate that naive_prediction is a feature id in the feature list
+
+        Parameters
+        ----------
+        naive_prediction: Optional[ObjectId]
+            Naive prediction feature id
+        features: List[FeatureModel]
+            List of features in the feature list
+
+        Raises
+        ------
+        DocumentError
+            If naive_prediction is not a valid feature id in the feature list
+        """
+        if naive_prediction is not None:
+            feature_ids: set[ObjectId] = {feature.id for feature in features}
+            if naive_prediction not in feature_ids:
+                feature_names = sorted(
+                    feature.name for feature in features if feature.name is not None
+                )
+                raise DocumentError(
+                    f"naive_prediction '{naive_prediction}' is not a feature in the feature list. "
+                    f"Available features: {feature_names}"
+                )
+
     async def extract_entity_relationship_data(
         self,
         features: List[FeatureModel],
@@ -512,6 +546,9 @@ class FeatureListService(
             await progress_callback(10, "Extracting feature data")
         feature_data = await self._extract_feature_data(document)
 
+        # validate naive_prediction against feature names
+        self._validate_naive_prediction(data.naive_prediction, feature_data["features"])
+
         if progress_callback:
             await progress_callback(30, "Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
@@ -568,6 +605,37 @@ class FeatureListService(
             "Do not use this method as it takes long time to deserialize the data, "
             "use list_documents_as_dict_iterator instead"
         )
+
+    async def validate_naive_prediction_for_feature_list(
+        self, feature_list_id: ObjectId, naive_prediction: ObjectId
+    ) -> None:
+        """
+        Validate that naive_prediction is a valid feature id for the given feature list
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Feature list ID
+        naive_prediction: ObjectId
+            Naive prediction feature id
+
+        Raises
+        ------
+        DocumentError
+            If naive_prediction is not a valid feature id in the feature list
+        """
+        feature_list_dict = await self.get_document_as_dict(
+            document_id=feature_list_id,
+            projection={"feature_ids": 1},
+        )
+        feature_ids = set()
+        for fid in feature_list_dict["feature_ids"]:
+            feature_ids.add(fid)
+        if naive_prediction not in feature_ids:
+            raise DocumentError(
+                f"naive_prediction '{naive_prediction}' is not a feature in the feature list. "
+                f"Available feature ids: {sorted(str(fid) for fid in feature_ids)}"
+            )
 
     async def update_readiness_distribution(
         self,

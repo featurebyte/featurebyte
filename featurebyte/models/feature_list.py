@@ -370,6 +370,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
     features_metadata: List[FeatureMetadata] = Field(frozen=True, default_factory=list)
 
+    # naive prediction feature id (must be a feature in this feature list)
+    naive_prediction: Optional[PydanticObjectId] = Field(default=None)
+
     # store info contains the warehouse specific info for the feature list
     feast_enabled: bool = Field(default=False)
 

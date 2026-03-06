@@ -38,6 +38,7 @@ from featurebyte.schema.feature_list import (
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListServiceCreate,
+    FeatureListServiceUpdate,
     FeatureListSQL,
     FeatureListUpdate,
     SampleEntityServingNames,
@@ -249,6 +250,16 @@ class FeatureListController(
             )
             task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
+
+        if data.naive_prediction is not None:
+            await self.service.validate_naive_prediction_for_feature_list(
+                feature_list_id=feature_list_id,
+                naive_prediction=data.naive_prediction,
+            )
+            await self.service.update_document(
+                document_id=feature_list_id,
+                data=FeatureListServiceUpdate(naive_prediction=data.naive_prediction),
+            )
 
         return await self.get(document_id=feature_list_id)
 

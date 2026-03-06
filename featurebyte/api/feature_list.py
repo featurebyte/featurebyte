@@ -469,6 +469,53 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             return self.internal_context_id
 
     @property
+    def naive_prediction(self) -> Optional[str]:
+        """
+        Returns the naive prediction feature name associated with the FeatureList object.
+
+        Returns
+        -------
+        Optional[str]
+            Name of the feature used as naive prediction, or None if not set.
+        """
+        naive_prediction_id = cast(FeatureListModel, self.cached_model).naive_prediction
+        if naive_prediction_id is None:
+            return None
+        for name, feature in self.feature_objects.items():
+            if feature.id == naive_prediction_id:
+                return name
+        return None
+
+    @typechecked
+    def update_naive_prediction(self, naive_prediction: str) -> None:
+        """
+        Set the naive prediction feature for this FeatureList. The feature name must be
+        one of the features in the feature list.
+
+        Parameters
+        ----------
+        naive_prediction: str
+            Name of the feature to use as naive prediction.
+
+        Raises
+        ------
+        ValueError
+            If the feature name is not found in the feature list.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
+        >>> feature_list.update_naive_prediction("InvoiceCount_60days")  # doctest: +SKIP
+        """
+        feature = self.feature_objects.get(naive_prediction)
+        if feature is None:
+            raise ValueError(
+                f"Feature '{naive_prediction}' is not in the feature list. "
+                f"Available features: {sorted(self.feature_objects.keys())}"
+            )
+        self.update(update_payload={"naive_prediction": str(feature.id)}, allow_update_local=False)
+
+    @property
     @substitute_docstring(
         doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "FeatureList"}
     )
