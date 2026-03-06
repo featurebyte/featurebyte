@@ -5,13 +5,13 @@ from featurebyte.typing import OffsetType
 
 def validate_offset_for_view(offset: Optional[OffsetType], view_type_name: str) -> None:
     """
-    Validate the offset parameter in as_features and as_target for a SnapshotsView like view.
+    Validate the offset parameter for a SnapshotsView or TimeSeriesView.
 
     Parameters
     ----------
     offset: Optional[OffsetType]
-        Offset for lookup feature / target. For SnapshotsView, should be an integer
-        specifying the number of time interval steps.
+        Offset for lookup feature / target. For SnapshotsView or TimeSeriesView, should be an
+        integer specifying the number of time interval steps.
     view_type_name: str
         View type name to be used in error messages, e.g. "SnapshotsView"
 
