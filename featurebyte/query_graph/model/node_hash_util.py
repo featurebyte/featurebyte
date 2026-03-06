@@ -216,6 +216,36 @@ def handle_time_series_input_node_parameters(node_parameters: Dict[str, Any]) ->
         node_parameters.pop("id_columns", None)
 
 
+def _normalize_plural_to_singular(
+    node_parameters: Dict[str, Any],
+    plural_key: str,
+    singular_key: str,
+) -> None:
+    """
+    Normalize a plural list field to its singular equivalent for backward-compatible hash computation.
+
+    - None → pop the plural key (field didn't exist in old features)
+    - Single-item list → pop the plural key and write the single value into the singular key,
+      so the hash matches old single-value features
+    - Multi-item list → leave as-is (genuinely composite, new hash territory)
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters (mutated in place)
+    plural_key: str
+        The new list-valued field name (e.g. "entity_columns", "serving_names")
+    singular_key: str
+        The legacy scalar field name (e.g. "entity_column", "serving_name")
+    """
+    values = node_parameters.get(plural_key)
+    if values is None:
+        node_parameters.pop(plural_key, None)
+    elif len(values) == 1:
+        node_parameters.pop(plural_key)
+        node_parameters[singular_key] = values[0]
+
+
 def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
     """
     Handle lookup node parameters
@@ -229,3 +259,5 @@ def handle_lookup_node_parameters(node_parameters: Dict[str, Any]) -> None:
     # compatibility
     if node_parameters.get("snapshots_parameters") is None:
         node_parameters.pop("snapshots_parameters", None)
+    _normalize_plural_to_singular(node_parameters, "entity_columns", "entity_column")
+    _normalize_plural_to_singular(node_parameters, "serving_names", "serving_name")
