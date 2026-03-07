@@ -423,3 +423,56 @@ async def test_delete_feature_list(
     # check that the feature list has been removed
     with pytest.raises(DocumentNotFoundError):
         await feature_list_service.get_document(document_id=feature_list.id)
+
+
+@pytest.mark.asyncio
+async def test_create_document__with_valid_naive_prediction(feature, feature_list_service, storage):
+    """Test creating a feature list with a valid naive_prediction"""
+    feature_list = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(
+            name="fl_with_naive_pred",
+            feature_ids=[feature.id],
+            naive_prediction=feature.id,
+        )
+    )
+    assert feature_list.naive_prediction == feature.id
+
+
+@pytest.mark.asyncio
+async def test_create_document__with_invalid_naive_prediction(
+    feature, feature_list_service, storage
+):
+    """Test creating a feature list with an invalid naive_prediction raises error"""
+    fake_id = ObjectId()
+    with pytest.raises(DocumentError) as exc:
+        await feature_list_service.create_document(
+            data=FeatureListServiceCreate(
+                name="fl_with_bad_naive_pred",
+                feature_ids=[feature.id],
+                naive_prediction=fake_id,
+            )
+        )
+    assert "naive_prediction" in str(exc.value)
+    assert "is not a feature in the feature list" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_naive_prediction_for_feature_list(
+    feature, feature_list_service, feature_list
+):
+    """Test validate_naive_prediction_for_feature_list with valid and invalid ids"""
+    # valid id should not raise
+    await feature_list_service.validate_naive_prediction_for_feature_list(
+        feature_list_id=feature_list.id,
+        naive_prediction=feature.id,
+    )
+
+    # invalid id should raise
+    fake_id = ObjectId()
+    with pytest.raises(DocumentError) as exc:
+        await feature_list_service.validate_naive_prediction_for_feature_list(
+            feature_list_id=feature_list.id,
+            naive_prediction=fake_id,
+        )
+    assert "naive_prediction" in str(exc.value)
+    assert "is not a feature in the feature list" in str(exc.value)

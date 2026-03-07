@@ -544,6 +544,7 @@ def test_get_feature_list(
             ("features_metadata", [{"feature_id": feature_id, "feature_type": "numeric"}]),
             ("features_primary_entity_ids", [[str(cust_id_entity.id)]]),
             ("is_deleted", False),
+            ("naive_prediction", None),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("primary_entity_ids", [str(cust_id_entity.id)]),

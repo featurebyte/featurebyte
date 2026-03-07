@@ -351,12 +351,26 @@ class VersionService:
             feature_ids=feature_ids
         )
 
+        # remap naive_prediction from old feature id to new feature id
+        naive_prediction = feature_list.naive_prediction
+        if naive_prediction is not None:
+            old_feat_name = feature_id_to_name_map.get(naive_prediction)
+            if old_feat_name is not None:
+                # find the new feature id for the same feature name
+                new_naive_prediction = None
+                for feat in features:
+                    if feat.name == old_feat_name:
+                        new_naive_prediction = feat.id
+                        break
+                naive_prediction = new_naive_prediction
+
         return FeatureListModel(**{
             **feature_list.model_dump(),
             "_id": ObjectId(),
             "feature_ids": feature_ids,
             "features": features,
             "features_metadata": features_metadata,
+            "naive_prediction": naive_prediction,
         })
 
     async def create_new_feature_list_version(
