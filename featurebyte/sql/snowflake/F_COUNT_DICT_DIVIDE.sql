@@ -6,7 +6,7 @@ $$
   if (!COUNTS || COUNTS === null) {
     return null;
   }
-  if (DIVISOR === null || DIVISOR === 0) {
+  if (!DIVISOR) {
     return null;
   }
   var result = {};
