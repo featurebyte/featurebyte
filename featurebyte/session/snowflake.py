@@ -601,7 +601,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 36
+        return 37
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'

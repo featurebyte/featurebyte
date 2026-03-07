@@ -143,6 +143,48 @@ def test_cosine_similarity__other_not_dict_scalar(count_per_category_feature):
     assert str(exc.value) == "cosine_similarity is only available for Feature; got 123"
 
 
+def test_divide(snowflake_event_table, count_per_category_feature, float_feature):
+    """Test divide method"""
+    result = count_per_category_feature.cd.divide(float_feature)
+    result_dict = result.model_dump()
+    assert result.dtype == DBVarType.OBJECT
+    count_dict_divide_node = get_node(result_dict["graph"], "count_dict_divide_1")
+    assert count_dict_divide_node == {
+        "name": "count_dict_divide_1",
+        "type": NodeType.COUNT_DICT_DIVIDE,
+        "parameters": {},
+        "output_type": "series",
+    }
+
+    # check SDK code generation
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        result,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_event_table.id: {
+                "name": snowflake_event_table.name,
+                "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                "columns_info": event_table_columns_info,
+            }
+        },
+    )
+
+
+def test_divide__other_not_numeric(count_per_category_feature, count_per_category_feature_2h):
+    """Test divide rejects non-numeric divisor"""
+    with pytest.raises(TypeError) as exc:
+        count_per_category_feature.cd.divide(count_per_category_feature_2h)
+    assert "divide requires a numeric Feature as divisor; got OBJECT" in str(exc.value)
+
+
+def test_divide__other_not_series(count_per_category_feature):
+    """Test divide rejects scalar divisor"""
+    with pytest.raises(TypeError) as exc:
+        count_per_category_feature.cd.divide(2.0)
+    assert "divide is only available for Feature; got 2.0" in str(exc.value)
+
+
 def test_get_value_from_dictionary__validation_fails(float_feature, count_per_category_feature):
     """
     Test validation will cause errors when features are not of the correct type.
