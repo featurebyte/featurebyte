@@ -183,3 +183,29 @@ class GetRankNode(ExpressionNode):
             lookup_key_node=lookup_key_node,
             descending=context.parameters["descending"],
         )
+
+
+@dataclass
+class CountDictDivideNode(ExpressionNode):
+    """Node for dividing all values in a count dict feature by a numeric feature"""
+
+    dictionary_node: ExpressionNode
+    divisor_node: ExpressionNode
+    query_node_type = NodeType.COUNT_DICT_DIVIDE
+
+    @property
+    def sql(self) -> Expression:
+        return self.context.adapter.call_udf(
+            "F_COUNT_DICT_DIVIDE",
+            [self.dictionary_node.sql, self.divisor_node.sql],
+        )
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> CountDictDivideNode:
+        table_node, dictionary_node, divisor_node = prepare_binary_op_input_nodes(context)
+        return CountDictDivideNode(
+            context=context,
+            table_node=table_node,
+            dictionary_node=dictionary_node,
+            divisor_node=divisor_node,
+        )

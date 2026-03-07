@@ -530,7 +530,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 16
+        return 17
 
     @property
     def sql_directory_name(self) -> str:

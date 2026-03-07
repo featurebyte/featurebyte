@@ -824,3 +824,62 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
             freq_expr = ExpressionStr(f"{func_name}({var_name}, key={operand})")
 
         return statements, freq_expr
+
+
+class CountDictDivideNode(BaseCountDictOpNode):
+    """CountDictDivideNode class - divides all values in a dict feature by a numeric feature"""
+
+    type: Literal[NodeType.COUNT_DICT_DIVIDE] = NodeType.COUNT_DICT_DIVIDE
+
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.OBJECT)
+
+    def generate_expression(self, operand: str, other_operands: List[str]) -> str:
+        return f"{operand}.cd.divide(other={other_operands[0]})"
+
+    def generate_odfv_expression(self, operand: str, other_operands: List[str]) -> str:
+        return f"{operand}.combine({other_operands[0]}, divide_dict)"
+
+    @staticmethod
+    def _get_divide_dict_function_name(
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], str]:
+        statements: List[StatementT] = []
+        func_name = "divide_dict"
+        if var_name_generator.should_insert_function(function_name=func_name):
+            func_string = f"""
+            def {func_name}(input_dict, divisor):
+                if pd.isna(input_dict) or pd.isna(divisor) or divisor == 0:
+                    return np.nan
+                return {{k: v / divisor for k, v in input_dict.items()}}
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[NodeCodeGenOutput],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, _ = self._get_divide_dict_function_name(var_name_generator=var_name_generator)
+        odfv_stats, output_var_name = super()._derive_on_demand_view_code(
+            node_inputs, var_name_generator, config
+        )
+        statements.extend(odfv_stats)
+        return statements, output_var_name
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[NodeCodeGenOutput],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, func_name = self._get_divide_dict_function_name(
+            var_name_generator=var_name_generator
+        )
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        dict_operand = input_var_name_expressions[0].as_input()
+        divisor_operand = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(f"{func_name}({dict_operand}, {divisor_operand})")
+        return statements, expr

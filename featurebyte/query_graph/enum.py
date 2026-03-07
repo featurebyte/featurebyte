@@ -97,6 +97,7 @@ class NodeType(StrEnum):
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"
+    COUNT_DICT_DIVIDE = "count_dict_divide"
     COSINE_SIMILARITY = "cosine_similarity"
     DICTIONARY_KEYS = "dictionary_keys"
     GET_RANK = "get_rank"

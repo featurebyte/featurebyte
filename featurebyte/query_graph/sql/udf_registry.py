@@ -49,6 +49,7 @@ SPARK_UDF_CLASS_MAPPING: dict[str, str] = {
     "F_GET_RANK": "com.featurebyte.hive.udf.CountDictRankV1",
     "F_TIMEZONE_OFFSET_TO_SECOND": "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1",
     "F_COUNT_DICT_NORMALIZE": "com.featurebyte.hive.udf.CountDictNormalizeV1",
+    "F_COUNT_DICT_DIVIDE": "com.featurebyte.hive.udf.CountDictDivideV1",
 }
 
 # UDFs that are dependencies of other UDFs (must be registered first)

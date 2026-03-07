@@ -67,6 +67,26 @@ class CountDictSeriesOperator(SeriesBinaryOperator):
             )
 
 
+class CountDictDivideSeriesOperator(SeriesBinaryOperator):
+    """
+    CountDict divide series operator that validates the divisor is a numeric feature.
+    """
+
+    def validate_inputs(self) -> None:
+        """
+        Validate the input series, and other parameter.
+
+        Raises
+        ------
+        TypeError
+            If the divisor is not a numeric Feature
+        """
+        if not isinstance(self.other, type(self.input_series)):
+            raise TypeError(f"divide is only available for Feature; got {self.other}")
+        if self.other.dtype not in {DBVarType.INT, DBVarType.FLOAT}:
+            raise TypeError(f"divide requires a numeric Feature as divisor; got {self.other.dtype}")
+
+
 class CountDictAccessor:
     """
     CountDictAccessor used to manipulate dict-like type Feature object
@@ -633,3 +653,34 @@ class CountDictAccessor:
         {'Chips et Tortillas': 0.143, 'Colas, Thés glacés et Sodas': 0.429, 'Crèmes et Chantilly': 0.143, 'Pains': 0.143, 'Œufs': 0.143}
         """
         return self._make_operation("normalize", DBVarType.OBJECT)
+
+    def divide(self, other: Feature) -> Feature:
+        """
+        Divides all values in the Cross Aggregate feature by a numeric feature.
+        If the divisor is 0 or null for a row, returns null for that row.
+
+        Parameters
+        ----------
+        other : Feature
+            A numeric feature to use as the divisor.
+
+        Returns
+        -------
+        Feature
+            A new Cross Aggregate feature with values divided by the given feature.
+
+        Examples
+        --------
+
+        Create a new feature by dividing a dictionary feature by a numeric feature:
+
+        >>> counts = catalog.get_feature("CustomerProductGroupCounts_7d")  # doctest: +SKIP
+        >>> total = catalog.get_feature("CustomerTotalCount_7d")  # doctest: +SKIP
+        >>> new_feature = counts.cd.divide(total)  # doctest: +SKIP
+        >>> new_feature.name = "CustomerProductGroupCountsRatio_7d"  # doctest: +SKIP
+        """
+        series_operator = CountDictDivideSeriesOperator(self._feature_obj, other)
+        return series_operator.operate(
+            node_type=NodeType.COUNT_DICT_DIVIDE,
+            output_var_type=DBVarType.OBJECT,
+        )

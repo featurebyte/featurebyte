@@ -303,6 +303,11 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
         },
         {
             "type": "function",
+            "filename": "F_COUNT_DICT_DIVIDE.sql",
+            "identifier": "F_COUNT_DICT_DIVIDE",
+        },
+        {
+            "type": "function",
             "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
             "identifier": "F_COUNT_DICT_NUM_UNIQUE",
         },
