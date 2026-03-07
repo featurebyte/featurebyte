@@ -22,7 +22,11 @@ from featurebyte.query_graph.node.metadata.config import (
     OnDemandViewCodeGenConfig,
     SDKCodeGenConfig,
 )
-from featurebyte.query_graph.node.metadata.operation import AggregationColumn, OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    AggregationColumn,
+    OperationStructure,
+    PostAggregationColumn,
+)
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
@@ -560,7 +564,10 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         aggregations = inputs[0].aggregations
         agg_column = aggregations[0]
-        # This assumes that dictionary features are never post-processed.
+        if isinstance(agg_column, PostAggregationColumn):
+            # The input is a post-processed dictionary (e.g. output of cd.normalize()).
+            # Normalized dictionaries contain float proportions, so extracting any key yields FLOAT.
+            return DBVarTypeInfo(dtype=DBVarType.FLOAT)
         assert isinstance(agg_column, AggregationColumn)
         method = agg_column.method
         if method is None:

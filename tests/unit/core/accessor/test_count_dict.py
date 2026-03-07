@@ -203,6 +203,40 @@ def test_get_value_from_dictionary__success(
         )
 
 
+def test_get_value_from_normalized_dictionary(
+    snowflake_event_table, count_per_category_feature, sum_per_category_feature
+):
+    """
+    Regression test: cd.get_value() on a post-processed (normalized) dictionary must not raise
+    AssertionError inside GetValueFromDictionaryNode.derive_dtype_info.
+    Previously the node asserted isinstance(agg_column, AggregationColumn) but a normalized dict
+    yields a PostAggregationColumn as its aggregation descriptor.
+    """
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
+    for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
+        normalized = per_cat_feat.cd.normalize()
+        assert normalized.dtype == DBVarType.OBJECT
+
+        # This previously raised AssertionError inside derive_dtype_info.
+        result = normalized.cd.get_value("key")
+
+        assert result.dtype == DBVarType.FLOAT
+        result_dict = result.model_dump()
+        assert result_dict["graph"]["nodes"][-1]["type"] == "get_value"
+
+        check_sdk_code_generation(
+            result,
+            to_use_saved_data=False,
+            table_id_to_info={
+                snowflake_event_table.id: {
+                    "name": snowflake_event_table.name,
+                    "record_creation_timestamp_column": snowflake_event_table.record_creation_timestamp_column,
+                    "columns_info": event_table_columns_info,
+                }
+            },
+        )
+
+
 def test_get_rank_from_dictionary__validation_fails(float_feature, count_per_category_feature):
     """
     Test validation will cause errors when features are not of the correct type.
