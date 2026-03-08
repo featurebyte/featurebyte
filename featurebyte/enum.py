@@ -883,6 +883,13 @@ class UploadFileFormat(StrEnum):
     PARQUET = "parquet"
 
 
+class NaivePredictionStructure(StrEnum):
+    """Structure of the naive prediction model"""
+
+    ADDITIVE = "additive", "Additive seasonal naive model"
+    MULTIPLICATIVE = "multiplicative", "Multiplicative seasonal naive model"
+
+
 class OnlineStoreType(StrEnum):
     """
     Online store type

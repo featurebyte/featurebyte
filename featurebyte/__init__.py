@@ -69,6 +69,7 @@ from featurebyte.enum import (
     AggFunc,
     DBVarType,
     FeatureType,
+    NaivePredictionStructure,
     SourceType,
     StorageType,
     TargetType,

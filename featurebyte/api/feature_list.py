@@ -48,11 +48,15 @@ from featurebyte.common.utils import (
     enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
-from featurebyte.enum import ConflictResolution
+from featurebyte.enum import ConflictResolution, NaivePredictionStructure
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureReadinessDistribution,
+    NaivePrediction,
+)
 from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
@@ -467,6 +471,57 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             return cast(FeatureListModel, self.cached_model).context_id
         except RecordRetrievalException:
             return self.internal_context_id
+
+    @property
+    def naive_prediction(self) -> Optional[NaivePrediction]:
+        """
+        Returns the naive prediction configuration associated with the FeatureList object.
+
+        Returns
+        -------
+        Optional[NaivePrediction]
+            Naive prediction configuration, or None if not set.
+        """
+        return cast(FeatureListModel, self.cached_model).naive_prediction
+
+    @typechecked
+    def update_naive_prediction(
+        self, feature_name: str, structure: NaivePredictionStructure
+    ) -> None:
+        """
+        Set the naive prediction for this FeatureList. The feature name must be
+        one of the features in the feature list.
+
+        Parameters
+        ----------
+        feature_name: str
+            Name of the feature to use as naive prediction.
+        structure: NaivePredictionStructure
+            Structure of the naive prediction model (additive or multiplicative).
+
+        Raises
+        ------
+        ValueError
+            If the feature name is not found in the feature list.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
+        >>> feature_list.update_naive_prediction(  # doctest: +SKIP
+        ...     "InvoiceCount_60days", NaivePredictionStructure.ADDITIVE
+        ... )
+        """
+        feature = self.feature_objects.get(feature_name)
+        if feature is None:
+            raise ValueError(
+                f"Feature '{feature_name}' is not in the feature list. "
+                f"Available features: {sorted(self.feature_objects.keys())}"
+            )
+        naive_prediction = NaivePrediction(feature_id=feature.id, structure=structure)
+        self.update(
+            update_payload={"naive_prediction": naive_prediction.model_dump(by_alias=True)},
+            allow_update_local=False,
+        )
 
     @property
     @substitute_docstring(

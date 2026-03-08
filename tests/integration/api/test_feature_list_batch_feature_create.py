@@ -58,3 +58,52 @@ def test_feature_group__saving_with_conflict_resolution(feature_group, source_ty
     # check feature list after saving feature group, make sure no new feature list is created
     feature_list_after = FeatureList.list(include_id=True)
     pd.testing.assert_frame_equal(feature_list_after, feature_list_before)
+
+
+@pytest.fixture(name="naive_pred_feature_group")
+def fixture_naive_pred_feature_group(event_table):
+    """Feature group fixture with unique names for naive prediction test"""
+    event_view = event_table.get_view()
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["NAIVE_PRED_COUNT_2h", "NAIVE_PRED_COUNT_24h"],
+    )
+    return feature_group
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_feature_list__naive_prediction(naive_pred_feature_group, source_type):
+    """Test creating and updating naive_prediction on a feature list"""
+    _ = source_type
+
+    # create feature list with naive_prediction set at creation
+    feature_list = FeatureList(
+        [
+            naive_pred_feature_group["NAIVE_PRED_COUNT_2h"],
+            naive_pred_feature_group["NAIVE_PRED_COUNT_24h"],
+        ],
+        name="fl_naive_pred_test",
+    )
+    feature_list.save()
+    assert feature_list.naive_prediction is None
+
+    # update naive_prediction with a valid feature name
+    feature_list.update_naive_prediction("NAIVE_PRED_COUNT_2h")
+    assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_2h"
+
+    # update to a different valid feature name
+    feature_list.update_naive_prediction("NAIVE_PRED_COUNT_24h")
+    assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_24h"
+
+    # update with an invalid feature name should fail
+    with pytest.raises(Exception) as exc:
+        feature_list.update_naive_prediction("nonexistent_feature")
+    assert (
+        "nonexistent_feature" in str(exc.value).lower()
+        or "naive_prediction" in str(exc.value).lower()
+    )
+
+    # clean up
+    feature_list.delete()

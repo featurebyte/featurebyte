@@ -10,7 +10,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, NaivePredictionStructure
 from featurebyte.exception import (
     DocumentError,
     DocumentInconsistencyError,
@@ -18,7 +18,7 @@ from featurebyte.exception import (
     DocumentNotFoundError,
 )
 from featurebyte.models.base import ReferenceInfo
-from featurebyte.models.feature_list import FeatureReadinessDistribution
+from featurebyte.models.feature_list import FeatureReadinessDistribution, NaivePrediction
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityCreate
@@ -423,3 +423,64 @@ async def test_delete_feature_list(
     # check that the feature list has been removed
     with pytest.raises(DocumentNotFoundError):
         await feature_list_service.get_document(document_id=feature_list.id)
+
+
+@pytest.mark.asyncio
+async def test_create_document__with_valid_naive_prediction(feature, feature_list_service, storage):
+    """Test creating a feature list with a valid naive_prediction"""
+    naive_pred = NaivePrediction(feature_id=feature.id, structure=NaivePredictionStructure.ADDITIVE)
+    feature_list = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(
+            name="fl_with_naive_pred",
+            feature_ids=[feature.id],
+            naive_prediction=naive_pred,
+        )
+    )
+    assert feature_list.naive_prediction == naive_pred
+
+
+@pytest.mark.asyncio
+async def test_create_document__with_invalid_naive_prediction(
+    feature, feature_list_service, storage
+):
+    """Test creating a feature list with an invalid naive_prediction raises error"""
+    fake_id = ObjectId()
+    naive_pred = NaivePrediction(
+        feature_id=fake_id, structure=NaivePredictionStructure.MULTIPLICATIVE
+    )
+    with pytest.raises(DocumentError) as exc:
+        await feature_list_service.create_document(
+            data=FeatureListServiceCreate(
+                name="fl_with_bad_naive_pred",
+                feature_ids=[feature.id],
+                naive_prediction=naive_pred,
+            )
+        )
+    assert "naive_prediction" in str(exc.value)
+    assert "is not a feature in the feature list" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_validate_naive_prediction_for_feature_list(
+    feature, feature_list_service, feature_list
+):
+    """Test validate_naive_prediction_for_feature_list with valid and invalid ids"""
+    # valid id should not raise
+    naive_pred = NaivePrediction(feature_id=feature.id, structure=NaivePredictionStructure.ADDITIVE)
+    await feature_list_service.validate_naive_prediction_for_feature_list(
+        feature_list_id=feature_list.id,
+        naive_prediction=naive_pred,
+    )
+
+    # invalid id should raise
+    fake_id = ObjectId()
+    bad_naive_pred = NaivePrediction(
+        feature_id=fake_id, structure=NaivePredictionStructure.ADDITIVE
+    )
+    with pytest.raises(DocumentError) as exc:
+        await feature_list_service.validate_naive_prediction_for_feature_list(
+            feature_list_id=feature_list.id,
+            naive_prediction=bad_naive_pred,
+        )
+    assert "naive_prediction" in str(exc.value)
+    assert "is not a feature in the feature list" in str(exc.value)

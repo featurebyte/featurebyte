@@ -21,7 +21,11 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureReadinessDistribution,
+    NaivePredictionNamespace,
+)
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
@@ -38,10 +42,12 @@ from featurebyte.schema.feature_list import (
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListServiceCreate,
+    FeatureListServiceUpdate,
     FeatureListSQL,
     FeatureListUpdate,
     SampleEntityServingNames,
 )
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
     EntityBriefInfoList,
     FeatureListBriefInfoList,
@@ -249,6 +255,34 @@ class FeatureListController(
             )
             task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
+
+        if data.naive_prediction is not None:
+            await self.service.validate_naive_prediction_for_feature_list(
+                feature_list_id=feature_list_id,
+                naive_prediction=data.naive_prediction,
+            )
+            await self.service.update_document(
+                document_id=feature_list_id,
+                data=FeatureListServiceUpdate(
+                    naive_prediction=data.naive_prediction,
+                ),
+            )
+            # also update the namespace with name-based naive prediction
+            feature_list = await self.service.get_document(document_id=feature_list_id)
+            feature_doc = await self.feature_service.get_document_as_dict(
+                document_id=data.naive_prediction.feature_id,
+                projection={"name": 1},
+            )
+            await self.feature_list_namespace_service.update_document(
+                document_id=feature_list.feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(
+                    naive_prediction=NaivePredictionNamespace(
+                        feature_name=feature_doc["name"],
+                        structure=data.naive_prediction.structure,
+                    ),
+                ),
+                return_document=False,
+            )
 
         return await self.get(document_id=feature_list_id)
 

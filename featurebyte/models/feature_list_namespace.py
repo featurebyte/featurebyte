@@ -18,6 +18,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.feature_list import NaivePredictionNamespace
 
 
 class FeatureListStatus(OrderedStrEnum):
@@ -70,6 +71,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     default_feature_list_id: PydanticObjectId = Field(frozen=True)
     status: FeatureListStatus = Field(frozen=True, default=FeatureListStatus.DRAFT)
     role: FeatureListRole = Field(default=FeatureListRole.OUTCOME_PREDICTORS)
+    naive_prediction: Optional[NaivePredictionNamespace] = Field(default=None)
 
     # Context ID for feature list namespaces that contain features using user-provided columns
     context_id: Optional[PydanticObjectId] = Field(frozen=True, default=None)

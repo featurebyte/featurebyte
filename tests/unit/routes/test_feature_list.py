@@ -480,6 +480,72 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
+    def test_update_200__naive_prediction(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update (success) with naive_prediction"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        namespace_id = create_response_dict["feature_list_namespace_id"]
+
+        # get feature id from the feature list
+        feature_id = create_response_dict["feature_ids"][0]
+
+        # update with valid naive_prediction
+        naive_pred = {"feature_id": feature_id, "structure": "additive"}
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"naive_prediction": naive_pred}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["naive_prediction"] == naive_pred
+
+        # verify namespace is also updated with name-based naive prediction
+        ns_response = test_api_client.get(f"/feature_list_namespace/{namespace_id}")
+        assert ns_response.status_code == HTTPStatus.OK
+        ns_naive_pred = ns_response.json()["naive_prediction"]
+        assert ns_naive_pred["structure"] == "additive"
+        assert ns_naive_pred["feature_name"] is not None
+
+        # update with invalid naive_prediction (nonexistent feature id)
+        bad_naive_pred = {"feature_id": str(ObjectId()), "structure": "additive"}
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"naive_prediction": bad_naive_pred}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    def test_create_201__with_naive_prediction(self, test_api_client_persistent, user_id):
+        """Test create (success) with naive_prediction"""
+        _ = user_id
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # get the feature id
+        feature_id = self.payload["feature_ids"][0]
+
+        # create feature list with naive_prediction
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = "fl_with_naive_pred"
+        naive_pred = {"feature_id": feature_id, "structure": "multiplicative"}
+        payload["naive_prediction"] = naive_pred
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["naive_prediction"] == naive_pred
+
+    def test_create_422__with_invalid_naive_prediction(self, test_api_client_persistent, user_id):
+        """Test create (failure) with invalid naive_prediction"""
+        _ = user_id
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = "fl_with_bad_naive_pred"
+        payload["naive_prediction"] = {"feature_id": str(ObjectId()), "structure": "additive"}
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
     def test_update_200__deploy_with_make_production_ready(
         self, test_api_client_persistent, create_success_response
     ):

@@ -34,6 +34,7 @@ from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
     FeatureReadinessDistribution,
+    NaivePrediction,
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -59,6 +60,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     name: NameStr
     feature_ids: List[PydanticObjectId] = Field(min_length=1)
     context_id: Optional[PydanticObjectId] = Field(default=None)
+    naive_prediction: Optional[NaivePrediction] = Field(default=None)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):
@@ -205,6 +207,7 @@ class FeatureListUpdate(FeatureByteBaseModel):
 
     make_production_ready: Optional[bool] = Field(default=None)
     ignore_guardrails: Optional[bool] = Field(default=None)
+    naive_prediction: Optional[NaivePrediction] = Field(default=None)
 
 
 class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdate):
@@ -216,6 +219,7 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     online_enabled_feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     readiness_distribution: Optional[FeatureReadinessDistribution] = Field(default=None)
     feast_enabled: Optional[bool] = Field(default=None)
+    # naive_prediction is inherited from FeatureListUpdate
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):
