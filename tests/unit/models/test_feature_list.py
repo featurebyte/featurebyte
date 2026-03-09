@@ -71,7 +71,6 @@ def feature_list_namespace_model_dict_fixture():
         "description": None,
         "is_deleted": False,
         "context_id": None,
-        "naive_prediction": None,
     }
 
 
