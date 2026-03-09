@@ -24,7 +24,7 @@ from pydantic import (
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
-from featurebyte.enum import DBVarType, FeatureType
+from featurebyte.enum import DBVarType, FeatureType, NaivePredictionStructure
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -58,6 +58,15 @@ class FeatureTypeFeatureCount(FeatureByteBaseModel):
 
     dtype: DBVarType
     count: int
+
+
+class NaivePrediction(FeatureByteBaseModel):
+    """
+    Naive prediction configuration for a feature list version (uses feature ID)
+    """
+
+    feature_id: PydanticObjectId
+    structure: NaivePredictionStructure
 
 
 class FeatureReadinessCount(FeatureByteBaseModel):
@@ -369,6 +378,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
     features_metadata: List[FeatureMetadata] = Field(frozen=True, default_factory=list)
+
+    # naive prediction configuration (feature must be in this feature list)
+    naive_prediction: Optional[NaivePrediction] = Field(default=None)
 
     # store info contains the warehouse specific info for the feature list
     feast_enabled: bool = Field(default=False)

@@ -883,6 +883,18 @@ class UploadFileFormat(StrEnum):
     PARQUET = "parquet"
 
 
+class NaivePredictionStructure(StrEnum):
+    """Structure indicating how features relate to the naive prediction"""
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.NaivePredictionStructure")
+
+    ADDITIVE = "additive", "Features are constructed as additive offsets from the naive prediction"
+    MULTIPLICATIVE = (
+        "multiplicative",
+        "Features are constructed as multiplicative factors of the naive prediction",
+    )
+
+
 class OnlineStoreType(StrEnum):
     """
     Online store type

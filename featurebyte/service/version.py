@@ -15,7 +15,7 @@ from featurebyte.exception import (
     NoFeatureJobSettingInSourceError,
 )
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel, NaivePrediction
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -351,12 +351,32 @@ class VersionService:
             feature_ids=feature_ids
         )
 
+        # remap naive_prediction from old feature id to new feature id
+        naive_prediction = feature_list.naive_prediction
+        if naive_prediction is not None:
+            old_feat_name = feature_id_to_name_map.get(naive_prediction.feature_id)
+            if old_feat_name is not None:
+                # find the new feature id for the same feature name
+                new_feature_id = None
+                for feat in features:
+                    if feat.name == old_feat_name:
+                        new_feature_id = feat.id
+                        break
+                if new_feature_id is not None:
+                    naive_prediction = NaivePrediction(
+                        feature_id=new_feature_id,
+                        structure=naive_prediction.structure,
+                    )
+                else:
+                    naive_prediction = None
+
         return FeatureListModel(**{
             **feature_list.model_dump(),
             "_id": ObjectId(),
             "feature_ids": feature_ids,
             "features": features,
             "features_metadata": features_metadata,
+            "naive_prediction": naive_prediction,
         })
 
     async def create_new_feature_list_version(

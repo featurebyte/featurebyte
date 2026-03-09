@@ -21,7 +21,10 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureReadinessDistribution,
+)
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
@@ -38,6 +41,7 @@ from featurebyte.schema.feature_list import (
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListServiceCreate,
+    FeatureListServiceUpdate,
     FeatureListSQL,
     FeatureListUpdate,
     SampleEntityServingNames,
@@ -250,6 +254,42 @@ class FeatureListController(
             task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
 
+        if data.naive_prediction is not None:
+            await self.service.validate_naive_prediction_for_feature_list(
+                feature_list_id=feature_list_id,
+                naive_prediction=data.naive_prediction,
+            )
+            await self.service.update_document(
+                document_id=feature_list_id,
+                data=FeatureListServiceUpdate(
+                    naive_prediction=data.naive_prediction,
+                ),
+            )
+
+        return await self.get(document_id=feature_list_id)
+
+    async def remove_naive_prediction(
+        self,
+        feature_list_id: ObjectId,
+    ) -> FeatureListModelResponse:
+        """
+        Remove naive prediction from a FeatureList
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList ID
+
+        Returns
+        -------
+        FeatureListModelResponse
+            FeatureList object with naive_prediction unset
+        """
+        # unset naive prediction on the feature list
+        await self.service.update_documents(
+            query_filter={"_id": feature_list_id},
+            update={"$set": {"naive_prediction": None}},
+        )
         return await self.get(document_id=feature_list_id)
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:

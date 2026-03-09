@@ -7,7 +7,10 @@ from typing import List, Optional
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
+from featurebyte.models.feature_list import (
+    FeatureReadinessDistribution,
+    FeatureTypeFeatureCount,
+)
 from featurebyte.models.feature_list_namespace import (
     FeatureListNamespaceModel,
     FeatureListRole,

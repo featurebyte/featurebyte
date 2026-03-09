@@ -270,6 +270,20 @@ async def get_feature_job_logs(
     return cast(Dict[str, Any], result)
 
 
+@router.delete("/{feature_list_id}/naive_prediction", response_model=FeatureListModelResponse)
+async def remove_naive_prediction(
+    request: Request, feature_list_id: PydanticObjectId
+) -> FeatureListModelResponse:
+    """
+    Remove naive prediction from FeatureList
+    """
+    controller = request.state.app_container.feature_list_controller
+    feature_list: FeatureListModelResponse = await controller.remove_naive_prediction(
+        feature_list_id=feature_list_id,
+    )
+    return feature_list
+
+
 @router.patch("/{feature_list_id}/description", response_model=FeatureListModelResponse)
 async def update_feature_list_description(
     request: Request,
