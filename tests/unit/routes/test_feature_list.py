@@ -516,24 +516,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         assert response.json()["naive_prediction"] == naive_pred
         return naive_pred
 
-    def test_update_200__unset_naive_prediction(
-        self, test_api_client_persistent, create_success_response
-    ):
-        """Test unsetting naive_prediction via PATCH with null"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response.json()
-        doc_id = create_response_dict["_id"]
-        feature_id = create_response_dict["feature_ids"][0]
-
-        self._set_and_verify_naive_prediction(test_api_client, doc_id, feature_id)
-
-        # unset naive_prediction by passing null
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"naive_prediction": None}
-        )
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["naive_prediction"] is None
-
     def test_delete_200__remove_naive_prediction(
         self, test_api_client_persistent, create_success_response
     ):

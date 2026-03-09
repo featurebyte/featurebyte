@@ -254,20 +254,17 @@ class FeatureListController(
             task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
 
-        if "naive_prediction" in data.model_fields_set:
-            if data.naive_prediction is not None:
-                await self.service.validate_naive_prediction_for_feature_list(
-                    feature_list_id=feature_list_id,
+        if data.naive_prediction is not None:
+            await self.service.validate_naive_prediction_for_feature_list(
+                feature_list_id=feature_list_id,
+                naive_prediction=data.naive_prediction,
+            )
+            await self.service.update_document(
+                document_id=feature_list_id,
+                data=FeatureListServiceUpdate(
                     naive_prediction=data.naive_prediction,
-                )
-                await self.service.update_document(
-                    document_id=feature_list_id,
-                    data=FeatureListServiceUpdate(
-                        naive_prediction=data.naive_prediction,
-                    ),
-                )
-            else:
-                return await self.remove_naive_prediction(feature_list_id=feature_list_id)
+                ),
+            )
 
         return await self.get(document_id=feature_list_id)
 
@@ -289,11 +286,9 @@ class FeatureListController(
             FeatureList object with naive_prediction unset
         """
         # unset naive prediction on the feature list
-        await self.service.persistent.update_one(
-            collection_name=self.service.collection_name,
+        await self.service.update_documents(
             query_filter={"_id": feature_list_id},
             update={"$set": {"naive_prediction": None}},
-            user_id=self.service.user.id,
         )
         return await self.get(document_id=feature_list_id)
 
