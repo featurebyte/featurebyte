@@ -92,13 +92,19 @@ def test_feature_list__naive_prediction(naive_pred_feature_group, source_type):
 
     # update naive_prediction with a valid feature name
     feature_list.update_naive_prediction("NAIVE_PRED_COUNT_2h", NaivePredictionStructure.ADDITIVE)
-    assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_2h"
+    naive_pred = feature_list.naive_prediction
+    assert naive_pred is not None
+    assert naive_pred.feature_id == naive_pred_feature_group["NAIVE_PRED_COUNT_2h"].id
+    assert naive_pred.structure == NaivePredictionStructure.ADDITIVE
 
     # update to a different valid feature name
     feature_list.update_naive_prediction(
         "NAIVE_PRED_COUNT_24h", NaivePredictionStructure.MULTIPLICATIVE
     )
-    assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_24h"
+    naive_pred = feature_list.naive_prediction
+    assert naive_pred is not None
+    assert naive_pred.feature_id == naive_pred_feature_group["NAIVE_PRED_COUNT_24h"].id
+    assert naive_pred.structure == NaivePredictionStructure.MULTIPLICATIVE
 
     # update with an invalid feature name should fail
     with pytest.raises(Exception) as exc:
