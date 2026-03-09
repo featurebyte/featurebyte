@@ -634,19 +634,20 @@ async def test_lookup_target_with_composite_series_id(
     suffix = unique_id.binary.hex()[:8].upper()
 
     # Only the composite key (store, sku) uniquely identifies each series.
+    # ts column is a string formatted per timestamp_format_string (e.g. "2001|01|07").
     df = pd.DataFrame([
-        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-05"), "val": 50.0},
-        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-06"), "val": 60.0},
-        {"store": "STORE_1", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-07"), "val": 70.0},
-        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-05"), "val": 500.0},
-        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-06"), "val": 600.0},
-        {"store": "STORE_1", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-07"), "val": 700.0},
-        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-05"), "val": 51.0},
-        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-06"), "val": 61.0},
-        {"store": "STORE_2", "sku": "SKU_A", "ts": pd.Timestamp("2001-01-07"), "val": 71.0},
-        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-05"), "val": 501.0},
-        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-06"), "val": 601.0},
-        {"store": "STORE_2", "sku": "SKU_B", "ts": pd.Timestamp("2001-01-07"), "val": 701.0},
+        {"store": "STORE_1", "sku": "SKU_A", "ts": "2001|01|05", "val": 50.0},
+        {"store": "STORE_1", "sku": "SKU_A", "ts": "2001|01|06", "val": 60.0},
+        {"store": "STORE_1", "sku": "SKU_A", "ts": "2001|01|07", "val": 70.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": "2001|01|05", "val": 500.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": "2001|01|06", "val": 600.0},
+        {"store": "STORE_1", "sku": "SKU_B", "ts": "2001|01|07", "val": 700.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": "2001|01|05", "val": 51.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": "2001|01|06", "val": 61.0},
+        {"store": "STORE_2", "sku": "SKU_A", "ts": "2001|01|07", "val": 71.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": "2001|01|05", "val": 501.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": "2001|01|06", "val": 601.0},
+        {"store": "STORE_2", "sku": "SKU_B", "ts": "2001|01|07", "val": 701.0},
     ])
 
     table_name = f"COMPOSITE_SERIES_TS_{suffix}"
@@ -664,13 +665,15 @@ async def test_lookup_target_with_composite_series_id(
     entity_sku = Entity(name=f"CompositeSKU_{suffix}", serving_names=[f"sku_{suffix}"])
     entity_sku.save()
 
-    # Create TimeSeriesTable with composite series_id_columns (ts column is TIMESTAMP type,
-    # so no format_string is needed)
+    # Create TimeSeriesTable with composite series_id_columns (ts column is a string
+    # formatted per timestamp_format_string, so format_string is required)
     ts_table = source_table.create_time_series_table(
         name=f"composite_series_ts_{suffix}",
         series_id_columns=["store", "sku"],
         reference_datetime_column="ts",
-        reference_datetime_schema=TimestampSchema(is_utc_time=True),
+        reference_datetime_schema=TimestampSchema(
+            format_string=timestamp_format_string, is_utc_time=True
+        ),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
     )
     ts_table["store"].as_entity(entity_store.name)
