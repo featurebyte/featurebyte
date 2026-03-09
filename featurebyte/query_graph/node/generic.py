@@ -1192,6 +1192,11 @@ class LookupParameters(FeatureByteBaseModel):
         Returns
         -------
         List[PydanticObjectId]
+
+        Raises
+        ------
+        ValueError
+            If neither entity_id nor entity_ids is set.
         """
         if self.entity_ids is not None:
             return self.entity_ids
@@ -1209,6 +1214,11 @@ class LookupParameters(FeatureByteBaseModel):
         Returns
         -------
         List[InColumnStr]
+
+        Raises
+        ------
+        ValueError
+            If neither entity_column nor entity_columns is set.
         """
         if self.entity_columns is not None:
             return self.entity_columns
@@ -1226,6 +1236,11 @@ class LookupParameters(FeatureByteBaseModel):
         Returns
         -------
         List[str]
+
+        Raises
+        ------
+        ValueError
+            If neither serving_name nor serving_names is set.
         """
         if self.serving_names is not None:
             return self.serving_names
