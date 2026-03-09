@@ -92,6 +92,21 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         ),
     )
 
+    @model_validator(mode="after")
+    def _validate_series_id_columns_dtypes(self) -> "TimeSeriesTableModel":
+        if not self.series_id_columns:
+            return self
+        col_info_map = {col.name: col for col in self.columns_info}
+        supported_id_types = DBVarType.supported_id_types()
+        for col_name in self.series_id_columns:
+            if col_name not in col_info_map:
+                raise ValueError(f'Column "{col_name}" not found in the table!')
+            col_dtype = col_info_map[col_name].dtype
+            if col_dtype not in supported_id_types:
+                dtypes = sorted(str(dtype) for dtype in supported_id_types)
+                raise ValueError(f'Column "{col_name}" is expected to have type(s): {dtypes}')
+        return self
+
     @property
     def primary_key_columns(self) -> List[str]:
         return []
