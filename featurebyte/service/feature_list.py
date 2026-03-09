@@ -321,12 +321,9 @@ class FeatureListService(
         if naive_prediction is not None:
             feature_ids: set[ObjectId] = {feature.id for feature in features}
             if naive_prediction.feature_id not in feature_ids:
-                feature_names = sorted(
-                    feature.name for feature in features if feature.name is not None
-                )
                 raise DocumentError(
                     f"naive_prediction feature_id '{naive_prediction.feature_id}' is not a feature "
-                    f"in the feature list. Available features: {feature_names}"
+                    f"in the feature list."
                 )
 
     async def extract_entity_relationship_data(
