@@ -24,7 +24,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureReadinessDistribution,
-    NaivePredictionNamespace,
 )
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import SortDir
@@ -47,7 +46,6 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
     SampleEntityServingNames,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
     EntityBriefInfoList,
     FeatureListBriefInfoList,
@@ -256,34 +254,47 @@ class FeatureListController(
             task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
 
-        if data.naive_prediction is not None:
-            await self.service.validate_naive_prediction_for_feature_list(
-                feature_list_id=feature_list_id,
-                naive_prediction=data.naive_prediction,
-            )
-            await self.service.update_document(
-                document_id=feature_list_id,
-                data=FeatureListServiceUpdate(
+        if "naive_prediction" in data.model_fields_set:
+            if data.naive_prediction is not None:
+                await self.service.validate_naive_prediction_for_feature_list(
+                    feature_list_id=feature_list_id,
                     naive_prediction=data.naive_prediction,
-                ),
-            )
-            # also update the namespace with name-based naive prediction
-            feature_list = await self.service.get_document(document_id=feature_list_id)
-            feature_doc = await self.feature_service.get_document_as_dict(
-                document_id=data.naive_prediction.feature_id,
-                projection={"name": 1},
-            )
-            await self.feature_list_namespace_service.update_document(
-                document_id=feature_list.feature_list_namespace_id,
-                data=FeatureListNamespaceServiceUpdate(
-                    naive_prediction=NaivePredictionNamespace(
-                        feature_name=feature_doc["name"],
-                        structure=data.naive_prediction.structure,
+                )
+                await self.service.update_document(
+                    document_id=feature_list_id,
+                    data=FeatureListServiceUpdate(
+                        naive_prediction=data.naive_prediction,
                     ),
-                ),
-                return_document=False,
-            )
+                )
+            else:
+                return await self.remove_naive_prediction(feature_list_id=feature_list_id)
 
+        return await self.get(document_id=feature_list_id)
+
+    async def remove_naive_prediction(
+        self,
+        feature_list_id: ObjectId,
+    ) -> FeatureListModelResponse:
+        """
+        Remove naive prediction from a FeatureList
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList ID
+
+        Returns
+        -------
+        FeatureListModelResponse
+            FeatureList object with naive_prediction unset
+        """
+        # unset naive prediction on the feature list
+        await self.service.persistent.update_one(
+            collection_name=self.service.collection_name,
+            query_filter={"_id": feature_list_id},
+            update={"$set": {"naive_prediction": None}},
+            user_id=self.service.user.id,
+        )
         return await self.get(document_id=feature_list_id)
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:

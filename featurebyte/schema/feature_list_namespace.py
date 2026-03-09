@@ -10,7 +10,6 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
-    NaivePredictionNamespace,
 )
 from featurebyte.models.feature_list_namespace import (
     FeatureListNamespaceModel,
@@ -59,4 +58,3 @@ class FeatureListNamespaceServiceUpdate(
     feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     deployed_feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     default_feature_list_id: Optional[PydanticObjectId] = Field(default=None)
-    naive_prediction: Optional[NaivePredictionNamespace] = Field(default=None)

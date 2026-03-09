@@ -629,14 +629,11 @@ class FeatureListService(
             document_id=feature_list_id,
             projection={"feature_ids": 1},
         )
-        feature_ids = set()
-        for fid in feature_list_dict["feature_ids"]:
-            feature_ids.add(fid)
+        feature_ids = set(feature_list_dict["feature_ids"])
         if naive_prediction.feature_id not in feature_ids:
             raise DocumentError(
                 f"naive_prediction feature_id '{naive_prediction.feature_id}' is not a feature "
-                f"in the feature list. "
-                f"Available feature ids: {sorted(str(fid) for fid in feature_ids)}"
+                f"in the feature list."
             )
 
     async def update_readiness_distribution(

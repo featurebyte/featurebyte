@@ -49,7 +49,11 @@ from featurebyte.common.utils import (
 )
 from featurebyte.config import Configurations
 from featurebyte.enum import ConflictResolution, NaivePredictionStructure
-from featurebyte.exception import RecordCreationException, RecordRetrievalException
+from featurebyte.exception import (
+    RecordCreationException,
+    RecordRetrievalException,
+    RecordUpdateException,
+)
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import (
@@ -521,6 +525,32 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self.update(
             update_payload={"naive_prediction": naive_prediction.model_dump(by_alias=True)},
             allow_update_local=False,
+        )
+
+    def remove_naive_prediction(self) -> None:
+        """
+        Remove the naive prediction configuration from this FeatureList.
+
+        Raises
+        ------
+        RecordUpdateException
+            If the removal request fails.
+
+        Examples
+        --------
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +SKIP
+        >>> feature_list.remove_naive_prediction()  # doctest: +SKIP
+        """
+        client = Configurations().get_client()
+        response = client.delete(url=f"{self._route}/{self.id}/naive_prediction")
+        if response.status_code != HTTPStatus.OK:
+            raise RecordUpdateException(response)
+        object_dict = response.json()
+        self._update_cache(object_dict)
+        type(self).__init__(
+            self,
+            **object_dict,
+            **self._get_init_params_from_object(),
         )
 
     @property

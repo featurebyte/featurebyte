@@ -487,7 +487,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        namespace_id = create_response_dict["feature_list_namespace_id"]
 
         # get feature id from the feature list
         feature_id = create_response_dict["feature_ids"][0]
@@ -500,19 +499,56 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["naive_prediction"] == naive_pred
 
-        # verify namespace is also updated with name-based naive prediction
-        ns_response = test_api_client.get(f"/feature_list_namespace/{namespace_id}")
-        assert ns_response.status_code == HTTPStatus.OK
-        ns_naive_pred = ns_response.json()["naive_prediction"]
-        assert ns_naive_pred["structure"] == "additive"
-        assert ns_naive_pred["feature_name"] is not None
-
         # update with invalid naive_prediction (nonexistent feature id)
         bad_naive_pred = {"feature_id": str(ObjectId()), "structure": "additive"}
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"naive_prediction": bad_naive_pred}
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    def _set_and_verify_naive_prediction(self, test_api_client, doc_id, feature_id):
+        """Helper to set naive_prediction and verify it was set"""
+        naive_pred = {"feature_id": feature_id, "structure": "additive"}
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"naive_prediction": naive_pred}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["naive_prediction"] == naive_pred
+        return naive_pred
+
+    def test_update_200__unset_naive_prediction(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test unsetting naive_prediction via PATCH with null"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        feature_id = create_response_dict["feature_ids"][0]
+
+        self._set_and_verify_naive_prediction(test_api_client, doc_id, feature_id)
+
+        # unset naive_prediction by passing null
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"naive_prediction": None}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["naive_prediction"] is None
+
+    def test_delete_200__remove_naive_prediction(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test removing naive_prediction via DELETE route"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        feature_id = create_response_dict["feature_ids"][0]
+
+        self._set_and_verify_naive_prediction(test_api_client, doc_id, feature_id)
+
+        # remove naive_prediction via DELETE route
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}/naive_prediction")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["naive_prediction"] is None
 
     def test_create_201__with_naive_prediction(self, test_api_client_persistent, user_id):
         """Test create (success) with naive_prediction"""

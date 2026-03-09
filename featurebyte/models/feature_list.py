@@ -69,15 +69,6 @@ class NaivePrediction(FeatureByteBaseModel):
     structure: NaivePredictionStructure
 
 
-class NaivePredictionNamespace(FeatureByteBaseModel):
-    """
-    Naive prediction configuration for a feature list namespace (uses feature name)
-    """
-
-    feature_name: str
-    structure: NaivePredictionStructure
-
-
 class FeatureReadinessCount(FeatureByteBaseModel):
     """
     Feature count corresponding to the feature readiness within a feature list

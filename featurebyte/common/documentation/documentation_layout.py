@@ -449,6 +449,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_role"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_naive_prediction"]),
+        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.remove_naive_prediction"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_feature_table"]),
     ]
