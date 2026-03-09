@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.enum import NaivePredictionStructure
 from featurebyte.exception import RecordCreationException
 
 
@@ -90,16 +91,20 @@ def test_feature_list__naive_prediction(naive_pred_feature_group, source_type):
     assert feature_list.naive_prediction is None
 
     # update naive_prediction with a valid feature name
-    feature_list.update_naive_prediction("NAIVE_PRED_COUNT_2h")
+    feature_list.update_naive_prediction("NAIVE_PRED_COUNT_2h", NaivePredictionStructure.ADDITIVE)
     assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_2h"
 
     # update to a different valid feature name
-    feature_list.update_naive_prediction("NAIVE_PRED_COUNT_24h")
+    feature_list.update_naive_prediction(
+        "NAIVE_PRED_COUNT_24h", NaivePredictionStructure.MULTIPLICATIVE
+    )
     assert feature_list.naive_prediction == "NAIVE_PRED_COUNT_24h"
 
     # update with an invalid feature name should fail
     with pytest.raises(Exception) as exc:
-        feature_list.update_naive_prediction("nonexistent_feature")
+        feature_list.update_naive_prediction(
+            "nonexistent_feature", NaivePredictionStructure.ADDITIVE
+        )
     assert (
         "nonexistent_feature" in str(exc.value).lower()
         or "naive_prediction" in str(exc.value).lower()
