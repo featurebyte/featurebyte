@@ -371,6 +371,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, MANAGE, "Feature.update_readiness"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.update_feature_type"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.cosine_similarity"]),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.divide"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.entropy"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_rank"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_relative_frequency"]),

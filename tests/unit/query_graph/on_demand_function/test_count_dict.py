@@ -8,6 +8,7 @@ import pytest
 
 from featurebyte.query_graph.node.count_dict import (
     CosineSimilarityNode,
+    CountDictDivideNode,
     CountDictTransformNode,
     DictionaryKeysNode,
     GetRankFromDictionaryNode,
@@ -399,4 +400,54 @@ def test_derive_on_demand_view_code__dictionary_get_rank(
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
         expected_output=scalar_param_expected_values,
+    )
+
+
+def test_derive_on_demand_view_code__count_dict_divide(
+    count_dict_feature1, odfv_config, udf_config, node_code_gen_output_factory
+):
+    """Test derive_on_demand_view_code for CountDictDivideNode"""
+    divisor_feature = pd.Series([
+        np.nan,  # null divisor -> nan
+        2.0,  # {"a": 1} / 2.0 -> {"a": 0.5}
+        0.0,  # zero divisor -> nan
+        3.0,  # {"a": 1, "b": 1, "c": 1} / 3.0 -> {"a": 1/3, ...}
+        10.0,  # {"a": 1, "b": 2, "c": 3, "__MISSING__": 4} / 10.0
+        2.0,  # {"0": 0.5, "1": 1, "2": 2, "3": 3} / 2.0
+        5.0,  # {"0": 1, "1": 2, "2": 3, "3": 4} / 5.0
+    ])
+
+    expected = pd.Series([
+        np.nan,  # null divisor
+        {"a": 0.5},  # {"a": 1} / 2.0
+        np.nan,  # zero divisor
+        {"a": 1 / 3, "b": 1 / 3, "c": 1 / 3},  # / 3.0
+        {"a": 0.1, "b": 0.2, "c": 0.3, "__MISSING__": 0.4},  # / 10.0
+        {"0": 0.25, "1": 0.5, "2": 1.0, "3": 1.5},  # / 2.0
+        {"0": 0.2, "1": 0.4, "2": 0.6, "3": 0.8},  # / 5.0
+    ])
+
+    node = CountDictDivideNode(**NODE_PARAMS)
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": count_dict_feature1, "feat2": divisor_feature},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=expected,
     )

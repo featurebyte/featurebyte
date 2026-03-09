@@ -232,4 +232,71 @@ public class CountDictTransformsTest {
     assertEquals(0.5, output.get(new Text("a")).get(), 0.0001);
     assertEquals(0.5, output.get(new Text("b")).get(), 0.0001);
   }
+
+  @Test
+  public void testCountDictDivide() throws HiveException {
+    CountDictDivideV1 udf = new CountDictDivideV1();
+    ObjectInspector doubleValueOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector[] arguments = {mapValueOI, doubleValueOI};
+    udf.initialize(arguments);
+    Map<String, DoubleWritable> testDict = new HashMap<>();
+    testDict.put("a", new DoubleWritable(10));
+    testDict.put("b", new DoubleWritable(20));
+    testDict.put("c", new DoubleWritable(30));
+    // Divide by 10: values should be 1.0, 2.0, 3.0
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(testDict),
+      new GenericUDF.DeferredJavaObject(new DoubleWritable(10.0)),
+    };
+    Map<Text, DoubleWritable> output = (Map<Text, DoubleWritable>) udf.evaluate(args);
+    assertEquals(1.0, output.get(new Text("a")).get(), 0.0001);
+    assertEquals(2.0, output.get(new Text("b")).get(), 0.0001);
+    assertEquals(3.0, output.get(new Text("c")).get(), 0.0001);
+  }
+
+  @Test
+  public void testCountDictDivideNull() throws HiveException {
+    CountDictDivideV1 udf = new CountDictDivideV1();
+    ObjectInspector doubleValueOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector[] arguments = {mapValueOI, doubleValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(null),
+      new GenericUDF.DeferredJavaObject(new DoubleWritable(5.0)),
+    };
+    Object output = udf.evaluate(args);
+    assertEquals(null, output);
+  }
+
+  @Test
+  public void testCountDictDivideByZero() throws HiveException {
+    CountDictDivideV1 udf = new CountDictDivideV1();
+    ObjectInspector doubleValueOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector[] arguments = {mapValueOI, doubleValueOI};
+    udf.initialize(arguments);
+    Map<String, DoubleWritable> testDict = new HashMap<>();
+    testDict.put("a", new DoubleWritable(10));
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(testDict),
+      new GenericUDF.DeferredJavaObject(new DoubleWritable(0.0)),
+    };
+    Object output = udf.evaluate(args);
+    assertEquals(null, output);
+  }
+
+  @Test
+  public void testCountDictDivideNullDivisor() throws HiveException {
+    CountDictDivideV1 udf = new CountDictDivideV1();
+    ObjectInspector doubleValueOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector[] arguments = {mapValueOI, doubleValueOI};
+    udf.initialize(arguments);
+    Map<String, DoubleWritable> testDict = new HashMap<>();
+    testDict.put("a", new DoubleWritable(10));
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(testDict),
+      new GenericUDF.DeferredJavaObject(null),
+    };
+    Object output = udf.evaluate(args);
+    assertEquals(null, output);
+  }
 }
