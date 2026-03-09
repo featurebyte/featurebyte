@@ -100,4 +100,5 @@ class TimeSeriesTableController(
             reference_datetime_schema=time_series_table.reference_datetime_schema,
             time_interval=time_series_table.time_interval,
             default_feature_job_setting=time_series_table.default_feature_job_setting,
+            is_global_series=time_series_table.is_global_series,
         )
