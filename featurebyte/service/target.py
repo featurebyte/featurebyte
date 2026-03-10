@@ -25,6 +25,7 @@ from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimary
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_feature_service import BaseFeatureService
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
@@ -54,12 +55,13 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        context_service: ContextService,
+        entity_service: EntityService,
         target_namespace_service: TargetNamespaceService,
         namespace_handler: NamespaceHandler,
         feature_store_service: FeatureStoreService,
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
-        entity_service: EntityService,
         entity_serving_names_service: EntityServingNamesService,
         storage: Storage,
         redis: Redis[Any],
@@ -71,6 +73,8 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
             derive_primary_entity_helper=derive_primary_entity_helper,
+            context_service=context_service,
+            entity_service=entity_service,
             storage=storage,
             redis=redis,
         )
@@ -121,6 +125,8 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             "node_name": node_name,
             "primary_entity_ids": derived_data.primary_entity_ids,
             "relationships_info": derived_data.relationships_info,
+            "entity_ids": derived_data.entity_ids,
+            "entity_dtypes": derived_data.entity_dtypes,
         })
 
     @staticmethod

@@ -1723,6 +1723,15 @@ def cust_id_entity_fixture(cust_id_entity_id, catalog):
     yield entity
 
 
+@pytest.fixture(name="cust_id_entity_tagged")
+def cust_id_entity_tagged_fixture(cust_id_entity, snowflake_event_table):
+    """
+    Customer ID entity fixture
+    """
+    snowflake_event_table.update_column_entity(column_name="cust_id", entity_name="customer")
+    yield cust_id_entity
+
+
 @pytest.fixture(name="transaction_entity")
 def transaction_entity_fixture(transaction_entity_id, catalog):
     """
@@ -2970,7 +2979,7 @@ def time_since_latest_event_timestamp_feature_fixture(
 
 
 @pytest.fixture(name="forecast_context")
-def forecast_context_fixture(cust_id_entity):
+def forecast_context_fixture(cust_id_entity_tagged):
     """
     Fixture for a Context with ForecastPointSchema
     """
@@ -2982,7 +2991,7 @@ def forecast_context_fixture(cust_id_entity):
     )
     forecast_context = Context(
         name="forecast_context_for_fixture",
-        primary_entity_ids=[cust_id_entity.id],
+        primary_entity_ids=[cust_id_entity_tagged.id],
         forecast_point_schema=forecast_schema,
     )
     forecast_context.save()
@@ -3013,7 +3022,7 @@ def days_until_forecast_feature_fixture(
 
 
 @pytest.fixture(name="forecast_point_dt_feature")
-def forecast_point_dt_feature_fixture(cust_id_entity, forecast_context):
+def forecast_point_dt_feature_fixture(forecast_context):
     """
     Fixture for a feature derived from forecast point date parts
     """

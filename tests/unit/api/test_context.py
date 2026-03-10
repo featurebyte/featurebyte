@@ -22,6 +22,7 @@ from featurebyte import (
     UseCase,
 )
 from featurebyte.enum import DBVarType, FeatureType
+from featurebyte.exception import RecordCreationException
 from featurebyte.models.context import UserProvidedColumn
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.query_graph.node.schema import DummyTableDetails
@@ -225,7 +226,7 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     assert not context_info["treatment"]
 
 
-def test_user_provided_columns(catalog, cust_id_entity, target_table):
+def test_user_provided_columns(catalog, cust_id_entity):
     """
     Test Context with user defined columns
     """
@@ -360,8 +361,6 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
     assert savings.context_id == context.id  # derived features inherit context_id
     assert savings.dtype == DBVarType.FLOAT
 
-    savings.save()
-
     # Derived feature from features with different context is prohibited
     context_2 = Context.create(
         name="test_context_derived_2",
@@ -377,11 +376,10 @@ def test_get_user_provided_feature_derived(catalog, cust_id_entity):
         income - tax
 
 
-def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
+def test_feature_list_model_context_id_derivation(catalog, cust_id_entity, snowflake_event_table):
     """
     Test that FeatureListModel derives context_id from features
     """
-
     context1 = Context(
         name="test_context_1",
         primary_entity_ids=[cust_id_entity.id],
@@ -403,9 +401,25 @@ def test_feature_list_model_context_id_derivation(catalog, cust_id_entity):
     )
     context2.save()
     feature1 = context1.get_user_provided_feature("income1")
+
+    # expect save to fail if context primary entity is not tagged to any column
+    with pytest.raises(RecordCreationException) as exc:
+        feature1.save()
+    assert (
+        "Some entities used in the feature are not tagged to a table column: ['customer']"
+        in exc.value.response.json()["traceback"]
+    )
+
+    snowflake_event_table.update_column_entity(column_name="cust_id", entity_name="customer")
     feature1.save()
     feature2 = context2.get_user_provided_feature("income2")
     feature2.save()
+
+    # Check that entity ids and entity dtypes are populated properly
+    assert feature1.context_id == context1.id
+    assert feature1.cached_model.entity_dtypes == [DBVarType.INT]
+    assert feature2.context_id == context2.id
+    assert feature2.cached_model.entity_dtypes == [DBVarType.INT]
 
     # Test that mixed context_ids raise an error
     with pytest.raises(ValueError, match="All features in a FeatureList must use the same context"):
