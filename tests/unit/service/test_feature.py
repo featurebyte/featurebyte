@@ -101,6 +101,7 @@ async def test_get_document_by_name_and_version(
             derive_primary_entity_helper=app_container.derive_primary_entity_helper,
             offline_store_info_initialization_service=app_container.offline_store_info_initialization_service,
             context_service=app_container.context_service,
+            entity_service=app_container.entity_service,
             storage=app_container.storage,
             redis=app_container.redis,
         )

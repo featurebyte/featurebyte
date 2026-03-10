@@ -279,7 +279,9 @@ def test_forecast_point_minus_timestamp_feature(
     check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
-def test_forecast_point_dt_hour(catalog, cust_id_entity, transaction_entity, mock_deployment_flow):
+def test_forecast_point_dt_hour(
+    catalog, cust_id_entity_tagged, transaction_entity, mock_deployment_flow
+):
     """
     Test a simple on-demand feature using forecast_point.dt.hour.
     """
@@ -296,7 +298,7 @@ def test_forecast_point_dt_hour(catalog, cust_id_entity, transaction_entity, moc
     )
     forecast_context = Context(
         name="forecast_context_hour",
-        primary_entity_ids=[cust_id_entity.id],
+        primary_entity_ids=[cust_id_entity_tagged.id],
         forecast_point_schema=forecast_schema,
     )
     forecast_context.save()

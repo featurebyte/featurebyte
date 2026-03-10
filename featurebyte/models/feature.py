@@ -167,9 +167,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
             # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
             # validate_assign=True in model_config.
-            # Only overwrite entity_ids if not already explicitly populated (e.g. set at the service
-            # layer for user-provided column features whose entity scope comes from the context).
-            if not self.entity_ids:
+            if entity_ids:
                 self.__dict__["entity_ids"] = entity_ids
                 self.__dict__["entity_dtypes"] = [
                     decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
