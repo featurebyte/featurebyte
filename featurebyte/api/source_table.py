@@ -102,10 +102,11 @@ def _resolve_series_id_params(
         raise ValueError(
             "Only one of series_id_column or series_id_columns can be specified, not both."
         )
-    return (
-        None if series_id_column is _UNSET else series_id_column,
-        None if series_id_columns is _UNSET else series_id_columns,
+    series_id_column = cast(Optional[str], None if series_id_column is _UNSET else series_id_column)
+    series_id_columns = cast(
+        Optional[list[str]], None if series_id_columns is _UNSET else series_id_columns
     )
+    return series_id_column, series_id_columns
 
 
 class TableDataFrame(BaseFrame, SampleMixin):
