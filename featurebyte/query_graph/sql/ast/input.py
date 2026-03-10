@@ -195,12 +195,16 @@ class InputNode(TableNode):
         else:
             table_details = context.parameters["table_details"]
         input_node_parameters = context.query_node.parameters
-        assert isinstance(input_node_parameters, BaseInputNodeParameters)
+        default_partition_column_info = (
+            input_node_parameters.get_default_partition_column()
+            if isinstance(input_node_parameters, BaseInputNodeParameters)
+            else None
+        )
         sql_node = InputNode(
             context=context,
             columns_map=columns_map,
             dbtable=table_details,
-            default_partition_column_info=input_node_parameters.get_default_partition_column(),
+            default_partition_column_info=default_partition_column_info,
             feature_store=feature_store,
         )
         return sql_node

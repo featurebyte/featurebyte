@@ -5,16 +5,16 @@
             "feature_ids": [
                 "646f6c1b0ed28a5271fb02c4"
             ],
+            "feature_job_setting": {
+                "blind_spot": "600s",
+                "execution_buffer": "0s",
+                "offset": "300s",
+                "period": "1800s"
+            },
             "feature_names": [
                 "sum_30m"
             ],
-            "sql_code": "WITH _FB_AGGREGATED AS (\n  SELECT\n    \"cust_id\" AS \"cust_id\",\n    SUM(\"col_float\") AS \"_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295\",\n    {{ CURRENT_TIMESTAMP }} AS \"POINT_IN_TIME\"\n  FROM (\n    SELECT\n      \"col_int\" AS \"col_int\",\n      \"col_float\" AS \"col_float\",\n      \"col_char\" AS \"col_char\",\n      \"col_text\" AS \"col_text\",\n      \"col_binary\" AS \"col_binary\",\n      \"col_boolean\" AS \"col_boolean\",\n      \"event_timestamp\" AS \"event_timestamp\",\n      \"cust_id\" AS \"cust_id\"\n    FROM \"sf_database\".\"sf_schema\".\"sf_table\"\n    WHERE\n      \"event_timestamp\" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 1800 AS TIMESTAMP)\n      AND \"event_timestamp\" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)\n  )\n  GROUP BY\n    \"cust_id\"\n)\nSELECT\n  AGG.\"cust_id\",\n  CAST(\"_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295\" AS DOUBLE) AS \"sum_30m\",\n  {{ CURRENT_TIMESTAMP }} AS \"POINT_IN_TIME\"\nFROM _FB_AGGREGATED AS AGG",
-            "feature_job_setting": {
-                "blind_spot": "600s",
-                "period": "1800s",
-                "offset": "300s",
-                "execution_buffer": "0s"
-            }
+            "sql_code": "WITH _FB_AGGREGATED AS (\n  SELECT\n    \"cust_id\" AS \"cust_id\",\n    SUM(\"col_float\") AS \"_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295\",\n    {{ CURRENT_TIMESTAMP }} AS \"POINT_IN_TIME\"\n  FROM (\n    SELECT\n      \"col_int\" AS \"col_int\",\n      \"col_float\" AS \"col_float\",\n      \"col_char\" AS \"col_char\",\n      \"col_text\" AS \"col_text\",\n      \"col_binary\" AS \"col_binary\",\n      \"col_boolean\" AS \"col_boolean\",\n      \"event_timestamp\" AS \"event_timestamp\",\n      \"cust_id\" AS \"cust_id\"\n    FROM \"sf_database\".\"sf_schema\".\"sf_table\"\n    WHERE\n      (\n        \"event_timestamp\" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -30, {{ CURRENT_TIMESTAMP }}))\n        AND \"event_timestamp\" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})\n      )\n      AND (\n        \"event_timestamp\" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 1800 AS TIMESTAMP)\n        AND \"event_timestamp\" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)\n      )\n  )\n  GROUP BY\n    \"cust_id\"\n)\nSELECT\n  AGG.\"cust_id\",\n  CAST(\"_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295\" AS DOUBLE) AS \"sum_30m\",\n  {{ CURRENT_TIMESTAMP }} AS \"POINT_IN_TIME\"\nFROM _FB_AGGREGATED AS AGG"
         }
     ]
 }

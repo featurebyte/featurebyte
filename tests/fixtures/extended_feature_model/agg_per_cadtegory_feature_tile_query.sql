@@ -9,8 +9,14 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
       "col_float" AS "input_col_sum_254bde514925221168a524ba7467c9b6ef83685d"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
-      "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-      AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+      (
+        "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+        AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+      )
+      AND (
+        "event_timestamp" >= DATE_ADD(CAST(__FB_START_DATE AS TIMESTAMP), -7, 'DAY')
+        AND "event_timestamp" <= DATE_ADD(CAST(__FB_END_DATE AS TIMESTAMP), 7, 'DAY')
+      )
   )
   WHERE
     "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)

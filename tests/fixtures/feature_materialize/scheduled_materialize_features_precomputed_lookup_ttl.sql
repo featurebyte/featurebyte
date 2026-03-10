@@ -6,16 +6,22 @@ FROM (
     "cust_id" AS "cust_id"
   FROM "sf_database"."sf_schema"."sf_table"
   WHERE
-    "event_timestamp" >= CAST(FLOOR(
-      (
-        EXTRACT(epoch_second FROM CAST(CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS TIMESTAMP)) - 300
-      ) / 1800
-    ) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-    AND "event_timestamp" < CAST(FLOOR(
-      (
-        EXTRACT(epoch_second FROM CAST(CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS TIMESTAMP)) - 300
-      ) / 1800
-    ) * 1800 + 300 - 600 AS TIMESTAMP)
+    (
+      "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, CAST('2022-01-06 00:00:00' AS TIMESTAMP)))
+      AND "event_timestamp" <= DATEADD(MONTH, 1, CAST('2022-01-06 00:00:00' AS TIMESTAMP))
+    )
+    AND (
+      "event_timestamp" >= CAST(FLOOR(
+        (
+          EXTRACT(epoch_second FROM CAST(CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS TIMESTAMP)) - 300
+        ) / 1800
+      ) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+      AND "event_timestamp" < CAST(FLOOR(
+        (
+          EXTRACT(epoch_second FROM CAST(CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS TIMESTAMP)) - 300
+        ) / 1800
+      ) * 1800 + 300 - 600 AS TIMESTAMP)
+    )
 )
 WHERE
   NOT "cust_id" IS NULL;

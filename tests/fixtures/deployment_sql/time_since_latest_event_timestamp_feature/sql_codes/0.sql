@@ -20,8 +20,14 @@ WITH _FB_AGGREGATED AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 7776000 AS TIMESTAMP)
-        AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+        (
+          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -129600, {{ CURRENT_TIMESTAMP }}))
+          AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
+        )
+        AND (
+          "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 7776000 AS TIMESTAMP)
+          AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+        )
     )
   )
   WHERE

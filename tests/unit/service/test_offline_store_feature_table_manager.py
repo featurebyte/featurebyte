@@ -734,12 +734,18 @@ async def test_feature_table_one_feature_deployed(
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
-                        "event_timestamp" >= CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-                        AND "event_timestamp" < CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        (
+                          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, __fb_current_feature_timestamp))
+                          AND "event_timestamp" <= DATEADD(MONTH, 1, __fb_current_feature_timestamp)
+                        )
+                        AND (
+                          "event_timestamp" >= CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                          AND "event_timestamp" < CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        )
                     )
                     WHERE
                       "cust_id" IS NOT NULL
@@ -892,12 +898,18 @@ async def test_feature_table_two_features_deployed(
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
-                        "event_timestamp" >= CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-                        AND "event_timestamp" < CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        (
+                          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, __fb_current_feature_timestamp))
+                          AND "event_timestamp" <= DATEADD(MONTH, 1, __fb_current_feature_timestamp)
+                        )
+                        AND (
+                          "event_timestamp" >= CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                          AND "event_timestamp" < CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        )
                     )
                     WHERE
                       "cust_id" IS NOT NULL
@@ -1006,12 +1018,18 @@ async def test_feature_table_undeploy(
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
-                        "event_timestamp" >= CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-                        AND "event_timestamp" < CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        (
+                          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, __fb_current_feature_timestamp))
+                          AND "event_timestamp" <= DATEADD(MONTH, 1, __fb_current_feature_timestamp)
+                        )
+                        AND (
+                          "event_timestamp" >= CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                          AND "event_timestamp" < CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        )
                     )
                     WHERE
                       "cust_id" IS NOT NULL
@@ -1157,12 +1175,18 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
-                        "event_timestamp" >= CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-                        AND "event_timestamp" < CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        (
+                          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, __fb_current_feature_timestamp))
+                          AND "event_timestamp" <= DATEADD(MONTH, 1, __fb_current_feature_timestamp)
+                        )
+                        AND (
+                          "event_timestamp" >= CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                          AND "event_timestamp" < CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                          ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                        )
                     )
                     WHERE
                       "cust_id" IS NOT NULL
@@ -1221,12 +1245,18 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                         "cust_id" AS "cust_id"
                       FROM "sf_database"."sf_schema"."sf_table"
                       WHERE
-                        "event_timestamp" >= CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-                        ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
-                        AND "event_timestamp" < CAST(FLOOR((
-                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-                        ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+                        (
+                          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, __fb_current_feature_timestamp))
+                          AND "event_timestamp" <= DATEADD(MONTH, 1, __fb_current_feature_timestamp)
+                        )
+                        AND (
+                          "event_timestamp" >= CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+                          ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+                          AND "event_timestamp" < CAST(FLOOR((
+                            DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+                          ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+                        )
                     )
                     WHERE
                       "cust_id" IS NOT NULL
