@@ -69,6 +69,45 @@ class _Unset:
 _UNSET: _Unset = _Unset()
 
 
+def _resolve_series_id_params(
+    series_id_column: Union[Optional[str], _Unset],
+    series_id_columns: Union[Optional[List[str]], _Unset],
+) -> Tuple[Optional[str], Optional[List[str]]]:
+    """
+    Validate and resolve the series_id_column / series_id_columns sentinel arguments.
+
+    Parameters
+    ----------
+    series_id_column : Union[Optional[str], _Unset]
+        The singular series id column argument.
+    series_id_columns : Union[Optional[List[str]], _Unset]
+        The plural series id columns argument.
+
+    Returns
+    -------
+    Tuple[Optional[str], Optional[List[str]]]
+        Resolved (series_id_column, series_id_columns) with sentinels replaced by None.
+
+    Raises
+    ------
+    ValueError
+        If neither or both of series_id_column and series_id_columns are specified.
+    """
+    if series_id_column is _UNSET and series_id_columns is _UNSET:
+        raise ValueError(
+            "Exactly one of series_id_column or series_id_columns must be explicitly set "
+            "(pass None if there is no series identifier)."
+        )
+    if series_id_column is not _UNSET and series_id_columns is not _UNSET:
+        raise ValueError(
+            "Only one of series_id_column or series_id_columns can be specified, not both."
+        )
+    return (
+        None if series_id_column is _UNSET else series_id_column,
+        None if series_id_columns is _UNSET else series_id_columns,
+    )
+
+
 class TableDataFrame(BaseFrame, SampleMixin):
     """
     TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
@@ -914,17 +953,9 @@ class SourceTable(AbstractTableData):
 
         from featurebyte.api.time_series_table import TimeSeriesTable
 
-        if series_id_column is _UNSET and series_id_columns is _UNSET:
-            raise ValueError(
-                "Exactly one of series_id_column or series_id_columns must be explicitly set "
-                "(pass None if there is no series identifier)."
-            )
-        if series_id_column is not _UNSET and series_id_columns is not _UNSET:
-            raise ValueError(
-                "Only one of series_id_column or series_id_columns can be specified, not both."
-            )
-        series_id_column = None if series_id_column is _UNSET else series_id_column
-        series_id_columns = None if series_id_columns is _UNSET else series_id_columns
+        series_id_column, series_id_columns = _resolve_series_id_params(
+            series_id_column, series_id_columns
+        )
 
         return TimeSeriesTable.create(
             source_table=self,
@@ -1339,17 +1370,9 @@ class SourceTable(AbstractTableData):
 
         from featurebyte.api.time_series_table import TimeSeriesTable
 
-        if series_id_column is _UNSET and series_id_columns is _UNSET:
-            raise ValueError(
-                "Exactly one of series_id_column or series_id_columns must be explicitly set "
-                "(pass None if there is no series identifier)."
-            )
-        if series_id_column is not _UNSET and series_id_columns is not _UNSET:
-            raise ValueError(
-                "Only one of series_id_column or series_id_columns can be specified, not both."
-            )
-        series_id_column = None if series_id_column is _UNSET else series_id_column
-        series_id_columns = None if series_id_columns is _UNSET else series_id_columns
+        series_id_column, series_id_columns = _resolve_series_id_params(
+            series_id_column, series_id_columns
+        )
 
         return TimeSeriesTable.get_or_create(
             source_table=self,

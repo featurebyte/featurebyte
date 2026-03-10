@@ -1224,7 +1224,7 @@ class LookupParameters(FeatureByteBaseModel):
             return self.entity_columns
         elif self.entity_column is not None:
             return [self.entity_column]
-        # A valid lookup feature / target must have the entity column(s) sepcified
+        # A valid lookup feature / target must have the entity column(s) specified
         raise ValueError("Either entity_column or entity_columns must be provided")
 
     def get_serving_names(self) -> List[str]:
@@ -1259,6 +1259,16 @@ class LookupParameters(FeatureByteBaseModel):
         feature_names = values["feature_names"]
         assert len(input_column_names) == len(feature_names)
         return values
+
+    @model_validator(mode="after")
+    def _validate_entity_fields_set(self) -> "LookupParameters":
+        if self.entity_column is None and self.entity_columns is None:
+            raise ValueError("At least one of entity_column or entity_columns must be set.")
+        if self.serving_name is None and self.serving_names is None:
+            raise ValueError("At least one of serving_name or serving_names must be set.")
+        if self.entity_id is None and self.entity_ids is None:
+            raise ValueError("At least one of entity_id or entity_ids must be set.")
+        return self
 
 
 class BaseLookupNode(AggregationOpStructMixin, BaseNode):
