@@ -921,11 +921,6 @@ class SourceTable(AbstractTableData):
         TimeSeriesTable
             TimeSeriesTable created from the source table.
 
-        Raises
-        ------
-        ValueError
-            If neither or both of series_id_column and series_id_columns are specified.
-
         Examples
         --------
         Create an time series table from a source table.
@@ -1361,11 +1356,6 @@ class SourceTable(AbstractTableData):
         Returns
         -------
         TimeSeriesTable
-
-        Raises
-        ------
-        ValueError
-            If neither or both of series_id_column and series_id_columns are specified.
         """
 
         from featurebyte.api.time_series_table import TimeSeriesTable
