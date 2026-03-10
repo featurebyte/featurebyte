@@ -13,6 +13,7 @@ from typing_extensions import Annotated, Literal
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.base import BaseNode
@@ -42,6 +43,15 @@ from featurebyte.query_graph.node.schema import (
     TableDetails,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
+
+
+class PartitionColumnInfo(FeatureByteBaseModel):
+    """
+    Partition column info for input node, which contains the column name and dtype info.
+    """
+
+    name: str
+    dtype_metadata: DBVarTypeMetadata
 
 
 class BaseInputNodeParameters(FeatureByteBaseModel):
@@ -181,6 +191,12 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         Optional[CommentStr]
         """
 
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        """
+        Get default partitioning column info for the input table
+        """
+        return None
+
     def get_source_info(self) -> SourceInfo:
         """
         Get source info
@@ -264,6 +280,15 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
             if table_name:
                 output = CommentStr(f'event_table name: "{table_name}"')
         return output
+
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        if self.timestamp_column is None:
+            return None
+        if self.event_timestamp_schema is None:
+            dtype_metadata = DBVarTypeMetadata()
+        else:
+            dtype_metadata = DBVarTypeMetadata(timestamp_schema=self.event_timestamp_schema)
+        return PartitionColumnInfo(name=self.timestamp_column, dtype_metadata=dtype_metadata)
 
 
 class ItemTableInputNodeParameters(BaseInputNodeParameters):
@@ -411,6 +436,12 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
                 output = CommentStr(f'time_series_table name: "{table_name}"')
         return output
 
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        dtype_metadata = DBVarTypeMetadata(timestamp_schema=self.reference_datetime_schema)
+        return PartitionColumnInfo(
+            name=self.reference_datetime_column, dtype_metadata=dtype_metadata
+        )
+
 
 class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
     """SnapshotsTableParameters"""
@@ -450,6 +481,12 @@ class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
             if table_name:
                 output = CommentStr(f'snapshots_table name: "{table_name}"')
         return output
+
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        dtype_metadata = DBVarTypeMetadata(timestamp_schema=self.snapshot_datetime_schema)
+        return PartitionColumnInfo(
+            name=self.snapshot_datetime_column, dtype_metadata=dtype_metadata
+        )
 
 
 InputNodeParameters = Annotated[
