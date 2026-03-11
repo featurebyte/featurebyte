@@ -5,17 +5,18 @@ Module for input data sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, InternalName, TableDataType
+from featurebyte.enum import DBVarType, InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata, NestedFieldMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
 )
+from featurebyte.query_graph.node.input import BaseInputNodeParameters, PartitionColumnInfo
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -39,6 +40,7 @@ class InputNode(TableNode):
 
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
+    default_partition_column_info: Optional[PartitionColumnInfo]
     query_node_type = NodeType.INPUT
 
     def from_query_impl(self, select_expr: Select) -> Select:
@@ -118,6 +120,7 @@ class InputNode(TableNode):
                 select_expr=select_expr,
                 columns=self.context.parameters["columns"],
                 partition_column_filter=partition_column_filter,
+                default_partition_column_info=self.default_partition_column_info,
                 adapter=self.context.adapter,
             )
 
@@ -147,6 +150,7 @@ class InputNode(TableNode):
                 select_expr=select_expr,
                 columns=self.context.parameters["columns"],
                 partition_column_filter=partition_column_filter,
+                default_partition_column_info=self.default_partition_column_info,
                 adapter=self.context.adapter,
             )
 
@@ -190,10 +194,17 @@ class InputNode(TableNode):
             table_details = context.development_datasets.mapping[table_id].model_dump()
         else:
             table_details = context.parameters["table_details"]
+        input_node_parameters = context.query_node.parameters
+        default_partition_column_info = (
+            input_node_parameters.get_default_partition_column()
+            if isinstance(input_node_parameters, BaseInputNodeParameters)
+            else None
+        )
         sql_node = InputNode(
             context=context,
             columns_map=columns_map,
             dbtable=table_details,
+            default_partition_column_info=default_partition_column_info,
             feature_store=feature_store,
         )
         return sql_node
@@ -267,8 +278,41 @@ class InputNode(TableNode):
         select_expr: Select,
         columns: list[dict[str, Any]],
         partition_column_filter: PartitionColumnFilter,
+        default_partition_column_info: Optional[PartitionColumnInfo],
         adapter: BaseAdapter,
     ) -> Select:
+        # Get partition column info from the column metadata which is configured explicitly by
+        # users. If not found, use the table-type specific default partition column info.
+        # Note: default partition column filtering is not applied for BigQuery due to
+        # TIMESTAMP vs DATETIME type incompatibility.
+        partition_column_info = cls._get_partition_column_info_from_partition_metadata(
+            columns=columns
+        )
+        if partition_column_info is None and adapter.source_type != SourceType.BIGQUERY:
+            partition_column_info = default_partition_column_info
+
+        if partition_column_info is not None:
+            partition_column = partition_column_info.name
+            dtype_metadata = partition_column_info.dtype_metadata
+            if dtype_metadata.timestamp_schema is not None:
+                format_string = dtype_metadata.timestamp_schema.format_string
+            else:
+                format_string = None
+            partition_filter_condition = get_partition_filter(
+                partition_column=partition_column,
+                partition_column_filter=partition_column_filter,
+                format_string=format_string,
+                adapter=adapter,
+            )
+            select_expr = select_expr.where(partition_filter_condition)
+
+        return select_expr
+
+    @classmethod
+    def _get_partition_column_info_from_partition_metadata(
+        cls,
+        columns: list[dict[str, Any]],
+    ) -> Optional[PartitionColumnInfo]:
         partition_column = None
         dtype_metadata_mapping = {}
         for column_info in columns:
@@ -287,19 +331,11 @@ class InputNode(TableNode):
         # table registration. In that case, we don't want to apply any partition filters.
         dtype_metadata = dtype_metadata_mapping.get(partition_column)
         if partition_column is not None and dtype_metadata is not None:
-            if dtype_metadata.timestamp_schema is not None:
-                format_string = dtype_metadata.timestamp_schema.format_string
-            else:
-                format_string = None
-            partition_filter_condition = get_partition_filter(
-                partition_column=partition_column,
-                partition_column_filter=partition_column_filter,
-                format_string=format_string,
-                adapter=adapter,
+            return PartitionColumnInfo(
+                name=partition_column,
+                dtype_metadata=dtype_metadata,
             )
-            select_expr = select_expr.where(partition_filter_condition)
-
-        return select_expr
+        return None
 
     @classmethod
     def _flatten_nested_fields(

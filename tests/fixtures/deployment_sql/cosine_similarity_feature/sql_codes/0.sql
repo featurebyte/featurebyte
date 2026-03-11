@@ -10,16 +10,22 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST(FLOOR(
-          (
-            EXTRACT(epoch_second FROM CAST({{ CURRENT_TIMESTAMP }} AS TIMESTAMP)) - 300
-          ) / 1800
-        ) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-        AND "event_timestamp" < CAST(FLOOR(
-          (
-            EXTRACT(epoch_second FROM CAST({{ CURRENT_TIMESTAMP }} AS TIMESTAMP)) - 300
-          ) / 1800
-        ) * 1800 + 300 - 600 AS TIMESTAMP)
+        (
+          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, {{ CURRENT_TIMESTAMP }}))
+          AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
+        )
+        AND (
+          "event_timestamp" >= CAST(FLOOR(
+            (
+              EXTRACT(epoch_second FROM CAST({{ CURRENT_TIMESTAMP }} AS TIMESTAMP)) - 300
+            ) / 1800
+          ) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+          AND "event_timestamp" < CAST(FLOOR(
+            (
+              EXTRACT(epoch_second FROM CAST({{ CURRENT_TIMESTAMP }} AS TIMESTAMP)) - 300
+            ) / 1800
+          ) * 1800 + 300 - 600 AS TIMESTAMP)
+        )
     )
     WHERE
       NOT "cust_id" IS NULL
@@ -72,8 +78,14 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
             WHERE
-              "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 1800 AS TIMESTAMP)
-              AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+              (
+                "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, {{ CURRENT_TIMESTAMP }}))
+                AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
+              )
+              AND (
+                "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 1800 AS TIMESTAMP)
+                AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+              )
           )
           GROUP BY
             "cust_id",
@@ -128,8 +140,14 @@ WITH DEPLOYMENT_REQUEST_TABLE AS (
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
             WHERE
-              "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 86400 AS TIMESTAMP)
-              AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+              (
+                "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, {{ CURRENT_TIMESTAMP }}))
+                AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
+              )
+              AND (
+                "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 86400 AS TIMESTAMP)
+                AND "event_timestamp" < CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 AS TIMESTAMP)
+              )
           )
           GROUP BY
             "cust_id",

@@ -9,8 +9,14 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
       "col_float" AS "input_col_std_06e1272c0c3f2d9fe71c0a171e70e6360bf00c65"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
-      "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-      AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+      (
+        "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+        AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+      )
+      AND (
+        "event_timestamp" >= DATEADD(DAY, -7, CAST(__FB_START_DATE AS TIMESTAMP))
+        AND "event_timestamp" <= DATEADD(DAY, 7, CAST(__FB_END_DATE AS TIMESTAMP))
+      )
   )
   WHERE
     "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)

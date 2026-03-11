@@ -59,6 +59,7 @@ def input_node_fixture():
             "schema_name": "my_schema",
             "table_name": "my_table",
         },
+        default_partition_column_info=None,
         feature_store={
             "type": "snowflake",
             "details": {

@@ -23,7 +23,13 @@ from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture, reset_global_graph
+
+
+@pytest.fixture(autouse=True)
+def clean_global_graph():
+    """Reset the global query graph before each test to prevent state leakage between tests."""
+    reset_global_graph()
 
 
 def get_nodes_from_feature(feature, node_type):
@@ -397,8 +403,14 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node, source_
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
               WHERE
-                "event_timestamp" >= __fb_last_materialized_timestamp
-                AND "event_timestamp" < __fb_current_feature_timestamp
+                (
+                  "event_timestamp" >= __fb_last_materialized_timestamp
+                  AND "event_timestamp" < __fb_current_feature_timestamp
+                )
+                AND (
+                  "event_timestamp" >= DATE_ADD(__fb_last_materialized_timestamp, -7, 'DAY')
+                  AND "event_timestamp" <= DATE_ADD(__fb_current_feature_timestamp, 7, 'DAY')
+                )
             )
             GROUP BY
               "col_int"
@@ -456,14 +468,20 @@ def test_item_aggregate_with_timestamp_schema_universe(
                 "tz_offset" AS "tz_offset"
               FROM "sf_database"."sf_schema"."sf_table_no_tz"
               WHERE
-                CAST(CONVERT_TIMEZONE(
-                  'UTC',
-                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
-                ) AS TIMESTAMP) >= __fb_last_materialized_timestamp
-                AND CAST(CONVERT_TIMEZONE(
-                  'UTC',
-                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
-                ) AS TIMESTAMP) < __fb_current_feature_timestamp
+                (
+                  CAST(CONVERT_TIMEZONE(
+                    'UTC',
+                    TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                  ) AS TIMESTAMP) >= __fb_last_materialized_timestamp
+                  AND CAST(CONVERT_TIMEZONE(
+                    'UTC',
+                    TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                  ) AS TIMESTAMP) < __fb_current_feature_timestamp
+                )
+                AND (
+                  "event_timestamp" >= DATE_ADD(__fb_last_materialized_timestamp, -7, 'DAY')
+                  AND "event_timestamp" <= DATE_ADD(__fb_current_feature_timestamp, 7, 'DAY')
+                )
             )
             GROUP BY
               "col_int"
@@ -673,12 +691,18 @@ def test_combined_universe__exclude_dummy_entity_universe(
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
-            "event_timestamp" >= CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-            ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
-            AND "event_timestamp" < CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-            ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+            (
+              "event_timestamp" >= DATE_ADD(DATE_ADD(__fb_current_feature_timestamp, -1440, 'MINUTE'), -1, 'MONTH')
+              AND "event_timestamp" <= DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH')
+            )
+            AND (
+              "event_timestamp" >= CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+              ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+              AND "event_timestamp" < CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+              ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+            )
         )
         WHERE
           "cust_id" IS NOT NULL
@@ -723,12 +747,18 @@ def test_combined_universe__window_aggregate_multiple_windows(
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
-            "event_timestamp" >= CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-            ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
-            AND "event_timestamp" < CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-            ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+            (
+              "event_timestamp" >= DATE_ADD(DATE_ADD(__fb_current_feature_timestamp, -1440, 'MINUTE'), -1, 'MONTH')
+              AND "event_timestamp" <= DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH')
+            )
+            AND (
+              "event_timestamp" >= CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+              ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+              AND "event_timestamp" < CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+              ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+            )
         )
         WHERE
           "cust_id" IS NOT NULL
@@ -740,12 +770,18 @@ def test_combined_universe__window_aggregate_multiple_windows(
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
           WHERE
-            "event_timestamp" >= CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-            ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
-            AND "event_timestamp" < CAST(FLOOR((
-              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
-            ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+            (
+              "event_timestamp" >= DATE_ADD(DATE_ADD(__fb_current_feature_timestamp, -1440, 'MINUTE'), -1, 'MONTH')
+              AND "event_timestamp" <= DATE_ADD(__fb_current_feature_timestamp, 1, 'MONTH')
+            )
+            AND (
+              "event_timestamp" >= CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+              ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+              AND "event_timestamp" < CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+              ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+            )
         )
         WHERE
           "cust_id" IS NOT NULL

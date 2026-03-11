@@ -16,7 +16,13 @@ WITH _FB_AGGREGATED AS (
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
       (
-        "col_float" > 100
+        (
+          "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -1440, {{ CURRENT_TIMESTAMP }}))
+          AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
+        )
+        AND (
+          "col_float" > 100
+        )
       )
       AND (
         "event_timestamp" >= CAST(DATE_PART(EPOCH_SECOND, {{ CURRENT_TIMESTAMP }}) - 600 - 86400 AS TIMESTAMP)

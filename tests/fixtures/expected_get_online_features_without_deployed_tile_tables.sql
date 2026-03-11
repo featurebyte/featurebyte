@@ -48,6 +48,9 @@ SELECT * FROM (
       "cust_id" AS "cust_id",
       "col_float" AS "input_col_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM "sf_database"."sf_schema"."sf_table"
+    WHERE
+      "event_timestamp" >= DATEADD(MONTH, -1, DATEADD(MINUTE, -30, CAST('2023-10-01 12:00:00' AS TIMESTAMP)))
+      AND "event_timestamp" <= DATEADD(MONTH, 1, CAST('2023-10-01 12:00:00' AS TIMESTAMP))
   ) AS R
     ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
     AND R."event_timestamp" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
