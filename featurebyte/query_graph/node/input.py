@@ -194,6 +194,10 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
     def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
         """
         Get default partitioning column info for the input table
+
+        Returns
+        -------
+        Optional[PartitionColumnInfo]
         """
         return None
 
