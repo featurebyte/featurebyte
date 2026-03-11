@@ -198,14 +198,21 @@ def test_partition_column_filters_with_on_demand_entity_filters(
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
 
 
+@pytest.mark.parametrize(
+    "source_type,fixture_suffix",
+    [
+        (SourceType.DATABRICKS_UNITY, ""),
+        (SourceType.BIGQUERY, "_bigquery"),
+    ],
+)
 def test_partition_column_filters_using_default_partition_column(
-    global_graph, input_details, update_fixtures
+    global_graph, input_details, update_fixtures, source_type, fixture_suffix
 ):
     """
     Test that partition filters are applied using the default partition column when no explicit
-    partition column is configured in the table columns.
+    partition column is configured in the table columns. For BigQuery, the default partition
+    column filtering is skipped due to TIMESTAMP vs DATETIME type incompatibility.
     """
-    source_type = SourceType.DATABRICKS_UNITY
     node_params = {
         "id": ObjectId(),
         "type": "event_table",
@@ -242,7 +249,7 @@ def test_partition_column_filters_using_default_partition_column(
         source_info=source_info,
     )
     actual = sql_to_string(sql_graph.build(input_node).sql, source_type)
-    fixture_filename = "tests/fixtures/query_graph/test_input/partition_column_filters_default_partition_column.sql"
+    fixture_filename = f"tests/fixtures/query_graph/test_input/partition_column_filters_default_partition_column{fixture_suffix}.sql"
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
 
 

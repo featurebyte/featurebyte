@@ -10,7 +10,7 @@ from typing import Any, Optional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, InternalName, TableDataType
+from featurebyte.enum import DBVarType, InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata, NestedFieldMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
@@ -283,10 +283,12 @@ class InputNode(TableNode):
     ) -> Select:
         # Get partition column info from the column metadata which is configured explicitly by
         # users. If not found, use the table-type specific default partition column info.
+        # Note: default partition column filtering is not applied for BigQuery due to
+        # TIMESTAMP vs DATETIME type incompatibility.
         partition_column_info = cls._get_partition_column_info_from_partition_metadata(
             columns=columns
         )
-        if partition_column_info is None:
+        if partition_column_info is None and adapter.source_type != SourceType.BIGQUERY:
             partition_column_info = default_partition_column_info
 
         if partition_column_info is not None:
