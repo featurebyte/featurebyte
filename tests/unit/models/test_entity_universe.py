@@ -23,7 +23,13 @@ from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture, reset_global_graph
+
+
+@pytest.fixture(autouse=True)
+def clean_global_graph():
+    """Reset the global query graph before each test to prevent state leakage between tests."""
+    reset_global_graph()
 
 
 def get_nodes_from_feature(feature, node_type):
