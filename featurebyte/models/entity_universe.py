@@ -523,11 +523,11 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
 
     def get_serving_names(self) -> List[str]:
         node = cast(LookupNode, self.node)
-        return [node.parameters.serving_name]
+        return [str(col) for col in node.parameters.get_serving_names()]
 
     def get_required_columns(self) -> Optional[list[str]]:
         node = cast(LookupNode, self.node)
-        return [str(node.parameters.entity_column)]
+        return [str(col) for col in node.parameters.get_entity_columns()]
 
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(LookupNode, self.node)
@@ -552,17 +552,23 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         else:
             aggregate_input_expr = self.aggregate_input_expr
 
+        entity_columns = [str(col) for col in node.parameters.get_entity_columns()]
         universe_expr = (
             select(
-                expressions.alias_(
-                    quoted_identifier(node.parameters.entity_column),
-                    alias=node.parameters.serving_name,
-                    quoted=True,
-                )
+                *[
+                    expressions.alias_(
+                        quoted_identifier(entity_column),
+                        alias=serving_name,
+                        quoted=True,
+                    )
+                    for (entity_column, serving_name) in zip(
+                        entity_columns, node.parameters.get_serving_names()
+                    )
+                ],
             )
             .distinct()
             .from_(aggregate_input_expr.subquery())
-            .where(columns_not_null([node.parameters.entity_column]))
+            .where(columns_not_null(entity_columns))
         )
         return [universe_expr]
 

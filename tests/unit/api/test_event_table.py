@@ -1304,9 +1304,9 @@ def test_create_event_table_without_event_id_column(snowflake_database_table, ca
 
     # expect lookup feature to be unsuccessful
     event_view = event_table.get_view()
-    with pytest.raises(AssertionError) as exc:
+    with pytest.raises(ValueError) as exc:
         event_view.col_text.as_feature("some feature")
-    assert "Event ID column is not available." in str(exc.value)
+    assert "Lookup feature / target is not supported for this view" in str(exc.value)
 
     # expect subset to work
     _ = event_view[["col_text", "col_int"]]

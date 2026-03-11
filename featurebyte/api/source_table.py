@@ -62,6 +62,53 @@ else:
 logger = get_logger(__name__)
 
 
+class _Unset:
+    """Sentinel type for parameters that must be explicitly set by the caller."""
+
+
+_UNSET: _Unset = _Unset()
+
+
+def _resolve_series_id_params(
+    series_id_column: Union[Optional[str], _Unset],
+    series_id_columns: Union[Optional[List[str]], _Unset],
+) -> Tuple[Optional[str], Optional[List[str]]]:
+    """
+    Validate and resolve the series_id_column / series_id_columns sentinel arguments.
+
+    Parameters
+    ----------
+    series_id_column : Union[Optional[str], _Unset]
+        The singular series id column argument.
+    series_id_columns : Union[Optional[List[str]], _Unset]
+        The plural series id columns argument.
+
+    Returns
+    -------
+    Tuple[Optional[str], Optional[List[str]]]
+        Resolved (series_id_column, series_id_columns) with sentinels replaced by None.
+
+    Raises
+    ------
+    ValueError
+        If neither or both of series_id_column and series_id_columns are specified.
+    """
+    if series_id_column is _UNSET and series_id_columns is _UNSET:
+        raise ValueError(
+            "Exactly one of series_id_column or series_id_columns must be explicitly set "
+            "(pass None if there is no series identifier)."
+        )
+    if series_id_column is not _UNSET and series_id_columns is not _UNSET:
+        raise ValueError(
+            "Only one of series_id_column or series_id_columns can be specified, not both."
+        )
+    series_id_column = cast(Optional[str], None if series_id_column is _UNSET else series_id_column)
+    series_id_columns = cast(
+        Optional[list[str]], None if series_id_columns is _UNSET else series_id_columns
+    )
+    return series_id_column, series_id_columns
+
+
 class TableDataFrame(BaseFrame, SampleMixin):
     """
     TableDataFrame class is a frame encapsulation of the table objects (like event table, item table).
@@ -818,7 +865,8 @@ class SourceTable(AbstractTableData):
         reference_datetime_column: str,
         reference_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
-        series_id_column: Optional[str],
+        series_id_column: Union[Optional[str], _Unset] = _UNSET,
+        series_id_columns: Union[Optional[List[str]], _Unset] = _UNSET,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         datetime_partition_column: Optional[str] = None,
@@ -848,7 +896,14 @@ class SourceTable(AbstractTableData):
             Specifies the time interval for the time series. Note that only intervals defined with a single time unit
             (e.g., 1 hour, 1 day) are supported.
         series_id_column: Optional[str]
-            The column that represents the unique identifier for each time series.
+            The optional column that represents the unique identifier for each time series.
+            Exactly one of series_id_column or series_id_columns must be explicitly passed
+            (pass None if there is no series identifier). Cannot be used together with series_id_columns.
+        series_id_columns: Optional[List[str]]
+            The optional columns that together represent the composite unique identifier for each
+            time series. Exactly one of series_id_column or series_id_columns must be explicitly
+            passed (pass None if there is no series identifier). Cannot be used together with
+            series_id_column.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
         description: Optional[str]
@@ -894,6 +949,10 @@ class SourceTable(AbstractTableData):
 
         from featurebyte.api.time_series_table import TimeSeriesTable
 
+        series_id_column, series_id_columns = _resolve_series_id_params(
+            series_id_column, series_id_columns
+        )
+
         return TimeSeriesTable.create(
             source_table=self,
             name=name,
@@ -904,6 +963,7 @@ class SourceTable(AbstractTableData):
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
             series_id_column=series_id_column,
+            series_id_columns=series_id_columns,
             description=description,
             _id=_id,
         )
@@ -1250,7 +1310,8 @@ class SourceTable(AbstractTableData):
         reference_datetime_column: str,
         reference_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
-        series_id_column: Optional[str],
+        series_id_column: Union[Optional[str], _Unset] = _UNSET,
+        series_id_columns: Union[Optional[List[str]], _Unset] = _UNSET,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         datetime_partition_column: Optional[str] = None,
@@ -1272,7 +1333,14 @@ class SourceTable(AbstractTableData):
         time_interval: TimeInterval
             The time interval of the time series.
         series_id_column: Optional[str]
-            The column that represents the unique identifier for each time series.
+            The optional column that represents the unique identifier for each time series.
+            Exactly one of series_id_column or series_id_columns must be explicitly passed
+            (pass None if there is no series identifier). Cannot be used together with series_id_columns.
+        series_id_columns: Optional[List[str]]
+            The optional columns that together represent the composite unique identifier for each
+            time series. Exactly one of series_id_column or series_id_columns must be explicitly
+            passed (pass None if there is no series identifier). Cannot be used together with
+            series_id_column.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
         description: Optional[str]
@@ -1293,6 +1361,10 @@ class SourceTable(AbstractTableData):
 
         from featurebyte.api.time_series_table import TimeSeriesTable
 
+        series_id_column, series_id_columns = _resolve_series_id_params(
+            series_id_column, series_id_columns
+        )
+
         return TimeSeriesTable.get_or_create(
             source_table=self,
             name=name,
@@ -1302,6 +1374,7 @@ class SourceTable(AbstractTableData):
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
             series_id_column=series_id_column,
+            series_id_columns=series_id_columns,
             record_creation_timestamp_column=record_creation_timestamp_column,
             description=description,
             _id=_id,

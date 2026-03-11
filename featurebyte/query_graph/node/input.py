@@ -378,6 +378,7 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
     type: Literal[TableDataType.TIME_SERIES_TABLE] = TableDataType.TIME_SERIES_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
     id_column: Optional[InColumnStr] = Field(default=None)
+    id_columns: Optional[List[InColumnStr]] = Field(default=None)
     reference_datetime_column: InColumnStr
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval
@@ -390,6 +391,7 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "series_id_column": self.id_column,
+            "series_id_columns": self.id_columns,
             "reference_datetime_column": self.reference_datetime_column,
             "reference_datetime_schema": derive_sdk_code_from_timestamp_schema(
                 timestamp_schema=self.reference_datetime_schema

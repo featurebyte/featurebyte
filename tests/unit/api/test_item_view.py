@@ -1007,8 +1007,11 @@ def test_as_feature__from_view_column(
             "input_column_names": ["item_amount"],
             "feature_names": ["ItemAmountFeature"],
             "entity_column": "item_id_col",
+            "entity_columns": None,
             "serving_name": "item_id",
+            "serving_names": None,
             "entity_id": item_entity.id,
+            "entity_ids": None,
             "scd_parameters": None,
             "event_parameters": {
                 "event_timestamp_column": "event_timestamp_event_table",

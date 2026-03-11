@@ -226,7 +226,7 @@ def _get_lookup_spec_from_join_step(
         node_name="dummy",
         input_column_name=join_step.parent.key,
         feature_name=join_step.parent.serving_name,
-        entity_column=join_step.child.key,
+        entity_columns=[join_step.child.key],
         serving_names=[join_step.child.serving_name],
         aggregation_source=aggregation_source,
         scd_parameters=scd_parameters,

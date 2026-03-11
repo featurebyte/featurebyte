@@ -49,6 +49,8 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         List of time series table columns
     series_id_column: Optional[str]
         Series ID column name
+    series_id_columns: Optional[List[str]]
+        Composite series ID column names
     reference_datetime_column: str
         Reference datetime column name
     reference_datetime_schema: TimestampSchema
@@ -90,17 +92,32 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         ),
     )
 
+    @model_validator(mode="after")
+    def _validate_series_id_columns_dtypes(self) -> "TimeSeriesTableModel":
+        if not self.series_id_columns:
+            return self
+        col_info_map = {col.name: col for col in self.columns_info}
+        supported_id_types = DBVarType.supported_id_types()
+        for col_name in self.series_id_columns:
+            if col_name not in col_info_map:
+                raise ValueError(f'Column "{col_name}" not found in the table!')
+            col_dtype = col_info_map[col_name].dtype
+            if col_dtype not in supported_id_types:
+                dtypes = sorted(str(dtype) for dtype in supported_id_types)
+                raise ValueError(f'Column "{col_name}" is expected to have type(s): {dtypes}')
+        return self
+
     @property
     def primary_key_columns(self) -> List[str]:
         return []
 
     @property
     def special_columns(self) -> List[str]:
-        cols = [
-            self.reference_datetime_column,
-            self.series_id_column,
-            self.record_creation_timestamp_column,
-        ]
+        cols: List[Optional[str]] = [self.reference_datetime_column]
+        cols.extend(
+            self.series_id_columns or ([self.series_id_column] if self.series_id_column else [])
+        )
+        cols.append(self.record_creation_timestamp_column)
         return [col for col in cols if col]
 
     def create_view_graph_node(

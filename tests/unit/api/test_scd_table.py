@@ -562,9 +562,9 @@ def test_create_scd_table_without_natural_key_column(
         assert "Natural key column is not available." in str(exc.value)
 
     # expect lookup feature to be unsuccessful
-    with pytest.raises(AssertionError) as exc:
+    with pytest.raises(ValueError) as exc:
         scd_view.col_text.as_feature("some feature")
-    assert "Natural key column is not available." in str(exc.value)
+    assert "Lookup feature / target is not supported for this view" in str(exc.value)
 
     # expect aggregate_asat to be successful
     scd_view.groupby("cust_id").aggregate_asat(

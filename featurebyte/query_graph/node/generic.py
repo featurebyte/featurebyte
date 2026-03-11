@@ -1173,12 +1173,81 @@ class LookupParameters(FeatureByteBaseModel):
 
     input_column_names: List[InColumnStr]
     feature_names: List[OutColumnStr]
-    entity_column: InColumnStr
-    serving_name: str
-    entity_id: PydanticObjectId
+    entity_column: Optional[InColumnStr] = Field(default=None)
+    entity_columns: Optional[List[InColumnStr]] = Field(default=None)
+    serving_name: Optional[str] = Field(default=None)
+    serving_names: Optional[List[str]] = Field(default=None)
+    entity_id: Optional[PydanticObjectId] = None
+    entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
     snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
+
+    def get_entity_ids(self) -> List[PydanticObjectId]:
+        """
+        Get entity ids. This method is more preferred than directly accessing the
+        `entity_id` or `entity_ids` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+
+        Raises
+        ------
+        ValueError
+            If neither entity_id nor entity_ids is set.
+        """
+        if self.entity_ids is not None:
+            return self.entity_ids
+        elif self.entity_id is not None:
+            return [self.entity_id]
+        # A valid lookup feature / target must have the entity id(s) specified
+        raise ValueError("Either entity_id or entity_ids must be provided")
+
+    def get_entity_columns(self) -> List[InColumnStr]:
+        """
+        Get entity columns. This method is more preferred than directly accessing the
+        `entity_column` or `entity_columns` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[InColumnStr]
+
+        Raises
+        ------
+        ValueError
+            If neither entity_column nor entity_columns is set.
+        """
+        if self.entity_columns is not None:
+            return self.entity_columns
+        elif self.entity_column is not None:
+            return [self.entity_column]
+        # A valid lookup feature / target must have the entity column(s) specified
+        raise ValueError("Either entity_column or entity_columns must be provided")
+
+    def get_serving_names(self) -> List[str]:
+        """
+        Get serving names. This method is more preferred than directly accessing the
+        `serving_name` or `serving_names` attributes as it handles the backward compatibility
+        between them.
+
+        Returns
+        -------
+        List[str]
+
+        Raises
+        ------
+        ValueError
+            If neither serving_name nor serving_names is set.
+        """
+        if self.serving_names is not None:
+            return self.serving_names
+        elif self.serving_name is not None:
+            return [self.serving_name]
+        # A valid lookup feature / target must have the serving name(s) specified
+        raise ValueError("Either serving_name or serving_names must be provided")
 
     @model_validator(mode="before")
     @classmethod
@@ -1190,6 +1259,16 @@ class LookupParameters(FeatureByteBaseModel):
         feature_names = values["feature_names"]
         assert len(input_column_names) == len(feature_names)
         return values
+
+    @model_validator(mode="after")
+    def _validate_entity_fields_set(self) -> "LookupParameters":
+        if self.entity_column is None and self.entity_columns is None:
+            raise ValueError("At least one of entity_column or entity_columns must be set.")
+        if self.serving_name is None and self.serving_names is None:
+            raise ValueError("At least one of serving_name or serving_names must be set.")
+        if self.entity_id is None and self.entity_ids is None:
+            raise ValueError("At least one of entity_id or entity_ids must be set.")
+        return self
 
 
 class BaseLookupNode(AggregationOpStructMixin, BaseNode):
@@ -1240,7 +1319,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=feature_name,
                 method=None,
-                keys=[self.parameters.entity_column],
+                keys=self.parameters.get_entity_columns(),
                 window=None,
                 category=None,
                 offset=offset,
@@ -1257,7 +1336,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         ]
 
     def _exclude_source_columns(self) -> List[str]:
-        return [self.parameters.entity_column]
+        return [str(col) for col in self.parameters.get_entity_columns()]
 
     def normalize_and_recreate_node(
         self,

@@ -27,7 +27,7 @@ class BaseLookupSpec(AggregationSpec, ABC):
     """
 
     input_column_name: str
-    entity_column: str
+    entity_columns: list[str]
     serving_names: list[str]
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
@@ -57,8 +57,11 @@ class BaseLookupSpec(AggregationSpec, ABC):
     def get_source_hash_parameters(self) -> dict[str, Any]:
         params: dict[str, Any] = {
             "source_expr": self.source_expr.sql(),
-            "entity_column": self.entity_column,
         }
+        if len(self.entity_columns) > 1:
+            params["entity_columns"] = self.entity_columns
+        else:
+            params["entity_column"] = self.entity_columns[0]
         if self.scd_parameters is not None:
             params["scd_parameters"] = self.scd_parameters.model_dump()
             if params["scd_parameters"].get("end_timestamp_metadata") is None:

@@ -565,9 +565,9 @@ def test_create_item_table_without_item_id_column(
 
     # expect lookup feature to be unsuccessful
     item_view = item_table.get_view()
-    with pytest.raises(AssertionError) as exc:
+    with pytest.raises(ValueError) as exc:
         item_view.item_type.as_feature("some feature")
-    assert "Item ID column is not available." in str(exc.value)
+    assert "Lookup feature / target is not supported for this view" in str(exc.value)
 
     # expect subset to work
     _ = item_view[["item_type", "item_amount"]]
