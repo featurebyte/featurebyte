@@ -693,3 +693,7 @@ class DeploymentSqlGenerationError(BaseUnprocessableEntityError):
 
 class MissingUserProvidedColumnsError(BaseUnprocessableEntityError):
     """Raised when required user-provided columns are missing from observation table"""
+
+
+class UntaggedEntityError(BaseUnprocessableEntityError):
+    """Raised when entity used in feature is not tagged to any table column"""

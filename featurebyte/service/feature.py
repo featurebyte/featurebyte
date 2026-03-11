@@ -28,6 +28,8 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_feature_service import BaseFeatureService
+from featurebyte.service.context import ContextService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -54,6 +56,8 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
+        context_service: ContextService,
+        entity_service: EntityService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
@@ -69,6 +73,8 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
+            context_service=context_service,
+            entity_service=entity_service,
             derive_primary_entity_helper=derive_primary_entity_helper,
             storage=storage,
             redis=redis,
@@ -78,6 +84,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
+        self.context_service = context_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -109,7 +116,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
         # derived attributes
         derived_data = await self.extract_derived_data(
-            graph=prepared_graph, node_name=prepared_node_name
+            graph=prepared_graph, node_name=prepared_node_name, feature_context_id=data.context_id
         )
 
         feature_dict = {
@@ -120,6 +127,8 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 "readiness": FeatureReadiness.DRAFT,
                 "primary_entity_ids": derived_data.primary_entity_ids,
                 "relationships_info": derived_data.relationships_info,
+                "entity_ids": derived_data.entity_ids,
+                "entity_dtypes": derived_data.entity_dtypes,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
