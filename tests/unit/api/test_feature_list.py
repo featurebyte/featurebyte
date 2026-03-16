@@ -19,7 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
-from featurebyte.enum import DBVarType, FeatureType, InternalName
+from featurebyte.enum import DBVarType, FeatureType, InternalName, NaivePredictionStructure
 from featurebyte.exception import (
     RecordCreationException,
     RecordDeletionException,
@@ -27,6 +27,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.context import UserProvidedColumn
+from featurebyte.models.feature_list import NaivePrediction
 from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -1082,6 +1083,40 @@ def test_list_features(saved_feature_list, float_feature):
 
     feature_version_list = saved_feature_list.list_features()
     assert feature_version_list.shape[0] == 1
+
+
+def test_list_features__with_naive_prediction(saved_feature_list, float_feature):
+    """
+    Test list_features flags the naive prediction feature
+    """
+    float_feature.save(conflict_resolution="retrieve")
+    naive_prediction = NaivePrediction(
+        feature_id=float_feature.id, structure=NaivePredictionStructure.ADDITIVE
+    )
+    with patch.object(
+        type(saved_feature_list),
+        "naive_prediction",
+        new_callable=lambda: property(lambda self: naive_prediction),
+    ):
+        feature_version_list = saved_feature_list.list_features()
+    assert_frame_equal(
+        feature_version_list,
+        pd.DataFrame({
+            "id": [str(float_feature.id)],
+            "name": [float_feature.name],
+            "version": [float_feature.version],
+            "dtype": [float_feature.dtype],
+            "readiness": [float_feature.readiness],
+            "online_enabled": [float_feature.online_enabled],
+            "tables": [["sf_event_table"]],
+            "primary_tables": [["sf_event_table"]],
+            "entities": [["customer"]],
+            "primary_entities": [["customer"]],
+            "created_at": [float_feature.created_at.isoformat()],
+            "is_default": [True],
+            "is_naive_prediction": [True],
+        }),
+    )
 
 
 @freeze_time("2023-01-20 06:30:00")
