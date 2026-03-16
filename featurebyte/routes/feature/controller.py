@@ -227,11 +227,14 @@ class FeatureController(
         if version:
             params["version"] = VersionIdentifier.from_str(version).model_dump()
 
+        naive_prediction_feature_id = None
         if feature_list_id:
             feature_list_document = await self.feature_list_service.get_document(
                 document_id=feature_list_id
             )
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
+            if feature_list_document.naive_prediction is not None:
+                naive_prediction_feature_id = feature_list_document.naive_prediction.feature_id
 
         if feature_namespace_id:
             query_filter = params.get("query_filter", {}).copy()
@@ -263,6 +266,7 @@ class FeatureController(
                 FeatureModelResponse(
                     **feature,
                     is_default=default_feature_id == feature["_id"],
+                    is_naive_prediction=naive_prediction_feature_id == feature["_id"],
                 )
             )
 

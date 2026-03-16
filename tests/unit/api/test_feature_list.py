@@ -1076,6 +1076,7 @@ def test_list_features(saved_feature_list, float_feature):
             "primary_entities": [["customer"]],
             "created_at": [float_feature.created_at.isoformat()],
             "is_default": [True],
+            "is_naive_prediction": [False],
         }),
     )
 

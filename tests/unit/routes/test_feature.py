@@ -407,6 +407,57 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert response_dict["total"] == len(feature_ids)
         assert set(output_feature_ids) == set(feature_ids)
 
+    def test_list_200__filter_by_feature_list_id_with_naive_prediction(
+        self, test_api_client_persistent
+    ):
+        """Test list (success) with naive prediction flag when filtering by feature_list_id"""
+        test_api_client, _ = test_api_client_persistent
+
+        # create feature list first
+        api_object_filename_pairs = [
+            ("entity", "entity"),
+            ("event_table", "event_table"),
+            ("feature", "feature_sum_30m"),
+            ("feature", "feature_sum_2h"),
+            ("feature_list", "feature_list_multi"),
+        ]
+        feature_ids = []
+        feature_list_id = None
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = test_api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+            if api_object == "feature":
+                feature_ids.append(response.json()["_id"])
+            if api_object == "feature_list":
+                feature_list_id = payload["_id"]
+
+        # set naive prediction on the feature list
+        naive_feature_id = feature_ids[0]
+        response = test_api_client.patch(
+            f"/feature_list/{feature_list_id}",
+            json={
+                "naive_prediction": {
+                    "feature_id": naive_feature_id,
+                    "structure": "additive",
+                }
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # list features filtered by feature_list_id
+        response = test_api_client.get(self.base_route, params={"feature_list_id": feature_list_id})
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+
+        # verify is_naive_prediction flag
+        for feat in response_dict["data"]:
+            if feat["_id"] == naive_feature_id:
+                assert feat["is_naive_prediction"] is True
+            else:
+                assert feat["is_naive_prediction"] is False
+
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses
     ):

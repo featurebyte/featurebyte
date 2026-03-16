@@ -1282,7 +1282,13 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         --------
         - [FeatureList.list_versions](/reference/featurebyte.api.feature_list.FeatureList.list_versions/)
         """
-        return Feature.list_versions(feature_list_id=self.id)
+        result = Feature.list_versions(feature_list_id=self.id)
+        naive_pred = self.naive_prediction
+        if naive_pred is not None and "id" in result.columns:
+            result["is_naive_prediction"] = result["id"] == str(naive_pred.feature_id)
+        else:
+            result["is_naive_prediction"] = False
+        return result
 
     @typechecked
     def get_historical_features_sql(
