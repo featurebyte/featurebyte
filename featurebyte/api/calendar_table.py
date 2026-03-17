@@ -4,7 +4,7 @@ CalendarTable class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, model_validator
@@ -13,15 +13,22 @@ from typing_extensions import Literal
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_validator
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.calendar_table import CalendarTableModel
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.table import (
     AllTableDataT,
     CalendarTableData,
 )
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ViewMetadata
 from featurebyte.schema.calendar_table import CalendarTableCreate, CalendarTableUpdate
+
+if TYPE_CHECKING:
+    from featurebyte.api.calendar_view import CalendarView
 
 
 class CalendarTable(TableApiObject):
@@ -66,21 +73,83 @@ class CalendarTable(TableApiObject):
         )
     )
 
-    def get_view(self, **kwargs: Any) -> None:
+    def get_view(
+        self,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
+        drop_column_names: Optional[List[str]] = None,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+    ) -> CalendarView:
         """
-        CalendarView is not yet implemented.
+        Gets a CalendarView object from a CalendarTable object.
 
         Parameters
         ----------
-        **kwargs: Any
-            Unused keyword arguments.
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
+            View mode to use. When auto, the view will be constructed with cleaning operations from
+            the table, and the record creation timestamp column will be dropped.
+        drop_column_names: Optional[List[str]]
+            List of column names to drop (manual mode only).
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of cleaning operations to apply per column in manual mode only. Each element in
+            the list indicates the cleaning operations for a specific column.
 
-        Raises
-        ------
-        NotImplementedError
-            Always raised as CalendarView is not yet implemented.
+        Returns
+        -------
+        CalendarView
+            CalendarView object constructed from the source table.
+
+        Examples
+        --------
+        Get a CalendarView in automated mode.
+
+        >>> calendar_table = catalog.get_table("CALENDAR")  # doctest: +SKIP
+        >>> calendar_view = calendar_table.get_view()  # doctest: +SKIP
         """
-        raise NotImplementedError("CalendarView not yet implemented")
+        from featurebyte.api.calendar_view import CalendarView
+
+        self._validate_view_mode_params(
+            view_mode=view_mode,
+            drop_column_names=drop_column_names,
+            column_cleaning_operations=column_cleaning_operations,
+        )
+
+        drop_column_names = drop_column_names or []
+        if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
+            drop_column_names.append(self.record_creation_timestamp_column)
+
+        data_node = self.frame.node
+        assert isinstance(data_node, InputNode)
+        calendar_table_data = cast(CalendarTableData, self.table_data)
+        (
+            calendar_table_data,
+            column_cleaning_operations,
+        ) = self._prepare_table_data_and_column_cleaning_operations(
+            table_data=calendar_table_data,
+            column_cleaning_operations=column_cleaning_operations,
+            view_mode=view_mode,
+        )
+
+        view_graph_node, columns_info = calendar_table_data.construct_calendar_view_graph_node(
+            calendar_table_node=data_node,
+            drop_column_names=drop_column_names,
+            metadata=ViewMetadata(
+                view_mode=view_mode,
+                drop_column_names=drop_column_names,
+                column_cleaning_operations=column_cleaning_operations,
+                table_id=data_node.parameters.id,
+            ),
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        columns_info = self._prepare_columns_info_for_view(
+            view_node=inserted_graph_node, columns_info=columns_info
+        )
+        return CalendarView(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            columns_info=columns_info,
+            node_name=inserted_graph_node.name,
+            series_id_column=self.series_id_column,
+        )
 
     @property
     def timestamp_column(self) -> Optional[str]:

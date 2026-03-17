@@ -124,6 +124,29 @@ def expected_snapshots_table_preview_query() -> str:
     ).strip()
 
 
+@pytest.fixture()
+def expected_calendar_table_preview_query() -> str:
+    """
+    Expected preview_sql output
+    """
+    return textwrap.dedent(
+        """
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          CAST("date" AS VARCHAR) AS "date",
+          CAST("created_at" AS VARCHAR) AS "created_at",
+          "store_id" AS "store_id"
+        FROM "sf_database"."sf_schema"."calendar_table"
+        LIMIT 10
+        """
+    ).strip()
+
+
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """
@@ -275,6 +298,21 @@ def saved_snapshots_table_fixture(snowflake_snapshots_table, catalog):
     assert isinstance(snowflake_snapshots_table.created_at, datetime)
     assert isinstance(snowflake_snapshots_table.tabular_source.feature_store_id, ObjectId)
     yield snowflake_snapshots_table
+
+
+@pytest.fixture(name="saved_calendar_table")
+def saved_calendar_table_fixture(snowflake_calendar_table, catalog):
+    """
+    Saved calendar table fixture
+    """
+    _ = catalog
+    previous_id = snowflake_calendar_table.id
+    assert snowflake_calendar_table.saved is True
+    assert snowflake_calendar_table.id == previous_id
+    assert snowflake_calendar_table.status == TableStatus.PUBLIC_DRAFT
+    assert isinstance(snowflake_calendar_table.created_at, datetime)
+    assert isinstance(snowflake_calendar_table.tabular_source.feature_store_id, ObjectId)
+    yield snowflake_calendar_table
 
 
 @pytest.fixture(name="snowflake_time_series_table_with_tz_offset_column")

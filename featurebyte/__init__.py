@@ -16,6 +16,7 @@ from featurebyte.api.api_object_util import iterate_api_object_using_paginated_r
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.calendar_table import CalendarTable
+from featurebyte.api.calendar_view import CalendarView
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.context import Context
@@ -509,6 +510,8 @@ __all__ = [
     # API objects
     "BatchFeatureTable",
     "BatchRequestTable",
+    "CalendarTable",
+    "CalendarView",
     "Catalog",
     "ChangeView",
     "CronFeatureJobSetting",
