@@ -436,6 +436,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             "entities": [],
             "column_count": 10,
             "series_id_column": "col_int",
+            "series_id_columns": ["col_int"],
             "reference_datetime_column": "date",
             "reference_datetime_schema": {
                 "format_string": "YYYY-MM-DD HH24:MI:SS",
@@ -558,6 +559,38 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         # check deleted table
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    @pytest.mark.asyncio
+    async def test_get_info_composite_series_id(self, test_api_client_persistent):
+        """Test retrieve info for table with composite series_id_columns"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # Create a table with composite series_id_columns
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = "composite_series_id_table"
+        payload["series_id_column"] = None
+        payload["series_id_columns"] = ["col_int", "store_id"]
+        payload["tabular_source"] = {
+            **payload["tabular_source"],
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "composite_time_series_table",
+            },
+        }
+        create_response = self.post(test_api_client, payload)
+        assert create_response.status_code == HTTPStatus.CREATED, create_response.json()
+        doc_id = create_response.json()["_id"]
+
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict["series_id_column"] is None
+        assert response_dict["series_id_columns"] == ["col_int", "store_id"]
 
     def test_create_with_unsupported_reference_timestamp_schema(self, test_api_client_persistent):
         """
