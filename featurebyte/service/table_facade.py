@@ -15,6 +15,8 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingU
 from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.scd_table import SCDTableServiceUpdate
 from featurebyte.schema.time_series_table import TimeSeriesTableServiceUpdate
+from featurebyte.service.calendar_table import CalendarTableService
+from featurebyte.service.calendar_table_validation import CalendarTableValidationService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.dimension_table_validation import DimensionTableValidationService
 from featurebyte.service.event_table import EventTableService
@@ -37,6 +39,7 @@ TableValidationService = Union[
     DimensionTableValidationService,
     SCDTableValidationService,
     TimeSeriesTableValidationService,
+    CalendarTableValidationService,
 ]
 
 
@@ -63,6 +66,8 @@ class TableFacadeService:
         table_status_service: TableStatusService,
         snapshots_table_service: SnapshotsTableService,
         snapshots_table_validation_service: SnapshotsTableValidationService,
+        calendar_table_service: CalendarTableService,
+        calendar_table_validation_service: CalendarTableValidationService,
     ):
         self.table_service = table_service
         self.event_table_service = event_table_service
@@ -79,6 +84,8 @@ class TableFacadeService:
         self.table_status_service = table_status_service
         self.snapshots_table_service = snapshots_table_service
         self.snapshots_table_validation_service = snapshots_table_validation_service
+        self.calendar_table_service = calendar_table_service
+        self.calendar_table_validation_service = calendar_table_validation_service
 
     def get_specific_table_service(self, table_type: TableDataType) -> TableDocumentService:
         """
@@ -100,6 +107,7 @@ class TableFacadeService:
             TableDataType.SCD_TABLE: self.scd_table_service,
             TableDataType.TIME_SERIES_TABLE: self.time_series_table_service,
             TableDataType.SNAPSHOTS_TABLE: self.snapshots_table_service,
+            TableDataType.CALENDAR_TABLE: self.calendar_table_service,
         }
         return table_service_map[table_type]  # type: ignore
 
@@ -125,6 +133,7 @@ class TableFacadeService:
             TableDataType.SCD_TABLE: self.scd_table_validation_service,
             TableDataType.TIME_SERIES_TABLE: self.time_series_table_validation_service,
             TableDataType.SNAPSHOTS_TABLE: self.snapshots_table_validation_service,
+            TableDataType.CALENDAR_TABLE: self.calendar_table_validation_service,
         }
         return table_service_map[table_type]  # type: ignore
 

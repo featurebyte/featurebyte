@@ -43,6 +43,7 @@ from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.routes.calendar_table.controller import CalendarTableController
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
@@ -90,6 +91,8 @@ from featurebyte.routes.user_defined_function.controller import UserDefinedFunct
 from featurebyte.service.batch_external_feature_table import BatchExternalFeatureTableService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.calendar_table import CalendarTableService
+from featurebyte.service.calendar_table_validation import CalendarTableValidationService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.context import ContextService
@@ -462,6 +465,10 @@ app_container_config.register_class(
     dependency_override={"table_document_service": "time_series_table_service"},
 )
 app_container_config.register_class(
+    CalendarTableValidationService,
+    dependency_override={"table_document_service": "calendar_table_service"},
+)
+app_container_config.register_class(
     SnapshotsTableValidationService,
     dependency_override={"table_document_service": "snapshots_table_service"},
 )
@@ -472,6 +479,8 @@ app_container_config.register_class(SemanticService)
 app_container_config.register_class(SemanticRelationshipService)
 app_container_config.register_class(SessionManagerService)
 app_container_config.register_class(SessionHelper)
+app_container_config.register_class(CalendarTableController)
+app_container_config.register_class(CalendarTableService)
 app_container_config.register_class(SnapshotsTableController)
 app_container_config.register_class(SnapshotsTableService)
 app_container_config.register_class(StaticSourceTableController)

@@ -51,6 +51,7 @@ class BaseTableData(FeatureByteBaseModel):
         TableDataType.SCD_TABLE,
         TableDataType.TIME_SERIES_TABLE,
         TableDataType.SNAPSHOTS_TABLE,
+        TableDataType.CALENDAR_TABLE,
     ] = Field(
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table"
     )

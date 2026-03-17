@@ -10,6 +10,7 @@ from pydantic import Field
 from typing_extensions import Annotated
 
 from featurebyte.common.model_util import construct_serialize_function
+from featurebyte.models.calendar_table import CalendarTableModel
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel as BaseTableModel
@@ -25,6 +26,7 @@ TABLE_TYPES = [
     SCDTableModel,
     TimeSeriesTableModel,
     SnapshotsTableModel,
+    CalendarTableModel,
 ]
 if TYPE_CHECKING:
     TableModel = BaseTableModel

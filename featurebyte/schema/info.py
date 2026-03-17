@@ -259,6 +259,16 @@ class TimeSeriesTableInfo(TableInfo):
     is_global_series: Optional[bool] = Field(default=None)
 
 
+class CalendarTableInfo(TableInfo):
+    """
+    CalendarTable info schema
+    """
+
+    series_id_column: Optional[str]
+    calendar_datetime_column: str
+    calendar_datetime_schema: TimestampSchema
+
+
 class SnapshotsTableInfo(TableInfo):
     """
     SnapshotsTable info schema

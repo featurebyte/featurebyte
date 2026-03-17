@@ -19,6 +19,7 @@ from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.batch_feature_table.api import BatchFeatureTableRouter
 from featurebyte.routes.batch_request_table.api import BatchRequestTableRouter
+from featurebyte.routes.calendar_table.api import CalendarTableRouter
 from featurebyte.routes.catalog.api import CatalogRouter
 from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
@@ -233,6 +234,7 @@ def get_app() -> FastAPI:
         BatchFeatureTableRouter(),
         BatchRequestTableRouter(),
         ContextRouter(),
+        CalendarTableRouter(),
         DeploymentRouter(),
         DeploymentSqlRouter(),
         DimensionTableRouter(),
