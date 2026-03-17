@@ -84,7 +84,6 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
-        self.context_service = context_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
