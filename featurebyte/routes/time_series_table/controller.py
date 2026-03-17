@@ -96,6 +96,7 @@ class TimeSeriesTableController(
         return TimeSeriesTableInfo(
             **table_dict,
             series_id_column=time_series_table.series_id_column,
+            series_id_columns=time_series_table.series_id_columns,
             reference_datetime_column=time_series_table.reference_datetime_column,
             reference_datetime_schema=time_series_table.reference_datetime_schema,
             time_interval=time_series_table.time_interval,

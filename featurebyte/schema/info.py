@@ -251,6 +251,7 @@ class TimeSeriesTableInfo(TableInfo):
     """
 
     series_id_column: Optional[str]
+    series_id_columns: Optional[List[str]] = Field(default=None)
     reference_datetime_column: str
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval
