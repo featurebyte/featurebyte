@@ -115,6 +115,7 @@ class Feature(
         "version",
         *FEATURE_COMMON_LIST_FIELDS,
         "is_default",
+        "is_naive_prediction",
     ]
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 

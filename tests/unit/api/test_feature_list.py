@@ -27,7 +27,6 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.context import UserProvidedColumn
-from featurebyte.models.feature_list import NaivePrediction
 from featurebyte.models.feature_list_namespace import FeatureListRole, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -1090,15 +1089,10 @@ def test_list_features__with_naive_prediction(saved_feature_list, float_feature)
     Test list_features flags the naive prediction feature
     """
     float_feature.save(conflict_resolution="retrieve")
-    naive_prediction = NaivePrediction(
-        feature_id=float_feature.id, structure=NaivePredictionStructure.ADDITIVE
+    saved_feature_list.update_naive_prediction(
+        float_feature.name, NaivePredictionStructure.ADDITIVE
     )
-    with patch.object(
-        type(saved_feature_list),
-        "naive_prediction",
-        new_callable=lambda: property(lambda self: naive_prediction),
-    ):
-        feature_version_list = saved_feature_list.list_features()
+    feature_version_list = saved_feature_list.list_features()
     assert_frame_equal(
         feature_version_list,
         pd.DataFrame({
