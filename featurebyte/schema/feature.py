@@ -110,6 +110,7 @@ class FeatureModelResponse(FeatureModel):
     """
 
     is_default: bool
+    is_naive_prediction: bool = False
 
 
 class FeaturePaginatedList(PaginationMixin):

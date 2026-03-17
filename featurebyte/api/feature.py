@@ -115,6 +115,7 @@ class Feature(
         "version",
         *FEATURE_COMMON_LIST_FIELDS,
         "is_default",
+        "is_naive_prediction",
     ]
     _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
@@ -456,22 +457,22 @@ class Feature(
         List saved Feature versions
 
         >>> Feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
-                                       name  version      dtype         readiness  online_enabled                                          tables    primary_tables           entities   primary_entities  created_at  is_default
-        0    CustomerLatestInvoiceTimestamp      ...  TIMESTAMP  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
-        1                      InvoiceCount      ...        INT             DRAFT           False                  [GROCERYINVOICE, INVOICEITEMS]    [INVOICEITEMS]   [groceryinvoice]   [groceryinvoice]         ...        True
-        2                ProductGroupLookup      ...    VARCHAR             DRAFT           False                                [GROCERYPRODUCT]  [GROCERYPRODUCT]   [groceryproduct]   [groceryproduct]         ...        True
-        3  CustomerProductGroupTotalCost_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True
-        4    CustomerProductGroupCounts_90d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True
-        5     CustomerProductGroupCounts_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True
-        6           InvoiceAmountAvg_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
-        7               InvoiceCount_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
+                                       name  version      dtype         readiness  online_enabled                                          tables    primary_tables           entities   primary_entities  created_at  is_default  is_naive_prediction
+        0    CustomerLatestInvoiceTimestamp      ...  TIMESTAMP  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
+        1                      InvoiceCount      ...        INT             DRAFT           False                  [GROCERYINVOICE, INVOICEITEMS]    [INVOICEITEMS]   [groceryinvoice]   [groceryinvoice]         ...        True                ...
+        2                ProductGroupLookup      ...    VARCHAR             DRAFT           False                                [GROCERYPRODUCT]  [GROCERYPRODUCT]   [groceryproduct]   [groceryproduct]         ...        True                ...
+        3  CustomerProductGroupTotalCost_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
+        4    CustomerProductGroupCounts_90d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
+        5     CustomerProductGroupCounts_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
+        6           InvoiceAmountAvg_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
+        7               InvoiceCount_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
 
         List Feature versions with the same name
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
-                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
-            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True
+                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default  is_naive_prediction
+            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True                    ...
         """
         params = {}
         if feature_list_id:
@@ -497,8 +498,8 @@ class Feature(
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
-                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
-            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
+                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default  is_naive_prediction
+            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True                ...
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_id = self.feature_namespace.default_feature_id

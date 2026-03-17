@@ -19,7 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
-from featurebyte.enum import DBVarType, FeatureType, InternalName
+from featurebyte.enum import DBVarType, FeatureType, InternalName, NaivePredictionStructure
 from featurebyte.exception import (
     RecordCreationException,
     RecordDeletionException,
@@ -1076,11 +1076,41 @@ def test_list_features(saved_feature_list, float_feature):
             "primary_entities": [["customer"]],
             "created_at": [float_feature.created_at.isoformat()],
             "is_default": [True],
+            "is_naive_prediction": [False],
         }),
     )
 
     feature_version_list = saved_feature_list.list_features()
     assert feature_version_list.shape[0] == 1
+
+
+def test_list_features__with_naive_prediction(saved_feature_list, float_feature):
+    """
+    Test list_features flags the naive prediction feature
+    """
+    float_feature.save(conflict_resolution="retrieve")
+    saved_feature_list.update_naive_prediction(
+        float_feature.name, NaivePredictionStructure.ADDITIVE
+    )
+    feature_version_list = saved_feature_list.list_features()
+    assert_frame_equal(
+        feature_version_list,
+        pd.DataFrame({
+            "id": [str(float_feature.id)],
+            "name": [float_feature.name],
+            "version": [float_feature.version],
+            "dtype": [float_feature.dtype],
+            "readiness": [float_feature.readiness],
+            "online_enabled": [float_feature.online_enabled],
+            "tables": [["sf_event_table"]],
+            "primary_tables": [["sf_event_table"]],
+            "entities": [["customer"]],
+            "primary_entities": [["customer"]],
+            "created_at": [float_feature.created_at.isoformat()],
+            "is_default": [True],
+            "is_naive_prediction": [True],
+        }),
+    )
 
 
 @freeze_time("2023-01-20 06:30:00")

@@ -1161,6 +1161,7 @@ def test_list_versions(saved_feature):
                 saved_feature.created_at.isoformat(),
             ],
             "is_default": [True] * 3,
+            "is_naive_prediction": [False] * 3,
         }),
     )
     assert_frame_equal(
@@ -1178,6 +1179,7 @@ def test_list_versions(saved_feature):
             "primary_entities": [["customer"]],
             "created_at": [saved_feature.created_at.isoformat()],
             "is_default": [True],
+            "is_naive_prediction": [False],
         }),
     )
 
