@@ -63,6 +63,7 @@ def test_user_provided_feature_save_and_list(event_table, user_entity):
     # Save the user-provided feature
     income_feature.name = "annual_income_feature"
     income_feature.save()
+    assert income_feature.primary_entity_ids == context.primary_entity_ids
 
     # Verify listing without context excludes the user-provided feature
     features_no_context = Feature.list(include_id=True)
