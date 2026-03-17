@@ -317,11 +317,15 @@ class DecomposePointState:
 
         elif isinstance(node, (LookupNode, LookupTargetNode)):
             # primary entity ids introduced by lookup node family
+            entity_columns = node.parameters.get_entity_columns()
+            colname_to_dtype_map = {}
             for source_column in op_struct.columns:
-                if source_column.name == node.parameters.entity_column:
-                    aggregation_info.primary_entity_dtypes = [source_column.dtype]
-                    break
-            assert len(aggregation_info.primary_entity_dtypes) == 1, (
+                if source_column.name in entity_columns:
+                    colname_to_dtype_map[source_column.name] = source_column.dtype
+            aggregation_info.primary_entity_dtypes = [
+                colname_to_dtype_map[col] for col in entity_columns if col in colname_to_dtype_map
+            ]
+            assert len(aggregation_info.primary_entity_dtypes) == len(entity_columns), (
                 "Primary entity dtype not found"
             )
 
