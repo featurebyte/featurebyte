@@ -14,6 +14,7 @@ from featurebyte.persistent.base import SortDir
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.calendar_table import CalendarTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
@@ -93,6 +94,7 @@ DocumentServiceT = TypeVar(
     ManagedViewService,
     DevelopmentDatasetService,
     SnapshotsTableService,
+    CalendarTableService,
 )
 
 

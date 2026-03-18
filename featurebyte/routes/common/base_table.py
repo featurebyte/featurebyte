@@ -15,6 +15,7 @@ from featurebyte.exception import (
     DocumentUpdateError,
     EntityTaggingIsNotAllowedError,
 )
+from featurebyte.models.calendar_table import CalendarTableModel
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableValidation, TableValidationStatus
@@ -34,6 +35,7 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
 from featurebyte.schema.worker.task.table_validation import TableValidationTaskPayload
 from featurebyte.service.base_table_document import DocumentCreate
+from featurebyte.service.calendar_table import CalendarTableService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -59,6 +61,7 @@ TableDocumentT = TypeVar(
     SCDTableModel,
     TimeSeriesTableModel,
     SnapshotsTableModel,
+    CalendarTableModel,
 )
 TableDocumentServiceT = TypeVar(
     "TableDocumentServiceT",
@@ -68,6 +71,7 @@ TableDocumentServiceT = TypeVar(
     SCDTableService,
     TimeSeriesTableService,
     SnapshotsTableService,
+    CalendarTableService,
 )
 
 
