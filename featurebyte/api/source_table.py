@@ -65,6 +65,9 @@ logger = get_logger(__name__)
 class _Unset:
     """Sentinel type for parameters that must be explicitly set by the caller."""
 
+    def __repr__(self) -> str:
+        return "<_Unset>"
+
 
 _UNSET: _Unset = _Unset()
 
