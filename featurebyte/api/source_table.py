@@ -1140,6 +1140,58 @@ class SourceTable(AbstractTableData):
         )
 
     @typechecked
+    def get_or_create_calendar_table(
+        self,
+        name: str,
+        calendar_datetime_column: str,
+        calendar_datetime_schema: TimestampSchema,
+        series_id_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> "CalendarTable":
+        """
+        Get or create a CalendarTable from this source table. Internally, this method calls
+        `CalendarTable.get` by name; if the table does not exist, it will be created.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        calendar_datetime_column: str
+            Column representing the calendar datetime.
+        calendar_datetime_schema: TimestampSchema
+            The schema of the calendar datetime column. Timezone column is not supported.
+        series_id_column: Optional[str]
+            Optional column representing the entity identifier in the calendar table.
+        record_creation_timestamp_column: Optional[str]
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want
+            to create a calendar table with a specific ID. This should not be a common operation,
+            and is typically used in tests only.
+
+        Returns
+        -------
+        CalendarTable
+            CalendarTable retrieved or created from the source table.
+        """
+        from featurebyte.api.calendar_table import CalendarTable
+
+        return CalendarTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            calendar_datetime_column=calendar_datetime_column,
+            calendar_datetime_schema=calendar_datetime_schema,
+            series_id_column=series_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
     def get_or_create_event_table(
         self,
         name: str,
