@@ -684,6 +684,7 @@ async def test_lookup_target_with_composite_series_id(
         f"composite_lookup_target_{suffix}",
         fill_value=0,
     )
+    lookup_target.save()
 
     # Create a Context with forecast_point_schema and composite primary entities.
     # The FORECAST_POINT column will be used as the temporal reference for target computation.

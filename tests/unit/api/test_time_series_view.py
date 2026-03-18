@@ -610,6 +610,7 @@ def test_time_series_view_as_target_composite_series_id(
     assert lookup_node["parameters"]["serving_names"] == ["cust_id", "transaction_id"]
     assert lookup_node["parameters"]["serving_name"] is None
     assert lookup_node["parameters"]["snapshots_parameters"]["offset_size"] == 7
+    target.save()
 
 
 def test_time_series_view_as_features_not_supported(snowflake_time_series_table, cust_id_entity):
