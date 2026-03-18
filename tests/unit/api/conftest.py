@@ -562,6 +562,16 @@ def snowflake_snapshots_view_fixture(
     yield snapshots_view
 
 
+@pytest.fixture(name="snowflake_calendar_view")
+def snowflake_calendar_view_fixture(snowflake_calendar_table, config):
+    """
+    CalendarView fixture
+    """
+    _ = config
+    calendar_view = snowflake_calendar_table.get_view()
+    yield calendar_view
+
+
 @pytest.fixture(name="another_snowflake_snapshots_view")
 def another_snowflake_snapshots_view_fixture(
     another_snowflake_snapshots_table, config, arbitrary_default_cron_feature_job_setting
