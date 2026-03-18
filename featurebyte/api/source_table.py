@@ -44,6 +44,7 @@ from featurebyte.schema.static_source_table import StaticSourceTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.batch_request_table import BatchRequestTable
+    from featurebyte.api.calendar_table import CalendarTable
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable

@@ -2,8 +2,6 @@
 Unit test for CalendarView class
 """
 
-import pytest
-
 from featurebyte.api.calendar_view import CalendarView
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
@@ -59,7 +57,9 @@ def test_from_calendar_table(snowflake_calendar_table, mock_api_object_cache):
     assert calendar_view.row_index_lineage == snowflake_calendar_table.frame.row_index_lineage
     assert calendar_view.columns_info == expected_view_columns_info
     assert calendar_view.series_id_column == snowflake_calendar_table.series_id_column
-    assert calendar_view.calendar_datetime_column == snowflake_calendar_table.calendar_datetime_column
+    assert (
+        calendar_view.calendar_datetime_column == snowflake_calendar_table.calendar_datetime_column
+    )
     assert calendar_view.timestamp_column == snowflake_calendar_table.timestamp_column
 
 
