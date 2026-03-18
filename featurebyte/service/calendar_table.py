@@ -42,7 +42,7 @@ class CalendarTableService(
 
         if data.calendar_datetime_schema.timezone_offset_column_name is not None:
             raise DocumentCreationError(
-                "Timezone information in calendar_datetime_column is not supported for CalendarTable."
+                "Timezone column in calendar_datetime_schema is not supported for CalendarTable."
             )
 
         return await super().create_document(data=data)

@@ -701,7 +701,7 @@ def test_timezone_offset__timezone_column_not_supported(snowflake_database_calen
             ),
         )
     assert (
-        "Timezone information in calendar_datetime_column is not supported for CalendarTable."
+        "Timezone column in calendar_datetime_schema is not supported for CalendarTable."
         in str(exc.value)
     )
 
