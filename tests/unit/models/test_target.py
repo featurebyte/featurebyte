@@ -79,12 +79,43 @@ async def test_get_forecasted_column__lookup_target(lookup_target, app_container
 async def test_get_forecasted_column__forward_aggregate_target(float_target, app_container):
     """
     Test that get_forecasted_column returns None for a forward_aggregate target
-    (not created via as_target).
+    (not created via as_target or forward_aggregate_asat).
     """
     float_target.save()
     target_doc = await app_container.target_service.get_document(document_id=float_target.id)
     result = target_doc.get_forecasted_column()
     assert result is None
+
+
+@pytest.fixture(name="forward_aggregate_asat_target")
+def forward_aggregate_asat_target_fixture(snowflake_time_series_view_with_entity):
+    """
+    Forward aggregate asat target fixture
+    """
+    return snowflake_time_series_view_with_entity.groupby("store_id").forward_aggregate_asat(
+        value_column="col_float",
+        method="sum",
+        target_name="forward_asat_target",
+        offset=7,
+        fill_value=0,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_forecasted_column__forward_aggregate_asat_target(
+    forward_aggregate_asat_target, app_container
+):
+    """
+    Test that get_forecasted_column extracts the correct column from a forward_aggregate_asat target.
+    """
+    forward_aggregate_asat_target.save()
+    target_doc = await app_container.target_service.get_document(
+        document_id=forward_aggregate_asat_target.id
+    )
+    result = target_doc.get_forecasted_column()
+    assert result is not None
+    assert result.column_name == "col_float"
+    assert result.table_id in [tid.table_id for tid in target_doc.table_id_column_names]
 
 
 @pytest.mark.asyncio

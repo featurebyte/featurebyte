@@ -12,7 +12,11 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.generic import ForwardAggregateNode, LookupTargetNode
+from featurebyte.query_graph.node.generic import (
+    ForwardAggregateAsAtNode,
+    ForwardAggregateNode,
+    LookupTargetNode,
+)
 
 
 class ForecastedColumn(FeatureByteBaseModel):
@@ -94,8 +98,8 @@ class TargetModel(BaseFeatureModel):
     def get_forecasted_column(self) -> Optional[ForecastedColumn]:
         """
         Extract the forecasted column from this target's query graph.
-        Returns the table_id and column_name used in the as_target() call
-        if the target has a LookupTargetNode (i.e., was created via as_target).
+        Returns the table_id and column_name if the target was created via as_target()
+        (LookupTargetNode) or forward_aggregate_asat() (ForwardAggregateAsAtNode).
 
         Returns
         -------
@@ -105,6 +109,8 @@ class TargetModel(BaseFeatureModel):
             return None
 
         target_node = self.graph.get_node_by_name(self.node_name)
+
+        # Check LookupTarget nodes (created via as_target)
         for node in self.graph.iterate_nodes(
             target_node=target_node, node_type=NodeType.LOOKUP_TARGET
         ):
@@ -116,6 +122,21 @@ class TargetModel(BaseFeatureModel):
                         table_id=table_id_col_names.table_id,
                         column_name=input_column_name,
                     )
+
+        # Check ForwardAggregateAsAt nodes (created via forward_aggregate_asat)
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE_AS_AT
+        ):
+            assert isinstance(node, ForwardAggregateAsAtNode)
+            if node.parameters.parent is not None:
+                value_column_name = str(node.parameters.parent)
+                for table_id_col_names in self.table_id_column_names:
+                    if value_column_name in table_id_col_names.column_names:
+                        return ForecastedColumn(
+                            table_id=table_id_col_names.table_id,
+                            column_name=value_column_name,
+                        )
+
         return None
 
     class Settings(BaseFeatureModel.Settings):
