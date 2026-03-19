@@ -53,6 +53,7 @@ class RequestInputType(StrEnum):
     UPLOADED_FILE = "uploaded_file"
     SOURCE_OBSERVATION_TABLE = "source_observation_table"
     MANAGED_VIEW = "managed_view"
+    AUTOMATED_GENERATION = "automated_generation"
 
 
 class TargetValueSamplingRate(FeatureByteBaseModel):
