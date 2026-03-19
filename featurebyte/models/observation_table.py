@@ -126,9 +126,7 @@ class AutomatedGenerationInput(FeatureByteBaseModel, NoOpMaterializeMixin):
     by automated processes (e.g., forecast observation table automation).
     """
 
-    type: Literal[RequestInputType.AUTOMATED_GENERATION] = (
-        RequestInputType.AUTOMATED_GENERATION
-    )
+    type: Literal[RequestInputType.AUTOMATED_GENERATION] = RequestInputType.AUTOMATED_GENERATION
 
 
 class ObservationTableObservationInput(FeatureByteBaseModel):
