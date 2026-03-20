@@ -120,6 +120,15 @@ class UploadedFileInput(FeatureByteBaseModel, NoOpMaterializeMixin):
     file_name: Optional[str] = Field(default=None)
 
 
+class AutomatedGenerationInput(FeatureByteBaseModel, NoOpMaterializeMixin):
+    """
+    AutomatedGenerationInput is used for observation tables that are programmatically generated
+    by automated processes (e.g., forecast observation table automation).
+    """
+
+    type: Literal[RequestInputType.AUTOMATED_GENERATION] = RequestInputType.AUTOMATED_GENERATION
+
+
 class ObservationTableObservationInput(FeatureByteBaseModel):
     """
     ObservationTableObservationInput is used to create an ObservationTableModel from an existing ObservationTableModel
@@ -141,6 +150,7 @@ ObservationInput = Annotated[
         UploadedFileInput,
         ObservationTableObservationInput,
         ManagedViewObservationInput,
+        AutomatedGenerationInput,
     ],
     Field(discriminator="type"),
 ]
