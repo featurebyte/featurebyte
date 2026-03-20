@@ -132,9 +132,7 @@ def test_calendar_view_without_series_id(snowflake_database_calendar_table, cata
     calendar_table = snowflake_database_calendar_table.create_calendar_table(
         name="sf_calendar_table_no_series",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
     )
     calendar_view = calendar_table.get_view()
     assert isinstance(calendar_view, CalendarView)
