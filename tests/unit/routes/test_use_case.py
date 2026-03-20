@@ -106,6 +106,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
 
         target_ob_table_id = ObjectId()
         non_target_ob_table_id = ObjectId()
+        non_target_ob_table_with_use_case_id = ObjectId()
         different_context_ob_table_id = ObjectId()
 
         # create observation table with target input
@@ -116,8 +117,14 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             target_input=True,
             target_id=self.payload["target_id"],
         )
-        # create observation table with non target input
+        # create observation table with non target input (not associated with use case)
         await create_observation_table(non_target_ob_table_id, target_input=False)
+        # create observation table with non target input but associated with use case
+        await create_observation_table(
+            non_target_ob_table_with_use_case_id,
+            use_case_id=created_use_case["_id"],
+            target_input=False,
+        )
         # create observation table with different context
         await create_observation_table(different_context_ob_table_id)
 
@@ -125,8 +132,9 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{created_use_case['_id']}/observation_tables",
         )
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["total"] == 1
-        assert response.json()["data"][0]["_id"] == str(target_ob_table_id)
+        assert response.json()["total"] == 2
+        returned_ids = {item["_id"] for item in response.json()["data"]}
+        assert returned_ids == {str(target_ob_table_id), str(non_target_ob_table_with_use_case_id)}
 
     def test_create_use_case__non_existent_target_and_context(
         self,
