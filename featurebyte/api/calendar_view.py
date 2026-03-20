@@ -32,7 +32,8 @@ class CalendarView(View, RawMixin):
     """
     A CalendarView object is a modified version of the CalendarTable object that provides additional
     capabilities for transforming data. With a CalendarView, you can create and transform columns
-    and filter records prior to feature declaration.
+    and filter records prior to feature declaration. Calendar views can also be used to enrich views
+    of other tables through joins.
 
     See Also
     --------
