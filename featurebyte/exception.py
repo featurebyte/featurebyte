@@ -488,6 +488,12 @@ class UseCaseInvalidDataError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidRequestInputError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table creation is attempted with a request input type that is not allowed via the API
+    """
+
+
 class ObservationTableInvalidContextError(BaseUnprocessableEntityError):
     """
     Raise when invalid observation table context is specified

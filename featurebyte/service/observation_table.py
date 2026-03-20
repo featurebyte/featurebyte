@@ -33,6 +33,7 @@ from featurebyte.exception import (
     MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
+    ObservationTableInvalidRequestInputError,
     ObservationTableInvalidSamplingError,
     ObservationTableInvalidTargetNameError,
     ObservationTableInvalidTreatmentNameError,
@@ -48,6 +49,7 @@ from featurebyte.models.context import ContextModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import (
+    AutomatedGenerationInput,
     ManagedViewObservationInput,
     ObservationTableModel,
     ObservationTableObservationInput,
@@ -624,6 +626,8 @@ class ObservationTableService(
 
         Raises
         ------
+        ObservationTableInvalidRequestInputError
+            If the request input is an AutomatedGenerationInput, which is only allowed internally.
         ObservationTableInvalidSamplingError
             If the sampling rate per target value is provided but the target namespace is not available
             or target is not of classification type.
@@ -632,6 +636,11 @@ class ObservationTableService(
         -------
         ObservationTableTaskPayload
         """
+
+        if isinstance(data.request_input, AutomatedGenerationInput):
+            raise ObservationTableInvalidRequestInputError(
+                "AutomatedGenerationInput cannot be used to create an observation table via the API."
+            )
 
         # Check any conflict with existing documents
         output_document_id = data.id or ObjectId()

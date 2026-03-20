@@ -1792,3 +1792,27 @@ class TestSplitInfoValidation:
 
         assert "split_info cannot be set directly" in str(exc.value)
         assert "Use the /split endpoint" in str(exc.value)
+
+    @pytest.mark.asyncio
+    async def test_automated_generation_input_not_allowed_via_api(
+        self, observation_table_service, source_observation_table
+    ):
+        """Test that AutomatedGenerationInput cannot be used to create an observation table via the API"""
+        from featurebyte.exception import ObservationTableInvalidRequestInputError
+        from featurebyte.models.observation_table import AutomatedGenerationInput
+        from featurebyte.schema.observation_table import ObservationTableCreate
+
+        request_input = AutomatedGenerationInput()
+        create_payload = ObservationTableCreate(
+            name="automated_table",
+            feature_store_id=source_observation_table.location.feature_store_id,
+            request_input=request_input,
+        )
+
+        with pytest.raises(ObservationTableInvalidRequestInputError) as exc:
+            await observation_table_service.get_observation_table_task_payload(create_payload)
+
+        assert (
+            "AutomatedGenerationInput cannot be used to create an observation table via the API"
+            in str(exc.value)
+        )
