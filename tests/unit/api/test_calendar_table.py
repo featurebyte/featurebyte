@@ -37,8 +37,8 @@ from tests.util.helper import check_sdk_code_generation
 def calendar_table_dict_fixture(snowflake_database_calendar_table, user_id):
     """CalendarTable in serialized dictionary format"""
     ts_schema = {
-        "format_string": "YYYY-MM-DD HH24:MI:SS",
-        "timezone": "Etc/UTC",
+        "format_string": "YYYY-MM-DD",
+        "timezone": None,
         "is_utc_time": None,
     }
     return {
@@ -177,9 +177,7 @@ def test_create_calendar_table(snowflake_database_calendar_table, calendar_table
         name="sf_calendar_table",
         series_id_column="store_id",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
         record_creation_timestamp_column="created_at",
         description="Some description",
     )
@@ -210,9 +208,7 @@ def test_create_calendar_table(snowflake_database_calendar_table, calendar_table
             name=123,
             series_id_column="store_id",
             calendar_datetime_column=234,
-            calendar_datetime_schema=TimestampSchema(
-                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-            ),
+            calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
             record_creation_timestamp_column=345,
         )
     assert 'argument "name" (int) is not an instance of str' in str(exc.value)
@@ -227,9 +223,7 @@ def test_create_calendar_table__without_series_id(snowflake_database_calendar_ta
     calendar_table = snowflake_database_calendar_table.create_calendar_table(
         name="sf_calendar_table",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
     )
     assert calendar_table.series_id_column is None
     assert calendar_table.calendar_datetime_column == "date"
@@ -247,9 +241,7 @@ def test_create_calendar_table__duplicated_record(
             name="sf_calendar_table",
             series_id_column="store_id",
             calendar_datetime_column="date",
-            calendar_datetime_schema=TimestampSchema(
-                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-            ),
+            calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
             record_creation_timestamp_column="created_at",
         )
     assert (
@@ -268,9 +260,7 @@ def test_create_calendar_table__retrieval_exception(snowflake_database_calendar_
                 name="sf_calendar_table",
                 series_id_column="store_id",
                 calendar_datetime_column="date",
-                calendar_datetime_schema=TimestampSchema(
-                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-                ),
+                calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
                 record_creation_timestamp_column="created_at",
             )
 
@@ -385,9 +375,7 @@ def test_info__calendar_table_without_record_creation_date(
         name="sf_calendar_table",
         series_id_column="store_id",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
     )
 
     # make sure .info() can be executed without throwing any error
@@ -535,9 +523,7 @@ def test_calendar_table__record_creation_exception(
                 name="sf_calendar_table",
                 series_id_column="store_id",
                 calendar_datetime_column="date",
-                calendar_datetime_schema=TimestampSchema(
-                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-                ),
+                calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
                 record_creation_timestamp_column="created_at",
                 _id=snowflake_calendar_table_id,
             )
@@ -553,9 +539,7 @@ def test_update_record_creation_timestamp_column__unsaved_object(
         name="calendar_table",
         series_id_column="store_id",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
     )
     assert calendar_table.record_creation_timestamp_column is None
     calendar_table.update_record_creation_timestamp_column("created_at")
@@ -650,22 +634,20 @@ def test_accessing_saved_calendar_table_attributes(saved_calendar_table):
     assert saved_calendar_table.timestamp_column == "date"
 
 
-def test_timezone__valid(snowflake_database_calendar_table, catalog):
-    """Test specifying a valid timezone"""
+def test_timezone__not_supported(snowflake_database_calendar_table, catalog):
+    """Test specifying a timezone raises ValidationError"""
     _ = catalog
 
-    calendar_table = snowflake_database_calendar_table.create_calendar_table(
-        name="sf_calendar_table",
-        series_id_column="store_id",
-        calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
-        ),
-    )
-    assert calendar_table.calendar_datetime_schema.timezone == "Asia/Singapore"
-
-    input_node_params = calendar_table.frame.node.parameters
-    assert input_node_params.calendar_datetime_schema.timezone == "Asia/Singapore"
+    with pytest.raises(ValidationError) as exc:
+        snowflake_database_calendar_table.create_calendar_table(
+            name="sf_calendar_table",
+            series_id_column="store_id",
+            calendar_datetime_column="date",
+            calendar_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+            ),
+        )
+    assert "timezone is not supported for CalendarTable" in str(exc.value)
 
 
 def test_timezone__invalid(snowflake_database_calendar_table, catalog):
@@ -687,7 +669,7 @@ def test_timezone__invalid(snowflake_database_calendar_table, catalog):
 def test_timezone_offset__timezone_column_not_supported(snowflake_database_calendar_table, catalog):
     """Test specifying a timezone offset using a column (not supported)"""
     _ = catalog
-    with pytest.raises(RecordCreationException) as exc:
+    with pytest.raises(ValidationError) as exc:
         snowflake_database_calendar_table.create_calendar_table(
             name="sf_calendar_table",
             series_id_column="store_id",
@@ -700,9 +682,19 @@ def test_timezone_offset__timezone_column_not_supported(snowflake_database_calen
                 ),
             ),
         )
-    assert "Timezone column in calendar_datetime_schema is not supported for CalendarTable." in str(
-        exc.value
-    )
+    assert "timezone is not supported for CalendarTable" in str(exc.value)
+
+
+def test_is_utc_time__not_supported(snowflake_database_calendar_table, catalog):
+    """Test specifying is_utc_time=True raises ValidationError"""
+    _ = catalog
+    with pytest.raises(ValidationError) as exc:
+        snowflake_database_calendar_table.create_calendar_table(
+            name="sf_calendar_table",
+            calendar_datetime_column="date",
+            calendar_datetime_schema=TimestampSchema(is_utc_time=True),
+        )
+    assert "is_utc_time must not be True" in str(exc.value)
 
 
 def test_sdk_code_generation(saved_calendar_table, update_fixtures):
@@ -761,9 +753,7 @@ def test_get_view__without_series_id(snowflake_database_calendar_table, catalog)
     calendar_table = snowflake_database_calendar_table.create_calendar_table(
         name="sf_calendar_table",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
     )
     from featurebyte.api.calendar_view import CalendarView
 

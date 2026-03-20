@@ -73,6 +73,19 @@ class CalendarTable(TableApiObject):
         )
     )
 
+    @model_validator(mode="after")
+    def _validate_calendar_datetime_schema(self) -> "CalendarTable":
+        schema = self.internal_calendar_datetime_schema
+        if schema.is_utc_time is True:
+            raise ValueError(
+                "calendar_datetime_schema: is_utc_time must not be True for CalendarTable"
+            )
+        if schema.timezone is not None:
+            raise ValueError(
+                "calendar_datetime_schema: timezone is not supported for CalendarTable"
+            )
+        return self
+
     def get_view(
         self,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,

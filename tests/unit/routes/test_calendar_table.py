@@ -117,8 +117,8 @@ class TestCalendarTableApi(BaseTableApiTestSuite):
             "series_id_column": "series_id",
             "calendar_datetime_column": "date",
             "calendar_datetime_schema": {
-                "format_string": "YYYY-MM-DD HH24:MI:SS",
-                "timezone": "Etc/UTC",
+                "format_string": "YYYY-MM-DD",
+                "timezone": None,
                 "is_utc_time": None,
             },
             "record_creation_timestamp_column": "created_at",
@@ -175,8 +175,8 @@ class TestCalendarTableApi(BaseTableApiTestSuite):
             "series_id_column": "store_id",
             "calendar_datetime_column": "date",
             "calendar_datetime_schema": {
-                "format_string": "YYYY-MM-DD HH24:MI:SS",
-                "timezone": "Etc/UTC",
+                "format_string": "YYYY-MM-DD",
+                "timezone": None,
                 "is_utc_time": None,
             },
         }

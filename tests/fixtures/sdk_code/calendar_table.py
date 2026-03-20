@@ -44,9 +44,7 @@ calendar_table = CalendarTable(
     series_id_column="store_id",
     calendar_datetime_column="date",
     calendar_datetime_schema=TimestampSchema(
-        format_string="YYYY-MM-DD HH24:MI:SS",
-        is_utc_time=None,
-        timezone="Etc/UTC",
+        format_string="YYYY-MM-DD", is_utc_time=None, timezone=None
     ),
     _id=ObjectId("{table_id}"),
 )

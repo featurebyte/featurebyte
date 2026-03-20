@@ -1824,9 +1824,7 @@ def snowflake_calendar_table_fixture(
         name="sf_calendar_table",
         series_id_column="store_id",
         calendar_datetime_column="date",
-        calendar_datetime_schema=TimestampSchema(
-            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
-        ),
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
         record_creation_timestamp_column="created_at",
         description="test calendar table",
         _id=snowflake_calendar_table_id,

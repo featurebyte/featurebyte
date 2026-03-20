@@ -62,6 +62,19 @@ class CalendarTableModel(CalendarTableData, TableModel):
         ),
     )
 
+    @model_validator(mode="after")
+    def _validate_calendar_datetime_schema(self) -> "CalendarTableModel":
+        schema = self.calendar_datetime_schema
+        if schema.is_utc_time is True:
+            raise ValueError(
+                "calendar_datetime_schema: is_utc_time must not be True for CalendarTable"
+            )
+        if schema.timezone is not None:
+            raise ValueError(
+                "calendar_datetime_schema: timezone is not supported for CalendarTable"
+            )
+        return self
+
     @property
     def primary_key_columns(self) -> List[str]:
         return [self.series_id_column] if self.series_id_column else []

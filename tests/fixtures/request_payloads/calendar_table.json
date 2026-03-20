@@ -4,7 +4,13 @@
         "Instead, update the test tests/unit/test_generate_payload_fixtures.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "6893ffbc6782e0c8fce7d073",
+    "_id": "6893ffbc6782e0c8fce7d074",
+    "calendar_datetime_column": "date",
+    "calendar_datetime_schema": {
+        "format_string": "YYYY-MM-DD",
+        "is_utc_time": null,
+        "timezone": null
+    },
     "columns_info": [
         {
             "description": null,
@@ -59,18 +65,15 @@
             "dtype": "VARCHAR",
             "dtype_metadata": {
                 "timestamp_schema": {
-                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "format_string": "YYYY-MM-DD",
                     "is_utc_time": null,
-                    "timezone": "Etc/UTC"
+                    "timezone": null
                 },
                 "timestamp_tuple_schema": null
             },
             "name": "date",
             "nested_field_metadata": null,
-            "partition_metadata": {
-                "is_partition_key": true,
-                "is_partition_key_candidate": false
-            }
+            "partition_metadata": null
         },
         {
             "description": null,
@@ -89,12 +92,8 @@
             "partition_metadata": null
         }
     ],
-    "calendar_datetime_column": "date",
-    "calendar_datetime_schema": {
-        "format_string": "YYYY-MM-DD HH24:MI:SS",
-        "is_utc_time": null,
-        "timezone": "Etc/UTC"
-    },
+    "datetime_partition_column": null,
+    "datetime_partition_schema": null,
     "description": "test calendar table",
     "managed_view_id": null,
     "name": "sf_calendar_table",
