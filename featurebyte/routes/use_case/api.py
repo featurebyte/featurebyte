@@ -82,7 +82,6 @@ async def list_use_case_observation_tables(
     observation_table_list: ObservationTableList = await observation_table_controller.list(
         query_filter={
             "use_case_ids": use_case.id,
-            "request_input.target_id": use_case.target_id,
         },
         page=page,
         page_size=page_size,
