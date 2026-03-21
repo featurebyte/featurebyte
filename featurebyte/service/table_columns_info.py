@@ -23,6 +23,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.table import TableColumnsInfoUpdate
+from featurebyte.service.calendar_table import CalendarTableService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -44,6 +45,7 @@ TableDocumentService = Union[
     SCDTableService,
     TimeSeriesTableService,
     SnapshotsTableService,
+    CalendarTableService,
 ]
 
 

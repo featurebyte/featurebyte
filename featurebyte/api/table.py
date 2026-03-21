@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Dict
 from bson import ObjectId
 
 from featurebyte.api.base_table import TableListMixin
+from featurebyte.api.calendar_table import CalendarTable
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.item_table import ItemTable
@@ -32,7 +33,7 @@ class Table(TableListMixin):
     about the semantics of the table columns, specifying default cleaning operations, or furnishing descriptions of
     both the table and its columns.
 
-    FeatureByte recognizes six table types:
+    FeatureByte recognizes seven table types:
 
     - Event Table
     - Item Table
@@ -40,6 +41,7 @@ class Table(TableListMixin):
     - Dimension Table
     - Time Series Table
     - Snapshots Table
+    - Calendar Table
 
     """
 
@@ -53,6 +55,7 @@ class Table(TableListMixin):
         TableDataType.DIMENSION_TABLE: DimensionTable,
         TableDataType.TIME_SERIES_TABLE: TimeSeriesTable,
         TableDataType.SNAPSHOTS_TABLE: SnapshotsTable,
+        TableDataType.CALENDAR_TABLE: CalendarTable,
     }
 
     @classmethod

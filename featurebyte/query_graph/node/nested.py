@@ -598,6 +598,36 @@ class SnapshotsViewGraphNodeParameters(BaseViewGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
+class CalendarViewGraphNodeParameters(BaseViewGraphNodeParameters):
+    """GraphNode (type:calendar_view) parameters"""
+
+    type: Literal[GraphNodeType.CALENDAR_VIEW] = GraphNodeType.CALENDAR_VIEW
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[NodeCodeGenOutput],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        node_name: str,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # construct calendar view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="calendar_view", node_name=node_name
+        )
+        assert len(input_var_name_expressions) == 1
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
+        expression = get_object_class_from_function_call(
+            callable_name=f"{table_var_name}.get_view",
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
 GRAPH_NODE_PARAMETERS_TYPES = [
     CleaningGraphNodeParameters,
     OfflineStoreIngestQueryGraphNodeParameters,
@@ -608,6 +638,7 @@ GRAPH_NODE_PARAMETERS_TYPES = [
     ChangeViewGraphNodeParameters,
     TimeSeriesViewGraphNodeParameters,
     SnapshotsViewGraphNodeParameters,
+    CalendarViewGraphNodeParameters,
 ]
 if TYPE_CHECKING:
     GraphNodeParameters = BaseGraphNodeParameters

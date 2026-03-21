@@ -30,6 +30,7 @@ class DataType(StrEnum):
     SCD_DATA = "SCDTable"
     TIME_SERIES_DATA = "TimeSeriesTable"
     SNAPSHOTS_DATA = "SnapshotsTable"
+    CALENDAR_DATA = "CalendarTable"
 
 
 class BaseTableTestSuite:
@@ -61,6 +62,7 @@ class BaseTableTestSuite:
         snowflake_scd_table,
         snowflake_time_series_table,
         snowflake_snapshots_table,
+        snowflake_calendar_table,
     ):
         """
         Retrieves fixture for table under test.
@@ -72,6 +74,7 @@ class BaseTableTestSuite:
             DataType.SCD_DATA: snowflake_scd_table,
             DataType.TIME_SERIES_DATA: snowflake_time_series_table,
             DataType.SNAPSHOTS_DATA: snowflake_snapshots_table,
+            DataType.CALENDAR_DATA: snowflake_calendar_table,
         }
         if self.data_type not in data_map:
             pytest.fail(

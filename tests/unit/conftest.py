@@ -868,6 +868,18 @@ def snowflake_query_map_fixture():
                 "COMMENT": "Snapshots table",
             }
         ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='calendar_table'"
+        ): [
+            {
+                "TABLE_NAME": "calendar_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "BASE TABLE",
+                "COMMENT": "Calendar table",
+            }
+        ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
         'SELECT\n  COUNT(*) AS "row_count"\nFROM "sf_database"."sf_schema"."sf_table"': [
             {"row_count": 100}
@@ -989,6 +1001,53 @@ def snowflake_query_map_fixture():
     ]
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."another_snapshots_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."time_series_table"'
+    ]
+    query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."calendar_table"'] = [
+        {
+            "column_name": "col_int",
+            "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            "comment": None,
+        },
+        {
+            "column_name": "col_float",
+            "data_type": json.dumps({"type": "REAL"}),
+            "comment": "Float column",
+        },
+        {
+            "column_name": "col_char",
+            "data_type": json.dumps({"type": "TEXT", "length": 1}),
+            "comment": "Char column",
+        },
+        {
+            "column_name": "col_text",
+            "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            "comment": "Text column",
+        },
+        {
+            "column_name": "col_binary",
+            "data_type": json.dumps({"type": "BINARY"}),
+            "comment": None,
+        },
+        {
+            "column_name": "col_boolean",
+            "data_type": json.dumps({"type": "BOOLEAN"}),
+            "comment": None,
+        },
+        {
+            "column_name": "date",
+            "data_type": json.dumps({"type": "TEXT", "length": 8}),
+            "comment": "Date column",
+        },
+        {
+            "column_name": "created_at",
+            "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            "comment": None,
+        },
+        {
+            "column_name": "store_id",
+            "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+            "comment": None,
+        },
     ]
     return query_map
 
@@ -1226,6 +1285,18 @@ def another_snowflake_database_snapshots_table_fixture(snowflake_data_source):
     )
 
 
+@pytest.fixture(name="snowflake_database_calendar_table")
+def snowflake_database_calendar_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for CalendarTable
+    """
+    yield snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="calendar_table",
+    )
+
+
 @pytest.fixture(name="snowflake_feature_store_id")
 def snowflake_feature_store_id_fixture():
     """Snowflake feature store id"""
@@ -1330,6 +1401,12 @@ def snowflake_snapshots_table_id_fixture():
 def another_snowflake_snapshots_table_id_fixture():
     """Snowflake snapshots table ID"""
     return ObjectId("68dd5a928c583807224804dc")
+
+
+@pytest.fixture(name="snowflake_calendar_table_id")
+def snowflake_calendar_table_id_fixture():
+    """Snowflake calendar table ID"""
+    return ObjectId("6893ffbc6782e0c8fce7d074")
 
 
 @pytest.fixture(name="cust_id_entity_id")
@@ -1732,6 +1809,29 @@ def another_snowflake_snapshots_table_fixture(
     assert snapshots_table.frame.node.parameters.id == snapshots_table.id
     assert snapshots_table.id == another_snowflake_snapshots_table_id
     yield snapshots_table
+
+
+@pytest.fixture(name="snowflake_calendar_table")
+def snowflake_calendar_table_fixture(
+    snowflake_database_calendar_table,
+    snowflake_calendar_table_id,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """CalendarTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    calendar_table = snowflake_database_calendar_table.create_calendar_table(
+        name="sf_calendar_table",
+        series_id_column="store_id",
+        calendar_datetime_column="date",
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
+        record_creation_timestamp_column="created_at",
+        description="test calendar table",
+        _id=snowflake_calendar_table_id,
+    )
+    assert calendar_table.frame.node.parameters.id == calendar_table.id
+    assert calendar_table.id == snowflake_calendar_table_id
+    yield calendar_table
 
 
 @pytest.fixture(name="cust_id_entity")

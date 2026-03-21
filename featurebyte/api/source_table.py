@@ -44,6 +44,7 @@ from featurebyte.schema.static_source_table import StaticSourceTableCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.batch_request_table import BatchRequestTable
+    from featurebyte.api.calendar_table import CalendarTable
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
     from featurebyte.api.item_table import ItemTable
@@ -1063,6 +1064,131 @@ class SourceTable(AbstractTableData):
             datetime_partition_column=datetime_partition_column,
             datetime_partition_schema=datetime_partition_schema,
             time_interval=time_interval,
+            series_id_column=series_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
+    def create_calendar_table(
+        self,
+        name: str,
+        calendar_datetime_column: str,
+        calendar_datetime_schema: TimestampSchema,
+        series_id_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> "CalendarTable":
+        """
+        Creates and adds to the catalog a CalendarTable object from a source table.
+
+        To create a CalendarTable, you need to identify the column representing the calendar
+        datetime.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        calendar_datetime_column: str
+            Column representing the calendar datetime.
+        calendar_datetime_schema: TimestampSchema
+            The schema of the calendar datetime column. Timezone column is not supported.
+        series_id_column: Optional[str]
+            Optional column representing the entity identifier in the calendar table.
+        record_creation_timestamp_column: Optional[str]
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want
+            to create a calendar table with a specific ID. This should not be a common operation,
+            and is typically used in tests only.
+
+        Returns
+        -------
+        CalendarTable
+            CalendarTable created from the source table.
+
+        Examples
+        --------
+        Create a calendar table from a source table.
+
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="CALENDAR"
+        ... )
+        >>> calendar_table = source_table.create_calendar_table(  # doctest: +SKIP
+        ...     name="CALENDAR",
+        ...     calendar_datetime_column="Date",
+        ...     calendar_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        ...     series_id_column="StoreGuid",
+        ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
+        """
+        from featurebyte.api.calendar_table import CalendarTable
+
+        return CalendarTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            calendar_datetime_column=calendar_datetime_column,
+            calendar_datetime_schema=calendar_datetime_schema,
+            series_id_column=series_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_calendar_table(
+        self,
+        name: str,
+        calendar_datetime_column: str,
+        calendar_datetime_schema: TimestampSchema,
+        series_id_column: Optional[str] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> "CalendarTable":
+        """
+        Get or create a CalendarTable from this source table. Internally, this method calls
+        `CalendarTable.get` by name; if the table does not exist, it will be created.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        calendar_datetime_column: str
+            Column representing the calendar datetime.
+        calendar_datetime_schema: TimestampSchema
+            The schema of the calendar datetime column. Timezone column is not supported.
+        series_id_column: Optional[str]
+            Optional column representing the entity identifier in the calendar table.
+        record_creation_timestamp_column: Optional[str]
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want
+            to create a calendar table with a specific ID. This should not be a common operation,
+            and is typically used in tests only.
+
+        Returns
+        -------
+        CalendarTable
+            CalendarTable retrieved or created from the source table.
+        """
+        from featurebyte.api.calendar_table import CalendarTable
+
+        return CalendarTable.get_or_create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            calendar_datetime_column=calendar_datetime_column,
+            calendar_datetime_schema=calendar_datetime_schema,
             series_id_column=series_id_column,
             description=description,
             _id=_id,

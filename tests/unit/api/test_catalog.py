@@ -31,6 +31,7 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
+from featurebyte.api.calendar_table import CalendarTable
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
 from featurebyte.api.context import Context
 from featurebyte.api.credential import Credential
@@ -301,7 +302,8 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
         TimeSeriesTable,  # accessible as part of catalog.(list|get)_table
-        SnapshotsTable,
+        SnapshotsTable,  # accessible as part of catalog.(list|get)_table
+        CalendarTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
         DeletableApiObject,
         TableApiObject,

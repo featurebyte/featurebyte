@@ -495,6 +495,47 @@ class SnapshotsTableInputNodeParameters(BaseInputNodeParameters):
         )
 
 
+class CalendarTableInputNodeParameters(BaseInputNodeParameters):
+    """CalendarTableParameters"""
+
+    type: Literal[TableDataType.CALENDAR_TABLE] = TableDataType.CALENDAR_TABLE
+    id: Optional[PydanticObjectId] = Field(default=None)
+    id_column: Optional[InColumnStr] = Field(default=None)
+    calendar_datetime_column: InColumnStr
+    calendar_datetime_schema: TimestampSchema
+
+    @property
+    def variable_name_prefix(self) -> str:
+        return "calendar_table"
+
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
+            "series_id_column": self.id_column,
+            "calendar_datetime_column": self.calendar_datetime_column,
+            "calendar_datetime_schema": derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.calendar_datetime_schema
+            ),
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
+
+    def construct_comment(
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'calendar_table name: "{table_name}"')
+        return output
+
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        dtype_metadata = DBVarTypeMetadata(timestamp_schema=self.calendar_datetime_schema)
+        return PartitionColumnInfo(
+            name=self.calendar_datetime_column, dtype_metadata=dtype_metadata
+        )
+
+
 InputNodeParameters = Annotated[
     Union[
         EventTableInputNodeParameters,
@@ -504,6 +545,7 @@ InputNodeParameters = Annotated[
         SCDTableInputNodeParameters,
         TimeSeriesTableInputNodeParameters,
         SnapshotsTableInputNodeParameters,
+        CalendarTableInputNodeParameters,
     ],
     Field(discriminator="type"),
 ]
@@ -525,6 +567,7 @@ class InputNode(BaseNode):
         TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
         TableDataType.TIME_SERIES_TABLE: ClassEnum.TIME_SERIES_TABLE,
         TableDataType.SNAPSHOTS_TABLE: ClassEnum.SNAPSHOTS_TABLE,
+        TableDataType.CALENDAR_TABLE: ClassEnum.CALENDAR_TABLE,
     }
 
     @property

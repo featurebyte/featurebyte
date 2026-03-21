@@ -1,5 +1,6 @@
 /batch_feature_table
 /batch_request_table
+/calendar_table
 /catalog
 /context
 /credential

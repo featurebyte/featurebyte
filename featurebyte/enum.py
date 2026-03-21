@@ -758,6 +758,7 @@ class TableDataType(StrEnum):
     SCD_TABLE = "scd_table"
     TIME_SERIES_TABLE = "time_series_table"
     SNAPSHOTS_TABLE = "snapshots_table"
+    CALENDAR_TABLE = "calendar_table"
 
     @classmethod
     def with_default_feature_job_setting(cls) -> set[str]:
@@ -799,6 +800,7 @@ class SemanticType(StrEnum):
     TIME_SERIES_DATE_TIME = "time_series_date_time"
     TIME_ZONE = "time_zone"
     SNAPSHOT_DATE_TIME = "snapshot_date_time"
+    CALENDAR_DATE = "calendar_date"
 
 
 class MaterializedTableNamePrefix(StrEnum):

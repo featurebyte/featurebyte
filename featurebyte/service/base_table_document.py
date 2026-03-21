@@ -81,6 +81,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             "scd_table": "SCDTable",
             "time_series_table": "TimeSeriesTable",
             "snapshots_table": "SnapshotsTable",
+            "calendar_table": "CalendarTable",
         }
 
     @property
