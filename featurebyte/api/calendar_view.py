@@ -11,6 +11,7 @@ from pydantic import Field
 from featurebyte.api.view import RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
+from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.input import CalendarTableInputNodeParameters, InputNode
@@ -125,6 +126,22 @@ class CalendarView(View, RawMixin):
         params = super()._getitem_frame_params
         params.update({"series_id_column": self.series_id_column})
         return params
+
+    def validate_join(self, other_view: View) -> None:
+        """
+        Validate join should be implemented by view classes that have extra requirements.
+
+        Parameters
+        ----------
+        other_view: View
+            the other view that we are joining with
+
+        Raises
+        ------
+        JoinViewMismatchError
+            raised when CalendarView is used as the left-hand side of a join
+        """
+        raise JoinViewMismatchError("CalendarView cannot be used as the left-hand side of a join")
 
     def _get_join_column(self) -> Optional[str]:
         return self.series_id_column

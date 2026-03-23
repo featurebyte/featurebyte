@@ -2,7 +2,10 @@
 Unit test for CalendarView class
 """
 
+import pytest
+
 from featurebyte.api.calendar_view import CalendarView
+from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -113,13 +116,28 @@ def test_calendar_view_copy(snowflake_calendar_view):
     assert id(new_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_validate_join(snowflake_dimension_view, snowflake_calendar_view):
+def test_validate_join(
+    snowflake_event_view,
+    snowflake_item_view,
+    snowflake_dimension_view,
+    snowflake_scd_view,
+    snowflake_calendar_view,
+):
     """
-    Test validate join
+    Test that CalendarView cannot be used as the left-hand side of a join with any view type.
     """
-    # No error expected
-    snowflake_calendar_view.validate_join(snowflake_dimension_view)
-    snowflake_calendar_view.validate_join(snowflake_calendar_view)
+    for other_view in [
+        snowflake_event_view,
+        snowflake_item_view,
+        snowflake_dimension_view,
+        snowflake_scd_view,
+        snowflake_calendar_view,
+    ]:
+        with pytest.raises(
+            JoinViewMismatchError,
+            match="CalendarView cannot be used as the left-hand side of a join",
+        ):
+            snowflake_calendar_view.validate_join(other_view)
 
 
 def test_calendar_view_without_series_id(snowflake_database_calendar_table, catalog):
