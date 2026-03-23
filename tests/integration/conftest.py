@@ -934,7 +934,9 @@ def calendar_dataframe_fixture():
     One row per (date, user_id) combination, matching the User entity values (1-9) used in event_table.
     """
     dates = pd.date_range("2001-01-01", "2001-12-31", freq="1D")
-    user_ids = list(range(1, 10))  # matches the series_id_col values (1-9) used in time_series_table
+    user_ids = list(
+        range(1, 10)
+    )  # matches the series_id_col values (1-9) used in time_series_table
     # A sparse mapping of month|day -> holiday name
     public_holidays = {"01|01": "New Year's Day", "12|25": "Christmas Day"}
     rows = []
@@ -2261,7 +2263,6 @@ def calendar_table_fixture(
     )
     calendar_table["series_id_col"].as_entity(user_entity.name)
     return calendar_table
-
 
 
 @pytest.fixture(name="dimension_view", scope="session")

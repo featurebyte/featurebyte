@@ -158,7 +158,7 @@ class CalendarView(View, RawMixin):
 
         Raises
         ------
-        NotImplementedError
+        JoinViewMismatchError
             If joining a CalendarView to the given view type is not supported
         """
         from featurebyte.api.event_view import EventView
