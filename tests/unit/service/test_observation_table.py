@@ -1471,6 +1471,33 @@ async def test_validate_forecast_point_format_string__spark(observation_table_se
 # Tests for forecast horizon computation
 
 
+def test_get_max_rows_per_entity_and_forecast_point_sql_expr(
+    observation_table_service, table_details
+):
+    """
+    Test get_max_rows_per_entity_and_forecast_point_sql_expr generates correct SQL
+    """
+    expr = observation_table_service.get_max_rows_per_entity_and_forecast_point_sql_expr(
+        ["cust_id"], table_details
+    )
+    expr_sql = expr.sql(pretty=True, dialect="snowflake")
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          MAX("ROW_COUNT") AS "MAX_ROWS"
+        FROM (
+          SELECT
+            COUNT(*) AS "ROW_COUNT"
+          FROM "fb_database"."fb_schema"."fb_table"
+          GROUP BY
+            "cust_id",
+            "FORECAST_POINT"
+        )
+        """
+    ).strip()
+    assert expr_sql == expected_query
+
+
 def test_get_max_forecast_horizon_sql_expr__basic(
     observation_table_service, table_details, adapter
 ):
@@ -1654,6 +1681,8 @@ async def test_validate_metadata__with_forecast_point_stats(
                     "max": ["2023-01-15T10:00:00+00:00", "2023-01-20", 10],
                 },
             )
+        if "MAX_ROWS" in query:
+            return pd.DataFrame({"MAX_ROWS": [5]})
         if "COUNT(*)" in query:
             return pd.DataFrame({"row_count": [1000]})
         if "INTERVAL" in query:
@@ -1701,11 +1730,13 @@ async def test_validate_metadata__with_forecast_point_stats(
         assert "most_recent_forecast_point" in metadata
         assert "least_recent_forecast_point" in metadata
         assert "forecast_horizon" in metadata
+        assert "max_rows_per_entity_and_forecast_point" in metadata
 
         # Verify values
         # 7 days duration + 1 (since FORECAST_POINT indicates beginning of period) = 8 days
         expected_horizon = CalendarWindow(unit=TimeIntervalUnit.DAY, size=8)
         assert metadata["forecast_horizon"] == expected_horizon
+        assert metadata["max_rows_per_entity_and_forecast_point"] == 5
 
 
 @pytest.mark.asyncio
@@ -1734,6 +1765,7 @@ async def test_validate_metadata__without_forecast_context(
         assert "most_recent_forecast_point" not in metadata
         assert "least_recent_forecast_point" not in metadata
         assert "forecast_horizon" not in metadata
+        assert "max_rows_per_entity_and_forecast_point" not in metadata
 
 
 class TestSplitInfoValidation:
