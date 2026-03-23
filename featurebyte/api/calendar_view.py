@@ -4,7 +4,7 @@ CalendarView class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import Any, ClassVar, Optional, cast
 
 from pydantic import Field
 
@@ -17,9 +17,6 @@ from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import CalendarTableInputNodeParameters, InputNode
-
-if TYPE_CHECKING:
-    pass
 
 
 class CalendarViewColumn(ViewColumn):
@@ -177,27 +174,30 @@ class CalendarView(View, RawMixin):
                 }
             }
         }
+        # The join should transform the left view's (EventView, TimeSeriesView, etc) timestamp
+        # column into its local time, truncated to day, and match with CalendarView's date column.
+        if isinstance(left_view, EventView):
+            original_timestamp_schema = left_view.event_timestamp_schema
+            column_name = left_view.timestamp_column
+        elif isinstance(left_view, TimeSeriesView):
+            original_timestamp_schema = left_view.reference_datetime_schema
+            column_name = left_view.reference_datetime_column
+        elif isinstance(left_view, SnapshotsView):
+            original_timestamp_schema = left_view.snapshot_datetime_schema
+            column_name = left_view.snapshot_datetime_column
+        else:
+            raise JoinViewMismatchError(
+                f"Joining a CalendarView to {type(left_view).__name__} is not supported"
+            )
         transform = SnapshotsDatetimeTransform(
-            original_timestamp_schema=None,
+            original_timestamp_schema=original_timestamp_schema,
             snapshot_timezone_name=None,
             snapshot_time_interval=TimeInterval(unit="DAY", value=1),
             snapshot_format_string=self.calendar_datetime_schema.format_string,
             snapshot_feature_job_setting=None,
             allow_exact_match_with_current_interval=True,
+            use_original_local_timezone=True,
         )
-        if isinstance(left_view, EventView):
-            transform.original_timestamp_schema = left_view.event_timestamp_schema
-            column_name = left_view.timestamp_column
-        elif isinstance(left_view, TimeSeriesView):
-            transform.original_timestamp_schema = left_view.reference_datetime_schema
-            column_name = left_view.reference_datetime_column
-        elif isinstance(left_view, SnapshotsView):
-            transform.original_timestamp_schema = left_view.snapshot_datetime_schema
-            column_name = left_view.snapshot_datetime_column
-        else:
-            raise NotImplementedError(
-                f"Joining a CalendarView to {type(left_view).__name__} is not supported"
-            )
         params["snapshots_datetime_join_keys"]["left_key"] = {
             "column_name": column_name,
             "transform": transform,

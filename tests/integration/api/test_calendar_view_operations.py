@@ -2,6 +2,10 @@
 Integration tests for CalendarView operations
 """
 
+import pandas as pd
+
+from tests.util.helper import fb_assert_frame_equal
+
 
 def test_calendar_view(calendar_table):
     """
@@ -58,18 +62,15 @@ def test_time_series_view_join_calendar_view(
     assert len(df) > 0
 
     # Verify first 5 rows: only Jan 1 (New Year's Day) should have a holiday name
-    actual = (
-        df[["reference_datetime_col", "public_holiday_name_from_calendar"]]
-        .head(5)
-        .to_dict(orient="records")
-    )
-    assert actual == [
-        {
-            "reference_datetime_col": "2001|01|01",
-            "public_holiday_name_from_calendar": "New Year's Day",
-        },
-        {"reference_datetime_col": "2001|01|02", "public_holiday_name_from_calendar": None},
-        {"reference_datetime_col": "2001|01|03", "public_holiday_name_from_calendar": None},
-        {"reference_datetime_col": "2001|01|04", "public_holiday_name_from_calendar": None},
-        {"reference_datetime_col": "2001|01|05", "public_holiday_name_from_calendar": None},
-    ]
+    actual = df[["reference_datetime_col", "public_holiday_name_from_calendar"]].head(5)
+    expected = pd.DataFrame({
+        "reference_datetime_col": [
+            "2001|01|01",
+            "2001|01|02",
+            "2001|01|03",
+            "2001|01|04",
+            "2001|01|05",
+        ],
+        "public_holiday_name_from_calendar": ["New Year's Day", None, None, None, None],
+    })
+    fb_assert_frame_equal(actual.reset_index(drop=True), expected)

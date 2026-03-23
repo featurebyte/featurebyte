@@ -317,20 +317,25 @@ def apply_snapshots_datetime_transform(
         col_timestamp_schema = transform.original_timestamp_schema
     else:
         col_timestamp_schema = TimestampSchema(is_utc_time=True)
-    utc_datetime_expr = convert_timestamp_to_utc(
-        column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
-    )
-    if transform.snapshot_timezone_name is not None:
-        snapshot_local_datetime_expr = convert_timezone(
-            target_tz="local",
-            timezone_obj=transform.snapshot_timezone_name,
-            adapter=adapter,
-            column_expr=utc_datetime_expr,
+    if transform.use_original_local_timezone:
+        local_datetime_expr = convert_timestamp_to_local(
+            column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
         )
     else:
-        snapshot_local_datetime_expr = utc_datetime_expr
+        utc_datetime_expr = convert_timestamp_to_utc(
+            column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
+        )
+        if transform.snapshot_timezone_name is not None:
+            local_datetime_expr = convert_timezone(
+                target_tz="local",
+                timezone_obj=transform.snapshot_timezone_name,
+                adapter=adapter,
+                column_expr=utc_datetime_expr,
+            )
+        else:
+            local_datetime_expr = utc_datetime_expr
     adjusted_datetime_expr = apply_snapshot_adjustment(
-        datetime_expr=snapshot_local_datetime_expr,
+        datetime_expr=local_datetime_expr,
         time_interval=transform.snapshot_time_interval,
         feature_job_setting=transform.snapshot_feature_job_setting,
         format_string=transform.snapshot_format_string,
