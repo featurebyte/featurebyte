@@ -335,6 +335,7 @@ def apply_snapshots_datetime_transform(
         feature_job_setting=transform.snapshot_feature_job_setting,
         format_string=transform.snapshot_format_string,
         offset_size=None,
+        allow_exact_match_with_current_interval=transform.allow_exact_match_with_current_interval,
         adapter=adapter,
     )
 

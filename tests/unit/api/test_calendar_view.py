@@ -142,18 +142,79 @@ def test_validate_join(
 
 
 @pytest.mark.parametrize(
-    "left_view_fixture, expected_error",
+    "left_view_fixture, expected_error, expected_snapshots_datetime_join_keys",
     [
-        ("snowflake_event_view", None),
-        ("snowflake_time_series_view", None),
-        ("snowflake_snapshots_view", None),
+        (
+            "snowflake_event_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "event_timestamp",
+                    "transform": {
+                        "original_timestamp_schema": None,
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+        ),
+        (
+            "snowflake_time_series_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+        ),
+        (
+            "snowflake_snapshots_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+        ),
         (
             "snowflake_dimension_view",
             NotImplementedError("Joining a CalendarView to DimensionView is not supported"),
+            None,
         ),
         (
             "snowflake_scd_view",
             NotImplementedError("Joining a CalendarView to SCDView is not supported"),
+            None,
         ),
     ],
 )
@@ -161,6 +222,7 @@ def test_calendar_view_join_as_right(
     request,
     left_view_fixture,
     expected_error,
+    expected_snapshots_datetime_join_keys,
     snowflake_calendar_view,
 ):
     """
@@ -184,7 +246,10 @@ def test_calendar_view_join_as_right(
         assert join_params.left_on == "col_int"
         assert join_params.right_on == "store_id"
         assert join_params.join_type == "left"
-        assert join_params.snapshots_datetime_join_keys is not None
+        assert (
+            join_params.snapshots_datetime_join_keys.model_dump()
+            == expected_snapshots_datetime_join_keys
+        )
 
 
 def test_calendar_view_without_series_id(snowflake_database_calendar_table, catalog):

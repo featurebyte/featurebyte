@@ -183,6 +183,7 @@ class CalendarView(View, RawMixin):
             snapshot_time_interval=TimeInterval(unit="DAY", value=1),
             snapshot_format_string=self.calendar_datetime_schema.format_string,
             snapshot_feature_job_setting=None,
+            allow_exact_match_with_current_interval=True,
         )
         if isinstance(left_view, EventView):
             transform.original_timestamp_schema = left_view.event_timestamp_schema

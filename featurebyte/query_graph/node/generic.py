@@ -1503,6 +1503,7 @@ class SnapshotsDatetimeTransform(FeatureByteBaseModel):
     snapshot_time_interval: TimeInterval
     snapshot_format_string: Optional[str]
     snapshot_feature_job_setting: Optional[CronFeatureJobSetting]
+    allow_exact_match_with_current_interval: bool = False
 
 
 class SnapshotsDatetimeJoinKey(FeatureByteBaseModel):
