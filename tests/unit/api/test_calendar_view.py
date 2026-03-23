@@ -6,6 +6,7 @@ import pytest
 
 from featurebyte.api.calendar_view import CalendarView
 from featurebyte.exception import JoinViewMismatchError
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -138,6 +139,52 @@ def test_validate_join(
             match="CalendarView cannot be used as the left-hand side of a join",
         ):
             snowflake_calendar_view.validate_join(other_view)
+
+
+@pytest.mark.parametrize(
+    "left_view_fixture, expected_error",
+    [
+        ("snowflake_event_view", None),
+        ("snowflake_time_series_view", None),
+        ("snowflake_snapshots_view", None),
+        (
+            "snowflake_dimension_view",
+            NotImplementedError("Joining a CalendarView to DimensionView is not supported"),
+        ),
+        (
+            "snowflake_scd_view",
+            NotImplementedError("Joining a CalendarView to SCDView is not supported"),
+        ),
+    ],
+)
+def test_calendar_view_join_as_right(
+    request,
+    left_view_fixture,
+    expected_error,
+    snowflake_calendar_view,
+):
+    """
+    Test join combinations with CalendarView as the right-hand side view
+    """
+    left_view = request.getfixturevalue(left_view_fixture)
+    left_subset = left_view[["col_int"]]
+    right_subset = snowflake_calendar_view[["col_int"]]
+
+    if expected_error:
+        with pytest.raises(
+            type(expected_error),
+            match=str(expected_error).replace("(", r"\(").replace(")", r"\)"),
+        ):
+            left_subset.join(right_subset, on="col_int", rsuffix="_cal")
+    else:
+        joined_view = left_subset.join(right_subset, on="col_int", rsuffix="_cal")
+        join_node = joined_view.node
+        assert join_node.type == NodeType.JOIN
+        join_params = join_node.parameters
+        assert join_params.left_on == "col_int"
+        assert join_params.right_on == "store_id"
+        assert join_params.join_type == "left"
+        assert join_params.snapshots_datetime_join_keys is not None
 
 
 def test_calendar_view_without_series_id(snowflake_database_calendar_table, catalog):

@@ -13,7 +13,9 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import CalendarTableInputNodeParameters, InputNode
 
 if TYPE_CHECKING:
@@ -142,6 +144,64 @@ class CalendarView(View, RawMixin):
             raised when CalendarView is used as the left-hand side of a join
         """
         raise JoinViewMismatchError("CalendarView cannot be used as the left-hand side of a join")
+
+    def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+        """
+        Get join parameters when another view (left) triggered a join with CalendarView (right)
+
+        Parameters
+        ----------
+        calling_view : View
+            The view that is joining with this CalendarView
+
+        Returns
+        -------
+        dict[str, Any]
+            Dictionary containing join parameters including snapshots_datetime_join_keys
+
+        Raises
+        ------
+        NotImplementedError
+            If joining a CalendarView to the given view type is not supported
+        """
+        from featurebyte.api.event_view import EventView
+        from featurebyte.api.snapshots_view import SnapshotsView
+        from featurebyte.api.time_series_view import TimeSeriesView
+
+        left_view = calling_view
+        params: dict[str, Any] = {
+            "snapshots_datetime_join_keys": {
+                "right_key": {
+                    "column_name": self.calendar_datetime_column,
+                    "transform": None,
+                }
+            }
+        }
+        transform = SnapshotsDatetimeTransform(
+            original_timestamp_schema=None,
+            snapshot_timezone_name=None,
+            snapshot_time_interval=TimeInterval(unit="DAY", value=1),
+            snapshot_format_string=self.calendar_datetime_schema.format_string,
+            snapshot_feature_job_setting=None,
+        )
+        if isinstance(left_view, EventView):
+            transform.original_timestamp_schema = left_view.event_timestamp_schema
+            column_name = left_view.timestamp_column
+        elif isinstance(left_view, TimeSeriesView):
+            transform.original_timestamp_schema = left_view.reference_datetime_schema
+            column_name = left_view.reference_datetime_column
+        elif isinstance(left_view, SnapshotsView):
+            transform.original_timestamp_schema = left_view.snapshot_datetime_schema
+            column_name = left_view.snapshot_datetime_column
+        else:
+            raise NotImplementedError(
+                f"Joining a CalendarView to {type(left_view).__name__} is not supported"
+            )
+        params["snapshots_datetime_join_keys"]["left_key"] = {
+            "column_name": column_name,
+            "transform": transform,
+        }
+        return params
 
     def _get_join_column(self) -> Optional[str]:
         return self.series_id_column
