@@ -212,6 +212,7 @@ class ObservationTableModel(MaterializedTableModel):
     least_recent_forecast_point: Optional[StrictStr] = Field(default=None)
     has_forecast_timezone_column: Optional[bool] = Field(default=False)
     forecast_horizon: Optional[CalendarWindow] = Field(default=None)
+    max_rows_per_entity_and_forecast_point: Optional[int] = Field(default=None)
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()

@@ -128,6 +128,7 @@ class ForecastPointStats:
     most_recent: str
     percentage_missing: float
     forecast_horizon: Optional[CalendarWindow]
+    max_rows_per_entity_and_forecast_point: Optional[int] = None
 
 
 @dataclass
@@ -1150,6 +1151,81 @@ class ObservationTableService(
         factor = conversion_factors.get(granularity, 86400)  # Default to DAY
         return int(round(secs / factor))
 
+    @staticmethod
+    def get_max_rows_per_entity_and_forecast_point_sql_expr(
+        entity_column_names: List[str],
+        table_details: TableDetails,
+    ) -> Expression:
+        """
+        Get the SQL expression to compute the max number of rows per unique combination
+        of entity columns and FORECAST_POINT.
+
+        Parameters
+        ----------
+        entity_column_names: List[str]
+            List of entity column names
+        table_details: TableDetails
+            Table details of the materialized table
+
+        Returns
+        -------
+        Expression
+        """
+        group_by_cols = [quoted_identifier(col) for col in entity_column_names] + [
+            quoted_identifier(SpecialColumnName.FORECAST_POINT)
+        ]
+        count_alias = quoted_identifier("ROW_COUNT")
+        inner_query = (
+            expressions.select(
+                expressions.Alias(
+                    this=expressions.Count(this=expressions.Star()),
+                    alias=count_alias,
+                )
+            )
+            .from_(get_fully_qualified_table_name(table_details.model_dump()))
+            .group_by(*group_by_cols)
+        )
+        aliased_max = expressions.Alias(
+            this=expressions.Max(this=count_alias),
+            alias=quoted_identifier("MAX_ROWS"),
+        )
+        return expressions.select(aliased_max).from_(inner_query.subquery())
+
+    async def _get_max_rows_per_entity_and_forecast_point(
+        self,
+        db_session: BaseSession,
+        columns_info: List[ColumnSpecWithEntityId],
+        table_details: TableDetails,
+    ) -> Optional[int]:
+        """
+        Get the max number of rows for any combination of entity columns and FORECAST_POINT.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        columns_info: List[ColumnSpecWithEntityId]
+            List of column specs with entity id
+        table_details: TableDetails
+            Table details of the materialized table
+
+        Returns
+        -------
+        Optional[int]
+            Max row count, None if table is empty
+        """
+        entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
+        sql_expr = self.get_max_rows_per_entity_and_forecast_point_sql_expr(
+            entity_col_names, table_details
+        )
+        sql_string = sql_to_string(sql_expr, db_session.source_type)
+        result_df = await db_session.execute_query_long_running(sql_string)
+        assert result_df is not None
+        value = result_df.iloc[0]["MAX_ROWS"]
+        if value is None or pd.isna(value):
+            return None
+        return int(value)
+
     async def _get_min_interval_secs_between_entities(
         self,
         db_session: BaseSession,
@@ -1322,11 +1398,19 @@ class ObservationTableService(
                         size=horizon_size,
                     )
 
+            # Compute max rows per entity + forecast_point combination
+            max_rows_per_entity_fp: Optional[int] = None
+            if db_session is not None:
+                max_rows_per_entity_fp = await self._get_max_rows_per_entity_and_forecast_point(
+                    db_session, columns_info, table_details
+                )
+
             forecast_point_stats = ForecastPointStats(
                 least_recent=forecast_least_recent_str,
                 most_recent=forecast_most_recent_str,
                 percentage_missing=forecast_percentage_missing,
                 forecast_horizon=forecast_horizon,
+                max_rows_per_entity_and_forecast_point=max_rows_per_entity_fp,
             )
 
         return ObservationTableStats(
@@ -1608,6 +1692,9 @@ class ObservationTableService(
             result["most_recent_forecast_point"] = forecast_point_stats.most_recent
             result["least_recent_forecast_point"] = forecast_point_stats.least_recent
             result["forecast_horizon"] = forecast_point_stats.forecast_horizon
+            result["max_rows_per_entity_and_forecast_point"] = (
+                forecast_point_stats.max_rows_per_entity_and_forecast_point
+            )
             if context is not None and context.forecast_point_schema is not None:
                 result["has_forecast_timezone_column"] = (
                     context.forecast_point_schema.has_timezone_column
