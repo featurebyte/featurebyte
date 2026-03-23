@@ -140,6 +140,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "least_recent_forecast_point": None,
             "least_recent_point_in_time": None,
             "location": json_dict["location"],
+            "max_rows_per_entity_and_forecast_point": None,
             "min_interval_secs_between_entities": None,
             "most_recent_forecast_point": None,
             "most_recent_point_in_time": "2023-01-15 10:00:00",
