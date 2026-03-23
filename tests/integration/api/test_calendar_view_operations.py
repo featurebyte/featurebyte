@@ -16,8 +16,8 @@ def test_calendar_view(calendar_table):
     view = view[["calendar_datetime_col", "series_id_col", "public_holiday_name"]]
     df_preview = view.preview(limit=10000)
     df_preview = df_preview.sort_values("calendar_datetime_col").reset_index(drop=True)
-    actual = df_preview.iloc[:5].to_dict(orient="list")
-    expected = {
+    actual = df_preview.iloc[:5].reset_index(drop=True)
+    expected = pd.DataFrame({
         "calendar_datetime_col": [
             "2001|01|01",
             "2001|01|02",
@@ -27,8 +27,8 @@ def test_calendar_view(calendar_table):
         ],
         "series_id_col": [1, 1, 1, 1, 1],
         "public_holiday_name": ["New Year's Day", None, None, None, None],
-    }
-    assert actual == expected
+    })
+    fb_assert_frame_equal(actual, expected)
 
 
 def test_time_series_view_join_calendar_view(
