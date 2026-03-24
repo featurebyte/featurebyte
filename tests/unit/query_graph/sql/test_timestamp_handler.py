@@ -254,6 +254,39 @@ def test_convert_timestamp_timezone_tuple(
                 ),
             ),
         ),
+        (
+            "use_original_local_timezone",
+            SnapshotsDatetimeJoinKey(
+                column_name="event_timestamp",
+                transform=SnapshotsDatetimeTransform(
+                    original_timestamp_schema=TimestampSchema(
+                        format_string="YYYY-MM-DD HH24:MI:SS",
+                        timezone="Etc/UTC",
+                    ),
+                    snapshot_timezone_name=None,
+                    snapshot_time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+                    snapshot_format_string="YYYY-MM-DD",
+                    snapshot_feature_job_setting=None,
+                    allow_exact_match_with_current_interval=True,
+                    use_original_local_timezone=True,
+                ),
+            ),
+        ),
+        (
+            "use_original_local_timezone_no_schema",
+            SnapshotsDatetimeJoinKey(
+                column_name="event_timestamp",
+                transform=SnapshotsDatetimeTransform(
+                    original_timestamp_schema=None,
+                    snapshot_timezone_name=None,
+                    snapshot_time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+                    snapshot_format_string="YYYY-MM-DD",
+                    snapshot_feature_job_setting=None,
+                    allow_exact_match_with_current_interval=True,
+                    use_original_local_timezone=True,
+                ),
+            ),
+        ),
     ],
 )
 def test_apply_snapshots_datetime_transform(

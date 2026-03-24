@@ -2,7 +2,11 @@
 Unit test for CalendarView class
 """
 
+import pytest
+
 from featurebyte.api.calendar_view import CalendarView
+from featurebyte.exception import JoinViewMismatchError
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -113,13 +117,154 @@ def test_calendar_view_copy(snowflake_calendar_view):
     assert id(new_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_validate_join(snowflake_dimension_view, snowflake_calendar_view):
+def test_validate_join(
+    snowflake_event_view,
+    snowflake_item_view,
+    snowflake_dimension_view,
+    snowflake_scd_view,
+    snowflake_calendar_view,
+):
     """
-    Test validate join
+    Test that CalendarView cannot be used as the left-hand side of a join with any view type.
     """
-    # No error expected
-    snowflake_calendar_view.validate_join(snowflake_dimension_view)
-    snowflake_calendar_view.validate_join(snowflake_calendar_view)
+    for other_view in [
+        snowflake_event_view,
+        snowflake_item_view,
+        snowflake_dimension_view,
+        snowflake_scd_view,
+        snowflake_calendar_view,
+    ]:
+        with pytest.raises(
+            JoinViewMismatchError,
+            match="CalendarView cannot be used as the left-hand side of a join",
+        ):
+            snowflake_calendar_view.validate_join(other_view)
+
+
+@pytest.mark.parametrize(
+    "left_view_fixture, expected_error, expected_snapshots_datetime_join_keys, join_on",
+    [
+        (
+            "snowflake_event_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "event_timestamp",
+                    "transform": {
+                        "original_timestamp_schema": None,
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                        "use_original_local_timezone": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+            "col_int",
+        ),
+        (
+            "snowflake_time_series_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                        "use_original_local_timezone": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+            "col_int",
+        ),
+        (
+            "snowflake_snapshots_view",
+            None,
+            {
+                "left_key": {
+                    "column_name": "date",
+                    "transform": {
+                        "original_timestamp_schema": {
+                            "format_string": "YYYY-MM-DD HH24:MI:SS",
+                            "is_utc_time": None,
+                            "timezone": "Etc/UTC",
+                        },
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                        "use_original_local_timezone": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+            "col_int",
+        ),
+        (
+            "snowflake_item_view",
+            JoinViewMismatchError("Joining a CalendarView to ItemView is not supported"),
+            None,
+            "event_id_col",
+        ),
+        (
+            "snowflake_dimension_view",
+            JoinViewMismatchError("Joining a CalendarView to DimensionView is not supported"),
+            None,
+            "col_int",
+        ),
+        (
+            "snowflake_scd_view",
+            JoinViewMismatchError("Joining a CalendarView to SCDView is not supported"),
+            None,
+            "col_int",
+        ),
+    ],
+)
+def test_calendar_view_join_as_right(
+    request,
+    left_view_fixture,
+    expected_error,
+    expected_snapshots_datetime_join_keys,
+    join_on,
+    snowflake_calendar_view,
+):
+    """
+    Test join combinations with CalendarView as the right-hand side view
+    """
+    left_view = request.getfixturevalue(left_view_fixture)
+    right_subset = snowflake_calendar_view[["col_int"]]
+
+    if expected_error:
+        with pytest.raises(
+            type(expected_error),
+            match=str(expected_error).replace("(", r"\(").replace(")", r"\)"),
+        ):
+            left_view.join(right_subset, on=join_on, rsuffix="_cal")
+    else:
+        left_subset = left_view[["col_int"]]
+        joined_view = left_subset.join(right_subset, on=join_on, rsuffix="_cal")
+        join_node = joined_view.node
+        assert join_node.type == NodeType.JOIN
+        join_params = join_node.parameters
+        assert join_params.left_on == join_on
+        assert join_params.right_on == "store_id"
+        assert join_params.join_type == "left"
+        assert (
+            join_params.snapshots_datetime_join_keys.model_dump()
+            == expected_snapshots_datetime_join_keys
+        )
 
 
 def test_calendar_view_without_series_id(snowflake_database_calendar_table, catalog):

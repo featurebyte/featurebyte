@@ -925,6 +925,31 @@ def snapshots_dataframe_fixture(time_series_dataframe):
     return df
 
 
+@pytest.fixture(name="calendar_dataframe", scope="session")
+def calendar_dataframe_fixture():
+    """
+    DataFrame fixture for calendar data
+
+    Covers the year 2001 to be compatible with event table timestamps which span 2001.
+    One row per (date, user_id) combination, matching the User entity values (1-9) used in event_table.
+    """
+    dates = pd.date_range("2001-01-01", "2001-12-31", freq="1D")
+    user_ids = list(
+        range(1, 10)
+    )  # matches the series_id_col values (1-9) used in time_series_table
+    # A sparse mapping of month|day -> holiday name
+    public_holidays = {"01|01": "New Year's Day", "12|25": "Christmas Day"}
+    rows = []
+    for uid in user_ids:
+        for d in dates:
+            rows.append({
+                "calendar_datetime_col": d.strftime("%Y|%m|%d"),
+                "series_id_col": uid,
+                "public_holiday_name": public_holidays.get(d.strftime("%m|%d")),
+            })
+    return pd.DataFrame(rows)
+
+
 @pytest.fixture(name="observation_table_dataframe", scope="session")
 def observation_table_dataframe_fixture(scd_dataframe):
     """
@@ -1059,6 +1084,7 @@ async def datasets_registration_helper_fixture(
     time_series_dataframe,
     time_series_tz_column_dataframe,
     snapshots_dataframe,
+    calendar_dataframe,
     observation_table_dataframe,
 ):
     """
@@ -1189,6 +1215,9 @@ async def datasets_registration_helper_fixture(
 
     # Snapshots table
     helper.add_table("SNAPSHOTS_TABLE", snapshots_dataframe)
+
+    # Calendar table
+    helper.add_table("CALENDAR_TABLE", calendar_dataframe)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -2189,6 +2218,51 @@ def snapshots_table_fixture(
     snapshots_table["series_id_col"].as_entity(series_entity.name)
     snapshots_table["user_id_col"].as_entity(user_entity.name)
     return snapshots_table
+
+
+@pytest.fixture(name="calendar_table_name", scope="session")
+def calendar_table_name_fixture(source_type):
+    """
+    Fixture for the CalendarTable name
+    """
+    return f"{source_type}_calendar_table"
+
+
+@pytest.fixture(name="calendar_data_tabular_source", scope="session")
+def calendar_data_tabular_source_fixture(session, data_source):
+    """
+    Fixture for calendar table tabular source
+    """
+    return data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="CALENDAR_TABLE",
+    )
+
+
+@pytest.fixture(name="calendar_table", scope="session")
+def calendar_table_fixture(
+    calendar_data_tabular_source,
+    calendar_table_name,
+    timestamp_format_string,
+    user_entity,
+    catalog,
+):
+    """
+    Fixture for a CalendarTable in integration tests
+
+    The calendar covers 2001-01-01 to 2001-12-31 with one row per (date, user_id) combination,
+    making it compatible with the event_table timestamps (which span 2001).
+    """
+    _ = catalog
+    calendar_table = calendar_data_tabular_source.create_calendar_table(
+        name=calendar_table_name,
+        calendar_datetime_column="calendar_datetime_col",
+        calendar_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
+        series_id_column="series_id_col",
+    )
+    calendar_table["series_id_col"].as_entity(user_entity.name)
+    return calendar_table
 
 
 @pytest.fixture(name="dimension_view", scope="session")
