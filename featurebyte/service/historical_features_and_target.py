@@ -237,6 +237,7 @@ async def get_historical_features(
     development_dataset: Optional[DevelopmentDatasetModel] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     raise_on_error: bool = True,
+    forecast_point_schema: Optional[ForecastPointSchema] = None,
 ) -> FeaturesComputationResult:
     """Get historical features
 
@@ -424,6 +425,7 @@ async def get_historical_features(
             development_datasets=development_datasets,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+            forecast_point_schema=forecast_point_schema,
         )
         feature_query_set_result = await execute_feature_query_set(
             session_handler=SessionHandler(
@@ -621,6 +623,7 @@ async def get_target(
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
             forecast_point_schema=forecast_point_schema,
+            is_target=True,
         )
 
         tic = time.time()

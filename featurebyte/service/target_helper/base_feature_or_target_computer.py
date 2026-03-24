@@ -10,17 +10,22 @@ from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, U
 
 import pandas as pd
 
+from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.common.feature_or_target import ComputeRequest
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -80,6 +85,16 @@ class ExecutionResult:
         extra = "forbid"
 
 
+@dataclass
+class ObservationTableInfo:
+    """
+    Observation table info
+    """
+
+    is_temp_observation_table: bool
+    forecast_point_schema: Optional[ForecastPointSchema]
+
+
 class QueryExecutor(Generic[ExecutorParamsT]):
     """
     Query executor
@@ -99,6 +114,38 @@ class QueryExecutor(Generic[ExecutorParamsT]):
         -------
         ExecutionResult
         """
+
+    @classmethod
+    async def _get_observation_table_info(
+        cls,
+        observation_table_service: ObservationTableService,
+        context_service: ContextService,
+        executor_params: ExecutorParamsT,
+    ) -> ObservationTableInfo:
+        # check if observation table is temporary (not persisted to mongo)
+        is_temp_observation_table = False
+        forecast_point_schema = None
+
+        if isinstance(executor_params.observation_set, ObservationTableModel):
+            try:
+                await observation_table_service.get_document(
+                    document_id=executor_params.observation_set.id
+                )
+            except DocumentNotFoundError:
+                is_temp_observation_table = True
+
+            if executor_params.observation_set.context_id is not None:
+                column_names = {info.name for info in executor_params.observation_set.columns_info}
+                if SpecialColumnName.POINT_IN_TIME in column_names:
+                    context = await context_service.get_document(
+                        executor_params.observation_set.context_id
+                    )
+                    forecast_point_schema = context.forecast_point_schema
+
+        return ObservationTableInfo(
+            is_temp_observation_table=is_temp_observation_table,
+            forecast_point_schema=forecast_point_schema,
+        )
 
 
 class Computer(Generic[ComputeRequestT, ExecutorParamsT]):

@@ -475,6 +475,7 @@ class FeatureTableCacheService:
                 development_dataset=development_dataset,
                 progress_callback=progress_callback,
                 raise_on_error=raise_on_error,
+                forecast_point_schema=forecast_point_schema,
             )
 
     @classmethod

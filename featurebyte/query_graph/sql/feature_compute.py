@@ -325,6 +325,7 @@ class FeatureExecutionPlan:
         feature_store_details: Optional[FeatureStoreDetails] = None,
         is_deployment_sql: bool = False,
         forecast_point_schema: Optional[ForecastPointSchema] = None,
+        is_target: bool = False,
     ) -> None:
         aggregator_kwargs = {
             "source_info": source_info,
@@ -352,6 +353,7 @@ class FeatureExecutionPlan:
         self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
         self.is_deployment_sql = is_deployment_sql
+        self.is_target = is_target
         self.forecast_point_schema = forecast_point_schema
 
     @property
@@ -713,7 +715,7 @@ class FeatureExecutionPlan:
                 if col not in exclude_columns
             ]
 
-            if self.forecast_point_schema is not None:
+            if self._should_replace_point_in_time_with_forecast_point():
                 # replace point-in-time with original point-in-time column
                 request_table_column_names.append(
                     expressions.alias_(
@@ -730,6 +732,9 @@ class FeatureExecutionPlan:
             f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
         return table_expr
+
+    def _should_replace_point_in_time_with_forecast_point(self) -> bool:
+        return self.is_target and self.forecast_point_schema is not None
 
     @staticmethod
     def _cast_output_column_by_dtype(
@@ -859,8 +864,9 @@ class FeatureExecutionPlan:
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
-        if self.forecast_point_schema is not None:
+        if self._should_replace_point_in_time_with_forecast_point():
             assert request_table_columns is not None
+            assert self.forecast_point_schema is not None
 
             ts_schema = TimestampSchema(
                 format_string=self.forecast_point_schema.format_string,
@@ -985,6 +991,7 @@ class FeatureExecutionPlanner:
         development_datasets: Optional[DevelopmentDatasets] = None,
         is_deployment_sql: bool = False,
         forecast_point_schema: Optional[ForecastPointSchema] = None,
+        is_target: bool = False,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -1000,6 +1007,7 @@ class FeatureExecutionPlanner:
             job_schedule_table_set=job_schedule_table_set,
             is_deployment_sql=is_deployment_sql,
             forecast_point_schema=forecast_point_schema,
+            is_target=is_target,
         )
         self.source_info = source_info
         self.serving_names_mapping = serving_names_mapping

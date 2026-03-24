@@ -16,12 +16,14 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.column_statistics import ColumnStatisticsService
+from featurebyte.service.context import ContextService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.historical_features_and_target import get_historical_features
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
@@ -64,6 +66,8 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         cron_helper: CronHelper,
         column_statistics_service: ColumnStatisticsService,
         system_metrics_service: SystemMetricsService,
+        observation_table_service: ObservationTableService,
+        context_service: ContextService,
     ):
         self.tile_cache_service = tile_cache_service
         self.feature_table_cache_service = feature_table_cache_service
@@ -71,8 +75,17 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         self.cron_helper = cron_helper
         self.column_statistics_service = column_statistics_service
         self.system_metrics_service = system_metrics_service
+        self.observation_table_service = observation_table_service
+        self.context_service = context_service
 
     async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> ExecutionResult:
+        observation_table_info = await self._get_observation_table_info(
+            observation_table_service=self.observation_table_service,
+            context_service=self.context_service,
+            executor_params=executor_params,
+        )
+        forecast_point_schema = observation_table_info.forecast_point_schema
+
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
@@ -90,6 +103,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 feature_list_id=executor_params.feature_list_id,
                 serving_names_mapping=executor_params.serving_names_mapping,
                 progress_callback=executor_params.progress_callback,
+                forecast_point_schema=forecast_point_schema,
             )
         else:
             features_computation_result = await get_historical_features(
@@ -107,6 +121,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 output_table_details=executor_params.output_table_details,
                 progress_callback=executor_params.progress_callback,
+                forecast_point_schema=forecast_point_schema,
             )
             historical_features_metrics = features_computation_result.historical_features_metrics
             is_output_view = False

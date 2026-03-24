@@ -269,6 +269,7 @@ def get_historical_features_expr(
     partition_column_filters: Optional[PartitionColumnFilters] = None,
     development_datasets: Optional[DevelopmentDatasets] = None,
     forecast_point_schema: Optional[ForecastPointSchema] = None,
+    is_target: bool = False,
 ) -> FeatureQueryPlan:
     """Construct the SQL code that extracts historical features
 
@@ -318,6 +319,7 @@ def get_historical_features_expr(
         partition_column_filters=partition_column_filters,
         development_datasets=development_datasets,
         forecast_point_schema=forecast_point_schema,
+        is_target=is_target,
     )
     plan = planner.generate_plan(nodes)
 
@@ -352,6 +354,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         partition_column_filters: Optional[PartitionColumnFilters] = None,
         development_datasets: Optional[DevelopmentDatasets] = None,
         forecast_point_schema: Optional[ForecastPointSchema] = None,
+        is_target: bool = False,
     ):
         self.request_table_name = request_table_name
         self.graph = graph
@@ -369,6 +372,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         self.partition_column_filters = partition_column_filters
         self.development_datasets = development_datasets
         self.forecast_point_schema = forecast_point_schema
+        self.is_target = is_target
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -392,6 +396,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             partition_column_filters=self.partition_column_filters,
             development_datasets=self.development_datasets,
             forecast_point_schema=self.forecast_point_schema,
+            is_target=self.is_target,
         )
         feature_query = feature_set_sql.get_feature_query(
             table_name=table_name,
@@ -419,6 +424,7 @@ def get_historical_features_query_set(
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
     forecast_point_schema: Optional[ForecastPointSchema] = None,
+    is_target: bool = False,
 ) -> FeatureQuerySet:
     """Construct the SQL code that extracts historical features
 
@@ -481,6 +487,7 @@ def get_historical_features_query_set(
         partition_column_filters=partition_column_filters,
         development_datasets=development_datasets,
         forecast_point_schema=forecast_point_schema,
+        is_target=is_target,
     )
     feature_query_set = FeatureQuerySet(
         feature_query_generator=feature_query_generator,
