@@ -1217,7 +1217,6 @@ class LookupParameters(FeatureByteBaseModel):
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
     snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
-    # TODO: update node hash util to handle backward compatibility (pop if None)
     calendar_parameters: Optional[CalendarLookupParameters] = Field(default=None)
 
     def get_entity_ids(self) -> List[PydanticObjectId]:
