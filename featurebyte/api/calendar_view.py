@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Optional, cast
 
 from pydantic import Field
 
+from featurebyte.api.snapshots_helper import validate_offset_for_view
 from featurebyte.api.view import RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -208,6 +209,9 @@ class CalendarView(View, RawMixin):
 
     def _get_join_column(self) -> Optional[str]:
         return self.series_id_column
+
+    def validate_offset(self, offset: Optional[OffsetType]) -> None:
+        validate_offset_for_view(offset, view_type_name="CalendarView")
 
     def get_additional_lookup_parameters(
         self, offset: Optional[OffsetType] = None

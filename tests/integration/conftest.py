@@ -937,10 +937,12 @@ def calendar_dataframe_fixture():
     user_ids = list(
         range(1, 10)
     )  # matches the series_id_col values (1-9) used in time_series_table
-    # A sparse mapping of month|day -> holiday name
-    public_holidays = {"01|01": "New Year's Day", "12|25": "Christmas Day"}
+    # All users observe New Year's Day; odd user IDs also observe Christmas Day.
     rows = []
     for uid in user_ids:
+        public_holidays = {"01|01": "New Year's Day"}
+        if uid % 2 == 1:
+            public_holidays["12|25"] = "Christmas Day"
         for d in dates:
             rows.append({
                 "calendar_datetime_col": d.strftime("%Y|%m|%d"),
