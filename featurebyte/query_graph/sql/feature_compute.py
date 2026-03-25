@@ -331,6 +331,7 @@ class FeatureExecutionPlan:
             "source_info": source_info,
             "is_online_serving": is_online_serving,
             "is_deployment_sql": is_deployment_sql,
+            "forecast_point_schema": forecast_point_schema,
         }
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),

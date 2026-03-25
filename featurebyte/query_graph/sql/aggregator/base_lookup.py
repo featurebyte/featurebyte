@@ -12,6 +12,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import SpecialColumnName
+from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.node.generic import SCDLookupParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import (
@@ -44,7 +45,10 @@ from featurebyte.query_graph.sql.offset import (
 )
 from featurebyte.query_graph.sql.scd_helper import Table
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
-from featurebyte.query_graph.sql.timestamp_helper import apply_snapshot_adjustment
+from featurebyte.query_graph.sql.timestamp_helper import (
+    apply_snapshot_adjustment,
+    convert_timestamp_to_local,
+)
 
 
 class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
@@ -204,10 +208,8 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
             source_expr = specs[0].source_expr
 
             snapshots_parameters = specs[0].snapshots_parameters
-            if snapshots_parameters is None:
-                join_keys = serving_names[:]
-                left_table_join_keys = None
-            else:
+            calendar_parameters = specs[0].calendar_parameters
+            if snapshots_parameters is not None:
                 join_keys = [
                     snapshots_parameters.snapshot_datetime_column,
                 ] + serving_names
@@ -245,6 +247,44 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                     get_qualified_column_identifier(serving_name, "REQ")
                     for serving_name in serving_names
                 ]
+            elif calendar_parameters is not None:
+                join_keys = [
+                    calendar_parameters.calendar_datetime_column,
+                ] + serving_names
+                if self.forecast_point_schema is None:
+                    datetime_expr_to_adjust = get_qualified_column_identifier(
+                        SpecialColumnName.POINT_IN_TIME, "REQ"
+                    )
+                else:
+                    datetime_expr_to_adjust = get_qualified_column_identifier(
+                        SpecialColumnName.FORECAST_POINT,
+                        "REQ",
+                    )
+                    if calendar_parameters.calendar_timestamp_schema is not None:
+                        datetime_expr_to_adjust = convert_timestamp_to_local(
+                            column_expr=datetime_expr_to_adjust,
+                            timestamp_schema=calendar_parameters.calendar_timestamp_schema,
+                            adapter=self.adapter,
+                        )
+                # TODO: offset sign should move forward or backward? For OffsetDirection.BACKWARD,
+                #  +1 means backward 1 day.
+                adjusted_datetime_expr = apply_snapshot_adjustment(
+                    datetime_expr=datetime_expr_to_adjust,
+                    time_interval=TimeInterval(unit="DAY", value=1),
+                    feature_job_setting=None,
+                    format_string=calendar_parameters.calendar_timestamp_format_string,
+                    offset_size=calendar_parameters.offset_size,
+                    offset_direction=OffsetDirection.BACKWARD,
+                    adapter=self.adapter,
+                    allow_exact_match_with_current_interval=True,
+                )
+                left_table_join_keys = [adjusted_datetime_expr] + [
+                    get_qualified_column_identifier(serving_name, "REQ")
+                    for serving_name in serving_names
+                ]
+            else:
+                join_keys = serving_names[:]
+                left_table_join_keys = None
 
             agg_expr = select(
                 *(
@@ -258,6 +298,11 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                 *(
                     [quoted_identifier(snapshots_parameters.snapshot_datetime_column)]
                     if snapshots_parameters
+                    else []
+                ),
+                *(
+                    [quoted_identifier(calendar_parameters.calendar_datetime_column)]
+                    if calendar_parameters
                     else []
                 ),
                 *[

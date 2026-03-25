@@ -344,6 +344,18 @@ def test_calendar_view_as_feature(snowflake_calendar_table, cust_id_entity):
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": {
+                "calendar_datetime_column": "date",
+                "calendar_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD",
+                        "is_utc_time": None,
+                        "timezone": None,
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "offset_size": None,
+            },
         },
     }
 
@@ -403,6 +415,18 @@ def test_calendar_view_as_target(snowflake_calendar_table, cust_id_entity):
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": {
+                "calendar_datetime_column": "date",
+                "calendar_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD",
+                        "is_utc_time": None,
+                        "timezone": None,
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "offset_size": None,
+            },
             "offset": None,
         },
     }

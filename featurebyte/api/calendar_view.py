@@ -13,10 +13,12 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.generic import SnapshotsDatetimeTransform
 from featurebyte.query_graph.node.input import CalendarTableInputNodeParameters, InputNode
+from featurebyte.typing import OffsetType
 
 
 class CalendarViewColumn(ViewColumn):
@@ -206,3 +208,21 @@ class CalendarView(View, RawMixin):
 
     def _get_join_column(self) -> Optional[str]:
         return self.series_id_column
+
+    def get_additional_lookup_parameters(
+        self, offset: Optional[OffsetType] = None
+    ) -> dict[str, Any]:
+        if offset is not None:
+            assert isinstance(offset, int)
+            offset_size = offset
+        else:
+            offset_size = None
+        return {
+            "calendar_parameters": {
+                "calendar_datetime_column": self.calendar_datetime_column,
+                "calendar_datetime_metadata": DBVarTypeMetadata(
+                    timestamp_schema=self.calendar_datetime_schema,
+                ),
+                "offset_size": offset_size,
+            }
+        }
