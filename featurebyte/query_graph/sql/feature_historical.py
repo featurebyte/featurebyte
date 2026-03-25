@@ -302,6 +302,8 @@ def get_historical_features_expr(
         Development datasets to use when reading the source tables
     forecast_point_schema: Optional[ForecastPointSchema]
         Forecast point schema to use
+    is_target: bool
+        Whether the features are targets
 
     Returns
     -------
@@ -465,6 +467,8 @@ def get_historical_features_query_set(
         Customised progress message which will be sent to a client.
     forecast_point_schema: Optional[ForecastPointSchema]
         Forecast point schema to use
+    is_target: bool
+        Whether the features are targets
 
     Returns
     -------

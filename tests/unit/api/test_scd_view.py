@@ -194,6 +194,7 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
             },
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     }
 
@@ -267,6 +268,7 @@ def test_scd_view_as_feature__special_column(
         },
         "event_parameters": None,
         "snapshots_parameters": None,
+        "calendar_parameters": None,
     }
 
     # check SDK code generation

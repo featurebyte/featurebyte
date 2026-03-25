@@ -202,6 +202,7 @@ def test_as_features__with_primary_key_column(
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     }
 
@@ -347,6 +348,7 @@ def test_as_target__from_view_column(snowflake_dimension_view_with_entity, cust_
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "offset": "1d",
         },
     }
@@ -392,6 +394,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     }
 

@@ -1018,6 +1018,7 @@ def test_as_feature__from_view_column(
                 "event_timestamp_metadata": None,
             },
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     }
 

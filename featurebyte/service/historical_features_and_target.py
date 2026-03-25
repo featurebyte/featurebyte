@@ -278,6 +278,8 @@ async def get_historical_features(
         Whether to raise an error if the computation fails. If True, any query error will be raised
         immediately. If False, computation will be done on a best effort basis with errors
         suppressed and logged in the result.
+    forecast_point_schema: Optional[ForecastPointSchema]
+        Forecast point schema to use
 
     Returns
     -------
