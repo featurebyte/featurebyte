@@ -260,12 +260,11 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                         SpecialColumnName.FORECAST_POINT,
                         "REQ",
                     )
-                    if calendar_parameters.calendar_timestamp_schema is not None:
-                        datetime_expr_to_adjust = convert_timestamp_to_local(
-                            column_expr=datetime_expr_to_adjust,
-                            timestamp_schema=calendar_parameters.calendar_timestamp_schema,
-                            adapter=self.adapter,
-                        )
+                    datetime_expr_to_adjust = convert_timestamp_to_local(
+                        column_expr=datetime_expr_to_adjust,
+                        timestamp_schema=self.forecast_point_schema.to_timestamp_schema(),
+                        adapter=self.adapter,
+                    )
                 # TODO: offset sign should move forward or backward? For OffsetDirection.BACKWARD,
                 #  +1 means backward 1 day.
                 adjusted_datetime_expr = apply_snapshot_adjustment(

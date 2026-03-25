@@ -1559,6 +1559,75 @@ def snapshots_aggregate_asat_feature_node_fixture(
     return feature_node
 
 
+@pytest.fixture(name="calendar_table_input_node")
+def calendar_table_input_node_fixture(global_graph, input_details):
+    """Fixture of an input node for a calendar table"""
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "calendar_table"
+    node_params = {
+        "type": "calendar_table",
+        "columns": [
+            {
+                "name": "date",
+                "dtype": DBVarType.VARCHAR,
+                "dtype_metadata": {"timestamp_schema": {"format_string": "YYYY-MM-DD"}},
+            },
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "col_float", "dtype": DBVarType.FLOAT},
+        ],
+        "id_column": "cust_id",
+        "calendar_datetime_column": "date",
+        "calendar_datetime_schema": {"format_string": "YYYY-MM-DD"},
+    }
+    node_params.update(input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
+@pytest.fixture(name="calendar_lookup_feature_node")
+def calendar_lookup_feature_node_fixture(global_graph, calendar_table_input_node, entity_id):
+    """
+    Fixture for a calendar table lookup feature node
+    """
+    node_params = {
+        "input_column_names": ["col_float"],
+        "feature_names": ["calendar_lookup_feature"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": entity_id,
+        "calendar_parameters": {
+            "calendar_datetime_column": "date",
+            "calendar_datetime_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD",
+                    "is_utc_time": None,
+                    "timezone": None,
+                },
+                "timestamp_tuple_schema": None,
+            },
+            "offset_size": None,
+        },
+    }
+    lookup_agg_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[calendar_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["calendar_lookup_feature"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_agg_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="window_aggregate_on_simple_view_feature_node")
 def window_aggregate_on_simple_view_feature_node_fixture(
     global_graph, event_table_input_node_with_id

@@ -11,7 +11,13 @@ from dataclasses import asdict
 import pytest
 
 from featurebyte import CalendarWindow, TimeInterval
-from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
+from featurebyte.enum import TimeIntervalUnit
+from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
+from featurebyte.query_graph.node.generic import (
+    CalendarLookupParameters,
+    EventLookupParameters,
+    SCDLookupParameters,
+)
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
@@ -237,6 +243,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -252,6 +259,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -298,6 +306,7 @@ def test_lookup_aggregator__offline_scd_only(
             ),
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -342,6 +351,7 @@ def test_lookup_aggregator__online_with_current_flag(
             ),
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -423,6 +433,7 @@ def test_lookup_aggregator__online_without_current_flag(
             ),
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -470,6 +481,7 @@ def test_lookup_aggregator__online_with_offset(
             ),
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -503,6 +515,7 @@ def test_lookup_aggregator__event_table(
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
             "snapshots_parameters": None,
+            "calendar_parameters": None,
             "is_parent_lookup": False,
             "agg_result_name_include_serving_names": True,
             "is_deployment_sql": False,
@@ -548,6 +561,112 @@ def test_snapshots_table_lookup(request, test_case_name, update_fixtures, source
     aggregator = LookupAggregator(source_info=source_info)
     for agg_spec in agg_specs:
         aggregator.update(agg_spec)
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
+    assert_equal_with_expected_fixture(
+        result_expr.sql(pretty=True),
+        f"tests/fixtures/aggregator/expected_lookup_aggregator_{test_case_name}.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.fixture
+def calendar_lookup_agg_spec(global_graph, calendar_lookup_feature_node, source_info):
+    """
+    Fixture for calendar table lookup aggregation specification
+    """
+    parent_nodes = global_graph.get_input_node_names(calendar_lookup_feature_node)
+    assert len(parent_nodes) == 1
+    agg_node = global_graph.get_node_by_name(parent_nodes[0])
+    return LookupSpec.from_query_graph_node(
+        node=agg_node,
+        graph=global_graph,
+        source_info=source_info,
+        agg_result_name_include_serving_names=True,
+    )[0]
+
+
+@pytest.fixture
+def calendar_lookup_agg_spec_with_offset(calendar_lookup_agg_spec):
+    """
+    Fixture for calendar table lookup aggregation specification with offset
+    """
+    agg_spec = copy.deepcopy(calendar_lookup_agg_spec)
+    agg_spec.calendar_parameters.offset_size = 2
+    return agg_spec
+
+
+def test_lookup_aggregator__calendar_table(
+    offline_lookup_aggregator, calendar_lookup_agg_spec, entity_id
+):
+    """
+    Test lookup aggregator with calendar table lookup spec
+    """
+    aggregator = offline_lookup_aggregator
+    aggregator.update(calendar_lookup_agg_spec)
+
+    direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
+    assert len(direct_lookup_specs) == 1
+    specs = [asdict(spec) for spec in direct_lookup_specs[0]]
+    for spec in specs:
+        spec.pop("aggregation_source")
+    assert specs == [
+        {
+            "node_name": calendar_lookup_agg_spec.node_name,
+            "serving_names": ["CUSTOMER_ID"],
+            "serving_names_mapping": None,
+            "input_column_name": "col_float",
+            "feature_name": "calendar_lookup_feature",
+            "entity_columns": ["cust_id"],
+            "entity_ids": [entity_id],
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": None,
+            "calendar_parameters": CalendarLookupParameters(
+                calendar_datetime_column="date",
+                calendar_datetime_metadata={
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD",
+                        "is_utc_time": None,
+                        "timezone": None,
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                offset_size=None,
+            ),
+            "is_parent_lookup": False,
+            "agg_result_name_include_serving_names": True,
+            "is_deployment_sql": False,
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "calendar_lookup",
+        "calendar_lookup_with_offset",
+        "calendar_lookup_with_forecast_point",
+    ],
+)
+def test_calendar_table_lookup(request, test_case_name, update_fixtures, source_info):
+    """
+    Test lookup aggregator for calendar table
+    """
+    test_case_mapping = {
+        "calendar_lookup": ("calendar_lookup_agg_spec", None),
+        "calendar_lookup_with_offset": ("calendar_lookup_agg_spec_with_offset", None),
+        "calendar_lookup_with_forecast_point": (
+            "calendar_lookup_agg_spec",
+            ForecastPointSchema(granularity=TimeIntervalUnit.DAY),
+        ),
+    }
+    fixture_name, forecast_point_schema = test_case_mapping[test_case_name]
+    agg_spec = request.getfixturevalue(fixture_name)
+
+    aggregator = LookupAggregator(
+        source_info=source_info, forecast_point_schema=forecast_point_schema
+    )
+    aggregator.update(agg_spec)
     result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
         result_expr.sql(pretty=True),
