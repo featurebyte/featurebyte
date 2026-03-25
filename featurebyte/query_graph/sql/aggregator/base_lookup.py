@@ -265,15 +265,15 @@ class BaseLookupAggregator(Aggregator[LookupSpecT]):
                         timestamp_schema=self.forecast_point_schema.to_timestamp_schema(),
                         adapter=self.adapter,
                     )
-                # TODO: offset sign should move forward or backward? For OffsetDirection.BACKWARD,
-                #  +1 means backward 1 day.
                 adjusted_datetime_expr = apply_snapshot_adjustment(
                     datetime_expr=datetime_expr_to_adjust,
                     time_interval=TimeInterval(unit="DAY", value=1),
                     feature_job_setting=None,
                     format_string=calendar_parameters.calendar_timestamp_format_string,
                     offset_size=calendar_parameters.offset_size,
-                    offset_direction=OffsetDirection.BACKWARD,
+                    offset_direction=(
+                        OffsetDirection.FORWARD if specs[0].is_target else OffsetDirection.BACKWARD
+                    ),
                     adapter=self.adapter,
                     allow_exact_match_with_current_interval=True,
                 )
