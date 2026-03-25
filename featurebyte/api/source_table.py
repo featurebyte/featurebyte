@@ -1120,14 +1120,14 @@ class SourceTable(AbstractTableData):
         >>> calendar_table = source_table.create_calendar_table(  # doctest: +SKIP
         ...     name="CALENDAR",
         ...     calendar_datetime_column="Date",
-        ...     calendar_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        ...     calendar_datetime_schema=TimestampSchema(format_string="yyyy-MM-dd"),
         ...     series_id_column="StoreGuid",
         ... )
 
         See Also
         --------
         - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
-            Schema for a timestamp column that can include timezone information.
+            Schema for a timestamp column. Note: timezone and is_utc_time are not supported for CalendarTable.
         """
         from featurebyte.api.calendar_table import CalendarTable
 
