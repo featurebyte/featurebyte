@@ -334,6 +334,7 @@ class FeaturePreviewService(PreviewService):
             job_schedule_table_set=job_schedule_table_set,
             column_statistics_info=column_statistics_info,
             forecast_point_schema=forecast_point_schema,
+            is_target=feature_or_target_preview.is_target,
         )
         result = await session.execute_query(preview_sql)
         if result is None:
@@ -384,7 +385,9 @@ class FeaturePreviewService(PreviewService):
             params["graph"] = document.graph
             params["node_name"] = document.node_name
             params["feature_store_id"] = document.tabular_source.feature_store_id
-        return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
+        return await self.preview_target_or_feature(
+            FeatureOrTargetPreview(**params, is_target=True)
+        )
 
     async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:
         """

@@ -20,6 +20,7 @@ class FeatureOrTargetPreview(ComputeRequest, PreviewObservationSet):
     graph: QueryGraph
     node_name: str
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    is_target: bool = Field(default=False)
 
 
 class FeaturePreview(ComputeRequest, PreviewObservationSet):
