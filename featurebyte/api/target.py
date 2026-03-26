@@ -279,6 +279,7 @@ class Target(
         observation_table: Union[ObservationTable, pd.DataFrame],
         serving_names_mapping: Optional[Dict[str, str]] = None,
         skip_entity_validation_checks: bool = False,
+        context_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame with target values for analysis, model training, or evaluation. The target
@@ -299,6 +300,10 @@ class Target(
             defined in Entities, mapping from original serving name to new name.
         skip_entity_validation_checks: bool
             Whether to skip entity validation checks.
+        context_id: Optional[ObjectId]
+            Context ID for DataFrame observation sets. When provided, the context's forecast point
+            schema will be used to compute the target using FORECAST_POINT instead of POINT_IN_TIME.
+            Ignored when observation_table is an ObservationTable (its own context_id is used).
 
         Returns
         -------
@@ -318,6 +323,7 @@ class Target(
             observation_table_name=temp_target_table_name,
             serving_names_mapping=serving_names_mapping,
             skip_entity_validation_checks=skip_entity_validation_checks,
+            context_id=context_id,
         )
         try:
             return temp_target_table.to_pandas()
@@ -331,6 +337,7 @@ class Target(
         observation_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         skip_entity_validation_checks: bool = False,
+        context_id: Optional[ObjectId] = None,
     ) -> ObservationTable:
         """
         Materialize feature list using an observation table asynchronously. The targets
@@ -347,6 +354,10 @@ class Target(
             Optional serving names mapping if the training events table has different serving name.
         skip_entity_validation_checks: bool
             Whether to skip entity validation checks
+        context_id: Optional[ObjectId]
+            Context ID for DataFrame observation sets. When provided, the context's forecast point
+            schema will be used to compute the target using FORECAST_POINT instead of POINT_IN_TIME.
+            Ignored when observation_table is an ObservationTable (its own context_id is used).
 
         Returns
         -------
@@ -369,6 +380,11 @@ class Target(
             graph = self.graph
             node_names = [self.node.name]
 
+        if is_input_observation_table:
+            resolved_context_id = observation_table.context_id
+        else:
+            resolved_context_id = context_id
+
         target_table_create_params = TargetTableCreate(
             name=observation_table_name,
             observation_table_id=observation_table_id,
@@ -376,7 +392,7 @@ class Target(
             serving_names_mapping=serving_names_mapping,
             graph=graph,
             node_names=node_names,
-            context_id=observation_table.context_id if is_input_observation_table else None,
+            context_id=resolved_context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
             target_id=target_id,
         )

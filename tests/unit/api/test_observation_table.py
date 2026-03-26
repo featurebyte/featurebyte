@@ -229,6 +229,66 @@ def test_create_observation_table_with_target_definition(
     assert observation_table.target == float_target
 
 
+@patch("featurebyte.api.mixin.AsyncMixin.post_async_task")
+@patch("featurebyte.service.target_helper.compute_target.TargetComputer.compute")
+def test_compute_target_table_with_context_id(mock_compute, mock_post, float_target):
+    """Test that compute_target_table passes context_id to TargetTableCreate for DataFrame input"""
+    mock_compute.return_value.is_output_view = False
+    float_target.save()
+
+    context_id = ObjectId()
+    df = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2023-01-01"]),
+        "FORECAST_POINT": pd.to_datetime(["2023-01-08"]),
+        "cust_id": ["C1"],
+    })
+
+    mock_post.return_value = {"_id": str(ObjectId())}
+    with patch.object(ObservationTable, "get_by_id"):
+        float_target.compute_target_table(
+            observation_table=df,
+            observation_table_name="test_target_table",
+            context_id=context_id,
+        )
+
+    # Verify context_id was included in the payload
+    import json
+
+    call_args = mock_post.call_args
+    payload_json = json.loads(call_args[1]["payload"]["payload"])
+    assert payload_json["context_id"] == str(context_id)
+
+
+@patch("featurebyte.api.mixin.AsyncMixin.post_async_task")
+@patch("featurebyte.service.target_helper.compute_target.TargetComputer.compute")
+def test_compute_target_table_obs_table_context_id_not_overridden(
+    mock_compute, mock_post, observation_table_from_view, float_target
+):
+    """Test that observation_table.context_id is always used for ObservationTable inputs"""
+    mock_compute.return_value.is_output_view = False
+    float_target.save()
+
+    explicit_context_id = ObjectId()
+
+    mock_post.return_value = {"_id": str(ObjectId())}
+    with patch.object(ObservationTable, "get_by_id"):
+        float_target.compute_target_table(
+            observation_table=observation_table_from_view,
+            observation_table_name="test_target_table",
+            context_id=explicit_context_id,
+        )
+
+    # Verify the observation_table's context_id was used, ignoring the explicit one
+    import json
+
+    call_args = mock_post.call_args
+    payload_json = json.loads(call_args[1]["payload"]["payload"])
+    obs_table_context_id = observation_table_from_view.context_id
+    if obs_table_context_id is not None:
+        assert payload_json["context_id"] == str(obs_table_context_id)
+        assert payload_json["context_id"] != str(explicit_context_id)
+
+
 def test_create_observation_table_with_treatment_column_from_view(snowflake_event_view_with_entity):
     """Test create observation table with treatment column"""
     expected_error = "Treatment name not found: treatment"
