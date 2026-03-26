@@ -147,35 +147,112 @@ def test_calendar_lookup_feature(calendar_table, timestamp_format_string, user_e
     assert df_fp_features[feature_name].iloc[0] == "Christmas Day"
 
 
-def test_calendar_lookup_feature_with_offset(calendar_table):
+def test_calendar_lookup_feature_with_offset(calendar_table, timestamp_format_string, user_entity):
     """
-    Test creating a calendar lookup feature with a day offset.
+    Test creating calendar lookup features with positive and negative day offsets.
 
-    With offset=2, the feature looks up the calendar row for (point-in-time date - 2 days).
+    Positive offset (offset=2): looks up the calendar row for (point-in-time date - 2 days).
     - POINT_IN_TIME on Jan 3 looks up Jan 1 -> "New Year's Day" (user 1 is odd)
     - POINT_IN_TIME on Jan 2 looks up Dec 31, 2000 -> null (not in dataset)
     - POINT_IN_TIME on Dec 27 looks up Dec 25 -> "Christmas Day"
+
+    Negative offset (offset=-2): looks up the calendar row for (point-in-time date + 2 days).
+    - POINT_IN_TIME on Dec 23 looks up Dec 25 -> "Christmas Day"
+    - POINT_IN_TIME on Dec 30 looks up Jan 1, 2002 -> null (not in dataset)
+    - POINT_IN_TIME on Dec 30, 2000 looks up Jan 1 -> "New Year's Day"
+
+    Also verifies that when a FORECAST_POINT is provided, offsets are applied relative to it
+    instead of POINT_IN_TIME, for both positive and negative offsets.
     """
     view = calendar_table.get_view()
-    feature_name = f"CalendarHolidayNameMinus2Days_{ObjectId()}"
-    feature = view["public_holiday_name"].as_feature(feature_name, offset=2)
-    feature_list = FeatureList([feature], str(ObjectId()))
 
-    preview_params = pd.DataFrame([
+    # Positive offset: look back 2 days
+    feature_name_pos = f"CalendarHolidayNameMinus2Days_{ObjectId()}"
+    feature_pos = view["public_holiday_name"].as_feature(feature_name_pos, offset=2)
+    feature_list_pos = FeatureList([feature_pos], str(ObjectId()))
+
+    preview_params_pos = pd.DataFrame([
         # 2 days after New Year's Day -> looks up Jan 1 -> "New Year's Day" (user 1 is odd)
         {"POINT_IN_TIME": pd.Timestamp("2001-01-03 10:00:00"), "üser id": 1},
-        # 1 day after New Year's Day -> looks up Jan 2 -> None (not a holiday)
+        # 1 day after New Year's Day -> looks up Dec 31, 2000 -> None (not in dataset)
         {"POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"), "üser id": 1},
         # 2 days after Christmas -> looks up Dec 25 -> "Christmas Day"
         {"POINT_IN_TIME": pd.Timestamp("2001-12-27 10:00:00"), "üser id": 1},
     ])
-    expected = preview_params.copy()
-    expected[feature_name] = ["New Year's Day", np.nan, "Christmas Day"]
-    obs_table = create_observation_table_by_upload(preview_params)
-    df_features = feature_list.compute_historical_feature_table(
-        obs_table, str(ObjectId())
+    expected_pos = preview_params_pos.copy()
+    expected_pos[feature_name_pos] = ["New Year's Day", np.nan, "Christmas Day"]
+    obs_table_pos = create_observation_table_by_upload(preview_params_pos)
+    df_features_pos = feature_list_pos.compute_historical_feature_table(
+        obs_table_pos, str(ObjectId())
     ).to_pandas()
-    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
+    fb_assert_frame_equal(df_features_pos, expected_pos, sort_by_columns=["POINT_IN_TIME"])
+
+    # Negative offset: look forward 2 days
+    feature_name_neg = f"CalendarHolidayNamePlus2Days_{ObjectId()}"
+    feature_neg = view["public_holiday_name"].as_feature(feature_name_neg, offset=-2)
+    feature_list_neg = FeatureList([feature_neg], str(ObjectId()))
+
+    preview_params_neg = pd.DataFrame([
+        # 2 days before Christmas -> looks up Dec 25 -> "Christmas Day"
+        {"POINT_IN_TIME": pd.Timestamp("2001-12-23 10:00:00"), "üser id": 1},
+        # Dec 30 -> looks up Jan 1, 2002 -> None (not in dataset)
+        {"POINT_IN_TIME": pd.Timestamp("2001-12-30 10:00:00"), "üser id": 1},
+        # Dec 30, 2000 -> looks up Jan 1, 2001 -> "New Year's Day"
+        {"POINT_IN_TIME": pd.Timestamp("2000-12-30 10:00:00"), "üser id": 1},
+    ])
+    expected_neg = preview_params_neg.copy()
+    expected_neg[feature_name_neg] = ["Christmas Day", np.nan, "New Year's Day"]
+    obs_table_neg = create_observation_table_by_upload(preview_params_neg)
+    df_features_neg = feature_list_neg.compute_historical_feature_table(
+        obs_table_neg, str(ObjectId())
+    ).to_pandas()
+    fb_assert_frame_equal(df_features_neg, expected_neg, sort_by_columns=["POINT_IN_TIME"])
+
+    # Verify offsets work correctly with FORECAST_POINT override
+    forecast_schema = ForecastPointSchema(
+        granularity=TimeIntervalUnit.DAY,
+        dtype=DBVarType.VARCHAR,
+        is_utc_time=False,
+        timezone="Asia/Singapore",
+        format_string=timestamp_format_string,
+    )
+    forecast_context = Context.create(
+        name=f"calendar_offset_forecast_context_{ObjectId()}",
+        primary_entity=[user_entity.name],
+        forecast_point_schema=forecast_schema,
+    )
+
+    # Positive offset with FORECAST_POINT: FORECAST_POINT on Dec 27, offset=2 -> looks up Dec 25
+    df_fp_pos = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-12-20 10:00:00"),
+            "FORECAST_POINT": "2001|12|27",
+            "üser id": 1,
+        }
+    ])
+    obs_table_fp_pos = create_observation_table_by_upload(
+        df_fp_pos, context_name=forecast_context.name
+    )
+    df_fp_pos_features = feature_list_pos.compute_historical_feature_table(
+        obs_table_fp_pos, str(ObjectId())
+    ).to_pandas()
+    assert df_fp_pos_features[feature_name_pos].iloc[0] == "Christmas Day"
+
+    # Negative offset with FORECAST_POINT: FORECAST_POINT on Dec 23, offset=-2 -> looks up Dec 25
+    df_fp_neg = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-12-20 10:00:00"),
+            "FORECAST_POINT": "2001|12|23",
+            "üser id": 1,
+        }
+    ])
+    obs_table_fp_neg = create_observation_table_by_upload(
+        df_fp_neg, context_name=forecast_context.name
+    )
+    df_fp_neg_features = feature_list_neg.compute_historical_feature_table(
+        obs_table_fp_neg, str(ObjectId())
+    ).to_pandas()
+    assert df_fp_neg_features[feature_name_neg].iloc[0] == "Christmas Day"
 
 
 def test_calendar_lookup_feature_different_users(calendar_table):
