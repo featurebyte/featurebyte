@@ -410,6 +410,9 @@ class ViewColumn(Series, SampleMixin):
         For SCD views, lookup features are materialized through point-in-time joins, and the resulting value represents
         the active row for the natural key at the point-in-time indicated in the feature request.
 
+        For CalendarView, the lookup uses the FORECAST_POINT as the reference when it is available instead of
+        POINT_IN_TIME.
+
         To obtain a feature value at a specific time before the request's point-in-time, an offset can be specified.
 
         Parameters
@@ -418,8 +421,11 @@ class ViewColumn(Series, SampleMixin):
             Name of the feature to create.
         offset: Optional[OffsetType]
             When specified, retrieve feature value as of this offset prior to the point-in-time. For
-            lookup features derived from SnapshotsView, the offset should be an integer specifying
-            the number of time interval steps.
+            lookup features derived from SnapshotsView, the offset should be a non-negative integer specifying
+            the number of time interval steps. For CalendarView, the offset is an integer specifying the
+            number of days; a positive value looks back and a negative value looks forward relative to the
+            reference date. When a FORECAST_POINT is available, the offset is applied relative to it instead
+            of POINT_IN_TIME.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 

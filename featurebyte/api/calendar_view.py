@@ -8,7 +8,6 @@ from typing import Any, ClassVar, Optional, cast
 
 from pydantic import Field
 
-from featurebyte.api.snapshots_helper import validate_offset_for_view
 from featurebyte.api.view import RawMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -211,7 +210,16 @@ class CalendarView(View, RawMixin):
         return self.series_id_column
 
     def validate_offset(self, offset: Optional[OffsetType]) -> None:
-        validate_offset_for_view(offset, view_type_name="CalendarView")
+        if offset is None:
+            return
+        if isinstance(offset, str):
+            raise ValueError(
+                "String offset is not supported for CalendarView. Use integer offset instead."
+            )
+        if not isinstance(offset, int):
+            raise ValueError(
+                "Offset for CalendarView must be an integer specifying the number of days."
+            )
 
     def get_additional_lookup_parameters(
         self, offset: Optional[OffsetType] = None
