@@ -90,8 +90,8 @@ def target_executor_fixture():
         feature_table_cache_service=Mock(),
         cron_helper=Mock(),
         system_metrics_service=Mock(),
-        observation_table_service=Mock(),
-        context_service=Mock(),
+        observation_table_service=AsyncMock(),
+        context_service=AsyncMock(),
     )
 
 
@@ -129,10 +129,8 @@ async def test_executor_uses_forecast_point_schema_from_params_obs_table(
         )
         await target_executor.execute(mock_executor_params_obs_table)
 
-        # Context service should NOT have been called since forecast_point_schema was provided
-        target_executor.context_service.get_document.assert_not_called()
-
-        # Verify forecast_point_schema was passed to cache service
+        # Verify executor_params.forecast_point_schema takes precedence over the one
+        # resolved from the observation table's context
         call_kwargs = (
             target_executor.feature_table_cache_service.create_view_or_table_from_cache.call_args[1]
         )
