@@ -9,7 +9,11 @@ from pydantic import model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, TimeIntervalUnit
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn, TimeZoneUnion
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampSchema,
+    TimeZoneColumn,
+    TimeZoneUnion,
+)
 
 
 class ForecastPointSchema(FeatureByteBaseModel):
@@ -131,3 +135,17 @@ class ForecastPointSchema(FeatureByteBaseModel):
         if isinstance(self.timezone, TimeZoneColumn):
             return self.timezone.column_name
         return None
+
+    def to_timestamp_schema(self) -> TimestampSchema:
+        """
+        Convert this ForecastPointSchema to a TimestampSchema for use in timestamp-aware operations.
+
+        Returns
+        -------
+        TimestampSchema
+        """
+        return TimestampSchema(
+            format_string=self.format_string,
+            is_utc_time=self.is_utc_time,
+            timezone=self.timezone,
+        )

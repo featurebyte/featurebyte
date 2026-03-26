@@ -4,8 +4,6 @@ Get targets module
 
 from __future__ import annotations
 
-from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
@@ -64,23 +62,13 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         ExecutionResult
         """
         # check if observation table is temporary (not persisted to mongo)
-        is_temp_observation_table = False
-        forecast_point_schema = None
-        if isinstance(executor_params.observation_set, ObservationTableModel):
-            try:
-                await self.observation_table_service.get_document(
-                    document_id=executor_params.observation_set.id
-                )
-            except DocumentNotFoundError:
-                is_temp_observation_table = True
-
-            if executor_params.observation_set.context_id is not None:
-                column_names = {info.name for info in executor_params.observation_set.columns_info}
-                if SpecialColumnName.POINT_IN_TIME in column_names:
-                    context = await self.context_service.get_document(
-                        executor_params.observation_set.context_id
-                    )
-                    forecast_point_schema = context.forecast_point_schema
+        observation_table_info = await self._get_observation_table_info(
+            observation_table_service=self.observation_table_service,
+            context_service=self.context_service,
+            executor_params=executor_params,
+        )
+        is_temp_observation_table = observation_table_info.is_temp_observation_table
+        forecast_point_schema = observation_table_info.forecast_point_schema
 
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)

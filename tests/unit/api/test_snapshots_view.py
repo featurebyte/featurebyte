@@ -794,6 +794,7 @@ def test_snapshots_view_as_feature(snowflake_snapshots_table, cust_id_entity):
                 "feature_job_setting": None,
                 "offset_size": 7,
             },
+            "calendar_parameters": None,
         },
     }
 
@@ -872,6 +873,7 @@ def test_snapshots_view_as_target(snowflake_snapshots_table, cust_id_entity):
                 "feature_job_setting": None,
                 "offset_size": 7,
             },
+            "calendar_parameters": None,
             "offset": None,
         },
     }

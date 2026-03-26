@@ -7,12 +7,13 @@ import pytest
 from featurebyte.api.calendar_view import CalendarView
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
 )
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 class TestCalendarView(BaseViewTestSuite):
@@ -272,8 +273,6 @@ def test_calendar_view_without_series_id(snowflake_database_calendar_table, cata
     Test CalendarView from CalendarTable without series_id_column
     """
     _ = catalog
-    from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-
     calendar_table = snowflake_database_calendar_table.create_calendar_table(
         name="sf_calendar_table_no_series",
         calendar_datetime_column="date",
@@ -318,3 +317,146 @@ def test_sdk_code_generation(saved_calendar_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_calendar_table.id,
     )
+
+
+def test_calendar_view_as_feature(snowflake_calendar_table, cust_id_entity):
+    """
+    Test CalendarView as_feature creates a standard lookup node using series_id_column as entity
+    """
+    snowflake_calendar_table.store_id.as_entity(cust_id_entity.name)
+    view = snowflake_calendar_table.get_view()
+    feature = view["col_float"].as_feature("FloatFeature")
+    graph_dict = feature.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_1")
+    assert lookup_node == {
+        "name": "lookup_1",
+        "type": NodeType.LOOKUP,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatFeature"],
+            "entity_column": "store_id",
+            "entity_columns": None,
+            "serving_name": "cust_id",
+            "serving_names": None,
+            "entity_id": cust_id_entity.id,
+            "entity_ids": None,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": None,
+            "calendar_parameters": {
+                "calendar_datetime_column": "date",
+                "calendar_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD",
+                        "is_utc_time": None,
+                        "timezone": None,
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "offset_size": None,
+            },
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_calendar_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_calendar_table.id: {
+                "name": snowflake_calendar_table.name,
+                "record_creation_timestamp_column": snowflake_calendar_table.record_creation_timestamp_column,
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+    feature.save()
+
+    agg_info = feature.info()["metadata"]["aggregations"]
+    assert agg_info == {
+        "F0": {
+            "aggregation_type": "lookup",
+            "category": None,
+            "column": "Input0",
+            "filter": False,
+            "function": None,
+            "keys": ["store_id"],
+            "name": "FloatFeature",
+            "offset": None,
+            "window": None,
+        }
+    }
+
+
+def test_calendar_view_as_target(snowflake_calendar_table, cust_id_entity):
+    """
+    Test CalendarView as_target creates a standard lookup target node using series_id_column as entity
+    """
+    snowflake_calendar_table.store_id.as_entity(cust_id_entity.name)
+    view = snowflake_calendar_table.get_view()
+    target = view["col_float"].as_target("FloatTarget", fill_value=0)
+    graph_dict = target.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_target_1")
+    assert lookup_node == {
+        "name": "lookup_target_1",
+        "type": NodeType.LOOKUP_TARGET,
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatTarget"],
+            "entity_column": "store_id",
+            "entity_columns": None,
+            "serving_name": "cust_id",
+            "serving_names": None,
+            "entity_id": cust_id_entity.id,
+            "entity_ids": None,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "snapshots_parameters": None,
+            "calendar_parameters": {
+                "calendar_datetime_column": "date",
+                "calendar_datetime_metadata": {
+                    "timestamp_schema": {
+                        "format_string": "YYYY-MM-DD",
+                        "is_utc_time": None,
+                        "timezone": None,
+                    },
+                    "timestamp_tuple_schema": None,
+                },
+                "offset_size": None,
+            },
+            "offset": None,
+        },
+    }
+
+    # check SDK code generation
+    table_columns_info = snowflake_calendar_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        target,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_calendar_table.id: {
+                "name": snowflake_calendar_table.name,
+                "record_creation_timestamp_column": snowflake_calendar_table.record_creation_timestamp_column,
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+    target.save()
+
+
+def test_calendar_view_as_feature__no_series_id(snowflake_database_calendar_table, catalog):
+    """
+    Test CalendarView as_feature raises ValueError when no series_id_column is set
+    """
+    _ = catalog
+    calendar_table = snowflake_database_calendar_table.create_calendar_table(
+        name="sf_calendar_table_no_series_for_lookup",
+        calendar_datetime_column="date",
+        calendar_datetime_schema=TimestampSchema(format_string="YYYY-MM-DD"),
+    )
+    view = calendar_table.get_view()
+    with pytest.raises(ValueError, match="Lookup feature / target is not supported for this view"):
+        view["col_float"].as_feature("FloatFeature")

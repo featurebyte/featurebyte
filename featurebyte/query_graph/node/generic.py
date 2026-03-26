@@ -1168,6 +1168,41 @@ class SnapshotsLookupParameters(FeatureByteBaseModel):
         return None
 
 
+class CalendarLookupParameters(FeatureByteBaseModel):
+    """Parameters for CalendarTable lookup"""
+
+    calendar_datetime_column: InColumnStr
+    calendar_datetime_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    offset_size: Optional[int] = Field(default=None)
+
+    @property
+    def calendar_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get calendar timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.calendar_datetime_metadata:
+            return self.calendar_datetime_metadata.timestamp_schema
+        return None
+
+    @property
+    def calendar_timestamp_format_string(self) -> Optional[str]:
+        """
+        Get calendar timestamp format string
+
+        Returns
+        -------
+        Optional[str]
+        """
+        calendar_timestamp_schema = self.calendar_timestamp_schema
+        if calendar_timestamp_schema:
+            return calendar_timestamp_schema.format_string
+        return None
+
+
 class LookupParameters(FeatureByteBaseModel):
     """Lookup NOde Parameters"""
 
@@ -1182,6 +1217,7 @@ class LookupParameters(FeatureByteBaseModel):
     scd_parameters: Optional[SCDLookupParameters] = Field(default=None)
     event_parameters: Optional[EventLookupParameters] = Field(default=None)
     snapshots_parameters: Optional[SnapshotsLookupParameters] = Field(default=None)
+    calendar_parameters: Optional[CalendarLookupParameters] = Field(default=None)
 
     def get_entity_ids(self) -> List[PydanticObjectId]:
         """

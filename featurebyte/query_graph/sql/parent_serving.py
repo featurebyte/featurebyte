@@ -232,6 +232,7 @@ def _get_lookup_spec_from_join_step(
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
         snapshots_parameters=snapshots_parameters,
+        calendar_parameters=None,
         serving_names_mapping=None,
         entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,

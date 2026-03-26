@@ -61,6 +61,7 @@ class LookupTargetSpec(BaseLookupSpec):
                 scd_parameters=params.scd_parameters,
                 event_parameters=params.event_parameters,
                 snapshots_parameters=params.snapshots_parameters,
+                calendar_parameters=params.calendar_parameters,
                 offset=params.offset,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,
                 is_deployment_sql=is_deployment_sql,

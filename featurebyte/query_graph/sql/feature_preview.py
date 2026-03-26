@@ -38,6 +38,7 @@ def get_feature_or_target_preview_sql(
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     forecast_point_schema: Optional[ForecastPointSchema] = None,
+    is_target: bool = False,
 ) -> str:
     """
     Get SQL code for previewing SQL for features or targets.
@@ -64,6 +65,8 @@ def get_feature_or_target_preview_sql(
         Column statistics information
     forecast_point_schema: Optional[ForecastPointSchema]
         Forecast point schema
+    is_target: bool
+        Whether the preview is for a target
 
     Returns
     -------
@@ -76,6 +79,7 @@ def get_feature_or_target_preview_sql(
         job_schedule_table_set=job_schedule_table_set,
         column_statistics_info=column_statistics_info,
         forecast_point_schema=forecast_point_schema,
+        is_target=is_target,
     )
     execution_plan = planner.generate_plan(nodes)
 

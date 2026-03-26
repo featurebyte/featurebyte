@@ -621,6 +621,7 @@ def test_extract_definition__lookup_on_assign(global_graph, lookup_assign_featur
             "scd_parameters": None,
             "event_parameters": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     )
 
@@ -910,6 +911,7 @@ def test_extract_definition__scd_lookup(
             "serving_name": "CUSTOMER_ID",
             "serving_names": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     )
 
@@ -958,6 +960,7 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
             "serving_name": "ORDER_ID",
             "serving_names": None,
             "snapshots_parameters": None,
+            "calendar_parameters": None,
         },
     )
 

@@ -257,6 +257,7 @@
                 "name": "lookup_1",
                 "output_type": "frame",
                 "parameters": {
+                    "calendar_parameters": null,
                     "entity_column": "col_text",
                     "entity_columns": null,
                     "entity_id": {

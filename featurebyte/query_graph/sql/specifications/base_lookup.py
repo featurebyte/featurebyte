@@ -11,6 +11,7 @@ from typing import Any, Optional
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
+    CalendarLookupParameters,
     EventLookupParameters,
     LookupNode,
     LookupTargetNode,
@@ -32,6 +33,7 @@ class BaseLookupSpec(AggregationSpec, ABC):
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
     snapshots_parameters: Optional[SnapshotsLookupParameters]
+    calendar_parameters: Optional[CalendarLookupParameters]
     is_parent_lookup: bool = False
 
     @property
