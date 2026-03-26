@@ -422,9 +422,10 @@ class ViewColumn(Series, SampleMixin):
         offset: Optional[OffsetType]
             When specified, retrieve feature value as of this offset prior to the point-in-time. For
             lookup features derived from SnapshotsView, the offset should be a non-negative integer specifying
-            the number of time interval steps. For CalendarView, the offset can also be negative to look
-            forward relative to the reference date. When a FORECAST_POINT is available, the offset is applied
-            relative to it instead of POINT_IN_TIME.
+            the number of time interval steps. For CalendarView, the offset is an integer specifying the
+            number of days; a positive value looks back and a negative value looks forward relative to the
+            reference date. When a FORECAST_POINT is available, the offset is applied relative to it instead
+            of POINT_IN_TIME.
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 

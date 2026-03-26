@@ -218,7 +218,7 @@ class CalendarView(View, RawMixin):
             )
         if not isinstance(offset, int):
             raise ValueError(
-                "Offset for CalendarView must be an integer specifying the number of time interval steps."
+                "Offset for CalendarView must be an integer specifying the number of days."
             )
 
     def get_additional_lookup_parameters(
