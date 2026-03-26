@@ -176,14 +176,50 @@ class ObservationTableModel(MaterializedTableModel):
 
     request_input: ObservationInput
         The input that defines how the observation table is created
+    most_recent_point_in_time: StrictStr
+        ISO 8601 datetime string of the most recent point in time in the table
     context_id: Optional[PydanticObjectId]
         The id of the context that the observation table is associated with
-    use_case_ids: Optional[List[PydanticObjectId]]
+    use_case_ids: List[PydanticObjectId]
         The ids of the use cases that the observation table is associated with
     purpose: Optional[Purpose]
-        The purpose of the observation table, which accepts one of: preview, eda, training, validation_test, other.
+        The purpose of the observation table, which accepts one of: preview, eda, training, validation_test, other
+    least_recent_point_in_time: Optional[StrictStr]
+        ISO 8601 datetime string of the least recent point in time in the table
+    entity_column_name_to_count: Optional[Dict[str, int]]
+        Mapping of entity column names to their distinct value counts
+    min_interval_secs_between_entities: Optional[float]
+        Minimum interval in seconds between entities in the table
     primary_entity_ids: Optional[List[PydanticObjectId]]
         The ids of the primary entities the observation table is associated with
+    has_row_index: Optional[bool]
+        Whether the table has a row index column
+    has_row_weights: Optional[bool]
+        Whether the table has a row weights column
+    target_namespace_id: Optional[PydanticObjectId]
+        The id of the target namespace associated with the observation table
+    treatment_id: Optional[PydanticObjectId]
+        The id of the treatment associated with the observation table
+    sample_rows: Optional[int]
+        The number of rows sampled when creating the observation table
+    sample_from_timestamp: Optional[datetime]
+        The start timestamp used for sampling rows
+    sample_to_timestamp: Optional[datetime]
+        The end timestamp used for sampling rows
+    table_with_missing_data: Optional[TableDetails]
+        Details of the warehouse table containing rows with missing data
+    downsampling_info: Optional[DownSamplingInfo]
+        Downsampling configuration used when creating the observation table
+    most_recent_forecast_point: Optional[StrictStr]
+        ISO 8601 datetime string of the most recent forecast point in the table
+    least_recent_forecast_point: Optional[StrictStr]
+        ISO 8601 datetime string of the least recent forecast point in the table
+    has_forecast_timezone_column: Optional[bool]
+        Whether the table has a forecast timezone column
+    forecast_horizon: Optional[CalendarWindow]
+        The forecast horizon window associated with the observation table
+    max_rows_per_entity_and_forecast_point: Optional[int]
+        Maximum number of rows per entity and forecast point combination
     """
 
     request_input: ObservationInput
