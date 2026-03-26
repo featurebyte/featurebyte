@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.materialisation import get_source_count_expr
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
+from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
@@ -55,6 +56,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         target_computer: TargetComputer,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_service: TargetService,
+        context_service: ContextService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -65,6 +67,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.target_computer = target_computer
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.target_service = target_service
+        self.context_service = context_service
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -186,6 +189,12 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             assert graph is not None
             assert node_names is not None
 
+            # Resolve forecast_point_schema from context_id if available
+            forecast_point_schema = None
+            if payload.context_id is not None:
+                context = await self.context_service.get_document(document_id=payload.context_id)
+                forecast_point_schema = context.forecast_point_schema
+
             result = await self.target_computer.compute(
                 observation_set=observation_set,
                 compute_request=ComputeTargetRequest(
@@ -196,6 +205,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     target_id=target_id,
                 ),
                 output_table_details=location.table_details,
+                forecast_point_schema=forecast_point_schema,
             )
             entity_ids = graph.get_entity_ids(node_names[0])
             primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(

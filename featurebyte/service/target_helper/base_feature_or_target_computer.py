@@ -66,6 +66,8 @@ class ExecutorParams(BasicExecutorParams):
     # Optional serving names mapping if the observations set has different serving name columns
     # than those defined in Entities
     serving_names_mapping: Optional[dict[str, str]] = None
+    # Optional forecast point schema for time series target computation
+    forecast_point_schema: Optional[ForecastPointSchema] = None
 
 
 ExecutorParamsT = TypeVar("ExecutorParamsT", bound=ExecutorParams)
@@ -216,6 +218,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
+        forecast_point_schema: Optional[ForecastPointSchema] = None,
     ) -> ExecutionResult:
         """
         Compute targets or features
@@ -230,6 +233,8 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Table details to write the results to
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback to override the default task progress updater
+        forecast_point_schema: Optional[ForecastPointSchema]
+            Optional forecast point schema for time series target computation
 
         Returns
         -------
@@ -265,4 +270,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             ),
             validation_parameters=validation_parameters,
         )
+        if forecast_point_schema is not None:
+            params.forecast_point_schema = forecast_point_schema
         return await self.query_executor.execute(params)

@@ -68,7 +68,11 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             executor_params=executor_params,
         )
         is_temp_observation_table = observation_table_info.is_temp_observation_table
-        forecast_point_schema = observation_table_info.forecast_point_schema
+        # Use forecast_point_schema from executor_params if provided, otherwise fall back
+        # to the one resolved from the observation table's context
+        forecast_point_schema = (
+            executor_params.forecast_point_schema or observation_table_info.forecast_point_schema
+        )
 
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
