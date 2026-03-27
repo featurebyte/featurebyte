@@ -36,7 +36,7 @@ license = { file = "LICENSE" }
 dependencies = [
   "aiofiles>=24",
   "alive-progress>=3",
-  "black>=24",
+  "black>=26.3.1,<27",
   "cachetools>=5",
   "croniter>=5",
   "cryptography>=45",
@@ -48,7 +48,7 @@ dependencies = [
   "numpy",
   "orjson>=3.11.6,<4",
   "pandas>=2",
-  "pillow>=10",
+  "pillow>=12.1.1,<13",
   "pyarrow>=18",
   "pydantic-extra-types>=2",
   "pydantic-settings>=2",
