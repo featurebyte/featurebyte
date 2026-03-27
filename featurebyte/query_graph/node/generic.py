@@ -1433,6 +1433,8 @@ class LookupNode(BaseLookupNode):
             offset = self.parameters.scd_parameters.offset
         elif self.parameters.snapshots_parameters:
             offset = self.parameters.snapshots_parameters.offset_size
+        elif self.parameters.calendar_parameters:
+            offset = self.parameters.calendar_parameters.offset_size
         else:
             offset = None
         out_var_name = var_name_generator.generate_variable_name(

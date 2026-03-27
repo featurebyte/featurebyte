@@ -390,6 +390,32 @@ def test_calendar_view_as_feature(snowflake_calendar_table, cust_id_entity):
     }
 
 
+def test_calendar_view_as_feature_with_offset(snowflake_calendar_table, cust_id_entity):
+    """
+    Test CalendarView as_feature with integer offset produces consistent SDK code generation
+    """
+    snowflake_calendar_table.store_id.as_entity(cust_id_entity.name)
+    view = snowflake_calendar_table.get_view()
+    feature = view["col_float"].as_feature("FloatFeature_1d_ahead", offset=-1)
+    graph_dict = feature.model_dump()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_1")
+    assert lookup_node["parameters"]["calendar_parameters"]["offset_size"] == -1
+
+    # check SDK code generation - this verifies the generated code produces the same graph hash
+    table_columns_info = snowflake_calendar_table.model_dump(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        table_id_to_info={
+            snowflake_calendar_table.id: {
+                "name": snowflake_calendar_table.name,
+                "record_creation_timestamp_column": snowflake_calendar_table.record_creation_timestamp_column,
+                "columns_info": table_columns_info,
+            }
+        },
+    )
+
+
 def test_calendar_view_as_target(snowflake_calendar_table, cust_id_entity):
     """
     Test CalendarView as_target creates a standard lookup target node using series_id_column as entity
