@@ -173,7 +173,12 @@ lint = [
 # Remove entries once the upstream dep that pulls them in is upgraded.
 [tool.uv]
 constraint-dependencies = [
+  "aiohttp>=3.13.3,<4",
+  "azure-core>=1.38.0,<2",
   "filelock>=3.20.3,<4",
+  "fonttools>=4.60.2,<5",
+  "pyasn1>=0.6.3,<1",
+  "pyjwt>=2.12.0,<3",
   "tornado>=6.5.5,<7",
   "urllib3>=2.6.3,<3",
   "virtualenv>=20.36.1,<21",
