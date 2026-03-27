@@ -46,7 +46,7 @@ dependencies = [
   "jinja2>=3",
   "lazy-object-proxy>=1",
   "numpy",
-  "orjson>=3",
+  "orjson>=3.11.6,<4",
   "pandas>=2",
   "pillow>=10",
   "pyarrow>=18",
@@ -55,10 +55,10 @@ dependencies = [
   "pydantic~=2.8",
   "pymongo>=4",
   "pyopenssl>=23",
-  "python-multipart",
+  "python-multipart>=0.0.22,<1",
   "python-on-whales",
   "pyyaml>=5",
-  "requests>=2",
+  "requests>=2.33.0,<3",
   "rich>=13",
   "sqlglot~=25.0", # Breaking change
   "typeguard>=4",
@@ -166,6 +166,17 @@ lint = [
   "types-ujson",
   "types-urllib3",
   "typing-extensions",
+]
+
+# Minimum version bounds for transitive dependencies with known vulnerabilities.
+# Add entries here when a vuln cannot be fixed by bumping a direct dependency.
+# Remove entries once the upstream dep that pulls them in is upgraded.
+[tool.uv]
+constraint-dependencies = [
+  "filelock>=3.20.3,<4",
+  "tornado>=6.5.5,<7",
+  "urllib3>=2.6.3,<3",
+  "virtualenv>=20.36.1,<21",
 ]
 
 # Packaging source metadata, this points to the source code repository.
