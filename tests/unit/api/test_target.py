@@ -55,7 +55,6 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     from bson import ObjectId
     from featurebyte import EventTable
 
-
     # event_table name: "sf_event_table"
     event_table = EventTable.get_by_id(ObjectId("{table_id}"))
     event_view = event_table.get_view(
