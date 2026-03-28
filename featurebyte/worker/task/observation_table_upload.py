@@ -122,16 +122,18 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             )
 
             # create observation table by calling the observation table task
+            override_model_params: dict[str, Any] = {
+                "request_input": UploadedFileInput(
+                    type=RequestInputType.UPLOADED_FILE,
+                    file_name=payload.uploaded_file_name,
+                ),
+                "treatment_id": payload.treatment_id,
+            }
+            if payload.target_namespace_id is not None:
+                override_model_params["target_namespace_id"] = payload.target_namespace_id
             await self.observation_table_task.create_observation_table(
                 payload=obs_task_payload,
-                override_model_params={
-                    "request_input": UploadedFileInput(
-                        type=RequestInputType.UPLOADED_FILE,
-                        file_name=payload.uploaded_file_name,
-                    ),
-                    "target_namespace_id": payload.target_namespace_id,
-                    "treatment_id": payload.treatment_id,
-                },
+                override_model_params=override_model_params,
             )
 
         # drop the temp table
