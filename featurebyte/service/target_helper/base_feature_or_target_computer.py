@@ -138,7 +138,7 @@ class QueryExecutor(Generic[ExecutorParamsT]):
 
             if executor_params.observation_set.context_id is not None:
                 column_names = {info.name for info in executor_params.observation_set.columns_info}
-                if SpecialColumnName.POINT_IN_TIME in column_names:
+                if SpecialColumnName.FORECAST_POINT in column_names:
                     context = await context_service.get_document(
                         executor_params.observation_set.context_id
                     )
