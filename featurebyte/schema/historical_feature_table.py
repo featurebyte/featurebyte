@@ -22,6 +22,7 @@ class HistoricalFeatureTableCreate(FeatureOrTargetTableCreate):
     """
 
     featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class HistoricalFeatureTableList(PaginationMixin):

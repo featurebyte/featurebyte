@@ -84,7 +84,11 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
             context_service=self.context_service,
             executor_params=executor_params,
         )
-        forecast_point_schema = observation_table_info.forecast_point_schema
+        # Use forecast_point_schema from executor_params if provided, otherwise fall back
+        # to the one resolved from the observation table's context
+        forecast_point_schema = (
+            executor_params.forecast_point_schema or observation_table_info.forecast_point_schema
+        )
 
         if (
             isinstance(executor_params.observation_set, ObservationTableModel)
