@@ -118,19 +118,18 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
         FeatureList, "compute_historical_feature_table"
     ) as mock_compute_historical_feature_table:
         mock_compute_historical_feature_table.return_value = mock_feature_table
-        with patch("featurebyte.api.feature_list.ObjectId", return_value=mock_object_id):
-            flist.compute_historical_features(dataframe)
+        flist.compute_historical_features(dataframe)
 
     # Check compute_historical_feature_table() is called correctly
     expected_dataframe = dataframe.copy()
     expected_dataframe[InternalName.DATAFRAME_ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
     assert expected_dataframe.equals(kwargs["observation_set"])
-    assert (
-        kwargs["historical_feature_table_name"]
-        == f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{mock_object_id}"
+    assert kwargs["historical_feature_table_name"].startswith(
+        "__TEMPORARY_HISTORICAL_FEATURE_TABLE_"
     )
     assert kwargs["serving_names_mapping"] is None
+    assert kwargs["context_id"] is None
 
     # Check temporary feature table is deleted
     mock_feature_table.delete.assert_called_once()

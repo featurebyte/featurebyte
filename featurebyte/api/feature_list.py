@@ -1339,6 +1339,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self,
         observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame with feature values for analysis, model training, or evaluation. The historical features
@@ -1372,6 +1373,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name columns than those
             defined in Entities, mapping from original serving name to new name.
+        context_id: Optional[ObjectId]
+            Context ID for DataFrame observation sets. When provided, the context's forecast point
+            schema will be used to compute features using FORECAST_POINT instead of POINT_IN_TIME.
 
         Returns
         -------
@@ -1428,6 +1432,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             observation_set=observation_set,
             historical_feature_table_name=temp_historical_feature_table_name,
             serving_names_mapping=serving_names_mapping,
+            context_id=context_id,
         )
         try:
             return temp_historical_feature_table.to_pandas()
@@ -1440,6 +1445,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         observation_set: Union[ObservationTable, pd.DataFrame],
         historical_feature_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> HistoricalFeatureTable:
         """
         Materialize feature list using an observation table asynchronously. The historical features
@@ -1454,6 +1460,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
+        context_id: Optional[ObjectId]
+            Context ID for DataFrame observation sets. When provided, the context's forecast point
+            schema will be used to compute features using FORECAST_POINT instead of POINT_IN_TIME.
+            Ignored when observation_set is an ObservationTable (its own context_id is used).
 
         Returns
         -------
@@ -1486,15 +1496,19 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             **kwargs,
         )
         feature_store_id = self._features[0].tabular_source.feature_store_id
+        is_input_observation_table = isinstance(observation_set, ObservationTable)
+        if is_input_observation_table:
+            resolved_context_id = observation_set.context_id
+        else:
+            resolved_context_id = context_id
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
-            observation_table_id=(
-                observation_set.id if isinstance(observation_set, ObservationTable) else None
-            ),
+            observation_table_id=(observation_set.id if is_input_observation_table else None),
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
+            context_id=resolved_context_id,
         )
-        if isinstance(observation_set, ObservationTable):
+        if is_input_observation_table:
             files = None
         else:
             assert isinstance(observation_set, pd.DataFrame)

@@ -12,6 +12,7 @@ from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalF
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
+from featurebyte.service.context import ContextService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -51,6 +52,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         historical_features_service: HistoricalFeaturesService,
         system_metrics_service: SystemMetricsService,
         task_progress_updater: TaskProgressUpdater,
+        context_service: ContextService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -62,6 +64,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.historical_features_service = historical_features_service
         self.system_metrics_service = system_metrics_service
         self.task_progress_updater = task_progress_updater
+        self.context_service = context_service
 
     async def get_task_description(self, payload: HistoricalFeatureTableTaskPayload) -> str:
         return f'Save historical feature table "{payload.name}"'
@@ -119,11 +122,18 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 self.task_progress_updater.update_progress, 0, FEATURE_COMPUTATION_PROGRESS_MAX
             )
 
+            # Resolve forecast_point_schema from context_id if available
+            forecast_point_schema = None
+            if payload.context_id is not None:
+                context = await self.context_service.get_document(document_id=payload.context_id)
+                forecast_point_schema = context.forecast_point_schema
+
             result = await self.historical_features_service.compute(
                 observation_set=observation_set,
                 compute_request=fl_get_historical_features,
                 output_table_details=location.table_details,
                 progress_callback=compute_progress_callback,
+                forecast_point_schema=forecast_point_schema,
             )
 
             # Update progress for the stats computation phase
