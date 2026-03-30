@@ -1474,7 +1474,6 @@ def test_feature_definition(feature_with_clean_column_names):
     from featurebyte import FeatureJobSetting
     from featurebyte import MissingValueImputation
 
-
     # event_table name: "sf_event_table"
     event_table = EventTable.get_by_id(ObjectId("6337f9651050ee7d5980660d"))
     event_view = event_table.get_view(
@@ -1904,7 +1903,6 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
     from bson import ObjectId
     from featurebyte import EventTable
     from featurebyte import FeatureJobSetting
-
 
     # event_table name: "sf_event_table"
     event_table = EventTable.get_by_id(ObjectId("{table_id}"))
