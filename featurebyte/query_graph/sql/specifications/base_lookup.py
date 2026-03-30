@@ -54,6 +54,16 @@ class BaseLookupSpec(AggregationSpec, ABC):
         args = []
         if self.scd_parameters is not None and self.scd_parameters.offset is not None:
             args.append(self.scd_parameters.offset)
+        if (
+            self.calendar_parameters is not None
+            and self.calendar_parameters.offset_size is not None
+        ):
+            args.append(str(self.calendar_parameters.offset_size))
+        if (
+            self.snapshots_parameters is not None
+            and self.snapshots_parameters.offset_size is not None
+        ):
+            args.append(str(self.snapshots_parameters.offset_size))
         return args
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
@@ -72,6 +82,12 @@ class BaseLookupSpec(AggregationSpec, ABC):
             params["event_parameters"] = self.event_parameters.model_dump()
             if params["event_parameters"].get("event_timestamp_metadata") is None:
                 params["event_parameters"].pop("event_timestamp_metadata", None)
+        if self.calendar_parameters is not None:
+            params["calendar_parameters"] = self.calendar_parameters.model_dump()
+        if self.snapshots_parameters is not None:
+            params["snapshots_parameters"] = self.snapshots_parameters.model_dump()
+            if params["snapshots_parameters"].get("snapshot_datetime_metadata") is None:
+                params["snapshots_parameters"].pop("snapshot_datetime_metadata", None)
         return params
 
     @classmethod

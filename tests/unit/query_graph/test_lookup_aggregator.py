@@ -646,6 +646,7 @@ def test_lookup_aggregator__calendar_table(
         "calendar_lookup",
         "calendar_lookup_with_offset",
         "calendar_lookup_with_forecast_point",
+        "calendar_lookup_with_offset_and_forecast_point",
     ],
 )
 def test_calendar_table_lookup(request, test_case_name, update_fixtures, source_info):
@@ -659,6 +660,10 @@ def test_calendar_table_lookup(request, test_case_name, update_fixtures, source_
             "calendar_lookup_agg_spec",
             ForecastPointSchema(granularity=TimeIntervalUnit.DAY),
         ),
+        "calendar_lookup_with_offset_and_forecast_point": (
+            "calendar_lookup_agg_spec_with_offset",
+            ForecastPointSchema(granularity=TimeIntervalUnit.DAY),
+        ),
     }
     fixture_name, forecast_point_schema = test_case_mapping[test_case_name]
     agg_spec = request.getfixturevalue(fixture_name)
@@ -667,6 +672,60 @@ def test_calendar_table_lookup(request, test_case_name, update_fixtures, source_
         source_info=source_info, forecast_point_schema=forecast_point_schema
     )
     aggregator.update(agg_spec)
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
+    assert_equal_with_expected_fixture(
+        result_expr.sql(pretty=True),
+        f"tests/fixtures/aggregator/expected_lookup_aggregator_{test_case_name}.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.parametrize(
+    "test_case_name,forecast_point_schema_factory",
+    [
+        ("calendar_lookup_multiple_offsets", lambda: None),
+        (
+            "calendar_lookup_multiple_offsets_with_forecast_point",
+            lambda: ForecastPointSchema(granularity=TimeIntervalUnit.DAY),
+        ),
+    ],
+)
+def test_calendar_table_lookup_multiple_offsets(
+    request,
+    test_case_name,
+    forecast_point_schema_factory,
+    update_fixtures,
+    source_info,
+    calendar_lookup_agg_spec,
+):
+    """
+    Test that calendar lookup specs with different offsets produce separate joins
+    and distinct result columns when registered in the same aggregator.
+    """
+    spec_no_offset = copy.deepcopy(calendar_lookup_agg_spec)
+    spec_offset_1 = copy.deepcopy(calendar_lookup_agg_spec)
+    spec_offset_1.calendar_parameters.offset_size = 1
+    spec_offset_neg_1 = copy.deepcopy(calendar_lookup_agg_spec)
+    spec_offset_neg_1.calendar_parameters.offset_size = -1
+
+    forecast_point_schema = forecast_point_schema_factory()
+    aggregator = LookupAggregator(
+        source_info=source_info, forecast_point_schema=forecast_point_schema
+    )
+    aggregator.update(spec_no_offset)
+    aggregator.update(spec_offset_1)
+    aggregator.update(spec_offset_neg_1)
+
+    # Each offset should produce a distinct source_hash so they are grouped separately
+    assert spec_no_offset.source_hash != spec_offset_1.source_hash
+    assert spec_no_offset.source_hash != spec_offset_neg_1.source_hash
+    assert spec_offset_1.source_hash != spec_offset_neg_1.source_hash
+
+    # Each offset should produce a distinct agg_result_name
+    assert spec_no_offset.agg_result_name != spec_offset_1.agg_result_name
+    assert spec_no_offset.agg_result_name != spec_offset_neg_1.agg_result_name
+    assert spec_offset_1.agg_result_name != spec_offset_neg_1.agg_result_name
+
     result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
         result_expr.sql(pretty=True),

@@ -1,18 +1,18 @@
 SELECT
   POINT_IN_TIME,
   cust_id,
-  "T0"."_fb_internal_CUSTOMER_ID_lookup_a_input_1" AS "_fb_internal_CUSTOMER_ID_lookup_a_input_1"
+  "T0"."_fb_internal_CUSTOMER_ID_lookup_a_2_input_1" AS "_fb_internal_CUSTOMER_ID_lookup_a_2_input_1"
 FROM REQUEST_TABLE
 LEFT JOIN (
   SELECT
     "CUSTOMER_ID",
     "snapshot_date",
-    ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_a_input_1") AS "_fb_internal_CUSTOMER_ID_lookup_a_input_1"
+    ANY_VALUE("_fb_internal_CUSTOMER_ID_lookup_a_2_input_1") AS "_fb_internal_CUSTOMER_ID_lookup_a_2_input_1"
   FROM (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
       "snapshot_date",
-      "a" AS "_fb_internal_CUSTOMER_ID_lookup_a_input_1"
+      "a" AS "_fb_internal_CUSTOMER_ID_lookup_a_2_input_1"
     FROM (
       SELECT
         "snapshot_date" AS "snapshot_date",

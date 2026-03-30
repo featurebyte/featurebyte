@@ -67,6 +67,7 @@ def mock_executor_params_obs_table_fixture(forecast_point_schema):
     obs_table.has_row_index = True
     obs_table.columns_info = [
         _make_column_info(SpecialColumnName.POINT_IN_TIME),
+        _make_column_info(SpecialColumnName.FORECAST_POINT),
     ]
     return Mock(
         spec=ExecutorParams,
@@ -156,6 +157,7 @@ async def test_executor_falls_back_to_context_when_no_schema_provided(target_exe
     obs_table.has_row_index = True
     obs_table.columns_info = [
         _make_column_info(SpecialColumnName.POINT_IN_TIME),
+        _make_column_info(SpecialColumnName.FORECAST_POINT),
     ]
 
     executor_params = Mock(
