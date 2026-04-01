@@ -297,11 +297,18 @@ class DeploymentServingEntityService:
             serving_name = entity_id_to_entity[entity_id].serving_names[0]
             serving_dtype = DBVarType.VARCHAR
             if entity_id in entity_id_to_table_id:
-                table = table_id_to_table[entity_id_to_table_id[entity_id]]
-                for column in table.columns_info:
-                    if column.entity_id == entity_id:
-                        serving_dtype = column.dtype
-                        break
+                table_id = entity_id_to_table_id[entity_id]
+                if table_id not in table_id_to_table:
+                    logger.warning(
+                        "Table not found for entity, falling back to VARCHAR dtype",
+                        extra={"entity_id": str(entity_id), "table_id": str(table_id)},
+                    )
+                else:
+                    table = table_id_to_table[table_id]
+                    for column in table.columns_info:
+                        if column.entity_id == entity_id:
+                            serving_dtype = column.dtype
+                            break
             entity_specs.append(ColumnSpec(name=serving_name, dtype=serving_dtype))
         return entity_specs
 
