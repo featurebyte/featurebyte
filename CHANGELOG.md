@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.4.1 (2026-04-01)
+
+### 💡 Enhancements
+
++ `service` Added support for composite series ID columns (`series_id_columns`) in `TimeSeriesTable`
+
 ## v3.4.0 (2026-03-05)
 
 ### 💡 Enhancements
