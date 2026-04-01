@@ -587,3 +587,36 @@ async def test_get_serving_entity_specs(
         another_entity.id: ColumnSpec(name=another_entity.serving_names[0], dtype=DBVarType.BINARY),
     }
     assert serving_entity_specs == [expected[entity_id] for entity_id in serving_entity_ids]
+
+
+@pytest.mark.asyncio
+async def test_get_serving_entity_specs_orphaned_table(
+    app_container,
+    deployed_feature_list_requiring_parent_serving_composite_entity,
+    group_entity,
+    another_entity,
+):
+    """Test get_serving_entity_specs falls back to VARCHAR with a warning when table is missing"""
+    feature_list = deployed_feature_list_requiring_parent_serving_composite_entity
+    serving_entity_ids = feature_list.primary_entity_ids
+
+    # Patch the table service to return no tables, simulating a deleted/orphaned table
+    async def empty_iterator(*args, **kwargs):
+        return
+        yield  # make it an async generator
+
+    with patch.object(
+        app_container.deployment_serving_entity_service.table_service,
+        "list_documents_iterator",
+        side_effect=empty_iterator,
+    ):
+        serving_entity_specs = (
+            await app_container.deployment_serving_entity_service.get_serving_entity_specs(
+                serving_entity_ids=serving_entity_ids
+            )
+        )
+
+    # All specs should fall back to VARCHAR when tables are missing
+    for spec, entity_id in zip(serving_entity_specs, serving_entity_ids):
+        entity = next(e for e in [group_entity, another_entity] if e.id == entity_id)
+        assert spec == ColumnSpec(name=entity.serving_names[0], dtype=DBVarType.VARCHAR)

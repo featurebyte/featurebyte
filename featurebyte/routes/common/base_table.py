@@ -501,7 +501,10 @@ class BaseTableDocumentController(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
         return [
-            (self.entity_service, {"primary_table_ids": document_id}),
+            (
+                self.entity_service,
+                {"$or": [{"primary_table_ids": document_id}, {"table_ids": document_id}]},
+            ),
             (
                 self.feature_service,
                 {

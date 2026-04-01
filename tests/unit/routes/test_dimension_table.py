@@ -268,3 +268,28 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{table_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "DimensionTable is referenced by Entity: customer"
+
+    def test_delete_422_non_primary_key_entity(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete fails when a non-primary-key column is tagged with an entity (table_ids check)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["_id"]
+        entity_payload = self.load_payload(
+            "tests/fixtures/request_payloads/entity_transaction.json"
+        )
+        # Tag a non-primary-key column with an entity (goes into table_ids only, not primary_table_ids)
+        response = test_api_client.patch(
+            f"{self.base_route}/{table_id}/column_entity",
+            json={
+                "column_name": "col_float",
+                "entity_id": entity_payload["_id"],
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # attempt to delete the table should fail even though entity is only in table_ids
+        response = test_api_client.delete(f"{self.base_route}/{table_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "DimensionTable is referenced by Entity: transaction"

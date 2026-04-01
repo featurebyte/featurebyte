@@ -162,10 +162,11 @@ def test_delete_table_and_entity_referenced_in_feature_entity_relationship(
     # check delete dimension table
     with pytest.raises(RecordDeletionException) as exc:
         saved_dimension_table.delete()
-    assert "DimensionTable is referenced by Entity: order" in str(exc.value)
+    assert "DimensionTable is referenced by Entity:" in str(exc.value)
 
-    # untag order from dimension table and attempt to delete dimension table again
+    # untag all entities from dimension table
     saved_dimension_table.col_int.as_entity(None)
+    saved_dimension_table.col_text.as_entity(None)
 
     # expect to fail because feat still references dimension table in its relationships
     with pytest.raises(RecordDeletionException) as exc:
@@ -212,10 +213,11 @@ def test_delete_table_and_entity_referenced_in_feature_list_entity_relationship(
     # attempt to delete dimension table
     with pytest.raises(RecordDeletionException) as exc:
         saved_dimension_table.delete()
-    assert "DimensionTable is referenced by Entity: sub_transaction" in str(exc.value)
+    assert "DimensionTable is referenced by Entity:" in str(exc.value)
 
-    # untag sub_transaction from dimension table and attempt to delete dimension table again
+    # untag all entities from dimension table
     saved_dimension_table.col_int.as_entity(None)
+    saved_dimension_table.col_text.as_entity(None)
 
     # expect to fail because feature list still references dimension table in its relationships
     with pytest.raises(RecordDeletionException) as exc:
