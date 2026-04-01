@@ -254,7 +254,8 @@ jobs:
   test-integration-spark:
     needs:
       - build-jar
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on:
+      group: Public Runners
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -267,8 +268,9 @@ jobs:
           - 1
           - 2
           - 3
+          - 4
     env:
-      PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
+      PYTEST_SPLITS: 4  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
       - uses: arduino/setup-task@v2
