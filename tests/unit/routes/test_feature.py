@@ -1091,12 +1091,16 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         create_response_dict = create_success_response.json()
         table_id = create_response_dict["table_ids"][0]
 
-        # untag id column's entity from the table first
-        response = test_api_client.patch(
-            f"event_table/{table_id}/column_entity",
-            json={"column_name": "col_int", "entity_id": None},
-        )
-        assert response.status_code == HTTPStatus.OK, response.json()
+        # untag all entity-tagged columns from the table first
+        response = test_api_client.get(f"/event_table/{table_id}")
+        columns_info = response.json()["columns_info"]
+        for col in columns_info:
+            if col.get("entity_id"):
+                response = test_api_client.patch(
+                    f"event_table/{table_id}/column_entity",
+                    json={"column_name": col["name"], "entity_id": None},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
 
         # attempt to delete an event table used by a feature
         response = test_api_client.delete(f"/event_table/{table_id}")

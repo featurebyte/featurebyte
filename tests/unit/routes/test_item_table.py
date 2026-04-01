@@ -254,6 +254,18 @@ class TestItemTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         table_id = create_response_dict["_id"]
+
+        # untag all entity-tagged columns first
+        response = test_api_client.get(f"{self.base_route}/{table_id}")
+        columns_info = response.json()["columns_info"]
+        for col in columns_info:
+            if col.get("entity_id"):
+                response = test_api_client.patch(
+                    f"{self.base_route}/{table_id}/column_entity",
+                    json={"column_name": col["name"], "entity_id": None},
+                )
+                assert response.status_code == HTTPStatus.OK, response.json()
+
         response = test_api_client.delete(f"{self.base_route}/{table_id}")
         assert response.status_code == HTTPStatus.OK, response.json()
 

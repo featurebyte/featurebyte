@@ -355,6 +355,8 @@ class TestEventTableTestSuite(BaseTableTestSuite):
 
     def test_delete(self, table_under_test):
         """Test delete"""
+        # untag cust_id entity (non-primary-key column) so the ItemTable reference check fires
+        table_under_test["cust_id"].as_entity(None)
         with pytest.raises(RecordDeletionException) as exc:
             table_under_test.delete()
         assert "EventTable is referenced by ItemTable: sf_item_table" in str(exc.value)
