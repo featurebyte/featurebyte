@@ -59,25 +59,28 @@ class ProgressThread(threading.Thread):
         Check progress updates from websocket
         """
         # receive message from websocket
-        with Configurations().get_websocket_client(task_id=self.task_id) as websocket_client:
-            try:
-                while True:
-                    message = websocket_client.receive_json()
-                    # socket closed
-                    if not message:
-                        break
-                    # update progress bar
-                    description = message.get("message")
-                    if description:
-                        self.progress_bar.text(description)
-                    percent = message.get("percent")
-                    if percent:
-                        # end of stream
-                        if percent == -1:
+        try:
+            with Configurations().get_websocket_client(task_id=self.task_id) as websocket_client:
+                try:
+                    while True:
+                        message = websocket_client.receive_json()
+                        # socket closed
+                        if not message:
                             break
-                        self.progress_bar(percent / 100)
-            finally:
-                pass
+                        # update progress bar
+                        description = message.get("message")
+                        if description:
+                            self.progress_bar.text(description)
+                        percent = message.get("percent")
+                        if percent:
+                            # end of stream
+                            if percent == -1:
+                                break
+                            self.progress_bar(percent / 100)
+                finally:
+                    pass
+        except Exception:
+            pass
 
     def get_id(self) -> Optional[int]:
         """
