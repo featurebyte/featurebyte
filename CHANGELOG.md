@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.4.1 (2026-04-01)
+
+### 💡 Enhancements
+
++ `service` Added support for composite series ID columns (`series_id_columns`) in `TimeSeriesTable`
+
+### 🐛 Bug Fixes
+
++ `service` Fix reference checking of entities tagged to table during deletion. Handle deploy failure due to entities tagged to deleted tables.
+
 ## v3.4.0 (2026-03-05)
 
 ### 💡 Enhancements
