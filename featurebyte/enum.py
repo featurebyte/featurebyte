@@ -759,6 +759,7 @@ class TableDataType(StrEnum):
     TIME_SERIES_TABLE = "time_series_table"
     SNAPSHOTS_TABLE = "snapshots_table"
     CALENDAR_TABLE = "calendar_table"
+    FORECAST_TABLE = "forecast_table"
 
     @classmethod
     def with_default_feature_job_setting(cls) -> set[str]:
@@ -801,6 +802,9 @@ class SemanticType(StrEnum):
     TIME_ZONE = "time_zone"
     SNAPSHOT_DATE_TIME = "snapshot_date_time"
     CALENDAR_DATE = "calendar_date"
+    FORECAST_EFFECTIVE_TIMESTAMP = "forecast_effective_timestamp"
+    FORECAST_NATURAL_KEY_ID = "forecast_natural_key_id"
+    FORECAST_TIMESTAMP = "forecast_timestamp"
 
 
 class MaterializedTableNamePrefix(StrEnum):

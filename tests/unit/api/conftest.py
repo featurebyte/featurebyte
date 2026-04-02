@@ -315,6 +315,21 @@ def saved_calendar_table_fixture(snowflake_calendar_table, catalog):
     yield snowflake_calendar_table
 
 
+@pytest.fixture(name="saved_forecast_table")
+def saved_forecast_table_fixture(snowflake_forecast_table, catalog):
+    """
+    Saved forecast table fixture
+    """
+    _ = catalog
+    previous_id = snowflake_forecast_table.id
+    assert snowflake_forecast_table.saved is True
+    assert snowflake_forecast_table.id == previous_id
+    assert snowflake_forecast_table.status == TableStatus.PUBLIC_DRAFT
+    assert isinstance(snowflake_forecast_table.created_at, datetime)
+    assert isinstance(snowflake_forecast_table.tabular_source.feature_store_id, ObjectId)
+    yield snowflake_forecast_table
+
+
 @pytest.fixture(name="snowflake_time_series_table_with_tz_offset_column")
 def snowflake_time_series_table_fixture(
     snowflake_database_time_series_table,
@@ -570,6 +585,16 @@ def snowflake_calendar_view_fixture(snowflake_calendar_table, config):
     _ = config
     calendar_view = snowflake_calendar_table.get_view()
     yield calendar_view
+
+
+@pytest.fixture(name="snowflake_forecast_view")
+def snowflake_forecast_view_fixture(snowflake_forecast_table, config):
+    """
+    ForecastView fixture
+    """
+    _ = config
+    forecast_view = snowflake_forecast_table.get_view()
+    yield forecast_view
 
 
 @pytest.fixture(name="another_snowflake_snapshots_view")

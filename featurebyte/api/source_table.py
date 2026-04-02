@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from featurebyte.api.calendar_table import CalendarTable
     from featurebyte.api.dimension_table import DimensionTable
     from featurebyte.api.event_table import EventTable
+    from featurebyte.api.forecast_table import ForecastTable
     from featurebyte.api.item_table import ItemTable
     from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
@@ -1190,6 +1191,121 @@ class SourceTable(AbstractTableData):
             calendar_datetime_column=calendar_datetime_column,
             calendar_datetime_schema=calendar_datetime_schema,
             series_id_column=series_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
+    def create_forecast_table(
+        self,
+        name: str,
+        effective_timestamp_column: str,
+        forecast_timestamp_column: str,
+        natural_key_column: Optional[str] = None,
+        effective_timestamp_schema: Optional[TimestampSchema] = None,
+        forecast_timestamp_schema: Optional[TimestampSchema] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> "ForecastTable":
+        """
+        Creates and adds to the catalog a ForecastTable object from a source table.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        effective_timestamp_column: str
+            Column representing the effective (as-of) timestamp.
+        forecast_timestamp_column: str
+            Column representing the forecast horizon timestamp.
+        natural_key_column: Optional[str]
+            Optional column representing the natural key of the forecast table.
+        effective_timestamp_schema: Optional[TimestampSchema]
+            Optional schema of the effective timestamp column.
+        forecast_timestamp_schema: Optional[TimestampSchema]
+            Optional schema of the forecast timestamp column.
+        record_creation_timestamp_column: Optional[str]
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object.
+
+        Returns
+        -------
+        ForecastTable
+            ForecastTable created from the source table.
+        """
+        from featurebyte.api.forecast_table import ForecastTable
+
+        return ForecastTable.create(
+            source_table=self,
+            name=name,
+            natural_key_column=natural_key_column,
+            effective_timestamp_column=effective_timestamp_column,
+            effective_timestamp_schema=effective_timestamp_schema,
+            forecast_timestamp_column=forecast_timestamp_column,
+            forecast_timestamp_schema=forecast_timestamp_schema,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
+    def get_or_create_forecast_table(
+        self,
+        name: str,
+        effective_timestamp_column: str,
+        forecast_timestamp_column: str,
+        natural_key_column: Optional[str] = None,
+        effective_timestamp_schema: Optional[TimestampSchema] = None,
+        forecast_timestamp_schema: Optional[TimestampSchema] = None,
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> "ForecastTable":
+        """
+        Get or create a ForecastTable from this source table. Internally, this method calls
+        `ForecastTable.get` by name; if the table does not exist, it will be created.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        effective_timestamp_column: str
+            Column representing the effective (as-of) timestamp.
+        forecast_timestamp_column: str
+            Column representing the forecast horizon timestamp.
+        natural_key_column: Optional[str]
+            Optional column representing the natural key of the forecast table.
+        effective_timestamp_schema: Optional[TimestampSchema]
+            Optional schema of the effective timestamp column.
+        forecast_timestamp_schema: Optional[TimestampSchema]
+            Optional schema of the forecast timestamp column.
+        record_creation_timestamp_column: Optional[str]
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object.
+
+        Returns
+        -------
+        ForecastTable
+            ForecastTable retrieved or created from the source table.
+        """
+        from featurebyte.api.forecast_table import ForecastTable
+
+        return ForecastTable.get_or_create(
+            source_table=self,
+            name=name,
+            natural_key_column=natural_key_column,
+            effective_timestamp_column=effective_timestamp_column,
+            effective_timestamp_schema=effective_timestamp_schema,
+            forecast_timestamp_column=forecast_timestamp_column,
+            forecast_timestamp_schema=forecast_timestamp_schema,
+            record_creation_timestamp_column=record_creation_timestamp_column,
             description=description,
             _id=_id,
         )

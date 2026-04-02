@@ -33,6 +33,8 @@ from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.forecast_table import ForecastTable
+from featurebyte.api.forecast_view import ForecastView
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
@@ -513,6 +515,8 @@ __all__ = [
     "CalendarTable",
     "CalendarView",
     "Catalog",
+    "ForecastTable",
+    "ForecastView",
     "ChangeView",
     "CronFeatureJobSetting",
     "Crontab",

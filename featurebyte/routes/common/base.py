@@ -30,6 +30,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.forecast_table import ForecastTableService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.managed_view import ManagedViewService
@@ -95,6 +96,7 @@ DocumentServiceT = TypeVar(
     DevelopmentDatasetService,
     SnapshotsTableService,
     CalendarTableService,
+    ForecastTableService,
 )
 
 
