@@ -68,10 +68,6 @@ class ForecastTableModel(ForecastTableData, TableModel):
     )
 
     @property
-    def primary_key_columns(self) -> List[str]:
-        return [self.natural_key_column] if self.natural_key_column else []
-
-    @property
     def special_columns(self) -> List[str]:
         cols = [
             self.natural_key_column,

@@ -187,7 +187,9 @@ class TestForecastTableApi(BaseTableApiTestSuite):
             "column_count": 9,
             "natural_key_column": "col_int",
             "effective_timestamp_column": "effective_timestamp",
+            "effective_timestamp_schema": None,
             "forecast_timestamp_column": "forecast_timestamp",
+            "forecast_timestamp_schema": None,
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

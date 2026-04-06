@@ -95,5 +95,7 @@ class ForecastTableController(
             **table_dict,
             natural_key_column=forecast_table.natural_key_column,
             effective_timestamp_column=forecast_table.effective_timestamp_column,
+            effective_timestamp_schema=forecast_table.effective_timestamp_schema,
             forecast_timestamp_column=forecast_table.forecast_timestamp_column,
+            forecast_timestamp_schema=forecast_table.forecast_timestamp_schema,
         )

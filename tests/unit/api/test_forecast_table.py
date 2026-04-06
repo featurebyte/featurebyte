@@ -215,7 +215,9 @@ def test_info(saved_forecast_table):
     expected_info = {
         "name": "sf_forecast_table",
         "effective_timestamp_column": "effective_timestamp",
+        "effective_timestamp_schema": None,
         "forecast_timestamp_column": "forecast_timestamp",
+        "forecast_timestamp_schema": None,
         "record_creation_timestamp_column": "created_at",
         "status": "PUBLIC_DRAFT",
         "entities": [],

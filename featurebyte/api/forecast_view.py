@@ -61,7 +61,7 @@ class ForecastView(View, RawMixin):
         -------
         str
         """
-        return self._get_forecast_table_node_parameters().effective_timestamp_column
+        return self.effective_timestamp_column
 
     @property
     def effective_timestamp_column(self) -> str:
