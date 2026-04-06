@@ -20,7 +20,8 @@ import org.apache.hadoop.io.Text;
 
 @Description(
     name = "F_COUNT_DICT_DIVIDE",
-    value = "_FUNC_(counts, divisor) - divide all values in a count dictionary by a numeric divisor")
+    value =
+        "_FUNC_(counts, divisor) - divide all values in a count dictionary by a numeric divisor")
 public class CountDictDivideV1 extends CountDictUDFV1 {
 
   private final transient PrimitiveObjectInspector.PrimitiveCategory[] divisorInputTypes =
