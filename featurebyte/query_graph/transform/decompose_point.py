@@ -341,11 +341,13 @@ class DecomposePointState:
             else:
                 aggregation_info.has_request_column = True
 
-        feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
-            node=node
-        )
-        if feature_job_setting:
-            aggregation_info.feature_job_settings = [feature_job_setting]
+        if not self.deployment_sql_generation:
+            # feature job setting handling is not required during deployment SQL generation
+            feature_job_setting = FeatureJobSettingExtractor(
+                graph=query_graph
+            ).extract_from_agg_node(node=node)
+            if feature_job_setting:
+                aggregation_info.feature_job_settings = [feature_job_setting]
         return aggregation_info
 
     def update_aggregation_info(
