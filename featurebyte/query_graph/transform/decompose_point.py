@@ -182,6 +182,27 @@ class FeatureJobSettingExtractor:
                 return self.extract_from_agg_node(node=_node)
         return None
 
+    def extract_all_from_target_node(self, node: Node) -> List[FeatureJobSettingUnion]:
+        """
+        Extract all feature job settings from the lineage of the target node.
+
+        Parameters
+        ----------
+        node: Node
+            Node to be processed
+
+        Returns
+        -------
+        List[FeatureJobSettingUnion]
+        """
+        settings = []
+        for _node in self.graph.iterate_nodes(target_node=node, node_type=None):
+            if isinstance(_node, (AggregationOpStructMixin, TimeSeriesWindowAggregateNode)):
+                setting = self.extract_from_agg_node(node=_node)
+                if setting is not None:
+                    settings.append(setting)
+        return settings
+
 
 @dataclass
 class DecomposePointState:

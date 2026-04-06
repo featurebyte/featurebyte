@@ -2,10 +2,10 @@
     "feature_table_sqls": [
         {
             "feature_job_setting": {
-                "blind_spot": "0s",
+                "blind_spot": "600s",
                 "execution_buffer": "0s",
-                "offset": "0s",
-                "period": "86400s"
+                "offset": "300s",
+                "period": "1800s"
             },
             "feature_names": [
                 "my_feature"
