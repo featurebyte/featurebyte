@@ -294,21 +294,17 @@ def test_time_series_view_join_calendar_view_same_date_col_name(
     calendar_table_with_date_col_2,
 ):
     """
-    Reproduce the SQL ambiguous column name 'date' error.
+    Reproduce the SQL ambiguous column name error for both 'date' and 'tz_offset'.
 
-    Root cause: apply_snapshots_datetime_transform uses an unqualified "date" reference
+    Root cause: apply_snapshots_datetime_transform uses unqualified column references
     (quoted_identifier(column_name)). When the left_node.sql already contains a JOIN where
-    both L and R expose a "date" column, appending DATE_TRUNC('day', "date") to that SELECT
-    makes Snowflake report "ambiguous column name 'date'".
+    both L and R expose the same column name, those unqualified references become ambiguous.
 
-    Faithful reproduction of the production pattern:
-    1. TimeSeriesView with reference_datetime_column="date"
-    2. Join with CalendarView1 (calendar_datetime_column="date"). Both views share a "date"
-       column, so the resulting SQL exposes both L."date" and R."date" in its FROM clause.
-    3. Join that result with CalendarView2 (also calendar_datetime_column="date").
-       apply_snapshots_datetime_transform is called on the step-2 SQL (left_node.sql) and
-       appends DATE_TRUNC('day', "date"). At this point both L and R in the FROM clause have
-       a "date" column → ambiguous.
+    Both the time series table and the first calendar table have a 'tz_offset' column, so
+    after step 2, both L and R in the FROM clause expose 'date' and 'tz_offset'.
+    Step 3 then triggers ambiguity for both columns:
+    - 'date' in DATE_TRUNC('day', "date")
+    - 'tz_offset' in the timezone conversion (CONVERT_TIMEZONE(..., "tz_offset", ...))
     """
     time_series_view = time_series_table_with_date_col.get_view()
     cal1_view = calendar_table_with_date_col.get_view()

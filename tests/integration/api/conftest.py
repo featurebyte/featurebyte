@@ -3,7 +3,7 @@ from sqlglot import parse_one
 
 from featurebyte import CronFeatureJobSetting, TimeInterval
 from featurebyte.enum import TimeIntervalUnit
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.sql.common import sql_to_string
 
 
@@ -79,9 +79,10 @@ async def time_series_table_with_date_col_fixture(
 ):
     """
     TimeSeriesTable where the reference datetime column is named 'date' — same name as the
-    calendar datetime column in calendar_table_with_date_col. Both columns use the same
-    formatted-string schema (e.g. "YYYY|MM|DD"), so apply_snapshots_datetime_transform applies
-    no real transformation and exits early for both join keys.
+    calendar datetime column in calendar_table_with_date_col. Includes a 'tz_offset' timezone
+    column (also shared with calendar_table_with_date_col) so that after the first calendar join,
+    both L and R expose 'tz_offset' in the FROM clause. A second calendar join then calls
+    apply_snapshots_datetime_transform, where both 'date' and 'tz_offset' are ambiguous.
     """
     _ = catalog
     _ = user_entity
@@ -89,11 +90,11 @@ async def time_series_table_with_date_col_fixture(
         parse_one(
             """
             CREATE OR REPLACE TABLE TIME_SERIES_DATE_COL AS
-            SELECT '2001|01|01' AS "date", 1 AS "user_id", 1.0 AS "value"
+            SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 1.0 AS "value"
             UNION ALL
-            SELECT '2001|06|15' AS "date", 1 AS "user_id", 2.0 AS "value"
+            SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 2.0 AS "value"
             UNION ALL
-            SELECT '2001|12|25' AS "date", 1 AS "user_id", 3.0 AS "value"
+            SELECT '2001|12|25' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 3.0 AS "value"
             """,
             read="snowflake",
         ),
@@ -109,7 +110,11 @@ async def time_series_table_with_date_col_fixture(
     time_series_table = source_table.create_time_series_table(
         name=f"{session.source_type}_time_series_table_date_col",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
+        reference_datetime_schema=TimestampSchema(
+            format_string=timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
+            is_utc_time=True,
+        ),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="user_id",
     )
@@ -265,11 +270,11 @@ async def calendar_table_with_date_col_fixture(
         parse_one(
             """
             CREATE OR REPLACE TABLE CALENDAR_DATE_COL AS
-            SELECT '2001|01|01' AS "date", 1 AS "user_id", 'New Year''s Day' AS "holiday_name"
+            SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 'New Year''s Day' AS "holiday_name"
             UNION ALL
-            SELECT '2001|06|15' AS "date", 1 AS "user_id", NULL AS "holiday_name"
+            SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", NULL AS "holiday_name"
             UNION ALL
-            SELECT '2001|12|25' AS "date", 1 AS "user_id", 'Christmas Day' AS "holiday_name"
+            SELECT '2001|12|25' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 'Christmas Day' AS "holiday_name"
             """,
             read="snowflake",
         ),
