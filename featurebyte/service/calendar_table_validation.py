@@ -63,6 +63,20 @@ class CalendarTableValidationService(
         For VARCHAR columns: parses with format_string, truncates to day, formats back,
         and checks the result equals the original. For TIMESTAMP columns: truncates to day
         and compares with the original. DATE columns are always day-granular and are skipped.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        table_model: CalendarTableModel
+            Calendar table model
+        num_records: int
+            Number of sample records to return in the error message
+
+        Raises
+        ------
+        TableValidationError
+            If any values are not at day granularity
         """
         adapter = session.adapter
         col_name = table_model.calendar_datetime_column
@@ -117,6 +131,18 @@ class CalendarTableValidationService(
         """
         Validate that (calendar_datetime_column, series_id_column) combinations are unique.
         Duplicate rows would cause incorrect results when joining with the calendar table.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        table_model: CalendarTableModel
+            Calendar table model
+
+        Raises
+        ------
+        TableValidationError
+            If duplicate rows are found
         """
         adapter = session.adapter
         source_table_expr = get_fully_qualified_table_name(
