@@ -288,6 +288,44 @@ def test_calendar_lookup_feature_different_users(calendar_table):
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
+def test_time_series_view_join_calendar_view_same_date_col_name(
+    time_series_table_with_date_col,
+    calendar_table_with_date_col,
+    calendar_table_with_date_col_2,
+):
+    """
+    Reproduce the SQL ambiguous column name 'date' error.
+
+    Root cause: apply_snapshots_datetime_transform uses an unqualified "date" reference
+    (quoted_identifier(column_name)). When the left_node.sql already contains a JOIN where
+    both L and R expose a "date" column, appending DATE_TRUNC('day', "date") to that SELECT
+    makes Snowflake report "ambiguous column name 'date'".
+
+    Faithful reproduction of the production pattern:
+    1. TimeSeriesView with reference_datetime_column="date"
+    2. Join with CalendarView1 (calendar_datetime_column="date"). Both views share a "date"
+       column, so the resulting SQL exposes both L."date" and R."date" in its FROM clause.
+    3. Join that result with CalendarView2 (also calendar_datetime_column="date").
+       apply_snapshots_datetime_transform is called on the step-2 SQL (left_node.sql) and
+       appends DATE_TRUNC('day', "date"). At this point both L and R in the FROM clause have
+       a "date" column → ambiguous.
+    """
+    time_series_view = time_series_table_with_date_col.get_view()
+    cal1_view = calendar_table_with_date_col.get_view()
+    cal2_view = calendar_table_with_date_col_2.get_view()
+
+    # Step 2: first calendar join — produces SQL with both L."date" and R."date" in FROM clause
+    ts_cal1_view = time_series_view.join(cal1_view, rprefix="cal1_")
+
+    # Step 3: second calendar join — apply_snapshots_datetime_transform appends
+    # DATE_TRUNC('day', "date") to the step-2 SQL, where "date" is ambiguous between L and R
+    final_view = ts_cal1_view.join(cal2_view, rprefix="cal2_")
+    df = final_view.preview(limit=10)
+    assert len(df) > 0
+    assert "date" in df.columns
+    assert "cal2_date" in df.columns
+
+
 def test_calendar_lookup_target(calendar_table):
     """
     Test creating a lookup target from CalendarView.
