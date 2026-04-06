@@ -78,11 +78,8 @@ async def time_series_table_with_date_col_fixture(
     session, feature_store, catalog, user_entity, timestamp_format_string
 ):
     """
-    TimeSeriesTable where the reference datetime column is named 'date' — same name as the
-    calendar datetime column in calendar_table_with_date_col. Includes a 'tz_offset' timezone
-    column (also shared with calendar_table_with_date_col) so that after the first calendar join,
-    both L and R expose 'tz_offset' in the FROM clause. A second calendar join then calls
-    apply_snapshots_datetime_transform, where both 'date' and 'tz_offset' are ambiguous.
+    TimeSeriesTable with 'date' and 'tz_offset' columns that overlap with the calendar table
+    fixtures. Used to test ambiguous column resolution when chaining multiple calendar joins.
     """
     _ = catalog
     _ = user_entity
@@ -127,9 +124,8 @@ async def calendar_table_with_date_col_fixture(
     session, feature_store, catalog, user_entity, timestamp_format_string
 ):
     """
-    CalendarTable where the calendar datetime column is named 'date' — same name as the
-    reference datetime column in time_series_table_with_date_col. Used to reproduce the SQL
-    ambiguous column name error when joining a time series view with a calendar view.
+    CalendarTable with a 'date' column matching time_series_table_with_date_col. Used to
+    reproduce ambiguous column errors when joining time series and calendar views.
     """
     _ = catalog
     _ = user_entity
@@ -169,9 +165,8 @@ async def calendar_table_with_date_col_2_fixture(
     session, feature_store, catalog, user_entity, timestamp_format_string
 ):
     """
-    Second CalendarTable where the calendar datetime column is named 'date'. Used alongside
-    calendar_table_with_date_col to reproduce the SQL ambiguous column name error when two
-    calendar joins are chained on a TimeSeriesView that also has a 'date' column.
+    Second CalendarTable with a 'date' column. Used with calendar_table_with_date_col to test
+    chaining two calendar joins on a TimeSeriesView with overlapping column names.
     """
     _ = catalog
     _ = user_entity
