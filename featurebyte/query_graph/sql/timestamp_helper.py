@@ -175,7 +175,9 @@ def resolve_selected_column_expr(table_expr: Select, column_name: str) -> Expres
     col_expr: Expression = quoted_identifier(column_name)
     for select_expr in table_expr.expressions:
         if select_expr.alias_or_name == column_name:
-            resolved_expr = select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+            resolved_expr = (
+                select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+            )
             return cast(Expression, resolved_expr)
     return col_expr
 

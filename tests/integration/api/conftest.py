@@ -1,7 +1,7 @@
 import pytest_asyncio
 from sqlglot import parse_one
 
-from featurebyte import CronFeatureJobSetting, TimeInterval
+from featurebyte import TimeInterval
 from featurebyte.enum import TimeIntervalUnit
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.sql.common import sql_to_string
