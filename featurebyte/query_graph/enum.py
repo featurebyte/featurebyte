@@ -217,6 +217,9 @@ class GraphNodeType(StrEnum):
             cls.SCD_VIEW,
             cls.CHANGE_VIEW,
             cls.TIME_SERIES_VIEW,
+            cls.SNAPSHOTS_VIEW,
+            cls.CALENDAR_VIEW,
+            cls.FORECAST_VIEW,
         }
 
 

@@ -342,3 +342,68 @@ def test_get_view__without_natural_key(snowflake_database_forecast_table, catalo
     forecast_view = forecast_table.get_view()
     assert isinstance(forecast_view, ForecastView)
     assert forecast_view.natural_key_column is None
+
+
+def test_create_forecast_table__with_timestamp_schema(snowflake_database_forecast_table, catalog):
+    """Test ForecastTable creation with timestamp schemas populated"""
+
+    _ = catalog
+
+    forecast_table = snowflake_database_forecast_table.create_forecast_table(
+        name="sf_forecast_table",
+        natural_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        forecast_timestamp_column="forecast_timestamp",
+        record_creation_timestamp_column="created_at",
+    )
+    # native TIMESTAMP_NTZ and TIMESTAMP_TZ columns don't require schemas
+    assert forecast_table.effective_timestamp_schema is None
+    assert forecast_table.forecast_timestamp_schema is None
+
+    # verify info also exposes the schema fields
+    info_dict = forecast_table.info()
+    assert info_dict["effective_timestamp_schema"] is None
+    assert info_dict["forecast_timestamp_schema"] is None
+
+
+def test_create_forecast_table__invalid_effective_timestamp_type(
+    snowflake_database_forecast_table, catalog
+):
+    """Test ForecastTable creation fails when effective_timestamp_column has wrong type"""
+    _ = catalog
+
+    with pytest.raises(ValueError, match='Column "col_float" is expected to have type'):
+        snowflake_database_forecast_table.create_forecast_table(
+            name="sf_forecast_table",
+            effective_timestamp_column="col_float",
+            forecast_timestamp_column="forecast_timestamp",
+        )
+
+
+def test_create_forecast_table__invalid_forecast_timestamp_type(
+    snowflake_database_forecast_table, catalog
+):
+    """Test ForecastTable creation fails when forecast_timestamp_column has wrong type"""
+    _ = catalog
+
+    with pytest.raises(ValueError, match='Column "col_float" is expected to have type'):
+        snowflake_database_forecast_table.create_forecast_table(
+            name="sf_forecast_table",
+            effective_timestamp_column="effective_timestamp",
+            forecast_timestamp_column="col_float",
+        )
+
+
+def test_create_forecast_table__invalid_natural_key_type(
+    snowflake_database_forecast_table, catalog
+):
+    """Test ForecastTable creation fails when natural_key_column has wrong type"""
+    _ = catalog
+
+    with pytest.raises(ValueError, match='Column "col_float" is expected to have type'):
+        snowflake_database_forecast_table.create_forecast_table(
+            name="sf_forecast_table",
+            natural_key_column="col_float",
+            effective_timestamp_column="effective_timestamp",
+            forecast_timestamp_column="forecast_timestamp",
+        )
