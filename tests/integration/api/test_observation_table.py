@@ -530,9 +530,13 @@ async def test_observation_table_downsampling(
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
     df_describe = source_observation_table.describe()
-    assert df_describe.loc["top", "user_active_24h_target"] == "true"
-    pos_obs_count = df_describe.loc["freq", "user_active_24h_target"]
+    top_value = df_describe.loc["top", "user_active_24h_target"]
+    top_freq = df_describe.loc["freq", "user_active_24h_target"]
     assert source_observation_table.shape()[0] == 123
+    if top_value == "true":
+        pos_obs_count = top_freq
+    else:
+        pos_obs_count = 123 - top_freq
     neg_obs_count = 123 - pos_obs_count
 
     # create downsampled observation table
@@ -546,11 +550,15 @@ async def test_observation_table_downsampling(
         ),
     )
     df_describe = observation_table.describe()
-    assert df_describe.loc["top", "user_active_24h_target"] == "true"
-    pos_obs_count_after_downsampling = df_describe.loc["freq", "user_active_24h_target"]
+    top_value = df_describe.loc["top", "user_active_24h_target"]
+    top_freq = df_describe.loc["freq", "user_active_24h_target"]
+    number_of_rows = observation_table.shape()[0]
+    if top_value == "true":
+        pos_obs_count_after_downsampling = top_freq
+    else:
+        pos_obs_count_after_downsampling = number_of_rows - top_freq
     assert pos_obs_count_after_downsampling < pos_obs_count * 0.65  # allow some randomness
     assert pos_obs_count_after_downsampling > pos_obs_count * 0.35  # allow some randomness
-    number_of_rows = observation_table.shape()[0]
     assert number_of_rows == pos_obs_count_after_downsampling + neg_obs_count
     check_materialized_table_preview_methods(
         observation_table,
@@ -579,9 +587,14 @@ async def test_observation_table_downsampling(
         ),
     )
     df_describe = observation_table.describe()
-    assert df_describe.loc["top", "user_active_24h_target"] == "true"
+    top_value = df_describe.loc["top", "user_active_24h_target"]
+    top_freq = df_describe.loc["freq", "user_active_24h_target"]
     pos_obs_count = pos_obs_count_after_downsampling
-    pos_obs_count_after_downsampling = df_describe.loc["freq", "user_active_24h_target"]
+    number_of_rows = observation_table.shape()[0]
+    if top_value == "true":
+        pos_obs_count_after_downsampling = top_freq
+    else:
+        pos_obs_count_after_downsampling = number_of_rows - top_freq
     assert pos_obs_count_after_downsampling < pos_obs_count * 0.65  # allow some randomness
     assert pos_obs_count_after_downsampling > pos_obs_count * 0.35  # allow some randomness
     number_of_rows = observation_table.shape()[0]
