@@ -312,7 +312,18 @@ def apply_snapshots_datetime_transform(
     if transform is None:
         return table_expr
 
-    col_expr = quoted_identifier(snapshots_datetime_join_key.column_name)
+    # Resolve the column expression from the SELECT list so the reference is qualified
+    # (e.g. L."date") rather than bare ("date"). When table_expr is itself a JOIN result
+    # where multiple sides expose the same column name, an unqualified reference would be
+    # ambiguous to the database engine.
+    column_name = snapshots_datetime_join_key.column_name
+    col_expr = quoted_identifier(column_name)
+    for select_expr in table_expr.expressions:
+        if select_expr.alias_or_name == column_name:
+            col_expr = (
+                select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+            )
+            break
     if transform.original_timestamp_schema:
         col_timestamp_schema = transform.original_timestamp_schema
     else:

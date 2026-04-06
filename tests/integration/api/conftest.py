@@ -211,9 +211,7 @@ async def snapshots_table_with_date_col_2_fixture(
 
 
 @pytest_asyncio.fixture(name="dimension_table_with_date_col", scope="session")
-async def dimension_table_with_date_col_fixture(
-    session, feature_store, catalog, user_entity
-):
+async def dimension_table_with_date_col_fixture(session, feature_store, catalog, user_entity):
     """
     DimensionTable that has a 'date' attribute column — same name as the reference datetime column
     in time_series_table_with_date_col. When a TimeSeriesView is first joined with this view
