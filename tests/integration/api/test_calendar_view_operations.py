@@ -294,27 +294,17 @@ def test_time_series_view_join_calendar_view_same_date_col_name(
     calendar_table_with_date_col_2,
 ):
     """
-    Reproduce the SQL ambiguous column name error for both 'date' and 'tz_offset'.
-
-    Root cause: apply_snapshots_datetime_transform uses unqualified column references
-    (quoted_identifier(column_name)). When the left_node.sql already contains a JOIN where
-    both L and R expose the same column name, those unqualified references become ambiguous.
-
-    Both the time series table and the first calendar table have a 'tz_offset' column, so
-    after step 2, both L and R in the FROM clause expose 'date' and 'tz_offset'.
-    Step 3 then triggers ambiguity for both columns:
-    - 'date' in DATE_TRUNC('day', "date")
-    - 'tz_offset' in the timezone conversion (CONVERT_TIMEZONE(..., "tz_offset", ...))
+    Test chained calendar joins when the datetime and timezone columns share names.
     """
     time_series_view = time_series_table_with_date_col.get_view()
     cal1_view = calendar_table_with_date_col.get_view()
     cal2_view = calendar_table_with_date_col_2.get_view()
 
-    # Step 2: first calendar join — produces SQL with both L."date" and R."date" in FROM clause
+    # Step 2: first calendar join. This produces SQL with both L."date" and R."date" in the FROM clause.
     ts_cal1_view = time_series_view.join(cal1_view, rprefix="cal1_")
 
-    # Step 3: second calendar join — apply_snapshots_datetime_transform appends
-    # DATE_TRUNC('day', "date") to the step-2 SQL, where "date" is ambiguous between L and R
+    # Step 3: second calendar join. apply_snapshots_datetime_transform appends
+    # DATE_TRUNC('day', "date") to the step 2 SQL, where "date" is ambiguous between L and R.
     final_view = ts_cal1_view.join(cal2_view, rprefix="cal2_")
     df = final_view.preview(limit=10)
     assert len(df) > 0
