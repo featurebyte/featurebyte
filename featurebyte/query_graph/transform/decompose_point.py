@@ -439,12 +439,17 @@ class DecomposePointState:
             return True
 
         # check whether the input nodes can be merged into one offline store ingest query graph
+        # In deployment SQL generation, FJS differences don't require splitting when all inputs
+        # share the same entity IDs (same entity source, just different scheduling). If entity
+        # IDs differ across inputs, FJS still acts as a guard.
+        all_inputs_have_same_entity_ids = all(
+            inp.primary_entity_ids == agg_info.primary_entity_ids for inp in input_aggregations_info
+        )
         all_inputs_have_empty_agg_node_types = True
         for input_agg_info in input_aggregations_info:
             fjs_match = (
-                self.deployment_sql_generation
-                or input_agg_info.feature_job_settings == agg_info.feature_job_settings
-            )
+                self.deployment_sql_generation and all_inputs_have_same_entity_ids
+            ) or input_agg_info.feature_job_settings == agg_info.feature_job_settings
             if (
                 input_agg_info.primary_entity_ids == agg_info.primary_entity_ids
                 and fjs_match
