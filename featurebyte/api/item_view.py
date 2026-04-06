@@ -18,6 +18,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.model.table import ItemTableData
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 from featurebyte.typing import OffsetType
 
@@ -155,6 +156,17 @@ class ItemView(View, GroupByMixin, RawMixin):
         str
         """
         return self.timestamp_column_name
+
+    @property
+    def event_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Event timestamp schema inherited from the associated EventView
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        return self.event_view.event_timestamp_schema
 
     @property
     def timestamp_timezone_offset_column(self) -> Optional[str]:

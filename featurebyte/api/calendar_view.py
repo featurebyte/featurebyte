@@ -164,6 +164,7 @@ class CalendarView(View, RawMixin):
             If joining a CalendarView to the given view type is not supported
         """
         from featurebyte.api.event_view import EventView
+        from featurebyte.api.item_view import ItemView
         from featurebyte.api.snapshots_view import SnapshotsView
         from featurebyte.api.time_series_view import TimeSeriesView
 
@@ -179,6 +180,9 @@ class CalendarView(View, RawMixin):
         # The join should transform the left view's (EventView, TimeSeriesView, etc) timestamp
         # column into its local time, truncated to day, and match with CalendarView's date column.
         if isinstance(left_view, EventView):
+            original_timestamp_schema = left_view.event_timestamp_schema
+            column_name = left_view.timestamp_column
+        elif isinstance(left_view, ItemView):
             original_timestamp_schema = left_view.event_timestamp_schema
             column_name = left_view.timestamp_column
         elif isinstance(left_view, TimeSeriesView):
