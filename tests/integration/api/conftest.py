@@ -86,7 +86,7 @@ async def time_series_table_with_date_col_fixture(
     query = sql_to_string(
         parse_one(
             """
-            CREATE OR REPLACE TABLE TIME_SERIES_DATE_COL AS
+            CREATE TABLE TIME_SERIES_DATE_COL AS
             SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 1.0 AS "value"
             UNION ALL
             SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 2.0 AS "value"
@@ -132,7 +132,7 @@ async def calendar_table_with_date_col_fixture(
     query = sql_to_string(
         parse_one(
             """
-            CREATE OR REPLACE TABLE CALENDAR_DATE_COL AS
+            CREATE TABLE CALENDAR_DATE_COL AS
             SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 'New Year''s Day' AS "holiday_name"
             UNION ALL
             SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", NULL AS "holiday_name"
@@ -173,7 +173,7 @@ async def calendar_table_with_date_col_2_fixture(
     query = sql_to_string(
         parse_one(
             """
-            CREATE OR REPLACE TABLE CALENDAR_DATE_COL_2 AS
+            CREATE TABLE CALENDAR_DATE_COL_2 AS
             SELECT '2001|01|01' AS "date", 1 AS "user_id", TRUE AS "is_weekend"
             UNION ALL
             SELECT '2001|06|15' AS "date", 1 AS "user_id", FALSE AS "is_weekend"
