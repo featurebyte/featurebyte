@@ -441,9 +441,13 @@ class DecomposePointState:
         # check whether the input nodes can be merged into one offline store ingest query graph
         all_inputs_have_empty_agg_node_types = True
         for input_agg_info in input_aggregations_info:
+            fjs_match = (
+                self.deployment_sql_generation
+                or input_agg_info.feature_job_settings == agg_info.feature_job_settings
+            )
             if (
                 input_agg_info.primary_entity_ids == agg_info.primary_entity_ids
-                and input_agg_info.feature_job_settings == agg_info.feature_job_settings
+                and fjs_match
                 and input_agg_info.has_ttl_agg_type == agg_info.has_ttl_agg_type
             ):
                 # if any of the input is the same as the output, that means

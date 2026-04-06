@@ -2,6 +2,7 @@
 
 import pytest
 
+import featurebyte as fb
 from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
     DecomposePointExtractor,
@@ -80,3 +81,64 @@ def test_decompose_point_extractor(
     assert output.decompose_node_names == set()
     assert output.ingest_graph_output_node_names == set()
     assert output.aggregation_node_names == {"time_series_window_aggregate_1"}
+
+
+def test_cyclic_phase_mixed_fjs_deployment_sql(snowflake_event_view_with_entity):
+    """
+    Regression test: deployment SQL generation must NOT trigger decomposition when inputs
+    have different feature job settings.
+
+    In deployment SQL generation, FJS is irrelevant (no tile scheduling), so a feature whose
+    sub-expressions happen to use different FJS should still be treated as a single graph.
+
+    Previously, check_input_aggregations compared feature_job_settings even during deployment
+    SQL generation, causing features with mixed FJS to be incorrectly flagged for decomposition.
+    """
+    view = snowflake_event_view_with_entity
+
+    fjs_a = fb.FeatureJobSetting(blind_spot="1h", period="24h", offset="1h")
+    fjs_b = fb.FeatureJobSetting(blind_spot="2h", period="24h", offset="2h")
+
+    view["sin_col"] = view["col_float"].sin()
+    view["cos_col"] = view["col_float"].cos()
+
+    grouped = view.groupby("cust_id")
+
+    # Two aggregations with deliberately different FJS
+    sum_sin = grouped.aggregate_over(
+        "sin_col",
+        method="sum",
+        feature_names=["sum_sin_fjs_a"],
+        windows=["7d"],
+        feature_job_setting=fjs_a,
+    )["sum_sin_fjs_a"]
+    sum_cos = grouped.aggregate_over(
+        "cos_col",
+        method="sum",
+        feature_names=["sum_cos_fjs_b"],
+        windows=["7d"],
+        feature_job_setting=fjs_b,
+    )["sum_cos_fjs_b"]
+
+    phase = fb.atan2(sum_sin, sum_cos)
+    phase.name = "phase_mixed_fjs"
+
+    # Use separate extractor instances — BaseGraphExtractor._input_node_map_cache is per-instance
+    # and would cause the second extract() call to skip processing intermediate nodes if reused.
+
+    # Without deployment_sql_generation, decomposition IS expected (different FJS means split)
+    result_normal = DecomposePointExtractor(phase.graph).extract(
+        node=phase.node, deployment_sql_generation=False
+    )
+    assert result_normal.decompose_node_names != set(), (
+        "Expected decomposition in normal mode with mixed FJS"
+    )
+
+    # With deployment_sql_generation, FJS differences should be ignored — no decomposition
+    result_deployment = DecomposePointExtractor(phase.graph).extract(
+        node=phase.node, deployment_sql_generation=True
+    )
+    assert result_deployment.decompose_node_names == set(), (
+        f"Deployment SQL generation incorrectly triggered decomposition for mixed-FJS feature: "
+        f"{result_deployment.decompose_node_names}"
+    )
