@@ -37,7 +37,6 @@ from featurebyte.api.context import Context
 from featurebyte.api.credential import Credential
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.dimension_table import DimensionTable
-from featurebyte.api.forecast_table import ForecastTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
@@ -48,6 +47,7 @@ from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.forecast_table import ForecastTable
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.observation_table import ObservationTable
