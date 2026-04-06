@@ -34,6 +34,7 @@ def convert_timezone(
     timezone_obj: TimeZoneUnion,
     adapter: BaseAdapter,
     column_expr: Expression,
+    timezone_column_expr: Optional[Expression] = None,
 ) -> Expression:
     """
     Convert timestamp column to UTC
@@ -48,6 +49,8 @@ def convert_timezone(
         SQL adapter
     column_expr: Expression
         Column expression
+    timezone_column_expr: Optional[Expression]
+        Resolved timezone column expression when timezone_obj is a TimeZoneColumn
 
     Returns
     -------
@@ -59,7 +62,7 @@ def convert_timezone(
         timezone_type = "name"
     else:
         assert isinstance(timezone_obj, TimeZoneColumn)
-        timezone = quoted_identifier(timezone_obj.column_name)
+        timezone = timezone_column_expr or quoted_identifier(timezone_obj.column_name)
         if timezone_obj.type == "offset":
             timezone_type = "offset"
         else:
@@ -73,6 +76,7 @@ def convert_timestamp_to_local(
     column_expr: Expression,
     timestamp_schema: TimestampSchema,
     adapter: BaseAdapter,
+    timezone_column_expr: Optional[Expression] = None,
 ) -> Expression:
     """
     Convert timestamp column in its original form with a specified TimestampSchema to local time
@@ -85,6 +89,8 @@ def convert_timestamp_to_local(
         Timestamp schema
     adapter: BaseAdapter
         SQL adapter
+    timezone_column_expr: Optional[Expression]
+        Resolved timezone column expression when timestamp_schema.timezone is a TimeZoneColumn
 
     Returns
     -------
@@ -101,6 +107,7 @@ def convert_timestamp_to_local(
             timezone_obj=timestamp_schema.timezone,
             adapter=adapter,
             column_expr=column_expr,
+            timezone_column_expr=timezone_column_expr,
         )
 
     return column_expr
@@ -110,6 +117,7 @@ def convert_timestamp_to_utc(
     column_expr: Expression,
     timestamp_schema: TimestampSchema,
     adapter: BaseAdapter,
+    timezone_column_expr: Optional[Expression] = None,
 ) -> Expression:
     """
     Convert timestamp column in its original form with a specified TimestampSchema to UTC
@@ -122,6 +130,8 @@ def convert_timestamp_to_utc(
         Timestamp schema
     adapter: BaseAdapter
         SQL adapter
+    timezone_column_expr: Optional[Expression]
+        Resolved timezone column expression when timestamp_schema.timezone is a TimeZoneColumn
 
     Returns
     -------
@@ -142,8 +152,31 @@ def convert_timestamp_to_utc(
             timezone_obj=timestamp_schema.timezone,
             adapter=adapter,
             column_expr=column_expr,
+            timezone_column_expr=timezone_column_expr,
         )
     return column_expr
+
+
+def resolve_selected_column_expr(table_expr: Select, column_name: str) -> Expression:
+    """
+    Resolve a column expression from a Select's projection list.
+
+    Parameters
+    ----------
+    table_expr: Select
+        Table expression
+    column_name: str
+        Output column name
+
+    Returns
+    -------
+    Expression
+    """
+    col_expr: Expression = quoted_identifier(column_name)
+    for select_expr in table_expr.expressions:
+        if select_expr.alias_or_name == column_name:
+            return select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+    return col_expr
 
 
 def convert_timestamp_timezone_tuple(
@@ -317,24 +350,29 @@ def apply_snapshots_datetime_transform(
     # where multiple sides expose the same column name, an unqualified reference would be
     # ambiguous to the database engine.
     column_name = snapshots_datetime_join_key.column_name
-    col_expr = quoted_identifier(column_name)
-    for select_expr in table_expr.expressions:
-        if select_expr.alias_or_name == column_name:
-            col_expr = (
-                select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
-            )
-            break
+    col_expr = resolve_selected_column_expr(table_expr, column_name)
+    timezone_column_expr = None
     if transform.original_timestamp_schema:
         col_timestamp_schema = transform.original_timestamp_schema
+        if isinstance(col_timestamp_schema.timezone, TimeZoneColumn):
+            timezone_column_expr = resolve_selected_column_expr(
+                table_expr, col_timestamp_schema.timezone.column_name
+            )
     else:
         col_timestamp_schema = TimestampSchema(is_utc_time=True)
     if transform.use_original_local_timezone:
         local_datetime_expr = convert_timestamp_to_local(
-            column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
+            column_expr=col_expr,
+            timestamp_schema=col_timestamp_schema,
+            adapter=adapter,
+            timezone_column_expr=timezone_column_expr,
         )
     else:
         utc_datetime_expr = convert_timestamp_to_utc(
-            column_expr=col_expr, timestamp_schema=col_timestamp_schema, adapter=adapter
+            column_expr=col_expr,
+            timestamp_schema=col_timestamp_schema,
+            adapter=adapter,
+            timezone_column_expr=timezone_column_expr,
         )
         if transform.snapshot_timezone_name is not None:
             local_datetime_expr = convert_timezone(
