@@ -4,7 +4,7 @@ Helpers for timestamp handling
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import Expression, expressions
@@ -175,7 +175,8 @@ def resolve_selected_column_expr(table_expr: Select, column_name: str) -> Expres
     col_expr: Expression = quoted_identifier(column_name)
     for select_expr in table_expr.expressions:
         if select_expr.alias_or_name == column_name:
-            return select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+            resolved_expr = select_expr.this if isinstance(select_expr, expressions.Alias) else select_expr
+            return cast(Expression, resolved_expr)
     return col_expr
 
 
