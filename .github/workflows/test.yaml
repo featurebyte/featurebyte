@@ -254,8 +254,7 @@ jobs:
   test-integration-spark:
     needs:
       - build-jar
-    runs-on:
-      group: Public Runners
+    runs-on: ubicloud-standard-8-ubuntu-2404
     timeout-minutes: 90
     strategy:
       fail-fast: false

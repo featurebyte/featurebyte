@@ -290,9 +290,18 @@ class OfflineStoreInfoInitializationService:
         else:
             decomposed_graph = feature.graph
             output_node_name = feature.node.name
-            feature_job_setting = FeatureJobSettingExtractor(
-                graph=feature.graph
-            ).extract_from_target_node(node=feature.node)
+            extractor = FeatureJobSettingExtractor(graph=feature.graph)
+            if deployment_sql_generation:
+                # For deployment SQL generation, collect all feature job settings and pick the
+                # most frequent one (smallest TTL) as the suggested setting.
+                all_settings = extractor.extract_all_from_target_node(node=feature.node)
+                feature_job_setting = (
+                    min(all_settings, key=lambda s: s.extract_ttl_seconds())
+                    if all_settings
+                    else None
+                )
+            else:
+                feature_job_setting = extractor.extract_from_target_node(node=feature.node)
 
             table_name = (
                 await self.offline_store_feature_table_creator(
