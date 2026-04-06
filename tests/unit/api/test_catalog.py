@@ -37,6 +37,7 @@ from featurebyte.api.context import Context
 from featurebyte.api.credential import Credential
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.dimension_table import DimensionTable
+from featurebyte.api.forecast_table import ForecastTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
@@ -304,6 +305,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         TimeSeriesTable,  # accessible as part of catalog.(list|get)_table
         SnapshotsTable,  # accessible as part of catalog.(list|get)_table
         CalendarTable,  # accessible as part of catalog.(list|get)_table
+        ForecastTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
         DeletableApiObject,
         TableApiObject,
