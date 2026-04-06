@@ -71,6 +71,45 @@ def test_request_column_operations_decomposition(scd_age_feature):
     assert output.is_decomposed is False
 
 
+def test_different_feature_job_settings_decomposition(float_feature, scd_lookup_feature):
+    """
+    Test that combining an event aggregate feature (has feature job setting) with an SCD lookup
+    feature (no feature job setting) triggers decomposition normally, but not during deployment
+    SQL generation.
+    """
+    # Verify both features share the same primary entity
+    assert float_feature.entity_ids == scd_lookup_feature.entity_ids
+
+    combined_feature = float_feature + scd_lookup_feature.astype(float)
+    combined_feature.name = "combined_different_job_settings"
+    combined_feature.save()
+
+    feature_model = combined_feature.cached_model
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature_model.graph)
+    output = transformer.transform(
+        target_node=feature_model.node,
+        relationships_info=feature_model.relationships_info,
+        feature_name=feature_model.name,
+        feature_version=feature_model.version.to_str(),
+    )
+
+    # Should be decomposed due to different feature job settings
+    assert output.is_decomposed is True
+
+    # check for deployment sql generation
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature_model.graph)
+    output = transformer.transform(
+        target_node=feature_model.node,
+        relationships_info=feature_model.relationships_info,
+        feature_name=feature_model.name,
+        feature_version=feature_model.version.to_str(),
+        deployment_sql_generation=True,
+    )
+
+    # Different feature job settings should not trigger decomposition for deployment SQL
+    assert output.is_decomposed is False
+
+
 def test_window_aggregate_feature_decomposition(float_feature):
     """
     Test decomposition with ttl window aggregate feature with request column.

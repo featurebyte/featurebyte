@@ -12,7 +12,8 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.enum import SourceType
+from featurebyte.api.context import Context
+from featurebyte.enum import DBVarType, FeatureType, SourceType
 from featurebyte.exception import DeploymentSqlGenerationError
 from featurebyte.models.deployment_sql import DeploymentSqlModel
 from tests.util.helper import (
@@ -53,6 +54,7 @@ TEST_CASES_MAPPING = {
     "same_entity_different_sources": TestCase(
         "deployed_same_entity_different_sources_feature_list"
     ),
+    "different_job_settings": TestCase("deployed_different_job_settings_feature_list"),
 }
 
 
@@ -381,7 +383,7 @@ async def deployed_same_entity_different_sources_feature_list(
 
 
 @pytest_asyncio.fixture
-async def deployed_not_supported_feature_list(
+async def deployed_different_job_settings_feature_list(
     app_container,
     snapshots_lookup_feature,
     float_feature_composite_entity,
@@ -390,7 +392,7 @@ async def deployed_not_supported_feature_list(
     mock_offline_store_feature_manager_dependencies,
 ):
     """
-    Fixture for deployed not supported feature
+    Fixture for deployed feature combining sources with different job settings
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
@@ -578,17 +580,52 @@ async def test_deployment_sql(
     )
 
 
-@pytest.mark.asyncio
-async def test_deployment_sql__not_supported(
-    deployed_not_supported_feature_list,
-    deployment_sql_generation_service,
+@pytest_asyncio.fixture
+async def deployed_user_provided_column_feature_list(
+    app_container,
+    float_feature,
+    cust_id_entity,
     deployment_id,
-    update_fixtures,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
 ):
     """
-    Test single feature deployment SQL generation
+    Fixture for deployed feature that uses a user-provided request column (not point-in-time
+    or forecast-point) combined with a window aggregate. This triggers decomposition even
+    during deployment SQL generation.
     """
-    _ = setup_deployment_case
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    context = Context(
+        name="context_with_user_column",
+        primary_entity_ids=[cust_id_entity.id],
+        user_provided_columns=[
+            {"name": "user_input", "dtype": DBVarType.FLOAT, "feature_type": FeatureType.NUMERIC},
+        ],
+    )
+    context.save()
+    user_input_feature = context.get_user_provided_feature("user_input")
+    feature = float_feature + user_input_feature
+    feature.name = "feature_with_user_provided_column"
+    feature_list = await deploy_feature(
+        app_container,
+        feature,
+        return_type="feature_list",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest.mark.asyncio
+async def test_deployment_sql__not_supported(
+    deployed_user_provided_column_feature_list,
+    deployment_sql_generation_service,
+    deployment_id,
+):
+    """
+    Test that deployment SQL generation raises an error for features with user-provided
+    request columns that result in a decomposed graph.
+    """
     with pytest.raises(DeploymentSqlGenerationError) as exc:
         _ = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
     assert "Deployment SQL generation is not supported" in str(exc.value)
