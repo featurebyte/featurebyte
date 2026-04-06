@@ -890,7 +890,7 @@ class ForecastTableData(BaseTableData):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.natural_key_column] if self.natural_key_column else []
+        return []
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
