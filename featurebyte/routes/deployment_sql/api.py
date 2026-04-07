@@ -94,11 +94,7 @@ class DeploymentSqlRouter(
         Create DeploymentSql by submitting an async generation task
         """
         controller = self.get_controller_for_request(request)
-        task = await controller.generate_deployment_sql(
-            str(data.deployment_id),
-            max_features_per_query=data.max_features_per_query,
-        )
-        return task
+        return await controller.generate_deployment_sql(data)
 
     async def list_objects(
         self,

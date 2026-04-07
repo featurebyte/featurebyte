@@ -114,12 +114,12 @@ class DeploymentSqlGenerationService:
 
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
-        features = []
+        features: list[FeatureModel] = []
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
             features.append(feature_model)
-        features.sort(key=lambda f: f.name)
+        features.sort(key=lambda f: f.name or "")
         grouped_features = self._group_features_by_aggregation_source(
             features=features, source_info=feature_store_model.get_source_info()
         )
