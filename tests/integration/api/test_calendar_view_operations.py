@@ -288,6 +288,30 @@ def test_calendar_lookup_feature_different_users(calendar_table):
     fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
+def test_time_series_view_join_calendar_view_same_date_col_name(
+    time_series_table_with_date_col,
+    calendar_table_with_date_col,
+    calendar_table_with_date_col_2,
+):
+    """
+    Test chained calendar joins when the datetime and timezone columns share names.
+    """
+    time_series_view = time_series_table_with_date_col.get_view()
+    cal1_view = calendar_table_with_date_col.get_view()
+    cal2_view = calendar_table_with_date_col_2.get_view()
+
+    # Step 2: first calendar join. This produces SQL with both L."date" and R."date" in the FROM clause.
+    ts_cal1_view = time_series_view.join(cal1_view, rprefix="cal1_")
+
+    # Step 3: second calendar join. apply_snapshots_datetime_transform appends
+    # DATE_TRUNC('day', "date") to the step 2 SQL, where "date" is ambiguous between L and R.
+    final_view = ts_cal1_view.join(cal2_view, rprefix="cal2_")
+    df = final_view.preview(limit=10)
+    assert len(df) > 0
+    assert "date" in df.columns
+    assert "cal2_date" in df.columns
+
+
 def test_calendar_lookup_target(calendar_table):
     """
     Test creating a lookup target from CalendarView.

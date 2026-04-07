@@ -1,6 +1,9 @@
 import pytest_asyncio
 from sqlglot import parse_one
 
+from featurebyte import TimeInterval
+from featurebyte.enum import TimeIntervalUnit
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.sql.common import sql_to_string
 
 
@@ -68,3 +71,131 @@ async def source_table_with_numeric_strings_fixture(session, feature_store, cata
         database_name=session.database_name,
         schema_name=session.schema_name,
     )
+
+
+@pytest_asyncio.fixture(name="time_series_table_with_date_col", scope="session")
+async def time_series_table_with_date_col_fixture(
+    session, feature_store, catalog, user_entity, timestamp_format_string
+):
+    """
+    TimeSeriesTable with 'date' and 'tz_offset' columns that overlap with the calendar table
+    fixtures. Used to test ambiguous column resolution when chaining multiple calendar joins.
+    """
+    _ = catalog
+    _ = user_entity
+    query = sql_to_string(
+        parse_one(
+            """
+            CREATE TABLE TIME_SERIES_DATE_COL AS
+            SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 1.0 AS "value"
+            UNION ALL
+            SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 2.0 AS "value"
+            UNION ALL
+            SELECT '2001|12|25' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 3.0 AS "value"
+            """,
+            read="snowflake",
+        ),
+        source_type=session.source_type,
+    )
+    await session.execute_query(query)
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="TIME_SERIES_DATE_COL",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    time_series_table = source_table.create_time_series_table(
+        name=f"{session.source_type}_time_series_table_date_col",
+        reference_datetime_column="date",
+        reference_datetime_schema=TimestampSchema(
+            format_string=timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
+            is_utc_time=True,
+        ),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+        series_id_column="user_id",
+    )
+    time_series_table["user_id"].as_entity(user_entity.name)
+    return time_series_table
+
+
+@pytest_asyncio.fixture(name="calendar_table_with_date_col", scope="session")
+async def calendar_table_with_date_col_fixture(
+    session, feature_store, catalog, user_entity, timestamp_format_string
+):
+    """
+    CalendarTable with a 'date' column matching time_series_table_with_date_col. Used to
+    reproduce ambiguous column errors when joining time series and calendar views.
+    """
+    _ = catalog
+    _ = user_entity
+    query = sql_to_string(
+        parse_one(
+            """
+            CREATE TABLE CALENDAR_DATE_COL AS
+            SELECT '2001|01|01' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 'New Year''s Day' AS "holiday_name"
+            UNION ALL
+            SELECT '2001|06|15' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", NULL AS "holiday_name"
+            UNION ALL
+            SELECT '2001|12|25' AS "date", 'UTC' AS "tz_offset", 1 AS "user_id", 'Christmas Day' AS "holiday_name"
+            """,
+            read="snowflake",
+        ),
+        source_type=session.source_type,
+    )
+    await session.execute_query(query)
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="CALENDAR_DATE_COL",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    calendar_table = source_table.create_calendar_table(
+        name=f"{session.source_type}_calendar_table_date_col",
+        calendar_datetime_column="date",
+        calendar_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
+        series_id_column="user_id",
+    )
+    calendar_table["user_id"].as_entity(user_entity.name)
+    return calendar_table
+
+
+@pytest_asyncio.fixture(name="calendar_table_with_date_col_2", scope="session")
+async def calendar_table_with_date_col_2_fixture(
+    session, feature_store, catalog, user_entity, timestamp_format_string
+):
+    """
+    Second CalendarTable with a 'date' column. Used with calendar_table_with_date_col to test
+    chaining two calendar joins on a TimeSeriesView with overlapping column names.
+    """
+    _ = catalog
+    _ = user_entity
+    query = sql_to_string(
+        parse_one(
+            """
+            CREATE TABLE CALENDAR_DATE_COL_2 AS
+            SELECT '2001|01|01' AS "date", 1 AS "user_id", TRUE AS "is_weekend"
+            UNION ALL
+            SELECT '2001|06|15' AS "date", 1 AS "user_id", FALSE AS "is_weekend"
+            UNION ALL
+            SELECT '2001|12|25' AS "date", 1 AS "user_id", FALSE AS "is_weekend"
+            """,
+            read="snowflake",
+        ),
+        source_type=session.source_type,
+    )
+    await session.execute_query(query)
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="CALENDAR_DATE_COL_2",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    calendar_table = source_table.create_calendar_table(
+        name=f"{session.source_type}_calendar_table_date_col_2",
+        calendar_datetime_column="date",
+        calendar_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
+        series_id_column="user_id",
+    )
+    calendar_table["user_id"].as_entity(user_entity.name)
+    return calendar_table

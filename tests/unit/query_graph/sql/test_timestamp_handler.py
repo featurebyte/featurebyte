@@ -310,3 +310,52 @@ def test_apply_snapshots_datetime_transform(
     actual = sql_to_string(result_expr, source_type)
     fixture_filename = f"tests/fixtures/query_graph/test_timestamp_handler/apply_snapshots_datetime_transform/{test_case_name}_{source_type}.sql"
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
+
+
+def test_apply_snapshots_datetime_transform_resolves_timezone_name_column(update_fixtures):
+    """
+    Test that timezone name columns are resolved from the select list when the input select
+    already contains duplicate column names from a previous join.
+    """
+    table_expr = parse_one(
+        """
+        SELECT
+          L."date" AS "date",
+          L."tz_offset" AS "tz_offset",
+          R."date" AS "cal1_date",
+          R."tz_offset" AS "cal1_tz_offset"
+        FROM left_table AS L
+        JOIN right_table AS R
+          ON L."user_id" = R."user_id"
+        """,
+        read="snowflake",
+    )
+    adapter = get_sql_adapter(
+        SourceInfo(database_name="my_db", schema_name="my_schema", source_type="snowflake")
+    )
+    result_expr = apply_snapshots_datetime_transform(
+        table_expr=table_expr,
+        snapshots_datetime_join_key=SnapshotsDatetimeJoinKey(
+            column_name="date",
+            transform=SnapshotsDatetimeTransform(
+                original_timestamp_schema=TimestampSchema(
+                    format_string="YYYY|MM|DD",
+                    timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
+                    is_utc_time=True,
+                ),
+                snapshot_timezone_name=None,
+                snapshot_time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+                snapshot_format_string=None,
+                snapshot_feature_job_setting=None,
+                allow_exact_match_with_current_interval=True,
+                use_original_local_timezone=True,
+            ),
+        ),
+        adapter=adapter,
+    )
+    actual = sql_to_string(result_expr, "snowflake")
+    fixture_filename = (
+        "tests/fixtures/query_graph/test_timestamp_handler/"
+        "apply_snapshots_datetime_transform/resolves_timezone_name_column_snowflake.sql"
+    )
+    assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
