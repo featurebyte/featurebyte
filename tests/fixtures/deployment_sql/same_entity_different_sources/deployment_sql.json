@@ -8,7 +8,7 @@
                 "period": "1800s"
             },
             "feature_names": [
-                "sum_1d_lt_10"
+                "sum_1d_gt_100"
             ],
             "sql_code": "<redacted: see 0.sql>"
         },
@@ -20,7 +20,7 @@
                 "period": "1800s"
             },
             "feature_names": [
-                "sum_1d_gt_100"
+                "sum_1d_lt_10"
             ],
             "sql_code": "<redacted: see 1.sql>"
         }

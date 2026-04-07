@@ -1,7 +1,7 @@
 WITH _FB_AGGREGATED AS (
   SELECT
     "cust_id" AS "cust_id",
-    SUM("col_float") AS "_fb_internal_cust_id_window_w86400_sum_58d51b03babb56d9c8829eb11257b24a7e088596",
+    SUM("col_float") AS "_fb_internal_cust_id_window_w86400_sum_25bf106eeade2e255561c765500361f0a061d889",
     {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"
   FROM (
     SELECT
@@ -21,7 +21,7 @@ WITH _FB_AGGREGATED AS (
           AND "event_timestamp" <= DATEADD(MONTH, 1, {{ CURRENT_TIMESTAMP }})
         )
         AND (
-          "col_float" < 10
+          "col_float" > 100
         )
       )
       AND (
@@ -34,6 +34,6 @@ WITH _FB_AGGREGATED AS (
 )
 SELECT
   AGG."cust_id",
-  CAST("_fb_internal_cust_id_window_w86400_sum_58d51b03babb56d9c8829eb11257b24a7e088596" AS DOUBLE) AS "sum_1d_lt_10",
+  CAST("_fb_internal_cust_id_window_w86400_sum_25bf106eeade2e255561c765500361f0a061d889" AS DOUBLE) AS "sum_1d_gt_100",
   {{ CURRENT_TIMESTAMP }} AS "POINT_IN_TIME"
 FROM _FB_AGGREGATED AS AGG

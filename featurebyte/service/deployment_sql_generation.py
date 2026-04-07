@@ -2,7 +2,7 @@
 DeploymentSqlGenerationService
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -84,6 +84,7 @@ class DeploymentSqlGenerationService:
         self,
         deployment_id: ObjectId,
         output_document_id: Optional[ObjectId] = None,
+        max_features_per_query: Optional[int] = None,
     ) -> DeploymentSqlModel:
         """
         Generate SQL code for the given deployment ID.
@@ -94,6 +95,9 @@ class DeploymentSqlGenerationService:
             The ID of the deployment for which to generate SQL.
         output_document_id: Optional[ObjectId]
             Optional ID of the output document to associate with the generated SQL.
+        max_features_per_query: Optional[int]
+            Maximum number of features to include in a single feature query. If not specified,
+            features are only split by aggregation source.
 
         Returns
         -------
@@ -110,14 +114,17 @@ class DeploymentSqlGenerationService:
 
         deployment = await self.deployment_service.get_document(deployment_id)
         feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
-        features = []
+        features: list[FeatureModel] = []
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
             features.append(feature_model)
+        features.sort(key=lambda f: cast(str, f.name))
         grouped_features = self._group_features_by_aggregation_source(
             features=features, source_info=feature_store_model.get_source_info()
         )
+        if max_features_per_query is not None:
+            grouped_features = self._split_feature_groups(grouped_features, max_features_per_query)
 
         entity_mapping: dict[ObjectId, EntityModel] = {}
         feature_table_sqls: list[FeatureTableSql] = []
@@ -206,6 +213,32 @@ class DeploymentSqlGenerationService:
                 groups[key] = []
             groups[key].append(feature)
         return list(groups.values())
+
+    @staticmethod
+    def _split_feature_groups(
+        grouped_features: list[list[FeatureModel]],
+        max_features_per_query: int,
+    ) -> list[list[FeatureModel]]:
+        """
+        Further split feature groups so that each group has at most max_features_per_query features.
+
+        Parameters
+        ----------
+        grouped_features: list[list[FeatureModel]]
+            List of feature groups.
+        max_features_per_query: int
+            Maximum number of features per group.
+
+        Returns
+        -------
+        list[list[FeatureModel]]
+            List of feature groups with each group having at most max_features_per_query features.
+        """
+        result = []
+        for group in grouped_features:
+            for i in range(0, len(group), max_features_per_query):
+                result.append(group[i : i + max_features_per_query])
+        return result
 
     async def _process_features(
         self,
