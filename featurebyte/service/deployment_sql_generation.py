@@ -2,7 +2,7 @@
 DeploymentSqlGenerationService
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -119,7 +119,7 @@ class DeploymentSqlGenerationService:
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
             features.append(feature_model)
-        features.sort(key=lambda f: f.name or "")
+        features.sort(key=lambda f: cast(str, f.name))
         grouped_features = self._group_features_by_aggregation_source(
             features=features, source_info=feature_store_model.get_source_info()
         )
