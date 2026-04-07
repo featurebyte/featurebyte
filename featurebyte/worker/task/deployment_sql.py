@@ -42,5 +42,6 @@ class DeploymentSqlCreateTask(DataWarehouseMixin, BaseTask[DeploymentSqlCreateTa
         deployment_sql_model = await self.deployment_sql_generation_service.generate_deployment_sql(
             deployment_id=payload.deployment_id,
             output_document_id=payload.output_document_id,
+            max_features_per_query=payload.max_features_per_query,
         )
         await self.deployment_sql_service.create_document(deployment_sql_model)

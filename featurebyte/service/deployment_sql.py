@@ -40,6 +40,7 @@ class DeploymentSqlService(
         payload = DeploymentSqlCreateTaskPayload(
             output_document_id=data.id or ObjectId(),
             deployment_id=data.deployment_id,
+            max_features_per_query=data.max_features_per_query,
             user_id=self.user.id,
             catalog_id=self.catalog_id,
         )

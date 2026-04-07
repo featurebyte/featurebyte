@@ -19,6 +19,14 @@ class DeploymentSqlCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     deployment_id: PydanticObjectId
+    max_features_per_query: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Maximum number of features to include in a single feature query. "
+            "If not specified, features are only split by aggregation source."
+        ),
+    )
 
 
 class DeploymentSqlList(PaginationMixin):

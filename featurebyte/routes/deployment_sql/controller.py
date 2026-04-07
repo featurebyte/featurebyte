@@ -39,7 +39,9 @@ class DeploymentSqlController(
         self.task_controller = task_controller
         self.task_manager = task_manager
 
-    async def generate_deployment_sql(self, deployment_id: str) -> Task:
+    async def generate_deployment_sql(
+        self, deployment_id: str, max_features_per_query: int | None = None
+    ) -> Task:
         """
         Generate deployment SQL asynchronously
 
@@ -47,6 +49,8 @@ class DeploymentSqlController(
         ----------
         deployment_id: str
             ID of the deployment to generate SQL for
+        max_features_per_query: int | None
+            Maximum number of features per query
 
         Returns
         -------
@@ -54,7 +58,10 @@ class DeploymentSqlController(
             Task object that tracks the generation progress
         """
         # Create the deployment SQL creation data
-        data = DeploymentSqlCreate(deployment_id=ObjectId(deployment_id))
+        data = DeploymentSqlCreate(
+            deployment_id=ObjectId(deployment_id),
+            max_features_per_query=max_features_per_query,
+        )
 
         # Get the task payload
         payload = await self.service.get_deployment_sql_create_task_payload(data=data)

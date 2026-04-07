@@ -4,7 +4,7 @@ DeploymentSqlTaskPayload schema
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -27,3 +27,4 @@ class DeploymentSqlCreateTaskPayload(BaseTaskPayload):
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     deployment_id: PydanticObjectId
+    max_features_per_query: Optional[int] = Field(default=None)

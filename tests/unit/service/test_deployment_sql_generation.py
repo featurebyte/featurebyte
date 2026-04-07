@@ -616,6 +616,90 @@ async def deployed_user_provided_column_feature_list(
     return feature_list
 
 
+@pytest_asyncio.fixture
+async def deployed_multiple_derived_features(
+    app_container,
+    float_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for deploying multiple features derived from float_feature that share the same
+    aggregation source (float_feature + 1, float_feature + 2, float_feature + 3).
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    derived_features = []
+    for i in range(1, 4):
+        f = float_feature + i
+        f.name = f"float_feature_plus_{i}"
+        derived_features.append(f)
+    feature_list = await deploy_features(
+        app_container,
+        derived_features,
+        feature_list_name=f"feature_list_{ObjectId()}",
+        deployment_id=deployment_id,
+    )
+    return feature_list
+
+
+@pytest.mark.asyncio
+async def test_deployment_sql__max_features_per_query(
+    deployed_multiple_derived_features,
+    deployment_sql_generation_service,
+    deployment_id,
+):
+    """
+    Test that max_features_per_query splits features into separate queries.
+    """
+    _ = deployed_multiple_derived_features
+
+    all_feature_names = ["float_feature_plus_1", "float_feature_plus_2", "float_feature_plus_3"]
+
+    # Without limit: all 3 features should be in one query
+    result = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    assert len(result.feature_table_sqls) == 1
+    assert result.feature_table_sqls[0].feature_names == all_feature_names
+
+    # With limit of 2: should split into 2 queries (2 + 1)
+    result = await deployment_sql_generation_service.generate_deployment_sql(
+        deployment_id, max_features_per_query=2
+    )
+    assert len(result.feature_table_sqls) == 2
+    assert result.feature_table_sqls[0].feature_names == all_feature_names[:2]
+    assert result.feature_table_sqls[1].feature_names == all_feature_names[2:]
+
+    # With limit of 1: should split into 3 queries, each containing exactly one feature
+    result = await deployment_sql_generation_service.generate_deployment_sql(
+        deployment_id, max_features_per_query=1
+    )
+    assert len(result.feature_table_sqls) == 3
+    for i, sql in enumerate(result.feature_table_sqls):
+        assert sql.feature_names == [all_feature_names[i]]
+
+    # Verify each split query only references its own feature in the SQL
+    for sql in result.feature_table_sqls:
+        expected_name = sql.feature_names[0]
+        assert f'"{expected_name}"' in sql.sql_code
+        for other_name in all_feature_names:
+            if other_name != expected_name:
+                assert f'"{other_name}"' not in sql.sql_code
+
+    # Verify the unsplit query references all features
+    unsplit_result = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    unsplit_sql = unsplit_result.feature_table_sqls[0].sql_code
+    for name in all_feature_names:
+        assert f'"{name}"' in unsplit_sql
+
+    # With limit >= total features: should remain as one query
+    result = await deployment_sql_generation_service.generate_deployment_sql(
+        deployment_id, max_features_per_query=10
+    )
+    assert len(result.feature_table_sqls) == 1
+    assert result.feature_table_sqls[0].feature_names == all_feature_names
+
+
 @pytest.mark.asyncio
 async def test_deployment_sql__not_supported(
     deployed_user_provided_column_feature_list,
