@@ -179,10 +179,7 @@ class CalendarView(View, RawMixin):
         }
         # The join should transform the left view's (EventView, TimeSeriesView, etc) timestamp
         # column into its local time, truncated to day, and match with CalendarView's date column.
-        if isinstance(left_view, EventView):
-            original_timestamp_schema = left_view.event_timestamp_schema
-            column_name = left_view.timestamp_column
-        elif isinstance(left_view, ItemView):
+        if isinstance(left_view, (EventView, ItemView)):
             original_timestamp_schema = left_view.event_timestamp_schema
             column_name = left_view.timestamp_column
         elif isinstance(left_view, TimeSeriesView):
