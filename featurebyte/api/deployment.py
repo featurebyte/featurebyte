@@ -38,6 +38,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import BatchRequestInput
 from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment_sql import DeploymentSqlModel
 from featurebyte.schema.batch_feature_table import (
     BatchExternalFeatureTableCreate,
     BatchFeatureTableCreate,
@@ -530,6 +531,46 @@ class Deployment(DeletableApiObject):
                 "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url).rstrip("/")
             ).replace("<API_TOKEN>", str(current_profile.api_token)),
         )
+
+    @typechecked
+    def get_deployment_sql(
+        self,
+        max_features_per_query: Optional[int] = None,
+    ) -> DeploymentSqlModel:
+        """
+        Generate SQL code that can be used to compute features for this deployment. The generated
+        SQL can be scheduled and run directly in your data warehouse to populate feature tables
+        without going through FeatureByte's serving infrastructure.
+
+        Parameters
+        ----------
+        max_features_per_query: Optional[int]
+            Maximum number of features to include in a single SQL query. If not specified, features
+            are only split by aggregation source. Use this to control the complexity of each
+            individual query.
+
+        Returns
+        -------
+        DeploymentSqlModel
+            Object containing the generated SQL. Key attributes:
+            - feature_table_sqls: List of FeatureTableSql objects, each with sql_code,
+              feature_names, feature_ids, and optional feature_job_setting.
+            - udf_registration_sqls: List of SQL statements for registering any required UDFs.
+
+        Examples
+        --------
+        Generate deployment SQL for a deployment.
+
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> deployment_sql = deployment.get_deployment_sql()  # doctest: +SKIP
+        >>> for feature_table_sql in deployment_sql.feature_table_sqls:  # doctest: +SKIP
+        ...     print(feature_table_sql.sql_code)
+        """
+        payload = {"deployment_id": str(self.id)}
+        if max_features_per_query is not None:
+            payload["max_features_per_query"] = max_features_per_query  # type: ignore[assignment]
+        result = self.post_async_task(route="/deployment_sql", payload=payload)
+        return DeploymentSqlModel(**result)
 
     def get_feature_jobs_status(
         self,
