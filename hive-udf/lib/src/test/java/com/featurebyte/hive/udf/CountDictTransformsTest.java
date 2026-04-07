@@ -293,8 +293,7 @@ public class CountDictTransformsTest {
     Map<String, DoubleWritable> testDict = new HashMap<>();
     testDict.put("a", new DoubleWritable(10));
     GenericUDF.DeferredObject[] args = {
-      new GenericUDF.DeferredJavaObject(testDict),
-      new GenericUDF.DeferredJavaObject(null),
+      new GenericUDF.DeferredJavaObject(testDict), new GenericUDF.DeferredJavaObject(null),
     };
     Object output = udf.evaluate(args);
     assertEquals(null, output);
