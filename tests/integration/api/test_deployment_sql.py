@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from http import HTTPStatus
 
 import pandas as pd
 import pytest
@@ -32,27 +31,15 @@ def make_unique(name):
     return f"{name}_{str(ObjectId())}"
 
 
-def get_deployment_sql(client, deployment: fb.Deployment) -> DeploymentSqlModel:
+def get_deployment_sql(deployment: fb.Deployment) -> DeploymentSqlModel:
     """
-    Get deployment SQL
+    Get deployment SQL via SDK method
     """
-    task_response = client.post("/deployment_sql", json={"deployment_id": str(deployment.id)})
-    assert task_response.status_code == HTTPStatus.CREATED, task_response.text
-    task_response_dict = task_response.json()
-    if task_response_dict["status"] != "SUCCESS":
-        traceback = task_response_dict.get("traceback")
-        raise AssertionError(
-            f"Deployment SQL generation task did not succeed, traceback:\n{traceback}"
-        )
-    output_path = task_response_dict["payload"]["task_output_path"]
-    response = client.get(output_path)
-    assert response.status_code == HTTPStatus.OK, response.text
-    deployment_sql = DeploymentSqlModel(**response.json())
-    return deployment_sql
+    return deployment.get_deployment_sql()
 
 
 @pytest.fixture
-def event_table_feature_test_case(client, event_table, user_entity):
+def event_table_feature_test_case(event_table, user_entity):
     """
     Simple event table feature
     """
@@ -72,7 +59,7 @@ def event_table_feature_test_case(client, event_table, user_entity):
     feature_list = fb.FeatureList([feature], name=feature_name)
     feature_list.save()
     deployment = feature_list.deploy()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -82,7 +69,7 @@ def event_table_feature_test_case(client, event_table, user_entity):
 
 
 @pytest.fixture
-def user_feature_served_via_transaction_test_case(client, event_table, order_entity):
+def user_feature_served_via_transaction_test_case(event_table, order_entity):
     """
     User feature as a parent feature served via transaction entity
     """
@@ -116,7 +103,7 @@ def user_feature_served_via_transaction_test_case(client, event_table, order_ent
         context_name=context.name,
     )
     deployment = feature_list.deploy(use_case_name=use_case.name)
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -126,7 +113,7 @@ def user_feature_served_via_transaction_test_case(client, event_table, order_ent
 
 
 @pytest.fixture
-def time_series_table_feature_test_case(client, time_series_table, series_entity):
+def time_series_table_feature_test_case(time_series_table, series_entity):
     """
     Simple time series table feature
     """
@@ -146,7 +133,7 @@ def time_series_table_feature_test_case(client, time_series_table, series_entity
     feature_list = fb.FeatureList([feature], name=feature_name)
     feature_list.save()
     deployment = feature_list.deploy()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -156,7 +143,7 @@ def time_series_table_feature_test_case(client, time_series_table, series_entity
 
 
 @pytest.fixture
-def snapshots_lookup_feature_test_case(client, snapshots_table, series_entity):
+def snapshots_lookup_feature_test_case(snapshots_table, series_entity):
     """
     Simple snapshots table lookup feature
     """
@@ -166,7 +153,7 @@ def snapshots_lookup_feature_test_case(client, snapshots_table, series_entity):
     feature_list = fb.FeatureList([feature], name=feature_name)
     feature_list.save()
     deployment = feature_list.deploy()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -176,7 +163,7 @@ def snapshots_lookup_feature_test_case(client, snapshots_table, series_entity):
 
 
 @pytest.fixture
-def scd_lookup_feature_test_case(client, scd_table, user_entity):
+def scd_lookup_feature_test_case(scd_table, user_entity):
     """
     SCD lookup feature test case
     """
@@ -187,7 +174,7 @@ def scd_lookup_feature_test_case(client, scd_table, user_entity):
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -197,7 +184,7 @@ def scd_lookup_feature_test_case(client, scd_table, user_entity):
 
 
 @pytest.fixture
-def aggregate_asat_feature_test_case(client, scd_table, status_entity):
+def aggregate_asat_feature_test_case(scd_table, status_entity):
     """
     Aggregate asat feature test case
     """
@@ -210,7 +197,7 @@ def aggregate_asat_feature_test_case(client, scd_table, status_entity):
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -220,7 +207,7 @@ def aggregate_asat_feature_test_case(client, scd_table, status_entity):
 
 
 @pytest.fixture
-def snapshots_aggregate_asat_feature_test_case(client, snapshots_table, user_entity):
+def snapshots_aggregate_asat_feature_test_case(snapshots_table, user_entity):
     """
     Aggregate asat feature from snapshots table test case
     """
@@ -235,7 +222,7 @@ def snapshots_aggregate_asat_feature_test_case(client, snapshots_table, user_ent
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -245,7 +232,7 @@ def snapshots_aggregate_asat_feature_test_case(client, snapshots_table, user_ent
 
 
 @pytest.fixture
-def time_since_last_event_feature_test_case(client, event_table, user_entity):
+def time_since_last_event_feature_test_case(event_table, user_entity):
     """
     Time since last event feature
     """
@@ -267,7 +254,7 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
     feature_list = fb.FeatureList([feature], name=feature_name)
     feature_list.save()
     deployment = feature_list.deploy()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
@@ -277,7 +264,7 @@ def time_since_last_event_feature_test_case(client, event_table, user_entity):
 
 
 @pytest.fixture
-def internal_parent_child_relationship_feature_test_case(client, scd_table, user_entity):
+def internal_parent_child_relationship_feature_test_case(scd_table, user_entity):
     """
     Time since last event feature
     """
@@ -295,7 +282,7 @@ def internal_parent_child_relationship_feature_test_case(client, scd_table, user
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    deployment_sql = get_deployment_sql(client, deployment)
+    deployment_sql = get_deployment_sql(deployment)
     return DeploymentSqlTestCase(
         feature_list=feature_list,
         deployment_sql=deployment_sql,
