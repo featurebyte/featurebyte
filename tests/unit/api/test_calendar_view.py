@@ -143,7 +143,7 @@ def test_validate_join(
 
 
 @pytest.mark.parametrize(
-    "left_view_fixture, expected_error, expected_snapshots_datetime_join_keys, join_on",
+    "left_view_fixture, expected_error, expected_snapshots_datetime_join_keys, join_on, left_subset_column",
     [
         (
             "snowflake_event_view",
@@ -163,6 +163,7 @@ def test_validate_join(
                 },
                 "right_key": {"column_name": "date", "transform": None},
             },
+            "col_int",
             "col_int",
         ),
         (
@@ -188,6 +189,7 @@ def test_validate_join(
                 "right_key": {"column_name": "date", "transform": None},
             },
             "col_int",
+            "col_int",
         ),
         (
             "snowflake_snapshots_view",
@@ -212,23 +214,41 @@ def test_validate_join(
                 "right_key": {"column_name": "date", "transform": None},
             },
             "col_int",
+            "col_int",
         ),
         (
             "snowflake_item_view",
-            JoinViewMismatchError("Joining a CalendarView to ItemView is not supported"),
             None,
-            "event_id_col",
+            {
+                "left_key": {
+                    "column_name": "event_timestamp_event_table",
+                    "transform": {
+                        "original_timestamp_schema": None,
+                        "snapshot_timezone_name": None,
+                        "snapshot_time_interval": {"unit": "DAY", "value": 1},
+                        "snapshot_format_string": "YYYY-MM-DD",
+                        "snapshot_feature_job_setting": None,
+                        "allow_exact_match_with_current_interval": True,
+                        "use_original_local_timezone": True,
+                    },
+                },
+                "right_key": {"column_name": "date", "transform": None},
+            },
+            "item_amount",
+            "item_amount",
         ),
         (
             "snowflake_dimension_view",
             JoinViewMismatchError("Joining a CalendarView to DimensionView is not supported"),
             None,
             "col_int",
+            "col_int",
         ),
         (
             "snowflake_scd_view",
             JoinViewMismatchError("Joining a CalendarView to SCDView is not supported"),
             None,
+            "col_int",
             "col_int",
         ),
     ],
@@ -239,6 +259,7 @@ def test_calendar_view_join_as_right(
     expected_error,
     expected_snapshots_datetime_join_keys,
     join_on,
+    left_subset_column,
     snowflake_calendar_view,
 ):
     """
@@ -254,7 +275,7 @@ def test_calendar_view_join_as_right(
         ):
             left_view.join(right_subset, on=join_on, rsuffix="_cal")
     else:
-        left_subset = left_view[["col_int"]]
+        left_subset = left_view[[left_subset_column]]
         joined_view = left_subset.join(right_subset, on=join_on, rsuffix="_cal")
         join_node = joined_view.node
         assert join_node.type == NodeType.JOIN
