@@ -196,6 +196,7 @@ class GraphNodeType(StrEnum):
     TIME_SERIES_VIEW = "time_series_view"
     SNAPSHOTS_VIEW = "snapshots_view"
     CALENDAR_VIEW = "calendar_view"
+    FORECAST_VIEW = "forecast_view"
 
     # graph node type used for offline store ingest query graph
     OFFLINE_STORE_INGEST_QUERY = "offline_store_ingest_query"
@@ -216,6 +217,9 @@ class GraphNodeType(StrEnum):
             cls.SCD_VIEW,
             cls.CHANGE_VIEW,
             cls.TIME_SERIES_VIEW,
+            cls.SNAPSHOTS_VIEW,
+            cls.CALENDAR_VIEW,
+            cls.FORECAST_VIEW,
         }
 
 

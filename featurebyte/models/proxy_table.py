@@ -14,6 +14,7 @@ from featurebyte.models.calendar_table import CalendarTableModel
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel as BaseTableModel
+from featurebyte.models.forecast_table import ForecastTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.models.snapshots_table import SnapshotsTableModel
@@ -27,6 +28,7 @@ TABLE_TYPES = [
     TimeSeriesTableModel,
     SnapshotsTableModel,
     CalendarTableModel,
+    ForecastTableModel,
 ]
 if TYPE_CHECKING:
     TableModel = BaseTableModel

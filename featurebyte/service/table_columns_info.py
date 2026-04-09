@@ -28,6 +28,7 @@ from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.forecast_table import ForecastTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.relationship import EntityRelationshipService
@@ -46,6 +47,7 @@ TableDocumentService = Union[
     TimeSeriesTableService,
     SnapshotsTableService,
     CalendarTableService,
+    ForecastTableService,
 ]
 
 

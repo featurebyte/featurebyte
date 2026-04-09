@@ -82,6 +82,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             "time_series_table": "TimeSeriesTable",
             "snapshots_table": "SnapshotsTable",
             "calendar_table": "CalendarTable",
+            "forecast_table": "ForecastTable",
         }
 
     @property

@@ -19,6 +19,7 @@ from featurebyte.models.calendar_table import CalendarTableModel
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableValidation, TableValidationStatus
+from featurebyte.models.forecast_table import ForecastTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
@@ -43,6 +44,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.forecast_table import ForecastTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -62,6 +64,7 @@ TableDocumentT = TypeVar(
     TimeSeriesTableModel,
     SnapshotsTableModel,
     CalendarTableModel,
+    ForecastTableModel,
 )
 TableDocumentServiceT = TypeVar(
     "TableDocumentServiceT",
@@ -72,6 +75,7 @@ TableDocumentServiceT = TypeVar(
     TimeSeriesTableService,
     SnapshotsTableService,
     CalendarTableService,
+    ForecastTableService,
 )
 
 

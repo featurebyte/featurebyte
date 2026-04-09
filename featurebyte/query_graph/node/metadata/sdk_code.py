@@ -232,6 +232,7 @@ class ClassEnum(Enum):
     TIME_SERIES_TABLE = ("featurebyte", "TimeSeriesTable")
     SNAPSHOTS_TABLE = ("featurebyte", "SnapshotsTable")
     CALENDAR_TABLE = ("featurebyte", "CalendarTable")
+    FORECAST_TABLE = ("featurebyte", "ForecastTable")
 
     # view
     EVENT_VIEW = ("featurebyte", "EventView")

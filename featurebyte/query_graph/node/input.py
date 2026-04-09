@@ -536,6 +536,56 @@ class CalendarTableInputNodeParameters(BaseInputNodeParameters):
         )
 
 
+class ForecastTableInputNodeParameters(BaseInputNodeParameters):
+    """ForecastTableParameters"""
+
+    type: Literal[TableDataType.FORECAST_TABLE] = TableDataType.FORECAST_TABLE
+    id: Optional[PydanticObjectId] = Field(default=None)
+    natural_key_column: Optional[InColumnStr] = Field(default=None)
+    effective_timestamp_column: InColumnStr
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    forecast_timestamp_column: InColumnStr
+    forecast_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+
+    @property
+    def variable_name_prefix(self) -> str:
+        return "forecast_table"
+
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+        result: Dict[str, Any] = {
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
+            "natural_key_column": self.natural_key_column,
+            "effective_timestamp_column": self.effective_timestamp_column,
+            "forecast_timestamp_column": self.forecast_timestamp_column,
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
+        if self.effective_timestamp_schema is not None:
+            result["effective_timestamp_schema"] = derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.effective_timestamp_schema
+            )
+        if self.forecast_timestamp_schema is not None:
+            result["forecast_timestamp_schema"] = derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.forecast_timestamp_schema
+            )
+        return result
+
+    def construct_comment(
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'forecast_table name: "{table_name}"')
+        return output
+
+    def get_default_partition_column(self) -> Optional[PartitionColumnInfo]:
+        dtype_metadata = DBVarTypeMetadata(timestamp_schema=self.effective_timestamp_schema)
+        return PartitionColumnInfo(
+            name=self.effective_timestamp_column, dtype_metadata=dtype_metadata
+        )
+
+
 InputNodeParameters = Annotated[
     Union[
         EventTableInputNodeParameters,
@@ -546,6 +596,7 @@ InputNodeParameters = Annotated[
         TimeSeriesTableInputNodeParameters,
         SnapshotsTableInputNodeParameters,
         CalendarTableInputNodeParameters,
+        ForecastTableInputNodeParameters,
     ],
     Field(discriminator="type"),
 ]
@@ -568,6 +619,7 @@ class InputNode(BaseNode):
         TableDataType.TIME_SERIES_TABLE: ClassEnum.TIME_SERIES_TABLE,
         TableDataType.SNAPSHOTS_TABLE: ClassEnum.SNAPSHOTS_TABLE,
         TableDataType.CALENDAR_TABLE: ClassEnum.CALENDAR_TABLE,
+        TableDataType.FORECAST_TABLE: ClassEnum.FORECAST_TABLE,
     }
 
     @property

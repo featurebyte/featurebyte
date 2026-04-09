@@ -35,6 +35,7 @@ from featurebyte.routes.feature_list.api import FeatureListRouter
 from featurebyte.routes.feature_list_namespace.api import FeatureListNamespaceRouter
 from featurebyte.routes.feature_namespace.api import FeatureNamespaceRouter
 from featurebyte.routes.feature_store.api import FeatureStoreRouter
+from featurebyte.routes.forecast_table.api import ForecastTableRouter
 from featurebyte.routes.historical_feature_table.api import HistoricalFeatureTableRouter
 from featurebyte.routes.item_table.api import ItemTableRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -235,6 +236,7 @@ def get_app() -> FastAPI:
         BatchRequestTableRouter(),
         ContextRouter(),
         CalendarTableRouter(),
+        ForecastTableRouter(),
         DeploymentRouter(),
         DeploymentSqlRouter(),
         DimensionTableRouter(),

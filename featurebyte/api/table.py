@@ -12,6 +12,7 @@ from featurebyte.api.base_table import TableListMixin
 from featurebyte.api.calendar_table import CalendarTable
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.event_table import EventTable
+from featurebyte.api.forecast_table import ForecastTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.snapshots_table import SnapshotsTable
@@ -56,6 +57,7 @@ class Table(TableListMixin):
         TableDataType.TIME_SERIES_TABLE: TimeSeriesTable,
         TableDataType.SNAPSHOTS_TABLE: SnapshotsTable,
         TableDataType.CALENDAR_TABLE: CalendarTable,
+        TableDataType.FORECAST_TABLE: ForecastTable,
     }
 
     @classmethod

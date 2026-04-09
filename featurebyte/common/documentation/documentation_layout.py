@@ -126,6 +126,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, CLASS_METHODS, "TimeSeriesTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "SnapshotsTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "CalendarTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "ForecastTable.get_by_id"]),
         DocLayoutItem([
             TABLE,
             SET_FEATURE_JOB,
@@ -169,6 +170,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, GET_VIEW, "TimeSeriesTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "SnapshotsTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "CalendarTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "ForecastTable.get_view"]),
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             doc_path_override="api.base_table.TableApiObject.column_cleaning_operations.md",
@@ -235,6 +237,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "TimeSeriesTable"]),
         DocLayoutItem([TABLE, TYPE, "SnapshotsTable"]),
         DocLayoutItem([TABLE, TYPE, "CalendarTable"]),
+        DocLayoutItem([TABLE, TYPE, "ForecastTable"]),
         DocLayoutItem(
             [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
@@ -598,6 +601,11 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "CalendarView.series_id_column"]),
         DocLayoutItem([VIEW, INFO, "CalendarView.calendar_datetime_column"]),
         DocLayoutItem([VIEW, INFO, "CalendarView.calendar_datetime_schema"]),
+        DocLayoutItem([VIEW, INFO, "ForecastView.natural_key_column"]),
+        DocLayoutItem([VIEW, INFO, "ForecastView.effective_timestamp_column"]),
+        DocLayoutItem([VIEW, INFO, "ForecastView.effective_timestamp_schema"]),
+        DocLayoutItem([VIEW, INFO, "ForecastView.forecast_timestamp_column"]),
+        DocLayoutItem([VIEW, INFO, "ForecastView.forecast_timestamp_schema"]),
         DocLayoutItem([VIEW, INFO, "View.columns"]),
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.column_cleaning_operations"]),
@@ -615,6 +623,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, TYPE, "TimeSeriesView"]),
         DocLayoutItem([VIEW, TYPE, "SnapshotsView"]),
         DocLayoutItem([VIEW, TYPE, "CalendarView"]),
+        DocLayoutItem([VIEW, TYPE, "ForecastView"]),
     ]
 
 

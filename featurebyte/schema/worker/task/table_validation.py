@@ -26,5 +26,6 @@ class TableValidationTaskPayload(BaseTaskPayload):
         TableDataType.TIME_SERIES_TABLE,
         TableDataType.SNAPSHOTS_TABLE,
         TableDataType.CALENDAR_TABLE,
+        TableDataType.FORECAST_TABLE,
     ]
     table_id: PydanticObjectId

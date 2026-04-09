@@ -66,6 +66,7 @@ from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
+from featurebyte.routes.forecast_table.controller import ForecastTableController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.managed_view.controller import ManagedViewController
@@ -153,6 +154,8 @@ from featurebyte.service.feature_store_warehouse import (
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.feature_type import FeatureTypeService
+from featurebyte.service.forecast_table import ForecastTableService
+from featurebyte.service.forecast_table_validation import ForecastTableValidationService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
@@ -469,6 +472,10 @@ app_container_config.register_class(
     dependency_override={"table_document_service": "calendar_table_service"},
 )
 app_container_config.register_class(
+    ForecastTableValidationService,
+    dependency_override={"table_document_service": "forecast_table_service"},
+)
+app_container_config.register_class(
     SnapshotsTableValidationService,
     dependency_override={"table_document_service": "snapshots_table_service"},
 )
@@ -481,6 +488,8 @@ app_container_config.register_class(SessionManagerService)
 app_container_config.register_class(SessionHelper)
 app_container_config.register_class(CalendarTableController)
 app_container_config.register_class(CalendarTableService)
+app_container_config.register_class(ForecastTableController)
+app_container_config.register_class(ForecastTableService)
 app_container_config.register_class(SnapshotsTableController)
 app_container_config.register_class(SnapshotsTableService)
 app_container_config.register_class(StaticSourceTableController)

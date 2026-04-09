@@ -18,6 +18,7 @@
 /feature_list_namespace
 /feature_namespace
 /feature_store
+/forecast_table
 /historical_feature_table
 /item_table
 /managed_view

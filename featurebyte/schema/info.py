@@ -269,6 +269,18 @@ class CalendarTableInfo(TableInfo):
     calendar_datetime_schema: TimestampSchema
 
 
+class ForecastTableInfo(TableInfo):
+    """
+    ForecastTable info schema
+    """
+
+    natural_key_column: Optional[str]
+    effective_timestamp_column: str
+    effective_timestamp_schema: Optional[TimestampSchema]
+    forecast_timestamp_column: str
+    forecast_timestamp_schema: Optional[TimestampSchema]
+
+
 class SnapshotsTableInfo(TableInfo):
     """
     SnapshotsTable info schema
