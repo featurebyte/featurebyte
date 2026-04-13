@@ -97,7 +97,7 @@ jobs:
           }' changes.csv >> $GITHUB_ENV
           echo "EOL" >> $GITHUB_ENV
 
-      - uses: mshick/add-pr-comment@v2
+      - uses: mshick/add-pr-comment@v3
         if: env.DIFF_EXIT_CODE == '1'
         with:
           message-id: dependencies
