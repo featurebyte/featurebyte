@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.4.2 (2026-04-12)
+
+### 💡 Enhancements
+
++ `sdk` Add `Deployment.get_deployment_sql()` method to expose deployment SQL generation in the SDK
+  + Generates SQL that can be scheduled and run directly in the data warehouse to populate feature tables
+  + Supports optional `max_features_per_query` parameter to control query complexity
++ `service` Skip feature job setting in query graph decomposition for deployment SQL generation
+
 ## v3.4.1 (2026-04-01)
 
 ### 💡 Enhancements
