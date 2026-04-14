@@ -368,6 +368,77 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
 
     @pytest.mark.asyncio
+    async def test_update_use_case_observation_weight_not_expected(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        default_catalog_id,
+        user_id,
+    ):
+        """Test that adding use case fails when table has OBSERVATION_WEIGHT but target does not expect it"""
+        test_api_client, persistent = test_api_client_persistent
+        _ = create_success_response
+
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+
+        # Target namespace does NOT have has_observation_weight (default False)
+
+        # Create observation table WITH OBSERVATION_WEIGHT column
+        ob_table_id = ObjectId()
+        await persistent.insert_one(
+            collection_name="observation_table",
+            document={
+                "_id": ob_table_id,
+                "name": "ob_table_unexpected_weight",
+                "request_input": {
+                    "target_id": ObjectId(use_case_payload["target_id"]),
+                    "observation_table_id": ob_table_id,
+                    "type": "dataframe",
+                },
+                "location": {
+                    "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "fb_materialized_table",
+                    },
+                },
+                "columns_info": [
+                    {"name": "a", "dtype": "INT"},
+                    {"name": "OBSERVATION_WEIGHT", "dtype": "FLOAT"},
+                ],
+                "num_rows": 1000,
+                "most_recent_point_in_time": "2023-01-15T10:00:00",
+                "context_id": ObjectId(use_case_payload["context_id"]),
+                "use_case_ids": [],
+                "primary_entity_ids": [],
+                "catalog_id": ObjectId(default_catalog_id),
+                "user_id": user_id,
+            },
+            user_id=user_id,
+        )
+
+        # Create use case
+        use_case_id = str(ObjectId())
+        uc_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        uc_payload["_id"] = use_case_id
+        uc_payload["name"] = "test_use_case_no_weight"
+        response = test_api_client.post("/use_case", json=uc_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # Adding use case should fail because table has OBSERVATION_WEIGHT but target doesn't expect it
+        response = test_api_client.patch(
+            f"{self.base_route}/{ob_table_id}",
+            json={"use_case_id_to_add": use_case_id},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert "does not have observation weight enabled" in response.json()["detail"]
+
+    @pytest.mark.asyncio
     async def test_update_purpose(self, test_api_client_persistent, create_success_response):
         """Test update purpose"""
         test_api_client, _ = test_api_client_persistent
