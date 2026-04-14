@@ -57,7 +57,7 @@ jobs:
           echo "CHANGELOG<<EOF" >> $GITHUB_ENV
           task changelog-pr | tee -a $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-      - uses: mshick/add-pr-comment@v2
+      - uses: mshick/add-pr-comment@v3
         with:
           message-id: changelog
           message: |
