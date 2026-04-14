@@ -53,6 +53,12 @@ DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     """
     ObservationTable class
+
+    An ObservationTable can optionally include an OBSERVATION_WEIGHT column to provide custom
+    per-row weights. This is configured at the target level: when a TargetNamespace has
+    has_observation_weight enabled, any observation table added to a related use case must
+    contain an OBSERVATION_WEIGHT column. During materialization, this column is automatically
+    converted into the internal weight column used by downstream operations such as model training.
     """
 
     # class variables
@@ -472,6 +478,11 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     ) -> ObservationTable:
         """
         Upload a file to create an observation table. This file can either be a CSV or Parquet file.
+
+        The file may optionally include a column named "OBSERVATION_WEIGHT" containing per-row
+        weights. This column is required when the associated target namespace has
+        has_observation_weight enabled. During materialization it is converted into the internal
+        weight column used by downstream operations.
 
         Parameters
         ----------

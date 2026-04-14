@@ -1901,6 +1901,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         - a column containing entity values with an accepted serving name.
         - a column containing historical points-in-time in UTC. The column name must be "POINT_IN_TIME".
+        - optionally, a column named "OBSERVATION_WEIGHT" containing per-row weights. This column is
+          required when the associated target namespace has has_observation_weight enabled. During
+          materialization it is converted into the internal weight column used by downstream operations.
+          You can use columns_rename_mapping to rename an existing column to "OBSERVATION_WEIGHT".
 
         Parameters
         ----------
