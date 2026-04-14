@@ -39,6 +39,7 @@ def test_target_namespace_create_and_delete(item_entity):
         "default_version_mode": "AUTO",
         "default_target_id": None,
         "target_type": "classification",
+        "has_observation_weight": False,
         "created_at": namespace_info["created_at"],
         "updated_at": namespace_info["updated_at"],
     }

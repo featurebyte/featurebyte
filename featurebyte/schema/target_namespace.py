@@ -38,6 +38,7 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
     window: Optional[str] = Field(default=None)
     target_type: Optional[TargetType] = Field(default=None)
     positive_label: Optional[PositiveLabelType] = Field(default=None)
+    has_observation_weight: bool = Field(default=False)
 
     @model_validator(mode="after")
     def _validate_settings(self) -> "TargetNamespaceCreate":
@@ -83,6 +84,7 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     window: Optional[str] = Field(default=None)
     target_type: Optional[TargetType] = Field(default=None)
     positive_label: Optional[PositiveLabelUpdate] = Field(default=None)
+    has_observation_weight: Optional[bool] = Field(default=None)
 
 
 class TargetNamespaceClassificationMetadataUpdate(FeatureByteBaseModel):
@@ -122,3 +124,4 @@ class TargetNamespaceInfo(BaseInfo):
     default_version_mode: DefaultVersionMode
     default_target_id: Optional[PydanticObjectId]
     target_type: Optional[TargetType]
+    has_observation_weight: bool = Field(default=False)

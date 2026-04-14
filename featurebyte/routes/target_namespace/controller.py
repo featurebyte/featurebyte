@@ -163,6 +163,7 @@ class TargetNamespaceController(
             default_version_mode=target_namespace.default_version_mode,
             default_target_id=target_namespace.default_target_id,
             target_type=target_namespace.target_type,
+            has_observation_weight=target_namespace.has_observation_weight,
             created_at=target_namespace.created_at,
             updated_at=target_namespace.updated_at,
         )

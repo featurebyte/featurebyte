@@ -63,6 +63,9 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     positive_label_candidates: List[PositiveLabelCandidatesItem] = Field(default_factory=list)
     positive_label: Optional[PositiveLabelType] = Field(default=None)
 
+    # whether observation tables for this target should include an OBSERVATION_WEIGHT column
+    has_observation_weight: bool = Field(default=False)
+
     # pydantic validators
     _sort_ids_validator = field_validator("target_ids", "entity_ids")(construct_sort_validator())
     _duration_validator = field_validator("window", mode="before")(duration_string_validator)

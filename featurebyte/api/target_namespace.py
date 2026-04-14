@@ -62,6 +62,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         window: Optional[str] = None,
         target_type: Optional[TargetType] = None,
         positive_label: Optional[PositiveLabelType] = None,
+        has_observation_weight: bool = False,
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -82,6 +83,8 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             Positive label value for classification targets. Only applicable when target_type is
             CLASSIFICATION. The value type must match the dtype (str for VARCHAR/CHAR, int for INT,
             bool for BOOL).
+        has_observation_weight: bool
+            Whether observation tables for this target should include an OBSERVATION_WEIGHT column
 
         Returns
         -------
@@ -114,6 +117,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             window=window,
             target_type=target_type,
             positive_label=positive_label,
+            has_observation_weight=has_observation_weight,
         )
         target_namespace.save()
         return target_namespace
@@ -272,6 +276,49 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             url=f"{self._route}/{self.id}",
             skip_update_schema_check=True,
         )
+
+    @typechecked
+    def update_has_observation_weight(self, has_observation_weight: bool) -> None:
+        """
+        Update whether observation tables for this target should include an OBSERVATION_WEIGHT column.
+
+        When enabled, any observation table added to a use case associated with this target must
+        contain an OBSERVATION_WEIGHT column. This allows users to provide custom weights for each
+        observation row.
+
+        Parameters
+        ----------
+        has_observation_weight: bool
+            Whether the target requires an OBSERVATION_WEIGHT column in observation tables
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
+        ...     primary_entity=["customer"],
+        ...     target_type=fb.TargetType.REGRESSION,
+        ... )
+        >>> target_namespace.update_has_observation_weight(True)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"has_observation_weight": has_observation_weight},
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}",
+            skip_update_schema_check=True,
+        )
+
+    @property
+    def has_observation_weight(self) -> bool:
+        """
+        Whether observation tables for this target should include an OBSERVATION_WEIGHT column.
+
+        Returns
+        -------
+        bool
+        """
+        return self.cached_model.has_observation_weight
 
     def delete(self) -> None:
         """

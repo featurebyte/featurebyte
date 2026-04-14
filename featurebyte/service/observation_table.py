@@ -1773,6 +1773,19 @@ class ObservationTableService(
                             f"Cannot add UseCase {data.use_case_id_to_add} due to mismatched treatments."
                         )
 
+                # validate observation weight column requirement
+                target_namespace = await self.target_namespace_service.get_document(
+                    document_id=use_case.target_namespace_id
+                )
+                if target_namespace.has_observation_weight:
+                    obs_table_column_names = {col.name for col in observation_table.columns_info}
+                    if SpecialColumnName.OBSERVATION_WEIGHT not in obs_table_column_names:
+                        raise ObservationTableInvalidUseCaseError(
+                            f"Cannot add UseCase {data.use_case_id_to_add} as the target requires an "
+                            f"'{SpecialColumnName.OBSERVATION_WEIGHT}' column in the observation table, "
+                            f"but the column is missing."
+                        )
+
                 use_case_ids.append(data.use_case_id_to_add)
 
             # validate use case id to remove

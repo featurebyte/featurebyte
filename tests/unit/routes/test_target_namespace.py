@@ -94,6 +94,32 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json()["target_type"] == "regression"
 
+    def test_update_has_observation_weight_200(self, test_api_client_persistent):
+        """Test update has_observation_weight via route"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.post(
+            "/target_namespace", json={**self.payload, "target_type": "regression"}
+        )
+        target_namespace_id = response.json()["_id"]
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["has_observation_weight"] is False
+
+        # enable observation weight
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={"has_observation_weight": True},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["has_observation_weight"] is True
+
+        # disable observation weight
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={"has_observation_weight": False},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["has_observation_weight"] is False
+
     def test_delete_target_namespace(self, test_api_client_persistent, create_success_response):
         """Test delete target namespace"""
         test_api_client, _ = test_api_client_persistent

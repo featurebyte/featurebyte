@@ -429,6 +429,20 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     session=db_session, table_details=missing_data_table_details
                 )
 
+        # rename OBSERVATION_WEIGHT to __FB_TABLE_ROW_WEIGHT if the target requires it
+        if target_namespace_id is not None:
+            target_ns = await self.target_namespace_service.get_document(
+                document_id=target_namespace_id
+            )
+            if target_ns.has_observation_weight:
+                weight_renamed = (
+                    await self.observation_table_service.rename_observation_weight_column(
+                        session=db_session, table_details=location.table_details
+                    )
+                )
+                if weight_renamed:
+                    output_table_has_row_weights = True
+
         # get the table with missing data if it has data
         table_with_missing_data = await self.get_table_with_missing_data(
             db_session=db_session,

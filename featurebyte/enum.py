@@ -645,6 +645,7 @@ class SpecialColumnName(StrEnum):
 
     POINT_IN_TIME = "POINT_IN_TIME"
     FORECAST_POINT = "FORECAST_POINT"
+    OBSERVATION_WEIGHT = "OBSERVATION_WEIGHT"
 
 
 class InternalName(StrEnum):

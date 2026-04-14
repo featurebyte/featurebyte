@@ -10,7 +10,7 @@ from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
@@ -227,3 +227,51 @@ class BaseMaterializedTableService(
             ).from_(quoted_identifier(table_details.table_name)),
             replace=True,
         )
+
+    @staticmethod
+    async def rename_observation_weight_column(
+        session: BaseSession,
+        table_details: TableDetails,
+    ) -> bool:
+        """
+        Rename the OBSERVATION_WEIGHT column to __FB_TABLE_ROW_WEIGHT if it exists.
+
+        Parameters
+        ----------
+        session: BaseSession
+            Database session
+        table_details: TableDetails
+            Table details of the materialized table
+
+        Returns
+        -------
+        bool
+            True if the column was renamed, False if OBSERVATION_WEIGHT was not found
+        """
+        table_schema = await session.list_table_schema(
+            table_name=table_details.table_name,
+            database_name=table_details.database_name,
+            schema_name=table_details.schema_name,
+        )
+        if SpecialColumnName.OBSERVATION_WEIGHT not in table_schema:
+            return False
+
+        # Rebuild the table with OBSERVATION_WEIGHT renamed to __FB_TABLE_ROW_WEIGHT
+        col_exprs = []
+        for col_name in table_schema:
+            if col_name == SpecialColumnName.OBSERVATION_WEIGHT:
+                col_exprs.append(
+                    expressions.alias_(
+                        quoted_identifier(col_name),
+                        alias=InternalName.TABLE_ROW_WEIGHT,
+                        quoted=True,
+                    )
+                )
+            else:
+                col_exprs.append(quoted_identifier(col_name))
+        await session.create_table_as(
+            table_details,
+            expressions.select(*col_exprs).from_(quoted_identifier(table_details.table_name)),
+            replace=True,
+        )
+        return True

@@ -268,6 +268,106 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.json()["use_case_ids"] == []
 
     @pytest.mark.asyncio
+    async def test_update_use_case_observation_weight_validation(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        create_observation_table,
+        default_catalog_id,
+        user_id,
+    ):
+        """Test that adding use case fails when target has observation weight but table lacks the column"""
+        test_api_client, persistent = test_api_client_persistent
+        _ = create_success_response
+
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+
+        # Get the target namespace id from the target
+        target_response = test_api_client.get(f"/target/{use_case_payload['target_id']}")
+        assert target_response.status_code == HTTPStatus.OK
+        target_namespace_id = target_response.json()["target_namespace_id"]
+
+        # Update target namespace to require observation weight
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}",
+            json={"has_observation_weight": True},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["has_observation_weight"] is True
+
+        # Create observation table WITHOUT OBSERVATION_WEIGHT column
+        new_ob_table_id = ObjectId()
+        await create_observation_table(
+            new_ob_table_id,
+            context_id=use_case_payload["context_id"],
+            target_input=True,
+            target_id=use_case_payload["target_id"],
+        )
+
+        # Create use case
+        use_case_id = str(ObjectId())
+        uc_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        uc_payload["_id"] = use_case_id
+        uc_payload["name"] = "test_use_case_weight"
+        response = test_api_client.post("/use_case", json=uc_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # Adding use case should fail because OBSERVATION_WEIGHT column is missing
+        response = test_api_client.patch(
+            f"{self.base_route}/{new_ob_table_id}",
+            json={"use_case_id_to_add": use_case_id},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert "OBSERVATION_WEIGHT" in response.json()["detail"]
+
+        # Now create observation table WITH OBSERVATION_WEIGHT column
+        ob_table_with_weight_id = ObjectId()
+        await persistent.insert_one(
+            collection_name="observation_table",
+            document={
+                "_id": ob_table_with_weight_id,
+                "name": "ob_table_with_weight",
+                "request_input": {
+                    "target_id": ObjectId(use_case_payload["target_id"]),
+                    "observation_table_id": ob_table_with_weight_id,
+                    "type": "dataframe",
+                },
+                "location": {
+                    "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "fb_materialized_table",
+                    },
+                },
+                "columns_info": [
+                    {"name": "a", "dtype": "INT"},
+                    {"name": "b", "dtype": "INT"},
+                    {"name": "OBSERVATION_WEIGHT", "dtype": "FLOAT"},
+                ],
+                "num_rows": 1000,
+                "most_recent_point_in_time": "2023-01-15T10:00:00",
+                "context_id": ObjectId(use_case_payload["context_id"]),
+                "use_case_ids": [],
+                "primary_entity_ids": [],
+                "catalog_id": ObjectId(default_catalog_id),
+                "user_id": user_id,
+            },
+            user_id=user_id,
+        )
+
+        # Adding use case should succeed with OBSERVATION_WEIGHT column present
+        response = test_api_client.patch(
+            f"{self.base_route}/{ob_table_with_weight_id}",
+            json={"use_case_id_to_add": use_case_id},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+    @pytest.mark.asyncio
     async def test_update_purpose(self, test_api_client_persistent, create_success_response):
         """Test update purpose"""
         test_api_client, _ = test_api_client_persistent
