@@ -29,6 +29,8 @@ from featurebyte.routes.development_dataset.api import DevelopmentDatasetRouter
 from featurebyte.routes.dimension_table.api import DimensionTableRouter
 from featurebyte.routes.entity.api import EntityRouter
 from featurebyte.routes.event_table.api import EventTableRouter
+from featurebyte.routes.exposure.api import ExposureRouter
+from featurebyte.routes.exposure_namespace.api import ExposureNamespaceRouter
 from featurebyte.routes.feature.api import FeatureRouter
 from featurebyte.routes.feature_job_setting_analysis.api import FeatureJobSettingAnalysisRouter
 from featurebyte.routes.feature_list.api import FeatureListRouter
@@ -250,6 +252,8 @@ def get_app() -> FastAPI:
         HistoricalFeatureTableRouter(),
         ItemTableRouter(),
         ObservationTableRouter(),
+        ExposureRouter(),
+        ExposureNamespaceRouter(),
         PeriodicTaskRouter(),
         RelationshipInfoRouter(),
         SCDTableRouter(),

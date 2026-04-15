@@ -40,6 +40,8 @@ from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
+from featurebyte.api.exposure import Exposure
+from featurebyte.api.exposure_namespace import ExposureNamespace
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
@@ -114,6 +116,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_deployments", Deployment, "list"),
         MethodMetadata("list_static_source_tables", StaticSourceTable, "list"),
         MethodMetadata("list_targets", Target, "list"),
+        MethodMetadata("list_exposures", Exposure, "list"),
         MethodMetadata("list_user_defined_functions", UserDefinedFunction, "list"),
         MethodMetadata("list_use_cases", UseCase, "list"),
         MethodMetadata("list_contexts", Context, "list"),
@@ -139,6 +142,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_deployment", Deployment, "get"),
         MethodMetadata("get_static_source_table", StaticSourceTable, "get"),
         MethodMetadata("get_target", Target, "get"),
+        MethodMetadata("get_exposure", Exposure, "get"),
         MethodMetadata("get_user_defined_function", UserDefinedFunction, "get"),
         MethodMetadata("get_use_case", UseCase, "get"),
         MethodMetadata("get_context", Context, "get"),
@@ -174,6 +178,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_static_source_table_by_id", StaticSourceTable, "get_by_id"),
         MethodMetadata("get_user_defined_function_by_id", UserDefinedFunction, "get_by_id"),
         MethodMetadata("get_target_by_id", Target, "get_by_id"),
+        MethodMetadata("get_exposure_by_id", Exposure, "get_by_id"),
         MethodMetadata("get_treatment_by_id", Treatment, "get_by_id"),
         MethodMetadata("get_use_case_by_id", UseCase, "get_by_id"),
         MethodMetadata("get_context_by_id", Context, "get_by_id"),
@@ -311,6 +316,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         TableApiObject,
         TableListMixin,
         TargetNamespace,
+        ExposureNamespace,
         FeatureOrTargetMixin,
         FeatureOrTargetNamespaceMixin,
         UseCaseOrContextMixin,

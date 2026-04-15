@@ -207,10 +207,19 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 output_table_details=location.table_details,
                 forecast_point_schema=forecast_point_schema,
             )
-            entity_ids = graph.get_entity_ids(node_names[0])
-            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids
-            )
+            # Derive primary entity IDs. When the observation set has its own entity IDs
+            # (e.g. child entities), use those since the output table will contain the
+            # observation set's entity columns (parent entity is resolved via parent serving).
+            if (
+                isinstance(observation_set, ObservationTableModel)
+                and observation_set.primary_entity_ids
+            ):
+                primary_entity_ids = list(observation_set.primary_entity_ids)
+            else:
+                entity_ids = graph.get_entity_ids(node_names[0])
+                primary_entity_ids = (
+                    await self.derive_primary_entity_helper.derive_primary_entity_ids(entity_ids)
+                )
 
             # get the table with missing data
             op_struct_target = graph.extract_operation_structure(
@@ -250,13 +259,16 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
             else:
                 use_case_ids = []
 
+            # Entity validation is already performed by target_computer.compute() via
+            # validate_entities_or_prepare_for_parent_serving, so skip it here to avoid
+            # false failures when parent entity serving was used.
             additional_metadata = (
                 await self.observation_table_service.validate_materialized_table_and_get_metadata(
                     db_session,
                     location.table_details,
                     feature_store=feature_store,
                     serving_names_remapping=payload.serving_names_mapping,
-                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    skip_entity_validation_checks=True,
                     primary_entity_ids=primary_entity_ids,
                     context_id=context_id,
                 )

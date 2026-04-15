@@ -466,6 +466,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         purpose: Optional[Purpose] = None,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        exposure_column: Optional[str] = None,
         treatment_column: Optional[str] = None,
         context_name: Optional[str] = None,
         use_case_name: Optional[str] = None,
@@ -487,6 +488,10 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        exposure_column: Optional[str]
+            Name of the column in the observation table that stores the exposure values.
+            The exposure column name must match an existing exposure namespace in the catalog.
+            The data type and primary entities must match those in the exposure namespace.
         treatment_column: Optional[str]
             Name of the column in the observation table that stores the treatment values.
             The treatment column name must match the treatment name of the associated context.
@@ -524,6 +529,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             primary_entity_ids=primary_entity_ids,
             uploaded_file_name=os.path.basename(file_path),
             target_column=target_column,
+            exposure_column=exposure_column,
             treatment_column=treatment_column,
             context_id=context_id,
             use_case_id=use_case_id,

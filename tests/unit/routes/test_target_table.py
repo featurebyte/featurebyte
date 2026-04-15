@@ -154,6 +154,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
                 "type": "observation_table",
             },
             "target_namespace_id": target_namespace_id,
+            "exposure_namespace_id": None,
             "updated_at": None,
             "use_case_ids": [],
             "user_id": str(user_id),

@@ -24,6 +24,8 @@ from featurebyte.service.development_dataset import DevelopmentDatasetService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.exposure import ExposureService
+from featurebyte.service.exposure_namespace import ExposureNamespaceService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
@@ -76,6 +78,8 @@ DocumentServiceT = TypeVar(
     RelationshipInfoService,
     PeriodicTaskService,
     ObservationTableService,
+    ExposureService,
+    ExposureNamespaceService,
     OnlineStoreService,
     HistoricalFeatureTableService,
     BatchRequestTableService,

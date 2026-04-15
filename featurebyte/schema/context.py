@@ -27,6 +27,8 @@ class ContextCreate(FeatureByteBaseModel):
     treatment_id: Optional[PydanticObjectId] = Field(default=None)
     user_provided_columns: List[UserProvidedColumn] = Field(default_factory=list)
     forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
+    exposure_id: Optional[PydanticObjectId] = Field(default=None)
+    exposure_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
