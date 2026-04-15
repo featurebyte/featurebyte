@@ -286,6 +286,7 @@ class DevelopmentDatasetService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[DevelopmentDatasetModel]:
         original_document = await self.get_document(
             document_id=document_id, populate_remote_attributes=False

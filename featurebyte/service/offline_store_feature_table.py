@@ -199,6 +199,7 @@ class OfflineStoreFeatureTableService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[OfflineStoreFeatureTableModel]:
         if isinstance(data, FeaturesUpdate):
             with self.get_feature_cluster_storage_lock(

@@ -1259,6 +1259,7 @@ class BaseDocumentService(
         update_dict: Dict[str, Any],
         update_document_class: Optional[Type[DocumentUpdateSchema]],
         skip_block_modification_check: bool = False,
+        skip_audit: bool = False,
     ) -> None:
         """
         Update document to persistent
@@ -1274,6 +1275,8 @@ class BaseDocumentService(
         skip_block_modification_check: bool
             Whether to skip block modification check (use with caution,
             should only be used when updating document description)
+        skip_audit: bool
+            Whether to skip audit logging for this update (use with caution)
         """
         if not skip_block_modification_check:
             # check if document is modifiable
@@ -1297,7 +1300,7 @@ class BaseDocumentService(
                 query_filter=await self.construct_get_query_filter(document_id=document.id),
                 update={"$set": update_dict},
                 user_id=self.user.id,
-                disable_audit=self.should_disable_audit,
+                disable_audit=self.should_disable_audit or skip_audit,
             )
 
     async def update_document(
@@ -1309,6 +1312,7 @@ class BaseDocumentService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[Document]:
         """
         Update document at persistent
@@ -1329,6 +1333,8 @@ class BaseDocumentService(
             Whether to skip block modification check (use with caution, only use when updating document description)
         populate_remote_attributes: bool
             Whether to populate remote attributes (e.g. file paths) when returning document
+        skip_audit: bool
+            Whether to skip audit logging for this update (use with caution)
 
         Returns
         -------
@@ -1352,6 +1358,7 @@ class BaseDocumentService(
             update_dict=update_dict,
             update_document_class=type(data),
             skip_block_modification_check=skip_block_modification_check,
+            skip_audit=skip_audit,
         )
 
         if return_document:
