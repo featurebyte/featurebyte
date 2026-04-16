@@ -137,6 +137,8 @@ class BaseMaterializedTableController(
         -------
         AsyncGenerator[bytes, None]
         """
+        row_group_size = 128_000
+
         bytestream = await self.feature_store_warehouse_service.download_table(
             location=location,
         )
@@ -146,6 +148,8 @@ class BaseMaterializedTableController(
         out_buffer = BytesIO()
         reader: Optional[pa.RecordBatchStreamReader] = None
         writer: Optional[pq.ParquetWriter] = None
+        buffered_tables: list[pa.Table] = []
+        buffered_rows = 0
         async for in_chunk in bytestream:
             in_buffer.write(in_chunk)
             in_buffer.seek(0)
@@ -157,19 +161,32 @@ class BaseMaterializedTableController(
 
             if not writer:
                 writer = pq.ParquetWriter(out_buffer, table.schema)
-            writer.write_table(table)
-            out_buffer.seek(0)
-            out_chunk = out_buffer.getvalue()
-            if out_chunk:
-                yield out_chunk
+
+            buffered_tables.append(table)
+            buffered_rows += table.num_rows
+
+            # Flush buffered tables as a single row group when threshold is reached
+            if buffered_rows >= row_group_size:
+                combined = pa.concat_tables(buffered_tables)
+                writer.write_table(combined)
+                buffered_tables = []
+                buffered_rows = 0
                 out_buffer.seek(0)
-                out_buffer.truncate(0)
+                out_chunk = out_buffer.getvalue()
+                if out_chunk:
+                    yield out_chunk
+                    out_buffer.seek(0)
+                    out_buffer.truncate(0)
+
+        # Flush remaining buffered tables
+        if writer and buffered_tables:
+            combined = pa.concat_tables(buffered_tables)
+            writer.write_table(combined)
 
         # read final chunk
         if reader:
             reader.close()
             if writer:
-                writer.write_table(reader.read_all())
                 writer.close()
         out_chunk = out_buffer.getvalue()
         if out_chunk:
