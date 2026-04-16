@@ -304,6 +304,23 @@ class AggregationSpec(ABC):
         hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
         return hasher.hexdigest(8)
 
+    @property
+    def source_view_hash(self) -> str:
+        """
+        Get a hash that identifies which aggregations can share the same source table CTE.
+        Unlike source_hash (which groups aggregations for the same subquery), this hash
+        excludes window-specific parameters so that features with different window sizes
+        but the same source table can share a single source scan.
+
+        By default this returns the same as source_hash. Subclasses for window-based
+        aggregations override this to exclude window/offset/blind_spot.
+
+        Returns
+        -------
+        str
+        """
+        return self.source_hash
+
     @abstractmethod
     def get_source_hash_parameters(self) -> dict[str, Any]:
         """

@@ -269,7 +269,9 @@ class NonTileWindowAggregator(Aggregator[NonTileWindowAggregateSpec]):
     @staticmethod
     def get_source_view_table_name(aggregation_spec: NonTileWindowAggregateSpec) -> str:
         """
-        Get the view name corresponding to the source of the aggregation
+        Get the view name corresponding to the source of the aggregation.
+        Uses source_view_hash (excludes window size) so that features with different
+        window sizes but the same source table share a single source scan CTE.
 
         Parameters
         ----------
@@ -280,7 +282,7 @@ class NonTileWindowAggregator(Aggregator[NonTileWindowAggregateSpec]):
         -------
         str
         """
-        return f"VIEW_{aggregation_spec.source_hash}"
+        return f"VIEW_{aggregation_spec.source_view_hash}"
 
     def get_source_view_with_timestamp_epoch(
         self, aggregation_spec: NonTileWindowAggregateSpec

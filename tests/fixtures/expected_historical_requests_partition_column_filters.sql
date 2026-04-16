@@ -27,7 +27,7 @@ FROM (
 );
 
 CREATE TABLE "__TEMP_0" AS
-WITH "VIEW_038bbd5f30898ec2_BUCKET_COLUMN" AS (
+WITH "VIEW_fb86875dff03239d_BUCKET_COLUMN" AS (
   SELECT
     *,
     (
@@ -76,7 +76,7 @@ WITH "VIEW_038bbd5f30898ec2_BUCKET_COLUMN" AS (
           VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
           VIEW."col_float"
         FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
-        INNER JOIN "VIEW_038bbd5f30898ec2_BUCKET_COLUMN" AS VIEW
+        INNER JOIN "VIEW_fb86875dff03239d_BUCKET_COLUMN" AS VIEW
           ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
           AND REQ."cust_id" = VIEW."store_id"
         WHERE
@@ -89,7 +89,7 @@ WITH "VIEW_038bbd5f30898ec2_BUCKET_COLUMN" AS (
           VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
           VIEW."col_float"
         FROM "__temp_feature_query_000000000000000000000000_request_table_time_series_w3_month_bs1_month_0_8_1_any_any_etc_utc_none_cust_id_distinct_by_scheduled_job_time" AS REQ
-        INNER JOIN "VIEW_038bbd5f30898ec2_BUCKET_COLUMN" AS VIEW
+        INNER JOIN "VIEW_fb86875dff03239d_BUCKET_COLUMN" AS VIEW
           ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 3) - 1 = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 3)
           AND REQ."cust_id" = VIEW."store_id"
         WHERE

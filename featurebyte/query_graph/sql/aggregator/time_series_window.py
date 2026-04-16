@@ -326,7 +326,9 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
     @staticmethod
     def get_source_view_table_name(aggregation_spec: TimeSeriesWindowAggregateSpec) -> str:
         """
-        Get the view name corresponding to the source of the aggregation
+        Get the view name corresponding to the source of the aggregation.
+        Uses source_view_hash (excludes window size) so that features with different
+        window sizes but the same source table share a single source scan CTE.
 
         Parameters
         ----------
@@ -337,14 +339,15 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         -------
         str
         """
-        return f"VIEW_{aggregation_spec.source_hash}"
+        return f"VIEW_{aggregation_spec.source_view_hash}"
 
     @staticmethod
     def get_source_view_with_bucket_column_table_name(
         aggregation_spec: TimeSeriesWindowAggregateSpec,
     ) -> str:
         """
-        Get the view name corresponding to the source of the aggregation with a bucket column
+        Get the view name corresponding to the source of the aggregation with a bucket column.
+        Uses source_view_hash so that different window sizes share the same bucketed source CTE.
 
         Parameters
         ----------
@@ -355,14 +358,15 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         -------
         str
         """
-        return f"VIEW_{aggregation_spec.source_hash}_BUCKET_COLUMN"
+        return f"VIEW_{aggregation_spec.source_view_hash}_BUCKET_COLUMN"
 
     @staticmethod
     def get_distinct_reference_datetime_table_name(
         aggregation_spec: TimeSeriesWindowAggregateSpec,
     ) -> str:
         """
-        Get the table name for distinct reference datetime
+        Get the table name for distinct reference datetime.
+        Uses source_view_hash so that different window sizes share the same CTE.
 
         Parameters
         ----------
@@ -373,7 +377,7 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         -------
         str
         """
-        return f"VIEW_{aggregation_spec.source_hash}_DISTINCT_REFERENCE_DATETIME"
+        return f"VIEW_{aggregation_spec.source_view_hash}_DISTINCT_REFERENCE_DATETIME"
 
     @classmethod
     def get_source_view(cls, aggregation_spec: TimeSeriesWindowAggregateSpec) -> Select:

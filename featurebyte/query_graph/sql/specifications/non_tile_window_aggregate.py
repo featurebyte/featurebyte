@@ -4,6 +4,8 @@ NonTileWindowAggregateSpec
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any, List, Optional, cast
 
@@ -84,6 +86,24 @@ class NonTileWindowAggregateSpec(AggregationSpec):
         params["parameters"] = parameters_dict
 
         return params
+
+    @property
+    def source_view_hash(self) -> str:
+        """
+        Hash for sharing source table CTEs across different aggregation specs.
+        The source view CTE does not depend on groupby keys, entity IDs, serving names,
+        category columns, window size, or offset. Only the source expression itself matters.
+
+        Returns
+        -------
+        str
+        """
+        params: dict[str, Any] = {
+            "source_expr": self.source_expr.sql(),
+        }
+        hasher = hashlib.shake_128()
+        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+        return hasher.hexdigest(8)
 
     @classmethod
     def construct_specs(
