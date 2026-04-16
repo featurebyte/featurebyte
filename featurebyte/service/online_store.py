@@ -151,6 +151,7 @@ class OnlineStoreService(
         update_dict: Dict[str, Any],
         update_document_class: Optional[Type[DocumentUpdateSchema]],
         skip_block_modification_check: bool = False,
+        skip_audit: bool = False,
     ) -> None:
         # encrypt credential if present in update_dict
         if "details" in update_dict:

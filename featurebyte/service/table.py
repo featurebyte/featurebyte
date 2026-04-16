@@ -38,6 +38,7 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[Document]:
         raise NotImplementedError
 

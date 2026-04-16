@@ -61,6 +61,7 @@ class SnapshotsTableService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[SnapshotsTableModel]:
         if isinstance(data, SnapshotsTableServiceUpdate) and data.default_feature_job_setting:
             # if default feature job setting is to be updated

@@ -139,6 +139,7 @@ class CredentialService(
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
+        skip_audit: bool = False,
     ) -> Optional[CredentialModel]:
         """
         Update document at persistent
@@ -159,6 +160,8 @@ class CredentialService(
             Whether to skip block modification check (used only when updating description)
         populate_remote_attributes: bool
             Whether to populate remote attributes
+        skip_audit: bool
+            Whether to skip audit logging for this update (use with caution)
 
         Returns
         -------

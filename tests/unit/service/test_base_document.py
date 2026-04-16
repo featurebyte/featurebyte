@@ -778,6 +778,48 @@ async def test_app_container__disable_block_modification_check(app_container, en
 
 
 @pytest.mark.asyncio
+async def test_update_document_skip_audit(document_service):
+    """Test that update_document with skip_audit=True does not create an audit record"""
+    document = await document_service.create_document(data=Document(name="original_name"))
+
+    # confirm the insertion was audited
+    audits_before = await document_service.list_document_audits(document_id=document.id)
+    assert audits_before["total"] == 1
+    assert audits_before["data"][0]["action_type"] == AuditActionType.INSERT
+
+    # update with skip_audit=True
+    updated = await document_service.update_document(
+        document_id=document.id,
+        data=Document(name="updated_name"),
+        skip_audit=True,
+    )
+    assert updated.name == "updated_name"
+
+    # no additional audit record should have been created
+    audits_after = await document_service.list_document_audits(document_id=document.id)
+    assert audits_after["total"] == 1
+    assert audits_after["data"][0]["action_type"] == AuditActionType.INSERT
+
+
+@pytest.mark.asyncio
+async def test_update_document_audit_recorded_by_default(document_service):
+    """Test that update_document records an audit entry by default"""
+    document = await document_service.create_document(data=Document(name="original_name"))
+
+    # update without skip_audit (default behaviour)
+    updated = await document_service.update_document(
+        document_id=document.id,
+        data=Document(name="updated_name"),
+    )
+    assert updated.name == "updated_name"
+
+    # an UPDATE audit record should have been created
+    audits = await document_service.list_document_audits(document_id=document.id)
+    action_types = [audit["action_type"] for audit in audits["data"]]
+    assert AuditActionType.UPDATE in action_types
+
+
+@pytest.mark.asyncio
 async def test_soft_delete_document(document_service):
     """Test soft delete document"""
     documents = [
