@@ -170,6 +170,28 @@ def multi_window_agg_specs_fixture(base_agg_spec):
     return specs
 
 
+@pytest.fixture(name="cross_agg_multi_func_specs")
+def cross_agg_multi_func_specs_fixture(base_agg_spec):
+    """
+    Fixture of cross-aggregation (value_by set) specs differing only by agg_func.
+    Today these emit independent inner GROUP BYs because get_source_hash_parameters
+    keeps agg_func in the hash when value_by is set. The two OBJECT_AGGs need
+    different ROW_NUMBER orderings (each by their own agg-result column), but the
+    inner GROUP BY itself could be shared.
+    """
+    agg_spec_1 = copy.deepcopy(base_agg_spec)
+    agg_spec_1.parameters.value_by = "snapshot_date"
+    agg_spec_1.parameters.agg_func = "sum"
+    agg_spec_1.parameters.names = ["feature_sum_by_cat"]
+
+    agg_spec_2 = copy.deepcopy(base_agg_spec)
+    agg_spec_2.parameters.value_by = "snapshot_date"
+    agg_spec_2.parameters.agg_func = "min"
+    agg_spec_2.parameters.names = ["feature_min_by_cat"]
+
+    return [agg_spec_1, agg_spec_2]
+
+
 @pytest.mark.parametrize(
     "test_case_name",
     [
@@ -184,6 +206,7 @@ def multi_window_agg_specs_fixture(base_agg_spec):
         "blind_spot",
         "event_table",
         "multi_window",
+        "cross_agg_multi_func",
     ],
 )
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
@@ -202,6 +225,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "blind_spot": "blind_spot_agg_specs",
         "event_table": "event_table_agg_spec",
         "multi_window": "multi_window_agg_specs",
+        "cross_agg_multi_func": "cross_agg_multi_func_specs",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)
