@@ -17,6 +17,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     get_combined_ingest_graph,
 )
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     CURRENT_TIMESTAMP_PLACEHOLDER,
@@ -298,6 +299,18 @@ class DeploymentSqlGenerationService:
         graph_container = OfflineIngestGraphContainer.build_from_feature_infos(feature_infos)
 
         for table_name, ingest_graphs in graph_container.offline_store_table_name_to_graphs.items():
+            # Skip tables whose features are pure request-column derivations (e.g., functions of
+            # FORECAST_POINT or POINT_IN_TIME with no source-data aggregation). They have no
+            # entity universe to materialize from and are served on-demand from request inputs.
+            # Note: non-decomposed features include RequestColumnNodes in aggregation_nodes_info
+            # (the decomposition-time filter at offline_store_ingest.py does not run for them),
+            # so we must filter by node type here rather than checking emptiness.
+            if not any(
+                info.node_type != NodeType.REQUEST_COLUMN
+                for g in ingest_graphs
+                for info in g.aggregation_nodes_info
+            ):
+                continue
             features = graph_container.offline_store_table_name_to_features[table_name]
             ingest_graph = ingest_graphs[0]
             primary_entities = await self._get_entities(
