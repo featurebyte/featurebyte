@@ -154,6 +154,22 @@ def event_table_agg_spec_fixture(base_agg_spec):
     return base_agg_spec
 
 
+@pytest.fixture(name="multi_window_agg_specs")
+def multi_window_agg_specs_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec objects differing only by window size.
+    Exercises the source_view_hash optimization that lets specs sharing a source
+    table but with different windows share a single source view CTE.
+    """
+    specs = []
+    for size in [7, 28, 91, 182]:
+        spec = copy.deepcopy(base_agg_spec)
+        spec.window = CalendarWindow(unit="DAY", size=size)
+        spec.parameters.names = [f"feature_w{size}d"]
+        specs.append(spec)
+    return specs
+
+
 @pytest.mark.parametrize(
     "test_case_name",
     [
@@ -167,6 +183,7 @@ def event_table_agg_spec_fixture(base_agg_spec):
         "grouped",
         "blind_spot",
         "event_table",
+        "multi_window",
     ],
 )
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
@@ -184,6 +201,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "grouped": "grouped_agg_specs",
         "blind_spot": "blind_spot_agg_specs",
         "event_table": "event_table_agg_spec",
+        "multi_window": "multi_window_agg_specs",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)
