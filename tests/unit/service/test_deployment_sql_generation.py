@@ -713,3 +713,87 @@ async def test_deployment_sql__not_supported(
     with pytest.raises(DeploymentSqlGenerationError) as exc:
         _ = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
     assert "Deployment SQL generation is not supported" in str(exc.value)
+
+
+@pytest_asyncio.fixture
+async def deployed_forecast_point_only_feature_list(
+    app_container,
+    forecast_point_dt_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list containing only a forecast-point-derived feature (no source-data
+    aggregation). The feature is a pure transformation of FORECAST_POINT. Feast integration is
+    disabled to mirror the user-reported scenario, where the bug surfaces only during deployment
+    SQL generation.
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    with mock.patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
+        feature_list = await deploy_feature(
+            app_container,
+            forecast_point_dt_feature,
+            return_type="feature_list",
+            deployment_id=deployment_id,
+        )
+    return feature_list
+
+
+@pytest_asyncio.fixture
+async def deployed_forecast_point_with_aggregate_feature_list(
+    app_container,
+    forecast_point_dt_feature,
+    ts_window_aggregate_feature,
+    deployment_id,
+    mock_update_data_warehouse,
+    mock_offline_store_feature_manager_dependencies,
+):
+    """
+    Fixture for a feature list mixing a forecast-point-derived feature with a real time-series
+    aggregate feature. Only the aggregate should produce an offline feature table SQL.
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_offline_store_feature_manager_dependencies
+    with mock.patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
+        feature_list = await deploy_features(
+            app_container,
+            [forecast_point_dt_feature, ts_window_aggregate_feature],
+            feature_list_name=f"feature_list_{ObjectId()}",
+            deployment_id=deployment_id,
+        )
+    return feature_list
+
+
+@pytest.mark.asyncio
+async def test_deployment_sql__forecast_point_only(
+    deployed_forecast_point_only_feature_list,
+    deployment_sql_generation_service,
+    deployment_id,
+):
+    """
+    Test that a feature list with only forecast-point-derived features generates no offline
+    feature table SQL (these features are served on-demand from request inputs).
+    """
+    _ = deployed_forecast_point_only_feature_list
+    deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    assert deployment_sql.feature_table_sqls == []
+
+
+@pytest.mark.asyncio
+async def test_deployment_sql__forecast_point_with_aggregate(
+    deployed_forecast_point_with_aggregate_feature_list,
+    deployment_sql_generation_service,
+    deployment_id,
+):
+    """
+    Test that mixing forecast-point-derived features with real aggregates yields offline SQL
+    only for the real aggregate; the forecast feature is omitted (served on-demand).
+    """
+    _ = deployed_forecast_point_with_aggregate_feature_list
+    deployment_sql = await deployment_sql_generation_service.generate_deployment_sql(deployment_id)
+    feature_names = [
+        name for sql in deployment_sql.feature_table_sqls for name in sql.feature_names
+    ]
+    assert feature_names == ["col_float_sum_3month"]
