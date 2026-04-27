@@ -690,21 +690,17 @@ class FeatureTableCacheService:
                     CACHE_INSERTION_START_PROGRESS_PERCENTAGE, "Inserting features into cache"
                 )
 
-            async with acquire_lock(
-                self.redis,
-                f"feature_table_cache_update:obs:{observation_table.id}",
-                timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-            ):
-                # We need to acquire a lock to handle the case where multiple requests are trying to
-                # add the features to the cache at the same time.
-                await self._insert_features_into_cache(
-                    db_session=db_session,
-                    observation_table=observation_table,
-                    non_cached_nodes=non_cached_nodes,
-                    graph=graph,
-                    intermediate_table_name=intermediate_table_name,
-                    features_computation_result=features_computation_result,
-                )
+            # No lock needed here — the caller (create_or_update_feature_table_cache)
+            # already holds the per-observation-table lock that wraps cache check +
+            # compute + insert.
+            await self._insert_features_into_cache(
+                db_session=db_session,
+                observation_table=observation_table,
+                non_cached_nodes=non_cached_nodes,
+                graph=graph,
+                intermediate_table_name=intermediate_table_name,
+                features_computation_result=features_computation_result,
+            )
 
             # Cache insertion completed
             if progress_callback:
@@ -797,9 +793,6 @@ class FeatureTableCacheService:
             "Observation Tables without row index are not supported"
         )
 
-        cached_definitions = await self.feature_table_cache_metadata_service.get_cached_definitions(
-            observation_table_id=observation_table.id
-        )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
@@ -810,43 +803,65 @@ class FeatureTableCacheService:
                 await self._get_definition_hashes_mapping_from_feature_list_id(feature_list_id)
             )
 
+        # Compute hashes before the lock (CPU-only, doesn't depend on cache state).
         hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
-        non_cached_nodes = await self.get_non_cached_nodes(cached_definitions, nodes, hashes)
 
-        if progress_callback:
-            await progress_callback(
-                FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
-                "Feature table cache status check completed",
+        # Serialize the cache-check + compute + insert sequence per observation table.
+        # Without this lock at the outer level, two concurrent requests for the same
+        # (observation_table, features) pair can both miss the cache, both decide to
+        # compute, and both run the expensive feature computation in parallel — even
+        # though the existing inner insert-only lock protects against concurrent writes,
+        # it doesn't dedup the compute. Holding the lock from the cache check through
+        # insert means a second request finds the cache populated and exits cheaply.
+        async with acquire_lock(
+            self.redis,
+            f"feature_table_cache_update:obs:{observation_table.id}",
+            timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        ):
+            cached_definitions = (
+                await self.feature_table_cache_metadata_service.get_cached_definitions(
+                    observation_table_id=observation_table.id
+                )
+            )
+            non_cached_nodes = await self.get_non_cached_nodes(
+                cached_definitions, nodes, hashes
             )
 
-        if non_cached_nodes:
-            features_computation_result = await self._materialize_and_update_cache(
-                feature_store=feature_store,
-                observation_table=observation_table,
-                db_session=db_session,
-                graph=graph,
-                non_cached_nodes=non_cached_nodes,
-                is_target=is_target,
-                serving_names_mapping=serving_names_mapping,
-                development_dataset=development_dataset,
-                progress_callback=progress_callback,
-                raise_on_error=raise_on_error,
-                forecast_point_schema=forecast_point_schema,
-            )
-        else:
-            # No features to compute, everything is cached
             if progress_callback:
                 await progress_callback(
-                    CACHE_INSERTION_COMPLETED_PROGRESS_PERCENTAGE, "All features already cached"
+                    FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE,
+                    "Feature table cache status check completed",
                 )
 
-            features_computation_result = FeaturesComputationResult(
-                historical_features_metrics=HistoricalFeaturesMetrics(
-                    tile_compute_seconds=0,
-                    feature_compute_seconds=0,
-                    feature_cache_update_seconds=0,
+            if non_cached_nodes:
+                features_computation_result = await self._materialize_and_update_cache(
+                    feature_store=feature_store,
+                    observation_table=observation_table,
+                    db_session=db_session,
+                    graph=graph,
+                    non_cached_nodes=non_cached_nodes,
+                    is_target=is_target,
+                    serving_names_mapping=serving_names_mapping,
+                    development_dataset=development_dataset,
+                    progress_callback=progress_callback,
+                    raise_on_error=raise_on_error,
+                    forecast_point_schema=forecast_point_schema,
                 )
-            )
+            else:
+                # No features to compute, everything is cached
+                if progress_callback:
+                    await progress_callback(
+                        CACHE_INSERTION_COMPLETED_PROGRESS_PERCENTAGE,
+                        "All features already cached",
+                    )
+
+                features_computation_result = FeaturesComputationResult(
+                    historical_features_metrics=HistoricalFeaturesMetrics(
+                        tile_compute_seconds=0,
+                        feature_compute_seconds=0,
+                        feature_cache_update_seconds=0,
+                    )
+                )
 
         return UpdateFeatureTableCacheResult(
             hashes=hashes,
