@@ -583,7 +583,7 @@ class TimeSeriesWindowAggregator(Aggregator[TimeSeriesWindowAggregateSpec]):
         if spec.parameters.value_by is not None:
             source_columns.add(spec.parameters.value_by)
         groupby_input_columns.extend([
-            get_qualified_column_identifier(col, "VIEW") for col in source_columns
+            get_qualified_column_identifier(col, "VIEW") for col in sorted(source_columns)
         ])
         join_condition = expressions.and_(
             expressions.EQ(

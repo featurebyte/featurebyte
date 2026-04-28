@@ -88,8 +88,8 @@ LEFT JOIN (
               RANGE_JOINED."__FB_CRON_JOB_SCHEDULE_DATETIME",
               RANGE_JOINED."__FB_VIEW_TIMESTAMP_EPOCH",
               RANGE_JOINED."CUSTOMER_ID",
-              VIEW."snapshot_date",
-              VIEW."a"
+              VIEW."a",
+              VIEW."snapshot_date"
             FROM (
               SELECT
                 REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
@@ -180,8 +180,8 @@ LEFT JOIN (
               RANGE_JOINED."__FB_CRON_JOB_SCHEDULE_DATETIME",
               RANGE_JOINED."__FB_VIEW_TIMESTAMP_EPOCH",
               RANGE_JOINED."CUSTOMER_ID",
-              VIEW."snapshot_date",
-              VIEW."a"
+              VIEW."a",
+              VIEW."snapshot_date"
             FROM (
               SELECT
                 REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
