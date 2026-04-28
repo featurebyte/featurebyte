@@ -690,17 +690,26 @@ class FeatureTableCacheService:
                     CACHE_INSERTION_START_PROGRESS_PERCENTAGE, "Inserting features into cache"
                 )
 
-            # No lock needed here — the caller (create_or_update_feature_table_cache)
-            # already holds the per-observation-table lock that wraps cache check +
-            # compute + insert.
-            await self._insert_features_into_cache(
-                db_session=db_session,
-                observation_table=observation_table,
-                non_cached_nodes=non_cached_nodes,
-                graph=graph,
-                intermediate_table_name=intermediate_table_name,
-                features_computation_result=features_computation_result,
-            )
+            # Defense in depth around the cache table mutation (create / alter / merge).
+            # The outer lock in create_or_update_feature_table_cache normally serializes
+            # this, but its TTL is finite (LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS) —
+            # if it expires mid-flight a concurrent caller could re-enter the insert
+            # path. We use a key distinct from the outer lock so re-acquiring here
+            # doesn't deadlock against this same process's own outer lock (Redis locks
+            # are not reentrant).
+            async with acquire_lock(
+                self.redis,
+                f"feature_table_cache_insert:obs:{observation_table.id}",
+                timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+            ):
+                await self._insert_features_into_cache(
+                    db_session=db_session,
+                    observation_table=observation_table,
+                    non_cached_nodes=non_cached_nodes,
+                    graph=graph,
+                    intermediate_table_name=intermediate_table_name,
+                    features_computation_result=features_computation_result,
+                )
 
             # Cache insertion completed
             if progress_callback:
@@ -809,10 +818,20 @@ class FeatureTableCacheService:
         # Serialize the cache-check + compute + insert sequence per observation table.
         # Without this lock at the outer level, two concurrent requests for the same
         # (observation_table, features) pair can both miss the cache, both decide to
-        # compute, and both run the expensive feature computation in parallel — even
-        # though the existing inner insert-only lock protects against concurrent writes,
-        # it doesn't dedup the compute. Holding the lock from the cache check through
-        # insert means a second request finds the cache populated and exits cheaply.
+        # compute, and both run the expensive feature computation in parallel.
+        # Holding the lock from the cache check through insert means a second request
+        # finds the cache populated and exits cheaply.
+        #
+        # Scope tradeoff: keying on observation_table.id alone also serializes
+        # requests for *different* feature sets on the same observation table.
+        # Finer granularity (e.g. per sorted hash-tuple) would unblock unrelated
+        # feature sets but would lose the dedup benefit whenever a later request
+        # overlaps with an in-flight compute — the in-flight request wouldn't
+        # populate the cache in time, so the later request would compute a
+        # superset on its own. The cache table is keyed per observation table, so
+        # observation_table.id is the natural unit; the wait cost is bounded by
+        # one ongoing compute, while the savings (observed at ~85 min / ~34 GB
+        # of duplicated work in production) are large.
         async with acquire_lock(
             self.redis,
             f"feature_table_cache_update:obs:{observation_table.id}",
