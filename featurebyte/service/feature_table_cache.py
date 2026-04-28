@@ -842,9 +842,7 @@ class FeatureTableCacheService:
                     observation_table_id=observation_table.id
                 )
             )
-            non_cached_nodes = await self.get_non_cached_nodes(
-                cached_definitions, nodes, hashes
-            )
+            non_cached_nodes = await self.get_non_cached_nodes(cached_definitions, nodes, hashes)
 
             if progress_callback:
                 await progress_callback(

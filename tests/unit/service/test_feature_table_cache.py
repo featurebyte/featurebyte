@@ -1077,9 +1077,7 @@ async def test_create_or_update_feature_table_cache__concurrent_calls_dedup_comp
 
     mock_get_historical_features.side_effect = slow_compute
 
-    with patch(
-        "featurebyte.service.feature_table_cache.acquire_lock", new=fake_acquire_lock
-    ):
+    with patch("featurebyte.service.feature_table_cache.acquire_lock", new=fake_acquire_lock):
         results = await asyncio.gather(
             feature_table_cache_service.create_or_update_feature_table_cache(
                 feature_store=feature_store,
