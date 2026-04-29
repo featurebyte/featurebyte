@@ -4,6 +4,7 @@ Module for managing physical feature table cache as well as metadata storage.
 
 from __future__ import annotations
 
+import hashlib
 import time
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, List, Optional, Tuple, cast
@@ -690,13 +691,17 @@ class FeatureTableCacheService:
                     CACHE_INSERTION_START_PROGRESS_PERCENTAGE, "Inserting features into cache"
                 )
 
-            # Defense in depth around the cache table mutation (create / alter / merge).
-            # The outer lock in create_or_update_feature_table_cache normally serializes
-            # this, but its TTL is finite (LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS) —
-            # if it expires mid-flight a concurrent caller could re-enter the insert
-            # path. We use a key distinct from the outer lock so re-acquiring here
-            # doesn't deadlock against this same process's own outer lock (Redis locks
-            # are not reentrant).
+            # Per-observation-table lock around the cache table mutation (create
+            # / alter / merge). The outer lock in
+            # create_or_update_feature_table_cache is scoped to (obs_table,
+            # feature-set fingerprint), so concurrent requests for *different*
+            # feature sets on the same observation table proceed in parallel and
+            # all reach this point — they must serialize their writes to the
+            # shared cache table (same target table, same row index, but
+            # different columns). It also serves as defense-in-depth in case the
+            # outer lock's TTL expires mid-flight. Keyed differently from the
+            # outer lock so re-acquiring here doesn't deadlock against this same
+            # process's own outer lock (Redis locks are not reentrant).
             async with acquire_lock(
                 self.redis,
                 f"feature_table_cache_insert:obs:{observation_table.id}",
@@ -815,34 +820,27 @@ class FeatureTableCacheService:
         # Compute hashes before the lock (CPU-only, doesn't depend on cache state).
         hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
 
-        # Serialize the cache-check + compute + insert sequence per observation table.
-        # Without this lock at the outer level, two concurrent requests for the same
-        # (observation_table, features) pair can both miss the cache, both decide to
-        # compute, and both run the expensive feature computation in parallel.
-        # Holding the lock from cache-check through insert means:
-        #   - A second request whose feature set is fully covered by the first's
-        #     output sees the cache populated by the time it acquires the lock and
-        #     skips compute entirely (get_non_cached_nodes returns []).
-        #   - A second request with partial overlap still computes, but only for
-        #     the genuinely missing definition hashes — overlapping ones are
-        #     filtered out by get_non_cached_nodes.
-        #   - A second request with no overlap gets no dedup benefit and is
-        #     simply blocked until the first releases. That serialization cost
-        #     is the per-observation-table scope tradeoff below.
+        # Serialize the cache-check + compute + insert sequence per (observation
+        # table, feature set). Without this lock, two concurrent requests for the
+        # same (observation_table, features) pair can both miss the cache, both
+        # decide to compute, and both run the expensive feature computation in
+        # parallel — observed in production at ~85 min / ~34 GB of duplicated work
+        # for two parallel model training tasks computing identical features.
         #
-        # Scope tradeoff: keying on observation_table.id alone also serializes
-        # requests for *different* feature sets on the same observation table.
-        # Finer granularity (e.g. per sorted hash-tuple) would unblock unrelated
-        # feature sets but would lose the dedup benefit whenever a later request
-        # overlaps with an in-flight compute — the in-flight request wouldn't
-        # populate the cache in time, so the later request would compute a
-        # superset on its own. The cache table is keyed per observation table, so
-        # observation_table.id is the natural unit; the wait cost is bounded by
-        # one ongoing compute, while the savings (observed at ~85 min / ~34 GB
-        # of duplicated work in production) are large.
+        # Lock scope is per *feature-set fingerprint* (sha256 of sorted unique
+        # definition hashes), not just per observation table. Two concurrent
+        # requests for the *same* feature list on the same observation table
+        # share a lock and dedup; requests for *unrelated* feature sets on the
+        # same observation table acquire different locks and run in parallel.
+        # Requests with *partial* hash overlap acquire different locks and can
+        # redundantly compute the shared hashes if perfectly concurrent — that's
+        # an accepted cost; the alternative (per-hash multi-lock acquisition) is
+        # significantly more complex, and the production case this protects
+        # against was identical feature lists, not partial overlap.
+        hashes_fingerprint = hashlib.sha256(",".join(sorted(set(hashes))).encode()).hexdigest()[:16]
         async with acquire_lock(
             self.redis,
-            f"feature_table_cache_update:obs:{observation_table.id}",
+            f"feature_table_cache_update:obs:{observation_table.id}:fp:{hashes_fingerprint}",
             timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
         ):
             cached_definitions = (

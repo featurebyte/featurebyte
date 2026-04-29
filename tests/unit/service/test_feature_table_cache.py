@@ -1112,3 +1112,86 @@ async def test_create_or_update_feature_table_cache__concurrent_calls_dedup_comp
         num_cached_definitions_expected=2,
         num_cached_table_expected=1,
     )
+
+
+@pytest.mark.asyncio
+async def test_create_or_update_feature_table_cache__different_feature_sets_run_in_parallel(
+    feature_store,
+    feature_table_cache_service,
+    observation_table,
+    regular_feature_list,
+    mock_get_historical_features,
+):
+    """
+    Two concurrent calls for the same observation_table but *different* feature
+    sets must NOT serialize. The outer lock is keyed on (observation_table,
+    feature-set fingerprint), so unrelated feature sets acquire different locks
+    and can compute in parallel. Regression test for the over-broad
+    per-observation-table scope that previously blocked all concurrent work on
+    the same observation table.
+    """
+    import asyncio
+    from contextlib import asynccontextmanager
+
+    locks_by_name: dict[str, asyncio.Lock] = {}
+
+    @asynccontextmanager
+    async def fake_acquire_lock(_redis, name, timeout=None, blocking_timeout=None):
+        _ = timeout, blocking_timeout
+        lock = locks_by_name.setdefault(name, asyncio.Lock())
+        async with lock:
+            yield lock
+
+    # Track the maximum number of compute calls in flight at the same time.
+    # If the lock is correctly per-fingerprint, two unrelated requests overlap
+    # and max_concurrent reaches 2. If the lock over-blocks (per-observation
+    # only) the second compute can't start until the first releases.
+    concurrent = 0
+    max_concurrent = 0
+    counter_lock = asyncio.Lock()
+    real_return_value = mock_get_historical_features.return_value
+
+    async def tracked_compute(*args, **kwargs):
+        nonlocal concurrent, max_concurrent
+        _ = args, kwargs
+        async with counter_lock:
+            concurrent += 1
+            if concurrent > max_concurrent:
+                max_concurrent = concurrent
+        # Sleep long enough for the second call to reach this point if it can.
+        await asyncio.sleep(0.1)
+        async with counter_lock:
+            concurrent -= 1
+        return real_return_value
+
+    mock_get_historical_features.side_effect = tracked_compute
+
+    nodes = regular_feature_list.feature_clusters[0].nodes
+    graph = regular_feature_list.feature_clusters[0].graph
+    assert len(nodes) >= 2, "fixture must have at least 2 distinct features"
+
+    with patch("featurebyte.service.feature_table_cache.acquire_lock", new=fake_acquire_lock):
+        await asyncio.gather(
+            feature_table_cache_service.create_or_update_feature_table_cache(
+                feature_store=feature_store,
+                observation_table=observation_table,
+                graph=graph,
+                nodes=[nodes[0]],
+            ),
+            feature_table_cache_service.create_or_update_feature_table_cache(
+                feature_store=feature_store,
+                observation_table=observation_table,
+                graph=graph,
+                nodes=[nodes[1]],
+            ),
+        )
+
+    # Both compute calls fired (different feature sets, so no dedup).
+    assert mock_get_historical_features.await_count == 2
+    # And they ran concurrently — the per-fingerprint lock scope must not
+    # block unrelated feature sets on the same observation table.
+    assert max_concurrent == 2, (
+        f"Expected 2 concurrent computes, observed max {max_concurrent}. "
+        "The outer lock is over-blocking — different feature sets on the same "
+        "observation table should run in parallel."
+    )
