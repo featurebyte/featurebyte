@@ -819,8 +819,16 @@ class FeatureTableCacheService:
         # Without this lock at the outer level, two concurrent requests for the same
         # (observation_table, features) pair can both miss the cache, both decide to
         # compute, and both run the expensive feature computation in parallel.
-        # Holding the lock from the cache check through insert means a second request
-        # finds the cache populated and exits cheaply.
+        # Holding the lock from cache-check through insert means:
+        #   - A second request whose feature set is fully covered by the first's
+        #     output sees the cache populated by the time it acquires the lock and
+        #     skips compute entirely (get_non_cached_nodes returns []).
+        #   - A second request with partial overlap still computes, but only for
+        #     the genuinely missing definition hashes — overlapping ones are
+        #     filtered out by get_non_cached_nodes.
+        #   - A second request with no overlap gets no dedup benefit and is
+        #     simply blocked until the first releases. That serialization cost
+        #     is the per-observation-table scope tradeoff below.
         #
         # Scope tradeoff: keying on observation_table.id alone also serializes
         # requests for *different* feature sets on the same observation table.
