@@ -24,8 +24,7 @@ env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
 jobs:
   test-deep-dive-notebooks:
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
@@ -59,8 +58,7 @@ jobs:
         run: task test-deep-dive-notebooks
     timeout-minutes: 30
   test-quick-start-notebooks:
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
@@ -94,8 +92,7 @@ jobs:
         run: task test-quick-start-notebooks
     timeout-minutes: 45
   test-playground-notebooks:
-    runs-on:
-      group: Public Runners
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
@@ -147,7 +144,7 @@ jobs:
         run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.ref_name }}")" >> $GITHUB_ENV
       - name: Validate Author Email and Set Channel ID
         run: |-
-          if [[ ! "${{ env.AUTHOR_EMAIL }}" =~ .+@featurebyte\.(com|ai)$ ]]; then
+          if [[ ! "${{ env.AUTHOR_EMAIL }}" =~ ^.+@featurebyte\.(com|ai)$ ]]; then
             echo "Author email '${{ env.AUTHOR_EMAIL }}' is not a valid FeatureByte email address" >&2
             exit 1
           fi

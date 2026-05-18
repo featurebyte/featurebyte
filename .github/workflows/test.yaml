@@ -629,7 +629,7 @@ jobs:
         run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.ref_name }}")" >> $GITHUB_ENV
       - name: Validate Author Email and Set Channel ID
         run: |-
-          if [[ ! "${{ env.AUTHOR_EMAIL }}" =~ .+@featurebyte\.(com|ai)$ ]]; then
+          if [[ ! "${{ env.AUTHOR_EMAIL }}" =~ ^.+@featurebyte\.(com|ai)$ ]]; then
             echo "Author email '${{ env.AUTHOR_EMAIL }}' is not a valid FeatureByte email address" >&2
             exit 1
           fi
