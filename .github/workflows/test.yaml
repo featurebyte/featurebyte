@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -85,7 +85,7 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -137,7 +137,7 @@ jobs:
       PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -200,7 +200,7 @@ jobs:
       PYTEST_SPLITS: 1  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -272,7 +272,7 @@ jobs:
       PYTEST_SPLITS: 4  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -367,7 +367,7 @@ jobs:
       PYTEST_SPLITS: 5  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -426,7 +426,7 @@ jobs:
       PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -485,7 +485,7 @@ jobs:
           - 3.10.14
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -525,7 +525,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -588,7 +588,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x

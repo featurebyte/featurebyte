@@ -32,7 +32,7 @@ jobs:
       DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
       - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
