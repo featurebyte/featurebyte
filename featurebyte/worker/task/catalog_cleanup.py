@@ -285,18 +285,8 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                         exc,
                     )
 
-            # cleanup the warehouse tables & remote files
-            await mongo_progress_callback(
-                percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
-                message="Cleaning up warehouse tables & remote files",
-            )
-            await self._cleanup_warehouse_tables(
-                catalog=catalog,
-                warehouse_tables=warehouse_tables,
-            )
-            await self._cleanup_store_files(remote_file_paths)
-
-            # delete the mongo documents
+            # delete the mongo documents first so that no live document can ever
+            # reference a remote file/warehouse table that has already been removed
             await mongo_progress_callback(
                 percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
                 message="Cleaning up Mongo records",
@@ -310,6 +300,17 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 query_filter=query_filter,
                 with_audit=with_audit,
             )
+
+            # cleanup the warehouse tables & remote files
+            await mongo_progress_callback(
+                percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
+                message="Cleaning up warehouse tables & remote files",
+            )
+            await self._cleanup_warehouse_tables(
+                catalog=catalog,
+                warehouse_tables=warehouse_tables,
+            )
+            await self._cleanup_store_files(remote_file_paths)
 
         # cleanup non-catalog mongo assets
         await self._post_cleanup_non_catalog_mongo_asset(
