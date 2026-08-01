@@ -137,6 +137,7 @@ lint = [
   "mypy-extensions",
   "mypy==1.0.1",
   "pip-audit",
+  "pip-licenses",
   "ruff",
   "toml-sort",
   "types-Markdown",
