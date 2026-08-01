@@ -54,17 +54,17 @@ explaining the reasoning and who approved it — see the existing comments in
   Feature Job Setting Analysis PDF-export endpoint) is triple-licensed
   GPLv2+ / LGPLv2+ / MPL-1.1. This is pending legal review to either
   formally elect the MPL-1.1 option or replace the dependency.
-- `rfc3987` (GPLv3+) is pulled in transitively via `feast`'s use of
-  `jsonschema[format]` - and `feast` is part of `featurebyte[server]`'s
-  runtime dependency graph, meaning `rfc3987` ships to anyone who installs
-  the `server` extra. This was not previously known, since it was masked
-  by the license gate never having actually run (see git history) and then
-  by `pip-licenses --allow-only` being fail-fast (reports only the first
-  violation found, not all of them - don't assume a clean run after fixing
-  one failure without re-running). Pending legal review: whether this is
-  "mere aggregation" (not a derivative work) under GPLv3, or whether
-  `feast`'s dependency can be influenced to use `jsonschema[format-nongpl]`
-  instead (a maintained non-GPL alternative that exists for exactly this
-  purpose).
+- **Resolved:** `rfc3987` (GPLv3+) used to be pulled in transitively via
+  `feast`'s use of `jsonschema[format]` - and `feast` is part of
+  `featurebyte[server]`'s runtime dependency graph, meaning it shipped to
+  anyone who installed the `server` extra. This was undetected for an
+  unknown period, since it was masked first by the license gate never
+  having actually run at all, and then by `pip-licenses --allow-only`
+  being fail-fast (reports only the first violation found, not all of
+  them). Fixed via `[tool.uv] override-dependencies` in `pyproject.toml`,
+  forcing `jsonschema` to resolve without the `format` extra anywhere in
+  the graph - verified no code in `feast` or `featurebyte` itself actually
+  uses `jsonschema.FormatChecker`, so this is not expected to be a
+  functional regression, but re-verify if `feast` is ever upgraded.
 - No CLA / IP-assignment process currently exists for external contributions
   to this repository, despite `CONTRIBUTING.md` accepting external PRs.

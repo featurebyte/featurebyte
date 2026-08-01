@@ -152,14 +152,16 @@ tasks:
     # filename instead of an identifier) - the bundled LICENSE.txt is
     # verbatim ISC license text, so this is a metadata bug, not a real
     # violation. Ignored with this comment as the record of that check.
-    # NOTE: rfc3987 (GPLv3+) is a transitive dependency of `feast` via
-    # `jsonschema[format]` - and feast is part of `featurebyte[server]`'s
-    # RUNTIME dependency graph, not dev-only tooling. This is a real,
-    # unresolved compliance question (does it ship to customers who install
-    # the server extra?) - deliberately left failing rather than added to
-    # --ignore-packages. Do not add it without legal sign-off; jsonschema
-    # offers a `format-nongpl` extra as an alternative if feast's dependency
-    # can be influenced/patched to prefer it.
+    # NOTE: rfc3987 (GPLv3+) used to be a transitive dependency of `feast`
+    # via `jsonschema[format]` (feast is part of `featurebyte[server]`'s
+    # RUNTIME dependency graph, not dev-only tooling - this was a real
+    # compliance issue, not a false positive). Fixed via
+    # `[tool.uv] override-dependencies` in pyproject.toml, which forces
+    # jsonschema to resolve without the `format` extra everywhere in the
+    # graph, dropping rfc3987 entirely. Verified: no code in feast or
+    # featurebyte itself uses jsonschema.FormatChecker, so this shouldn't
+    # be a functional regression - but re-verify if feast is upgraded, in
+    # case a newer version starts actually relying on format validation.
     env:
       PERMISSIVE_LICENSES: |-
         Apache Software License;Apache License 2.0;Apache License, Version 2.0;Apache-2.0;Apache 2.0;BSD;BSD License;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;BSD 3-Clause License;Historical Permission Notice and Disclaimer (HPND);Historical Permission Notice and Disclaimer;ISC License (ISCL);ISC;MIT;MIT License;MIT-CMU;DFSG approved;MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);Public Domain;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Zope Public License;CNRI-Python;Python-2.0

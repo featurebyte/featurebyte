@@ -185,6 +185,18 @@ constraint-dependencies = [
   "urllib3>=2.6.3,<3",
   "virtualenv>=20.36.1,<21",
 ]
+# feast declares `jsonschema[format]`, which pulls in rfc3987 (GPLv3+) - a
+# real copyleft dependency in featurebyte[server]'s runtime graph (see
+# OSS_POLICY.md). Override to the extras-free `jsonschema` requirement so
+# nothing in the graph can pull in the `format` extra; jsonschema's format
+# validators are opt-in (a package missing a format validator just means
+# that specific format string isn't deep-checked, it doesn't break schema
+# validation), so this should be functionally safe, but verify feast still
+# behaves correctly after this change - it was resolving with rfc3987
+# present until now.
+override-dependencies = [
+  "jsonschema==4.26.0",
+]
 
 # Packaging source metadata, this points to the source code repository.
 #     Use UV_INDEX_FEATUREBYTE_NP_USERNAME=_json_key_base64
