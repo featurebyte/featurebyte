@@ -133,6 +133,7 @@ docs = [
 ]
 lint = [
   "bandit",
+  "cyclonedx-bom>=6",
   "darglint",
   "mypy-extensions",
   "mypy==1.0.1",

@@ -149,6 +149,28 @@ tasks:
     cmds:
       - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware --allow-only="${PERMISSIVE_LICENSES}"
 
+  sbom:
+    desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling)"
+    sources:
+      - uv.lock
+      - pyproject.toml
+    generates:
+      - sbom.json
+    cmds:
+      - uv export --no-dev --all-extras --no-header --no-hashes --no-annotate | grep -v '^-e ' > .sbom-requirements.txt
+      - uv run cyclonedx-py requirements .sbom-requirements.txt --output-format json --output-file sbom.json
+      - rm -f .sbom-requirements.txt
+
+  notice:
+    desc: "Generate THIRD-PARTY-NOTICES.txt attributing dependency licenses (whole synced environment, including dev tooling - over-inclusive is safer than under-inclusive for attribution)"
+    sources:
+      - uv.lock
+      - pyproject.toml
+    generates:
+      - THIRD-PARTY-NOTICES.txt
+    cmds:
+      - uv run pip-licenses --with-authors --with-urls --with-license-file --no-license-path --format=plain-vertical --ignore-packages featurebyte featurebyte_freeware --output-file THIRD-PARTY-NOTICES.txt
+
   import-rules:
     desc: Check for import rule violations
     sources:
