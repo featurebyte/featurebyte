@@ -162,6 +162,17 @@ tasks:
     # featurebyte itself uses jsonschema.FormatChecker, so this shouldn't
     # be a functional regression - but re-verify if feast is upgraded, in
     # case a newer version starts actually relying on format validation.
+    # NOTE: pyphen is tri-licensed GPL 2.0+/LGPL 2.1+/MPL 1.1 (see its own
+    # LICENSE file) - a genuine choice, not a compound requirement. Elected
+    # to consume it under LGPL 2.1+ / MPL 1.1 (not the GPL option), which
+    # is permitted for use in a closed-source commercial application. The
+    # only hyphenation dictionary actually relevant (hyph_en_US.dic, used
+    # via weasyprint for the Feature Job Setting Analysis PDF report) is
+    # separately licensed BSD-style per its own README, independent of
+    # pyphen's own tri-license. Ignored on this basis; if additional
+    # non-English dictionaries are ever bundled/used, re-check their
+    # individual licenses (pyphen's dictionaries come from LibreOffice and
+    # are not uniformly available under all three of GPL/LGPL/MPL).
     env:
       PERMISSIVE_LICENSES: |-
         Apache Software License;Apache License 2.0;Apache License, Version 2.0;Apache-2.0;Apache 2.0;BSD;BSD License;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;BSD 3-Clause License;Historical Permission Notice and Disclaimer (HPND);Historical Permission Notice and Disclaimer;ISC License (ISCL);ISC;MIT;MIT License;MIT-CMU;DFSG approved;MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);Public Domain;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Zope Public License;CNRI-Python;Python-2.0
@@ -169,7 +180,7 @@ tasks:
       - uv.lock
       - pyproject.toml
     cmds:
-      - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware chardet gssapi --allow-only="${PERMISSIVE_LICENSES}"
+      - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware chardet gssapi pyphen --allow-only="${PERMISSIVE_LICENSES}"
 
   sbom:
     desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling)"

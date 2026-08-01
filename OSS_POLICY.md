@@ -50,10 +50,19 @@ explaining the reasoning and who approved it — see the existing comments in
 
 ## Known open items
 
-- `pyphen` (pulled in transitively via `weasyprint`, used only for the
-  Feature Job Setting Analysis PDF-export endpoint) is triple-licensed
-  GPLv2+ / LGPLv2+ / MPL-1.1. This is pending legal review to either
-  formally elect the MPL-1.1 option or replace the dependency.
+- **Resolved:** `pyphen` (pulled in transitively via `weasyprint`, used
+  only for the Feature Job Setting Analysis PDF-export endpoint) is
+  tri-licensed GPL 2.0+ / LGPL 2.1+ / MPL 1.1 - a genuine choice, per its
+  own bundled `LICENSE` file, not a compound requirement. Elected to
+  consume it under LGPL 2.1+ / MPL 1.1 (not the GPL option), which is
+  permitted for use in a closed-source commercial application. The only
+  hyphenation dictionary actually relevant here (`hyph_en_US.dic`) is
+  separately BSD-style licensed per its own README, independent of
+  `pyphen`'s tri-license. If additional non-English dictionaries are ever
+  bundled/used, re-check their individual licenses before assuming the
+  same election covers them - `pyphen`'s dictionaries come from
+  LibreOffice and are not uniformly available under all three of
+  GPL/LGPL/MPL.
 - **Resolved:** `rfc3987` (GPLv3+) used to be pulled in transitively via
   `feast`'s use of `jsonschema[format]` - and `feast` is part of
   `featurebyte[server]`'s runtime dependency graph, meaning it shipped to
