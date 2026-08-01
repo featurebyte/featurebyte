@@ -140,6 +140,26 @@ tasks:
     # passes no matter what is installed. Scanning the whole (already `--all-groups
     # --all-extras` synced) environment and explicitly ignoring our own first-party
     # packages avoids that failure mode.
+    # NOTE: pip-licenses --allow-only is fail-fast - it reports only the first
+    # violating package it finds, not all of them. Don't assume the gate is
+    # clean just because it fails on one specific package; re-run after fixing
+    # each failure to confirm no others are hiding behind it.
+    # NOTE: chardet (LGPLv2+) is a transitive dependency of cyclonedx-bom (a
+    # dev-only SBOM-generation tool, never distributed to customers) - ignored
+    # rather than added to the allow-list, since LGPL is not something we want
+    # to blanket-permit for anything that might ship.
+    # NOTE: gssapi's package metadata is broken (`License: LICENSE.txt`, a
+    # filename instead of an identifier) - the bundled LICENSE.txt is
+    # verbatim ISC license text, so this is a metadata bug, not a real
+    # violation. Ignored with this comment as the record of that check.
+    # NOTE: rfc3987 (GPLv3+) is a transitive dependency of `feast` via
+    # `jsonschema[format]` - and feast is part of `featurebyte[server]`'s
+    # RUNTIME dependency graph, not dev-only tooling. This is a real,
+    # unresolved compliance question (does it ship to customers who install
+    # the server extra?) - deliberately left failing rather than added to
+    # --ignore-packages. Do not add it without legal sign-off; jsonschema
+    # offers a `format-nongpl` extra as an alternative if feast's dependency
+    # can be influenced/patched to prefer it.
     env:
       PERMISSIVE_LICENSES: |-
         Apache Software License;Apache License 2.0;Apache License, Version 2.0;Apache-2.0;Apache 2.0;BSD;BSD License;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;BSD 3-Clause License;Historical Permission Notice and Disclaimer (HPND);Historical Permission Notice and Disclaimer;ISC License (ISCL);ISC;MIT;MIT License;MIT-CMU;DFSG approved;MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);Public Domain;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Zope Public License;CNRI-Python;Python-2.0
@@ -147,7 +167,7 @@ tasks:
       - uv.lock
       - pyproject.toml
     cmds:
-      - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware --allow-only="${PERMISSIVE_LICENSES}"
+      - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware chardet gssapi --allow-only="${PERMISSIVE_LICENSES}"
 
   sbom:
     desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling)"
