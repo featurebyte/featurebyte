@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'breaking') }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       name: Send Slack notification to user-experience channel
-      uses: slackapi/slack-github-action@v3.0.1
+      uses: slackapi/slack-github-action@v3.0.3
       with:
         method: chat.postMessage
         token: ${{ secrets.SLACK_OAUTH }}

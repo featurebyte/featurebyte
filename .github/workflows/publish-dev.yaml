@@ -31,8 +31,8 @@ jobs:
     outputs:
       DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -124,7 +124,7 @@ jobs:
     needs:
       - publish
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}
@@ -144,7 +144,7 @@ jobs:
         run: |
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_OAUTH }}
