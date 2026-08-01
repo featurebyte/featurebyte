@@ -48,32 +48,41 @@ first-party or the classification is a known metadata error) with a comment
 explaining the reasoning and who approved it — see the existing comments in
 `Taskfile.lint.yaml`'s `licenses` task for the expected format.
 
-## Known open items
+## Resolved findings
 
-- **Resolved:** `pyphen` (pulled in transitively via `weasyprint`, used
-  only for the Feature Job Setting Analysis PDF-export endpoint) is
-  tri-licensed GPL 2.0+ / LGPL 2.1+ / MPL 1.1 - a genuine choice, per its
-  own bundled `LICENSE` file, not a compound requirement. Elected to
-  consume it under LGPL 2.1+ / MPL 1.1 (not the GPL option), which is
-  permitted for use in a closed-source commercial application. The only
+This is the authoritative record for each ignored/overridden package below —
+code comments in `Taskfile.lint.yaml`/`pyproject.toml` point here rather than
+repeating this reasoning, to avoid the two drifting out of sync.
+
+- **`pyphen`** (via `weasyprint`, used only for the Feature Job Setting
+  Analysis PDF-export endpoint): tri-licensed GPL 2.0+ / LGPL 2.1+ / MPL 1.1
+  — a genuine choice per its own bundled `LICENSE` file, not a compound
+  requirement. Elected to consume it under LGPL 2.1+ / MPL 1.1 (not the GPL
+  option), which is permitted for closed-source commercial use. The only
   hyphenation dictionary actually relevant here (`hyph_en_US.dic`) is
   separately BSD-style licensed per its own README, independent of
-  `pyphen`'s tri-license. If additional non-English dictionaries are ever
-  bundled/used, re-check their individual licenses before assuming the
-  same election covers them - `pyphen`'s dictionaries come from
-  LibreOffice and are not uniformly available under all three of
-  GPL/LGPL/MPL.
-- **Resolved:** `rfc3987` (GPLv3+) used to be pulled in transitively via
-  `feast`'s use of `jsonschema[format]` - and `feast` is part of
-  `featurebyte[server]`'s runtime dependency graph, meaning it shipped to
-  anyone who installed the `server` extra. This was undetected for an
-  unknown period, since it was masked first by the license gate never
-  having actually run at all, and then by `pip-licenses --allow-only`
-  being fail-fast (reports only the first violation found, not all of
-  them). Fixed via `[tool.uv] override-dependencies` in `pyproject.toml`,
-  forcing `jsonschema` to resolve without the `format` extra anywhere in
-  the graph - verified no code in `feast` or `featurebyte` itself actually
-  uses `jsonschema.FormatChecker`, so this is not expected to be a
-  functional regression, but re-verify if `feast` is ever upgraded.
+  `pyphen`'s tri-license. Re-check if additional non-English dictionaries
+  are ever bundled/used — `pyphen`'s dictionaries come from LibreOffice and
+  are not uniformly available under all three of GPL/LGPL/MPL. Ignored via
+  `--ignore-packages` in the `licenses` task.
+- **`rfc3987`** (GPLv3+, via `feast`'s `jsonschema[format]` requirement,
+  part of `featurebyte[server]`'s runtime dependency graph — this shipped
+  to anyone installing the `server` extra, and was undetected until the
+  license gate was made to actually work): removed from the resolved graph
+  entirely via `[tool.uv] override-dependencies` in `pyproject.toml`, which
+  forces `jsonschema` to resolve without the `format` extra anywhere in the
+  graph. Verified neither `feast` nor `featurebyte` uses
+  `jsonschema.FormatChecker`, so this is not expected to be a functional
+  regression — re-verify if `feast` is ever upgraded.
+- **`chardet`** (LGPLv2+, transitive dependency of `cyclonedx-bom`, the
+  dev-only SBOM tool — never distributed to customers): ignored via
+  `--ignore-packages`.
+- **`gssapi`**: not a real violation — its package metadata is broken
+  (`License: LICENSE.txt`, a filename instead of an identifier), but the
+  bundled `LICENSE.txt` is verbatim ISC License text, verified by reading
+  it directly. Ignored via `--ignore-packages`.
+
+## Known open items
+
 - No CLA / IP-assignment process currently exists for external contributions
   to this repository, despite `CONTRIBUTING.md` accepting external PRs.
