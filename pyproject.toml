@@ -48,14 +48,14 @@ dependencies = [
   "numpy",
   "orjson>=3.11.6,<4",
   "pandas>=2",
-  "pillow>=12.1.1,<13",
-  "pyarrow>=18",
+  "pillow>=12.3.0,<13",
+  "pyarrow>=23.0.1",
   "pydantic-extra-types>=2",
   "pydantic-settings>=2",
   "pydantic~=2.8",
   "pymongo>=4",
   "pyopenssl>=23",
-  "python-multipart>=0.0.22,<1",
+  "python-multipart>=0.0.30,<1",
   "python-on-whales",
   "pyyaml>=5",
   "requests>=2.33.0,<3",
@@ -184,6 +184,7 @@ constraint-dependencies = [
   "tornado>=6.5.5,<7",
   "urllib3>=2.6.3,<3",
   "virtualenv>=20.36.1,<21",
+  "weasyprint>=68.0,<69",
 ]
 # Drops rfc3987 (GPLv3+, pulled in via feast's jsonschema[format] requirement)
 # from the resolved graph entirely. See OSS_POLICY.md ("Resolved findings")
