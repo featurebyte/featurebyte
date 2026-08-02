@@ -52,25 +52,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
       - name: Setup gradle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: hive-udf/.gradle
           key: gradle-cache-${{ runner.os }}
       - name: Setup gradle build cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: hive-udf/lib/build
           key: gradle-build-cache-${{ runner.os }}
       - name: Building hive-udf
         run: task build-jar
       - name: Upload hive-udf
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: hive-udf
           path: hive-udf/lib/build/libs/*
@@ -84,8 +84,8 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -110,12 +110,12 @@ jobs:
       - name: Renaming test assets
         run: mv .coverage .coverage.0
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.0
           path: pytest.xml.0
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.0
           path: .coverage.0
@@ -136,8 +136,8 @@ jobs:
     env:
       PYTEST_SPLITS: 2  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -165,20 +165,20 @@ jobs:
           mv pytest.xml.1 pytest.xml.1.${{ matrix.pytest-group }}
           mv .test_durations .test_durations.1.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.1.${{ matrix.pytest-group }}
           path: pytest.xml.1.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.1.${{ matrix.pytest-group }}
           path: .coverage.1.${{ matrix.pytest-group }}
           overwrite: true
           include-hidden-files: true
       - name: Upload test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.test_durations.1.${{ matrix.pytest-group }}
           path: .test_durations.1.${{ matrix.pytest-group }}
@@ -199,8 +199,8 @@ jobs:
     env:
       PYTEST_SPLITS: 1  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -232,20 +232,20 @@ jobs:
           mv pytest.xml.1b pytest.xml.1b.${{ matrix.pytest-group }}
           mv .test_durations .test_durations.1b.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.1b.${{ matrix.pytest-group }}
           path: pytest.xml.1b.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.1b.${{ matrix.pytest-group }}
           path: .coverage.1b.${{ matrix.pytest-group }}
           overwrite: true
           include-hidden-files: true
       - name: Upload test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.test_durations.1b.${{ matrix.pytest-group }}
           path: .test_durations.1b.${{ matrix.pytest-group }}
@@ -271,8 +271,8 @@ jobs:
     env:
       PYTEST_SPLITS: 4  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -314,7 +314,7 @@ jobs:
           mv pytest.xml.2 pytest.xml.2.${{ matrix.pytest-group }}
           mv .test_durations .test_durations.2.${{ matrix.pytest-group }}
       - name: Upload spark-thrift log file
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: spark-thrift-logs-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}
           path: spark-thrift-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}.log
@@ -322,20 +322,20 @@ jobs:
 
       # NOTE: Only holding 1 test result to be used in pytest report
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.2.${{ matrix.pytest-group }}
           path: pytest.xml.2.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.2.${{ matrix.pytest-group }}
           path: .coverage.2.${{ matrix.pytest-group }}
           overwrite: true
           include-hidden-files: true
       - name: Upload test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.test_durations.2.${{ matrix.pytest-group }}
           path: .test_durations.2.${{ matrix.pytest-group }}
@@ -366,8 +366,8 @@ jobs:
     env:
       PYTEST_SPLITS: 5  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -390,18 +390,18 @@ jobs:
           mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-group }}
           mv .test_durations .test_durations.4.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-group }}
           path: pytest.xml.4.${{ matrix.pytest-group }}
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-group }}
           path: .coverage.4.${{ matrix.pytest-group }}
           include-hidden-files: true
       - name: Upload test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.test_durations.4.${{ matrix.pytest-group }}
           path: .test_durations.4.${{ matrix.pytest-group }}
@@ -425,8 +425,8 @@ jobs:
     env:
       PYTEST_SPLITS: 3  # This needs to be EQ the count of strategy.matrix.pytest-group
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -454,20 +454,20 @@ jobs:
           mv pytest.xml.5 pytest.xml.5.${{ matrix.pytest-group }}
           mv .test_durations .test_durations.5.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.5.${{ matrix.pytest-group }}
           path: pytest.xml.5.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.coverage.5.${{ matrix.pytest-group }}
           path: .coverage.5.${{ matrix.pytest-group }}
           overwrite: true
           include-hidden-files: true
       - name: Upload test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-${{ matrix.python-version }}-.test_durations.5.${{ matrix.pytest-group }}
           path: .test_durations.5.${{ matrix.pytest-group }}
@@ -484,8 +484,8 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v6
-      - uses: arduino/setup-task@v2
+      - uses: actions/checkout@v7
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -522,10 +522,10 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -550,7 +550,7 @@ jobs:
       - name: Merge test results
         run: task test-merge
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: pytest-coverage.txt
           path: pytest-coverage.txt
@@ -585,10 +585,10 @@ jobs:
         python-version:
           - 3.10.14
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: arduino/setup-task@v2
+      - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
@@ -600,7 +600,7 @@ jobs:
       - name: Merge test durations
         run: cat .test_durations.* | jq --slurp --sort-keys add > .test_durations
       - name: Upload combined test durations
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: .test_durations
           path: .test_durations
@@ -618,7 +618,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}
@@ -638,7 +638,7 @@ jobs:
         run: |
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_OAUTH }}
