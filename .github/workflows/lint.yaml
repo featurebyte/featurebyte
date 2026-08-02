@@ -5,6 +5,9 @@ name: lint
       - opened
       - synchronize
       - reopened
+  push:
+    branches:
+      - main
 permissions: read-all
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -37,6 +40,19 @@ jobs:
       - name: pip-audit check [ONLY MAIN]
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: task lint:safety
+      - name: Generate SBOM and third-party notices [ONLY MAIN]
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |-
+          task lint:sbom
+          task lint:notice
+      - uses: actions/upload-artifact@v6
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        with:
+          name: oss-compliance-artifacts
+          path: |
+            sbom.json
+            THIRD-PARTY-NOTICES.txt
+          retention-days: 90
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}

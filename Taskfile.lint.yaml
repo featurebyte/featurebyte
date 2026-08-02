@@ -57,7 +57,7 @@ tasks:
       - uv run ruff format --diff || uv run ruff format
 
   pr:
-    desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."
+    desc: "Run the linter, but without the vulnerability audit. This is run on every PR. Vulnerability audit will be run on deploy."
     deps:
       - task: install
       - task: import-rules
@@ -65,6 +65,7 @@ tasks:
       - task: style
       - task: type
       - task: bandit
+      - task: licenses
 
   style:
     desc: "Run the linter[style]"
@@ -130,6 +131,53 @@ tasks:
       - featurebyte/**/*
     cmds:
       - uv run bandit -c pyproject.toml -ll --recursive featurebyte
+
+  licenses:
+    desc: "Run the linter[licenses] - fails the build on any non-permissive (e.g. copyleft) dependency license"
+    # NOTE: do not filter with `pip-licenses --packages "$(uv export ...)"` - `uv export`
+    # emits a leading `-e .` line, and passing the export output as a single quoted
+    # string makes `--packages` match zero real packages, so the check silently
+    # passes no matter what is installed. Scanning the whole (already `--all-groups
+    # --all-extras` synced) environment and explicitly ignoring our own first-party
+    # packages avoids that failure mode.
+    # NOTE: pip-licenses --allow-only is fail-fast (reports only the first
+    # violation per run) - re-run after each fix to confirm nothing else is
+    # hiding behind it.
+    # NOTE: chardet, gssapi, pyphen are ignored below; rfc3987 was removed
+    # entirely (see the override-dependencies comment in pyproject.toml).
+    # See OSS_POLICY.md ("Resolved findings") for the full rationale on
+    # each - this comment is deliberately just a pointer, not a duplicate,
+    # to avoid the two drifting out of sync.
+    env:
+      PERMISSIVE_LICENSES: |-
+        Apache Software License;Apache License 2.0;Apache License, Version 2.0;Apache-2.0;Apache 2.0;BSD;BSD License;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;BSD 3-Clause License;Historical Permission Notice and Disclaimer (HPND);Historical Permission Notice and Disclaimer;ISC License (ISCL);ISC;MIT;MIT License;MIT-CMU;DFSG approved;MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);Public Domain;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Zope Public License;CNRI-Python;Python-2.0
+    sources:
+      - uv.lock
+      - pyproject.toml
+    cmds:
+      - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware chardet gssapi pyphen --allow-only="${PERMISSIVE_LICENSES}"
+
+  sbom:
+    desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling)"
+    sources:
+      - uv.lock
+      - pyproject.toml
+    generates:
+      - sbom.json
+    cmds:
+      - uv export --no-dev --all-extras --no-header --no-hashes --no-annotate | grep -v '^-e ' > .sbom-requirements.txt
+      - uv run cyclonedx-py requirements .sbom-requirements.txt --output-format json --output-file sbom.json
+      - rm -f .sbom-requirements.txt
+
+  notice:
+    desc: "Generate THIRD-PARTY-NOTICES.txt attributing dependency licenses (whole synced environment, including dev tooling - over-inclusive is safer than under-inclusive for attribution)"
+    sources:
+      - uv.lock
+      - pyproject.toml
+    generates:
+      - THIRD-PARTY-NOTICES.txt
+    cmds:
+      - uv run pip-licenses --with-authors --with-urls --with-license-file --no-license-path --format=plain-vertical --ignore-packages featurebyte featurebyte_freeware --output-file THIRD-PARTY-NOTICES.txt
 
   import-rules:
     desc: Check for import rule violations

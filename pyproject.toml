@@ -133,10 +133,12 @@ docs = [
 ]
 lint = [
   "bandit",
+  "cyclonedx-bom>=6",
   "darglint",
   "mypy-extensions",
   "mypy==1.0.1",
   "pip-audit",
+  "pip-licenses",
   "ruff",
   "toml-sort",
   "types-Markdown",
@@ -182,6 +184,12 @@ constraint-dependencies = [
   "tornado>=6.5.5,<7",
   "urllib3>=2.6.3,<3",
   "virtualenv>=20.36.1,<21",
+]
+# Drops rfc3987 (GPLv3+, pulled in via feast's jsonschema[format] requirement)
+# from the resolved graph entirely. See OSS_POLICY.md ("Resolved findings")
+# for the full rationale and verification.
+override-dependencies = [
+  "jsonschema==4.26.0",
 ]
 
 # Packaging source metadata, this points to the source code repository.
