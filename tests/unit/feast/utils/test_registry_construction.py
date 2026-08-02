@@ -13,6 +13,33 @@ from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
 from tests.util.helper import assert_lists_of_dicts_equal
 
 
+def _strip_keys(obj, keys):
+    """Recursively strip the given keys from a dict/list structure."""
+    if isinstance(obj, dict):
+        return {k: _strip_keys(v, keys) for k, v in obj.items() if k not in keys}
+    if isinstance(obj, list):
+        return [_strip_keys(v, keys) for v in obj]
+    return obj
+
+
+def _strip_meta(obj):
+    """
+    Recursively strip keys that feast populates as bookkeeping (non-deterministic
+    timestamps in "meta", default feature-view versioning in "version") and that
+    are irrelevant to the content these tests check.
+    """
+    return _strip_keys(obj, ("meta", "version"))
+
+
+def _strip_feature_service_refs(obj):
+    """
+    Recursively strip the resolved batch source / view type that feast now embeds
+    in each feature service feature reference, which duplicates what's already
+    checked via the data source and feature view spec comparisons.
+    """
+    return _strip_keys(_strip_meta(obj), ("batchSource", "viewType"))
+
+
 def test_feast_registry_construction__missing_asset(
     snowflake_feature_store,
     mysql_online_store,
@@ -104,7 +131,7 @@ async def test_feast_registry_construction__with_post_processing_features(
     pit_data_source = next(
         data_source for data_source in data_sources if data_source["name"] == "POINT_IN_TIME"
     )
-    assert pit_data_source == {
+    assert _strip_meta(pit_data_source) == {
         "dataSourceClassType": "feast.data_source.RequestSource",
         "name": "POINT_IN_TIME",
         "project": "featurebyte_project",
@@ -387,17 +414,20 @@ def test_feast_registry_construction(
     assert udf_definition.strip() == textwrap.dedent(expected).strip()
 
     # check that the registry dict is as expected
-    assert_lists_of_dicts_equal(feast_registry_dict["dataSources"], expected_data_sources)
     assert_lists_of_dicts_equal(
-        [entity["spec"] for entity in entities],
+        _strip_meta(feast_registry_dict["dataSources"]),
+        expected_data_sources,
+    )
+    assert_lists_of_dicts_equal(
+        _strip_meta([entity["spec"] for entity in entities]),
         expected_entity_specs,
     )
     assert_lists_of_dicts_equal(
-        [feat_view["spec"] for feat_view in feat_views],
+        _strip_meta([feat_view["spec"] for feat_view in feat_views]),
         expected_feature_view_specs,
     )
     assert_lists_of_dicts_equal(
-        [feat_service["spec"] for feat_service in feat_services],
+        _strip_feature_service_refs([feat_service["spec"] for feat_service in feat_services]),
         expected_feature_service_spec,
     )
     assert feast_registry_dict["projectMetadata"] == [

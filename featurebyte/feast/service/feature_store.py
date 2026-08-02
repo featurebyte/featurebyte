@@ -103,6 +103,12 @@ def create_feast_feature_store(
             config=repo_config,
             online_store_id=effective_online_store_id,
         )
+        # Force the registry to load (and be cached in memory by
+        # FeatureByteRegistryStore) while the temp file above still exists. Feast's
+        # FeatureStore.registry is a lazy property, so without this, the first
+        # access could happen after this function returns and the temp file is
+        # cleaned up, causing a FileNotFoundError.
+        feast_feature_store.registry  # pylint: disable=pointless-statement
         return feast_feature_store
 
 

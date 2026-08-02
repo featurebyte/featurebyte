@@ -725,7 +725,7 @@ class FeastRegistryBuilder:
                 #  (COUNT_DICT or ARRAY types) this simulates feast apply command
                 apply_total_with_repo_instance(
                     store=feature_store,
-                    project=project_name,
+                    project_name=project_name,
                     registry=cast(Registry, registry),
                     repo=repo_content,
                     skip_source_validation=True,
@@ -748,12 +748,15 @@ class FeastRegistryBuilder:
 
         # prepare repo content by adding all feast assets
         repo_content = RepoContents(
+            projects=[],
             data_sources=[],
             entities=[],
             feature_views=[],
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
+            label_views=[],
+            permissions=[],
         )
         for data_source in feast_data_sources + feast_request_sources:
             repo_content.data_sources.append(data_source)
@@ -915,12 +918,15 @@ class FeastRegistryBuilder:
         RegistryProto
         """
         repo_content = RepoContents(
+            projects=[],
             data_sources=[],
             entities=[],
             feature_views=[],
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
+            label_views=[],
+            permissions=[],
         )
 
         first_store = feast_stores[0]

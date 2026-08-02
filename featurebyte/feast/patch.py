@@ -16,6 +16,7 @@ from feast.field import Field
 from feast.online_response import OnlineResponse
 from feast.protos.feast.serving.ServingService_pb2 import FieldStatus, GetOnlineFeaturesResponse
 from feast.type_map import python_values_to_proto_values
+from feast.value_type import ValueType
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
@@ -24,6 +25,7 @@ def augment_response_with_on_demand_transforms(
     feature_refs: List[str],
     requested_on_demand_feature_views: List[OnDemandFeatureView],
     full_feature_names: bool,
+    feature_types: Optional[Dict[str, ValueType]] = None,
 ) -> None:
     """
     The main difference between this and the original Feast implementation is that
@@ -46,6 +48,9 @@ def augment_response_with_on_demand_transforms(
         A boolean that provides the option to add the feature view prefixes to the feature names,
         changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
         "customer_fv__daily_transactions").
+    feature_types: Optional[Dict[str, ValueType]]
+        Optional mapping of feature names to ValueType for type-aware deserialization, forwarded
+        to the underlying `OnlineResponse`.
 
     Raises
     ------
@@ -66,7 +71,7 @@ def augment_response_with_on_demand_transforms(
                 else feature_name
             )
 
-    initial_response = OnlineResponse(online_features_response)
+    initial_response = OnlineResponse(online_features_response, feature_types=feature_types)
     initial_response_arrow: Optional[pyarrow.Table] = None
     initial_response_dict: Optional[Dict[str, List[Any]]] = None
 
