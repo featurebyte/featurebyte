@@ -1,5 +1,19 @@
 # Changelog
 
+## v3.4.3 (2026-08-03)
+
+### 💡 Enhancements
+
++ `service` Add `skip_audit` option to `BaseDocumentService.update_document` for updates that don't need to be tracked in the audit trail
+
+### 🐛 Bug Fixes
+
++ `service` Fix `OfflineStoreFeatureTableBadStateError` when generating deployment SQL for features derived purely from request columns (e.g. context-based date features with no source-data aggregation node)
++ `service` Fix concurrent feature computation so two requests for the same observation table and feature set can no longer both miss the cache and duplicate an expensive compute
++ `service` Delete Mongo documents before cleaning up warehouse tables and remote files during catalog cleanup, so no live document can reference an already-deleted resource
++ `dependencies` Bump pillow, pyarrow, python-multipart, and weasyprint to resolve open high-severity CVEs
++ `dependencies` Bump aiohttp, tornado, urllib3, pyasn1, pyjwt, idna, pygments, and python-dotenv to resolve open high-severity CVEs
+
 ## v3.4.2 (2026-04-12)
 
 ### 💡 Enhancements
