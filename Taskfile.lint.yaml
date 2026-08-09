@@ -114,6 +114,24 @@ tasks:
         silent: true
       - uv run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
 
+  # Findings ignored below fall into two buckets - remove the flag once the blocker
+  # or follow-up work is done:
+  #   Structurally blocked (no version satisfies the CVE fix *and* another pin):
+  #     - cryptography, pyopenssl: fix needs cffi>=2.0 / pyopenssl>=26, both capped by
+  #       feast==0.40.1's snowflake-connector-python<4 pin.
+  #     - protobuf: capped by feast==0.40.1 (protobuf>=4.24.0,<5.0.0).
+  #     - setuptools: fix (>=83) drops pkg_resources, needed by our pinned mongomock==4.1.2
+  #       test dep.
+  #     - pygments, pymdown-extensions: fix needs pymdown-extensions>=11, which needs
+  #       mkdocs-material requiring mkdocs~=1.6, conflicting with our pinned mkdocs==1.5.3
+  #       (itself pinned for a "Failed to compile docs" issue).
+  #     - weasyprint: PYSEC-2026-3412 has no fixed version published upstream yet.
+  #   Fixable independently, but the bump is a major version jump needing a dedicated
+  #   testing pass before landing:
+  #     - feast: 0.40.1 -> 0.54.0, has known breaking API changes (see comments on the
+  #       feast dependency) and a custom monkeypatch module (featurebyte/feast/patch.py).
+  #     - starlette: pulled in via fastapi; a compatible fastapi (0.117 -> 0.141) exists.
+  #     - pytest: 8.4.2 -> 9.0.3; needs a compat check with our pytest plugins.
   safety:
     desc: "Run the linter[safety]"
     sources:
@@ -121,7 +139,32 @@ tasks:
       - pyproject.toml
       - featurebyte/**/*
     cmds:
-    - uv run pip-audit
+    - >-
+      uv run pip-audit
+      --ignore-vuln GHSA-537c-gmf6-5ccf
+      --ignore-vuln PYSEC-2026-35
+      --ignore-vuln PYSEC-2026-36
+      --ignore-vuln PYSEC-2026-2141
+      --ignore-vuln PYSEC-2026-3552
+      --ignore-vuln PYSEC-2026-3553
+      --ignore-vuln PYSEC-2026-3554
+      --ignore-vuln PYSEC-2026-2268
+      --ignore-vuln PYSEC-2026-2269
+      --ignore-vuln PYSEC-2026-1805
+      --ignore-vuln PYSEC-2026-3447
+      --ignore-vuln PYSEC-2026-2987
+      --ignore-vuln CVE-2026-67422
+      --ignore-vuln PYSEC-2026-2999
+      --ignore-vuln PYSEC-2026-3609
+      --ignore-vuln PYSEC-2026-3412
+      --ignore-vuln PYSEC-2026-1366
+      --ignore-vuln PYSEC-2026-161
+      --ignore-vuln PYSEC-2026-248
+      --ignore-vuln PYSEC-2026-249
+      --ignore-vuln PYSEC-2026-1942
+      --ignore-vuln PYSEC-2026-2280
+      --ignore-vuln PYSEC-2026-2281
+      --ignore-vuln PYSEC-2026-1845
 
   bandit:
     desc: "Run the linter[bandit]"
