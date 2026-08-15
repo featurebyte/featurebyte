@@ -5,11 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "6893ffbc6782e0c8fce7d075",
-    "natural_key_column": "col_int",
-    "effective_timestamp_column": "effective_timestamp",
-    "effective_timestamp_schema": null,
-    "forecast_timestamp_column": "forecast_timestamp",
-    "forecast_timestamp_schema": null,
     "columns_info": [
         {
             "description": null,
@@ -87,8 +82,13 @@
     "datetime_partition_column": null,
     "datetime_partition_schema": null,
     "description": "test forecast table",
+    "effective_timestamp_column": "effective_timestamp",
+    "effective_timestamp_schema": null,
+    "forecast_timestamp_column": "forecast_timestamp",
+    "forecast_timestamp_schema": null,
     "managed_view_id": null,
     "name": "sf_forecast_table",
+    "natural_key_column": "col_int",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {
         "feature_store_id": "646f6c190ed28a5271fb02a1",

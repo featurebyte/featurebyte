@@ -15,6 +15,7 @@ from featurebyte.api.context import Context
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity
+from featurebyte.api.exposure import Exposure
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
@@ -518,6 +519,32 @@ class CatalogGetByIdMixin:
         >>> target = catalog.get_target_by_id(ObjectId())  # doctest: +SKIP
         """
         return Target.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_exposure_by_id(
+        self,
+        id: ObjectId,
+    ) -> Exposure:
+        """
+        Get exposure by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Exposure id.
+
+        Returns
+        -------
+        Exposure
+            Exposure object.
+
+        Examples
+        --------
+        Get a saved exposure.
+
+        >>> exposure = catalog.get_exposure_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return Exposure.get_by_id(id=id)
 
     @update_and_reset_catalog
     def get_treatment_by_id(

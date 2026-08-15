@@ -6,6 +6,8 @@
     ],
     "_id": "646f6c1c0ed28a5271fb02d5",
     "description": null,
+    "exposure_id": null,
+    "exposure_namespace_id": null,
     "forecast_point_schema": null,
     "name": "transaction_context",
     "primary_entity_ids": [

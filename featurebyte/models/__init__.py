@@ -5,6 +5,8 @@ Document models for serialization to persistent storage
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_table import EventTableModel
+from featurebyte.models.exposure import ExposureModel
+from featurebyte.models.exposure_namespace import ExposureNamespaceModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel
@@ -18,4 +20,6 @@ __all__ = [
     "FeatureModel",
     "FeatureNamespaceModel",
     "FeatureStoreModel",
+    "ExposureModel",
+    "ExposureNamespaceModel",
 ]

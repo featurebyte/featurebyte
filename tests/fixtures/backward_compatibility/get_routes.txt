@@ -12,6 +12,8 @@
 /dimension_table
 /entity
 /event_table
+/exposure
+/exposure_namespace
 /feature
 /feature_job_setting_analysis
 /feature_list

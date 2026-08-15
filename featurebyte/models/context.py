@@ -17,6 +17,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.exposure import ExposureSourceColumn
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 
@@ -111,6 +112,10 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     forecast_point_schema: Optional[ForecastPointSchema] = Field(default=None)
     graph: Optional[QueryGraph] = Field(default=None)
     node_name: Optional[str] = Field(default=None)
+
+    exposure_id: Optional[PydanticObjectId] = Field(default=None)
+    exposure_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    exposure_source_column: Optional[ExposureSourceColumn] = Field(default=None)
 
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)

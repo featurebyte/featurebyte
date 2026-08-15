@@ -22,6 +22,7 @@ from featurebyte.api.context import Context
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity
+from featurebyte.api.exposure import Exposure
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList
@@ -674,6 +675,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Target.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_exposures(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains various attributes of the registered exposures in the catalog
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of exposures
+
+        Examples
+        --------
+        >>> exposures = catalog.list_exposures()  # doctest: +SKIP
+        """
+        return Exposure.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_treatments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered treatments in the catalog
@@ -1253,6 +1275,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> target = catalog.get_target("target_name")  # doctest: +SKIP
         """
         return Target.get(name=name)
+
+    @update_and_reset_catalog
+    def get_exposure(self, name: str) -> Any:
+        """
+        Gets an Exposure object from the catalog based on its name.
+
+        Parameters
+        ----------
+        name: str
+            Exposure name.
+
+        Returns
+        -------
+        Any
+            Retrieved exposure.
+
+        Examples
+        --------
+        >>> exposure = catalog.get_exposure("exposure_name")  # doctest: +SKIP
+        """
+        return Exposure.get(name=name)
 
     @update_and_reset_catalog
     def get_treatment(self, name: str) -> Any:

@@ -567,6 +567,18 @@ class ObservationTableTargetDefinitionExistsError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidExposureNameError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies an exposure name that does not exist
+    """
+
+
+class ObservationTableExposureDefinitionExistsError(BaseUnprocessableEntityError):
+    """
+    Raise when observation table specifies an exposure name that already has a definition
+    """
+
+
 class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
     Raise when task is not revocable

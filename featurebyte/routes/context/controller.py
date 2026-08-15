@@ -21,6 +21,8 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.exposure import ExposureService
+from featurebyte.service.exposure_namespace import ExposureNamespaceService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.treatment import TreatmentService
 from featurebyte.service.use_case import UseCaseService
@@ -43,6 +45,8 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         deployment_service: DeploymentService,
         user_service: UserService,
         entity_service: EntityService,
+        exposure_service: ExposureService,
+        exposure_namespace_service: ExposureNamespaceService,
         use_case_service: UseCaseService,
         catalog_service: CatalogService,
         treatment_service: TreatmentService,
@@ -55,6 +59,8 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         self.deployment_service = deployment_service
         self.user_service = user_service
         self.entity_service = entity_service
+        self.exposure_service = exposure_service
+        self.exposure_namespace_service = exposure_namespace_service
         self.use_case_service = use_case_service
         self.catalog_service = catalog_service
         self.treatment_service = treatment_service
@@ -89,8 +95,76 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             raise DocumentCreationError(
                 "Context entity ids must all be primary entity ids"
             ) from exc
+
+        # validate and resolve exposure if provided
+        if data.exposure_id or data.exposure_namespace_id:
+            await self._validate_and_resolve_exposure(data)
+
         result: ContextModel = await self.context_service.create_document(data=data)
+
+        # derive and persist exposure_source_column if an exposure was provided
+        if data.exposure_id:
+            exposure = await self.exposure_service.get_document(document_id=data.exposure_id)
+            exposure_source_column = exposure.get_exposure_source_column()
+            if exposure_source_column:
+                await self.context_service.update_documents(
+                    query_filter={"_id": result.id},
+                    update={
+                        "$set": {"exposure_source_column": exposure_source_column.model_dump()}
+                    },
+                )
+                result.exposure_source_column = exposure_source_column
+
         return result
+
+    async def _validate_and_resolve_exposure(self, data: ContextCreate) -> None:
+        """
+        Validate and resolve exposure fields on a Context create payload.
+
+        The exposure's entities must be equal to or parent entities of the context's
+        primary entities (supports hierarchical time series use cases).
+
+        Parameters
+        ----------
+        data: ContextCreate
+            Context creation payload
+
+        Raises
+        ------
+        DocumentCreationError
+            If exposure entities are not compatible with context primary entities.
+        """
+        if not data.exposure_namespace_id and data.exposure_id:
+            exposure = await self.exposure_service.get_document(document_id=data.exposure_id)
+            data.exposure_namespace_id = exposure.exposure_namespace_id
+
+        exposure_namespace = await self.exposure_namespace_service.get_document(
+            document_id=data.exposure_namespace_id  # type: ignore
+        )
+
+        if data.exposure_id:
+            if data.exposure_id != exposure_namespace.default_exposure_id:
+                raise DocumentCreationError(
+                    "Input exposure_id and exposure namespace default_exposure_id must be the same"
+                )
+        else:
+            data.exposure_id = exposure_namespace.default_exposure_id
+
+        # Validate exposure entities are same as or parent of context entities
+        if set(exposure_namespace.entity_ids) == set(data.primary_entity_ids):
+            return
+
+        context_ancestor_ids: set[ObjectId] = set()
+        for ctx_entity_id in data.primary_entity_ids:
+            entity = await self.entity_service.get_document(document_id=ctx_entity_id)
+            context_ancestor_ids.update(entity.ancestor_ids)
+
+        if not set(exposure_namespace.entity_ids).issubset(
+            context_ancestor_ids | set(data.primary_entity_ids)
+        ):
+            raise DocumentCreationError(
+                "Exposure entities must be the same as or parent entities of context entities"
+            )
 
     async def update_context(self, context_id: ObjectId, data: ContextUpdate) -> ContextModel:
         """
