@@ -81,6 +81,33 @@ repeating this reasoning, to avoid the two drifting out of sync.
   (`License: LICENSE.txt`, a filename instead of an identifier), but the
   bundled `LICENSE.txt` is verbatim ISC License text, verified by reading
   it directly. Ignored via `--ignore-packages`.
+- **`future`** (1.0.0, via `pyhive`, part of `featurebyte[server]`'s runtime
+  dependency graph): package-level metadata is MIT and passes `task
+  lint:licenses` without an ignore entry, but one bundled file,
+  `future/backports/urllib/robotparser.py` (also mirrored at
+  `future/moves/urllib/robotparser.py`), is separately dual-licensed
+  GPL-2.0-only / PSF (Python-2.2) — `pip-licenses` reports only the
+  package-level classifier and does not see this file-level fact. Elected
+  the PSF/Python-2.2 option over GPLv2, per the choice the file's own
+  header offers. Not imported by any first-party code (only pulled in as
+  part of the whole `future` package via `pyhive`); re-check this election
+  if `future` is ever bumped, since the file's license terms are pinned to
+  this specific version.
+- **`pillow`** (12.3.0, direct runtime dependency): package-level metadata
+  is `MIT-CMU` and passes `task lint:licenses`, but Pillow optionally
+  bundles compiled-in codecs under several other licenses depending on the
+  build. Verified via the actual linked libraries in the installed wheel
+  (`otool -L` / `.dylibs` inventory) that this is the standard, unmodified
+  official PyPI wheel: the GPL-3.0-or-later codec (`libimagequant`) and the
+  LGPL-2.1-or-later codec (`fribidi`) are both **absent** — not merely
+  unused, not bundled at all. FreeType *is* linked and is dual-licensed
+  FTL / GPL-2.0-or-later; the official wheel builds it under the FTL
+  option (the permissive one), which we are electing here explicitly for
+  the first time — this was previously true by default but undocumented.
+  Re-verify this election (and re-run the `otool -L`/`ldd` check) if
+  `pillow` is ever built from source rather than installed from the
+  official wheel, since a source build could pull in different optional
+  codecs.
 
 ## Known open items
 
