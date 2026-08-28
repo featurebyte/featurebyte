@@ -133,6 +133,24 @@ repeating this reasoning, to avoid the two drifting out of sync.
   sub-packages to ignore in the first place — re-check if `setuptools` is
   ever upgraded to a version that no longer vendors `autocommand`, or that
   vendors a different version of it.
+
+  **Update (2026-08-28):** confirmed this SDK's Docker image (built from
+  this repo's own `docker/Dockerfile`) is the same one distributed to
+  on-prem customers who self-host the entire FeatureByte application - not
+  merely a hypothetical self-hostable offering, following the same
+  correction made to `frontend`'s `sharp-libvips` entry and to the
+  MongoDB/SSPL position in `featurebyte-app`. Unlike those two, no
+  additional notice-in-image fix is needed here: `docker/Dockerfile`'s
+  runner stage does `COPY --from=builder /app/.venv /app/.venv`, copying
+  the entire virtual environment wholesale - including every installed
+  package's own bundled license files, such as
+  `setuptools/_vendor/autocommand-2.2.2.dist-info/LICENSE`. That file is
+  already present in the shipped image today, as a structural consequence
+  of how this repo packages its Docker image (copy the whole `.venv`,
+  unlike `frontend`'s Next.js build, which tree-shakes `node_modules` down
+  to `.next/standalone` output and drops raw package license files in the
+  process). No engineering fix required; this is lower-risk than it first
+  appeared once actually checked against the real distribution model.
 - **`pillow`** (12.3.0, direct runtime dependency): package-level metadata
   is `MIT-CMU` and passes `task lint:licenses`, but Pillow optionally
   bundles compiled-in codecs under several other licenses depending on the
