@@ -89,10 +89,30 @@ repeating this reasoning, to avoid the two drifting out of sync.
   GPL-2.0-only / PSF (Python-2.2) — `pip-licenses` reports only the
   package-level classifier and does not see this file-level fact. Elected
   the PSF/Python-2.2 option over GPLv2, per the choice the file's own
-  header offers. Not imported by any first-party code (only pulled in as
-  part of the whole `future` package via `pyhive`); re-check this election
-  if `future` is ever bumped, since the file's license terms are pinned to
-  this specific version.
+  header offers.
+
+  Verified segregable in practice, not just "not imported by first-party
+  code": `robotparser.py` only loads if something calls
+  `future.standard_library.install_aliases()` (the only code path in
+  `future/standard_library/__init__.py` that imports
+  `future.backports.urllib.robotparser`). `pyhive` (the only reason
+  `future` is a dependency at all) imports only `future.utils.iteritems`
+  and `future.utils.with_metaclass` — never `standard_library` or
+  `install_aliases`. Grepped the entire installed dependency tree for
+  `install_aliases`: the only other hits are an unrelated same-named local
+  variable in `jupyterlab/labextensions.py` (a dict of CLI flag aliases,
+  nothing to do with `future`) and `libfuturize` (future's own bundled
+  2-to-3 code-migration CLI tool, never invoked at runtime). Nothing in
+  either resolved dependency graph (checked in both `featurebyte`'s
+  Python 3.12 environment, `future` 1.0.0, and `featurebyte-app`'s Python
+  3.10 environment, `future` 0.18.3) ever calls `install_aliases()`, so
+  `robotparser.py` is present on disk but never actually executed by
+  anything in Falcon's shipped build.
+
+  Re-check both the election and this segregability finding if `future`
+  is ever bumped or if `pyhive` starts using `future.standard_library`,
+  since the file's license terms and its trigger condition are pinned to
+  the versions checked here.
 - **`autocommand`** (2.2.2, LGPL-3.0, vendored inside `setuptools`'s own
   `_vendor` bundle at `setuptools/_vendor/autocommand`): reached via
   `celerybeat-mongo`, a runtime dependency of `featurebyte[server]`, which
