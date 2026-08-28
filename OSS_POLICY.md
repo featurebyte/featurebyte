@@ -93,6 +93,26 @@ repeating this reasoning, to avoid the two drifting out of sync.
   part of the whole `future` package via `pyhive`); re-check this election
   if `future` is ever bumped, since the file's license terms are pinned to
   this specific version.
+- **`autocommand`** (2.2.2, LGPL-3.0, vendored inside `setuptools`'s own
+  `_vendor` bundle at `setuptools/_vendor/autocommand`): reached via
+  `celerybeat-mongo`, a runtime dependency of `featurebyte[server]`, which
+  depends on `setuptools`. It is not independently installed as its own
+  top-level distribution (confirmed: `pip-licenses --packages autocommand`
+  returns nothing), so it is invisible to `task lint:licenses` entirely —
+  not a case of passing the gate on coarse metadata like `future`/`pillow`
+  above, but of not being seen by the gate at all, since it's nested
+  inside another package's vendored bundle rather than its own installed
+  distribution. It does reach `docker/Dockerfile`'s `uv sync --all-groups
+  --all-extras` build (the self-hostable SDK image), so it is a real,
+  shipped dependency, not merely a build-time artifact. No first-party
+  code imports `setuptools`/`pkg_resources`, and `autocommand` is pure
+  Python with no compiled component, so it satisfies LGPL's
+  source-availability-without-relinking case as shipped. Accepted as
+  documented here rather than via `--ignore-packages`, since standard
+  license-scanning tooling has no visibility into nested vendored
+  sub-packages to ignore in the first place — re-check if `setuptools` is
+  ever upgraded to a version that no longer vendors `autocommand`, or that
+  vendors a different version of it.
 - **`pillow`** (12.3.0, direct runtime dependency): package-level metadata
   is `MIT-CMU` and passes `task lint:licenses`, but Pillow optionally
   bundles compiled-in codecs under several other licenses depending on the
