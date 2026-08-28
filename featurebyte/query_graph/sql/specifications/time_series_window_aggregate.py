@@ -4,6 +4,8 @@ TimeSeriesWindowAggregationSpec
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any, List, Optional, cast
 
@@ -105,6 +107,28 @@ class TimeSeriesWindowAggregateSpec(AggregationSpec):
         params["parameters"] = parameters_dict
 
         return params
+
+    @property
+    def source_view_hash(self) -> str:
+        """
+        Hash for sharing source table CTEs across different aggregation specs.
+        The source view CTE does not depend on groupby keys, entity IDs, serving names,
+        category columns, window size, offset, or blind spot. Only the source expression
+        itself, the bucket column type (fixed vs variable size), and the join strategy
+        (time series table vs not) matter.
+
+        Returns
+        -------
+        str
+        """
+        params: dict[str, Any] = {
+            "source_expr": self.source_expr.sql(),
+            "is_fixed_size_window": self.window.is_fixed_size(),
+            "is_time_series_table": self.is_time_series_table,
+        }
+        hasher = hashlib.shake_128()
+        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+        return hasher.hexdigest(8)
 
     @classmethod
     def construct_specs(
