@@ -81,6 +81,98 @@ repeating this reasoning, to avoid the two drifting out of sync.
   (`License: LICENSE.txt`, a filename instead of an identifier), but the
   bundled `LICENSE.txt` is verbatim ISC License text, verified by reading
   it directly. Ignored via `--ignore-packages`.
+- **`future`** (1.0.0, via `pyhive`, part of `featurebyte[server]`'s runtime
+  dependency graph): package-level metadata is MIT and passes `task
+  lint:licenses` without an ignore entry, but one bundled file,
+  `future/backports/urllib/robotparser.py` (also mirrored at
+  `future/moves/urllib/robotparser.py`), is separately dual-licensed
+  GPL-2.0-only / PSF (Python-2.2) — `pip-licenses` reports only the
+  package-level classifier and does not see this file-level fact. Elected
+  the PSF/Python-2.2 option over GPLv2, per the choice the file's own
+  header offers.
+
+  Verified segregable in practice, not just "not imported by first-party
+  code": `robotparser.py` only loads if something calls
+  `future.standard_library.install_aliases()` (the only code path in
+  `future/standard_library/__init__.py` that imports
+  `future.backports.urllib.robotparser`). `pyhive` (the only reason
+  `future` is a dependency at all) imports only `future.utils.iteritems`
+  and `future.utils.with_metaclass` — never `standard_library` or
+  `install_aliases`. Grepped the entire installed dependency tree for
+  `install_aliases`: the only other hits are an unrelated same-named local
+  variable in `jupyterlab/labextensions.py` (a dict of CLI flag aliases,
+  nothing to do with `future`) and `libfuturize` (future's own bundled
+  2-to-3 code-migration CLI tool, never invoked at runtime). Nothing in
+  either resolved dependency graph (checked in both `featurebyte`'s
+  Python 3.12 environment, `future` 1.0.0, and `featurebyte-app`'s Python
+  3.10 environment, `future` 0.18.3) ever calls `install_aliases()`, so
+  `robotparser.py` is present on disk but never actually executed by
+  anything in Falcon's shipped build.
+
+  Re-check both the election and this segregability finding if `future`
+  is ever bumped or if `pyhive` starts using `future.standard_library`,
+  since the file's license terms and its trigger condition are pinned to
+  the versions checked here.
+- **`autocommand`** (2.2.2, LGPL-3.0, vendored inside `setuptools`'s own
+  `_vendor` bundle at `setuptools/_vendor/autocommand`): reached via
+  `celerybeat-mongo`, a runtime dependency of `featurebyte[server]`, which
+  depends on `setuptools`. It is not independently installed as its own
+  top-level distribution (confirmed: `pip-licenses --packages autocommand`
+  returns nothing), so it is invisible to `task lint:licenses` entirely —
+  not a case of passing the gate on coarse metadata like `future`/`pillow`
+  above, but of not being seen by the gate at all, since it's nested
+  inside another package's vendored bundle rather than its own installed
+  distribution. It does reach `docker/Dockerfile`'s `uv sync --all-groups
+  --all-extras` build (the self-hostable SDK image), so it is a real,
+  shipped dependency, not merely a build-time artifact. No first-party
+  code imports `setuptools`/`pkg_resources`, and `autocommand` is pure
+  Python with no compiled component, so it satisfies LGPL's
+  source-availability-without-relinking case as shipped. Accepted as
+  documented here rather than via `--ignore-packages`, since standard
+  license-scanning tooling has no visibility into nested vendored
+  sub-packages to ignore in the first place — re-check if `setuptools` is
+  ever upgraded to a version that no longer vendors `autocommand`, or that
+  vendors a different version of it.
+
+  **Update (2026-08-28):** the primary on-prem distribution vector for
+  this dependency is actually **`featurebyte-app`**, not this repo's own
+  self-host path — `featurebyte-app`'s Helm chart is confirmed shipped to
+  on-prem customers who self-host the entire FeatureByte application (see
+  that repo's own `OSS_POLICY.md` for the full analysis), and
+  `featurebyte-app` depends on `featurebyte[server]`, which is how
+  `autocommand` reaches it. This repo's own `docker/Dockerfile` may also
+  be distributed independently (the public SDK is self-hostable on its
+  own), so the finding below still applies here too, but
+  `featurebyte-app`'s image is the one confirmed to matter for the
+  acquirer's diligence question.
+
+  Either way, no additional notice-in-image fix is needed: both
+  `featurebyte`'s and `featurebyte-app`'s Dockerfiles copy their entire
+  virtual environment wholesale into the runner stage (`COPY --from=
+  builder /app/.venv /app/.venv`), including every installed package's
+  own bundled license files, such as
+  `setuptools/_vendor/autocommand-2.2.2.dist-info/LICENSE`. That file is
+  already present in both shipped images today, as a structural
+  consequence of packaging the whole `.venv` (unlike `frontend`'s Next.js
+  build, which tree-shakes `node_modules` down to `.next/standalone`
+  output and drops raw package license files in the process). No
+  engineering fix required; this is lower-risk than it first appeared
+  once actually checked against the real distribution model.
+- **`pillow`** (12.3.0, direct runtime dependency): package-level metadata
+  is `MIT-CMU` and passes `task lint:licenses`, but Pillow optionally
+  bundles compiled-in codecs under several other licenses depending on the
+  build. Verified via the actual linked libraries in the installed wheel
+  (`otool -L` / `.dylibs` inventory) that this is the standard, unmodified
+  official PyPI wheel: the GPL-3.0-or-later codec (`libimagequant`) and the
+  LGPL-2.1-or-later codec (`fribidi`) are both **absent** — not merely
+  unused, not bundled at all. FreeType *is* linked and is dual-licensed
+  FTL / GPL-2.0-or-later; the official wheel builds it under the FTL
+  option (the permissive one), which we are electing here explicitly for
+  the first time — this was previously true by default but undocumented.
+  Re-verify this election (and re-run the `otool -L`/`ldd` check) if
+  `pillow` is ever built from source rather than installed from the
+  official wheel, since a source build could pull in different optional
+  codecs.
 
 ## Known open items
 
