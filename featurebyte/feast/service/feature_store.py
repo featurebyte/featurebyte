@@ -103,6 +103,10 @@ def create_feast_feature_store(
             config=repo_config,
             online_store_id=effective_online_store_id,
         )
+        # Force the registry to load while the temp file still exists. The registry
+        # is loaded lazily on first access, and the temp file is deleted once this
+        # function returns.
+        _ = feast_feature_store.registry
         return feast_feature_store
 
 

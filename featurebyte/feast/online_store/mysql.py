@@ -5,13 +5,13 @@ Custom MySQL online store implementation for Feast.
 from typing import Literal, Sequence
 
 from feast import Entity, FeatureView, RepoConfig
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import (
+from feast.infra.online_stores.mysql_online_store.mysql import (
     MySQLOnlineStore as BaseMySQLOnlineStore,
 )
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import (
+from feast.infra.online_stores.mysql_online_store.mysql import (
     MySQLOnlineStoreConfig as BaseMySQLOnlineStoreConfig,
 )
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import (
+from feast.infra.online_stores.mysql_online_store.mysql import (
     _drop_table_and_index,
     _table_id,
 )
@@ -63,4 +63,4 @@ class FBMySQLOnlineStore(BaseMySQLOnlineStore):
                 cur.execute(f"ALTER TABLE {table_name} ADD INDEX {index_name} (entity_key);")
 
         for table in tables_to_delete:
-            _drop_table_and_index(cur, project, table)
+            _drop_table_and_index(cur, _table_id(project, table))

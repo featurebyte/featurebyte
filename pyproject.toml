@@ -75,9 +75,7 @@ server = [
   "databricks-sdk",
   "databricks-sql-connector~=4.0.0",
   "fastapi",
-  # import changes 'feast.infra.online_stores.contrib'
-  # Change in RepoContents.__init__
-  "feast[snowflake,redis,mysql,gcp]==0.40.1",
+  "feast[snowflake,redis,mysql,gcp]==0.66.0",
   "featurebyte-freeware",
   "gevent",
   "google-cloud-bigquery",
@@ -136,7 +134,9 @@ lint = [
   "cyclonedx-bom>=6",
   "darglint",
   "mypy-extensions",
-  "mypy==1.0.1",
+  # feast requires starlette>=1.0.1, whose Request.state uses a TypeVar default (PEP 696)
+  # that mypy 1.0.1 cannot parse, surfacing as spurious "StateT? has no attribute" errors.
+  "mypy==1.20.2",
   "pip-audit",
   "pip-licenses",
   "ruff",

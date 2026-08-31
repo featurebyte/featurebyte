@@ -104,6 +104,8 @@ async def test_feast_registry_construction__with_post_processing_features(
     pit_data_source = next(
         data_source for data_source in data_sources if data_source["name"] == "POINT_IN_TIME"
     )
+    # meta contains non-deterministic created/updated timestamps populated by feast
+    pit_data_source.pop("meta", None)
     assert pit_data_source == {
         "dataSourceClassType": "feast.data_source.RequestSource",
         "name": "POINT_IN_TIME",
@@ -387,17 +389,41 @@ def test_feast_registry_construction(
     assert udf_definition.strip() == textwrap.dedent(expected).strip()
 
     # check that the registry dict is as expected
-    assert_lists_of_dicts_equal(feast_registry_dict["dataSources"], expected_data_sources)
+    # meta contains non-deterministic created/updated timestamps populated by feast
+    actual_data_sources = [
+        {k: v for k, v in data_source.items() if k != "meta"}
+        for data_source in feast_registry_dict["dataSources"]
+    ]
+    assert_lists_of_dicts_equal(actual_data_sources, expected_data_sources)
     assert_lists_of_dicts_equal(
         [entity["spec"] for entity in entities],
         expected_entity_specs,
     )
+    # meta (nested in batchSource) contains non-deterministic timestamps, and version is a
+    # feast-internal feature view versioning field not modelled by the expected fixture
+    actual_feature_view_specs = []
+    for feat_view in feat_views:
+        spec = {k: v for k, v in feat_view["spec"].items() if k != "version"}
+        spec["batchSource"] = {
+            k: v for k, v in spec["batchSource"].items() if k != "meta"
+        }
+        actual_feature_view_specs.append(spec)
     assert_lists_of_dicts_equal(
-        [feat_view["spec"] for feat_view in feat_views],
+        actual_feature_view_specs,
         expected_feature_view_specs,
     )
+    # batchSource (with non-deterministic meta) and viewType are additional fields feast now
+    # embeds inline in feature service specs, not modelled by the expected fixture
+    actual_feature_service_specs = []
+    for feat_service in feat_services:
+        spec = dict(feat_service["spec"])
+        spec["features"] = [
+            {k: v for k, v in feature.items() if k not in ("batchSource", "viewType")}
+            for feature in spec["features"]
+        ]
+        actual_feature_service_specs.append(spec)
     assert_lists_of_dicts_equal(
-        [feat_service["spec"] for feat_service in feat_services],
+        actual_feature_service_specs,
         expected_feature_service_spec,
     )
     assert feast_registry_dict["projectMetadata"] == [

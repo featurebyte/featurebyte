@@ -2,7 +2,6 @@
 Tests for Deployment route
 """
 
-import json
 import textwrap
 from datetime import datetime
 from http import HTTPStatus
@@ -474,7 +473,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            content=json.dumps(data),
+            json=data,
         )
         assert response.status_code == HTTPStatus.OK, response.content
 
@@ -495,7 +494,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            content=json.dumps(data),
+            json=data,
         )
 
         # Check error
@@ -527,7 +526,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}] * num_rows}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            content=json.dumps(data),
+            json=data,
         )
 
         # Check error
@@ -566,7 +565,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            content=json.dumps(data),
+            json=data,
         )
         assert response.status_code == HTTPStatus.OK, response.content
 
@@ -602,7 +601,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            content=json.dumps(data),
+            json=data,
         )
         assert response.status_code == HTTPStatus.OK, response.content
 
