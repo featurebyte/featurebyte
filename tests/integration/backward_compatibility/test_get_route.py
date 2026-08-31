@@ -51,11 +51,14 @@ def extract_get_routes():
     """Extract get routes to be tests"""
     routes = []
     exclude_paths = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/temp_data", "/redoc"}
-    for route in app.routes:
-        path = getattr(route, "path", None)
+    # Walking app.routes directly no longer yields a flat list of individual routes with
+    # resolved paths (fastapi's include_router is now lazily resolved via _IncludedRouter
+    # wrapper objects), so use the OpenAPI schema as the source of truth for actual paths.
+    paths = app.openapi()["paths"]
+    for path, methods in paths.items():
         if "{" in path or path in exclude_paths:
             continue
-        if path and "GET" in getattr(route, "methods", {}):
+        if "get" in methods:
             routes.append(path)
     return routes
 
