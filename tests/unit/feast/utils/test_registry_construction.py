@@ -404,9 +404,7 @@ def test_feast_registry_construction(
     actual_feature_view_specs = []
     for feat_view in feat_views:
         spec = {k: v for k, v in feat_view["spec"].items() if k != "version"}
-        spec["batchSource"] = {
-            k: v for k, v in spec["batchSource"].items() if k != "meta"
-        }
+        spec["batchSource"] = {k: v for k, v in spec["batchSource"].items() if k != "meta"}
         actual_feature_view_specs.append(spec)
     assert_lists_of_dicts_equal(
         actual_feature_view_specs,

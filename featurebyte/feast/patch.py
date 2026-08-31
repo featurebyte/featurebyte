@@ -47,6 +47,9 @@ def augment_response_with_on_demand_transforms(
         A boolean that provides the option to add the feature view prefixes to the feature names,
         changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
         "customer_fv__daily_transactions").
+    feature_types: Optional[Dict[str, Any]]
+        Optional mapping of feature names to their Feast ValueType, passed by newer versions of Feast.
+        Unused here since the correct dtype is derived from odfv.features instead.
 
     Raises
     ------

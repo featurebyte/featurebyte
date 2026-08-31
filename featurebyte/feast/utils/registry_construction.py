@@ -21,7 +21,12 @@ from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
 from feast.infra.registry.registry import Registry
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from feast.repo_config import FeastConfigBaseModel, RegistryConfig, RepoConfig
+from feast.repo_config import (
+    FeastConfigBaseModel,
+    MaterializationConfig,
+    RegistryConfig,
+    RepoConfig,
+)
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
 from pydantic import Field as PydanticField
@@ -662,6 +667,10 @@ class FeastRegistryBuilder:
         repo_config_kwargs = {
             "online_store": online_store_config,
             "entity_key_serialization_version": 3,
+            # Our custom offline stores (BigQuery, Spark Thrift) only implement
+            # pull_latest_from_table_or_query, not pull_all_from_table_or_query, which is
+            # what feast's materialization compute engine calls by default.
+            "materialization_config": MaterializationConfig(pull_latest_features=True),
         }
         if offline_store_config:
             repo_config_kwargs["offline_store"] = offline_store_config
