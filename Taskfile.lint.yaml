@@ -135,6 +135,14 @@ tasks:
   #     try/except ImportError that just sets HAS_DATABRICKS_SQL_CONNECTOR = False).
   #     Needs a dedicated engineering pass (rework the monkeypatch against the new class)
   #     plus a real Databricks integration test run before landing.
+  #   - pygments (PYSEC-2026-2987), pymdown-extensions (PYSEC-2026-2999, PYSEC-2026-3609,
+  #     PYSEC-2026-3654): fix needs pymdown-extensions>=11.0.1, but mkdocs-material==9.5.18
+  #     caps it at ~=10.2. mkdocs-material versions compatible with pymdown-extensions>=11
+  #     exist, but the only ones satisfiable alongside our mkdocs==1.5.3 pin resolve down to
+  #     mkdocs-material==9.2.6 (a big jump back from 9.5.18) - confirmed NOT just a
+  #     theoretical risk: tried it, and the resulting docs-output diff is large enough to
+  #     OOM-crash the `build-updated-docs` CI job's diff2html rendering step outright.
+  #     Needs a dedicated pass on the mkdocs-material/mkdocs pin chain, not a CVE-fix bump.
   safety:
     desc: "Run the linter[safety]"
     sources:
@@ -150,6 +158,10 @@ tasks:
       --ignore-vuln CVE-2026-41608
       --ignore-vuln CVE-2026-43871
       --ignore-vuln CVE-2026-66053
+      --ignore-vuln PYSEC-2026-2987
+      --ignore-vuln PYSEC-2026-2999
+      --ignore-vuln PYSEC-2026-3609
+      --ignore-vuln PYSEC-2026-3654
 
   bandit:
     desc: "Run the linter[bandit]"

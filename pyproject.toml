@@ -188,9 +188,7 @@ constraint-dependencies = [
   "pip>=26.1.2,<27",
   "protobuf>=5.29.6,<6",
   "pyasn1>=0.6.4,<1",
-  "pygments>=2.20.0,<3",
   "pyjwt>=2.13.0,<3",
-  "pymdown-extensions>=11.0.1,<12",
   "python-dotenv>=1.2.2,<2",
   "setuptools<82", # >=82 drops pkg_resources, needed by mongomock==4.1.2 (test dep); CVE fix needs >=83, so unfixable without a mongomock upgrade
   "snowflake-connector-python>=4.7.2,<5",
