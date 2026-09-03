@@ -41,7 +41,8 @@ _DIRECT_MANNER = (
 
 def parse_lock(path: Path) -> Dict[str, Any]:
     with open(path, "rb") as file:
-        return tomllib.load(file)
+        data: Dict[str, Any] = tomllib.load(file)
+        return data
 
 
 def direct_dependency_names(lock: Dict[str, Any]) -> Set[str]:
@@ -56,7 +57,8 @@ def direct_dependency_names(lock: Dict[str, Any]) -> Set[str]:
 
 
 def _find_root_package(lock: Dict[str, Any]) -> Dict[str, Any]:
-    for package in lock["package"]:
+    packages: List[Dict[str, Any]] = lock["package"]
+    for package in packages:
         if package.get("source") == {"editable": "."}:
             return package
     raise ValueError("No editable (self) package found in uv.lock")
@@ -119,7 +121,7 @@ def _transitive_manner(
     queue = deque([(name, None)])
     while queue:
         current, triggering_marker = queue.popleft()
-        for edge in sorted(reverse_graph.get(current, []), key=lambda e: e["dependent"]):
+        for edge in sorted(reverse_graph.get(current, []), key=lambda e: str(e["dependent"])):
             dependent = edge["dependent"]
             edge_marker = triggering_marker
             if edge_marker is None and _is_platform_conditional(edge["marker"]):

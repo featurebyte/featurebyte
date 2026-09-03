@@ -8,7 +8,8 @@ Adds these as `featurebyte:*` properties on each component, sourced from
 overrides.
 """
 
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import copy
 import json
@@ -41,7 +42,7 @@ def _suppress_unresolved_defaults(fields: Dict[str, Any], computed: Dict[str, An
 def annotate_sbom(
     sbom: Dict[str, Any],
     annotations: Dict[str, Any],
-    computed: Dict[str, Dict[str, Any]] = None,
+    computed: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Return a copy of `sbom` with `featurebyte:*` properties added to each component.
 
@@ -102,7 +103,7 @@ def main() -> None:
 
     computed = None
     if lock_path:
-        computed = lockfile_facts.compute_facts(lockfile_facts.parse_lock(lock_path))
+        computed = lockfile_facts.compute_facts(lockfile_facts.parse_lock(Path(lock_path)))
 
     result = annotate_sbom(sbom, annotations, computed=computed)
 

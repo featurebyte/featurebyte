@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: dependencies
+
+issues: []
+
+note: "Fix known CVEs across dependencies: cryptography, pyopenssl, snowflake-connector-python, protobuf, pymdown-extensions, pygments, and gitpython."
+
+subtext: |
+  + snowflake-connector-python 3.17.4 -> 4.7.2 (critical TLS hostname verification bypass);
+    cryptography, pyopenssl bumped alongside since snowflake-connector-python 3.x capped both
+  + protobuf 4.25.8 -> 5.29.6, pymdown-extensions 10.16.1 -> 11.0.1+, pygments 2.19.2 -> 2.20.0+,
+    gitpython 3.1.58 -> 3.1.59+
+  + thrift and setuptools CVEs remain open, documented in Taskfile.lint.yaml's `safety` task:
+    thrift's fix needs a databricks-sql-connector bump that breaks an internal-API monkeypatch
+    in featurebyte/session/databricks.py; setuptools' fix drops pkg_resources, needed by our
+    pinned mongomock test dependency

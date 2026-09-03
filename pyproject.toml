@@ -39,7 +39,7 @@ dependencies = [
   "black>=26.3.1,<27",
   "cachetools>=5",
   "croniter>=5",
-  "cryptography>=45",
+  "cryptography>=50",
   "grapheme>=0.6",
   "humanize>=4",
   "importlib-metadata>=8",
@@ -54,7 +54,7 @@ dependencies = [
   "pydantic-settings>=2",
   "pydantic~=2.8",
   "pymongo>=4",
-  "pyopenssl>=23",
+  "pyopenssl>=26",
   "python-multipart>=0.0.30,<1",
   "python-on-whales",
   "pyyaml>=5",
@@ -178,7 +178,7 @@ constraint-dependencies = [
   "click>=8.3.3,<9",
   "filelock>=3.20.3,<4",
   "fonttools>=4.60.2,<5",
-  "gitpython>=3.1.58,<4",
+  "gitpython>=3.1.59,<4",
   "idna>=3.15,<4",
   "jupyter-server>=2.20.0,<3",
   "lxml>=6.1.0,<7",
@@ -186,15 +186,19 @@ constraint-dependencies = [
   "msgpack>=1.2.1,<2",
   "nbconvert>=7.17.1,<8",
   "pip>=26.1.2,<27",
+  "protobuf>=5.29.6,<6",
   "pyasn1>=0.6.4,<1",
+  "pygments>=2.20.0,<3",
   "pyjwt>=2.13.0,<3",
+  "pymdown-extensions>=11.0.1,<12",
   "python-dotenv>=1.2.2,<2",
   "setuptools<82", # >=82 drops pkg_resources, needed by mongomock==4.1.2 (test dep); CVE fix needs >=83, so unfixable without a mongomock upgrade
+  "snowflake-connector-python>=4.7.2,<5",
   "soupsieve>=2.8.4,<3",
-  "tornado>=6.5.7,<7",
+  "tornado>=6.5.8,<7",
   "urllib3>=2.7.0,<3",
   "virtualenv>=20.36.1,<21",
-  "weasyprint>=68.0,<69",
+  "weasyprint>=68.0,<69", # GHSA-jhhc-3hcp-qhm5 (CSS injection) unfixed upstream; not exploitable here - our only call site (featurebyte/routes/feature_job_setting_analysis/controller.py) never sets presentational_hints=True (default False), which the advisory requires
 ]
 # Drops rfc3987 (GPLv3+, pulled in via feast's jsonschema[format] requirement)
 # from the resolved graph entirely. See OSS_POLICY.md ("Resolved findings")

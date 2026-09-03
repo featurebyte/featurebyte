@@ -112,7 +112,7 @@ class SnowflakeSession(BaseSession):
         except SnowflakeError as exc:
             raise DataWarehouseConnectionError(exc.msg) from exc
 
-        cursor = self._connection.cursor()
+        cursor: Any = self._connection.cursor()
         cursor.execute(f'USE ROLE "{self.role_name}"')
         try:
             cursor.execute(f'USE SCHEMA "{self.database_name}"."{self.schema_name}"')
