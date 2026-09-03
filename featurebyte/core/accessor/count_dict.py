@@ -158,7 +158,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["CustomerProductGroupCountsEntropy_7d"].iloc[0]
-        1.475076311054695
+        np.float64(1.475076311054695)
         """
         return self._make_operation("entropy", DBVarType.FLOAT)
 
@@ -347,7 +347,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["CustomerProductGroupCountsUniqueCount_7d"].iloc[0]
-        5.0
+        np.float64(5.0)
         """
         return self._make_operation(
             "unique_count",
@@ -407,7 +407,7 @@ class CountDictAccessor:
         Similarity feature:
 
         >>> df["CustomerProductGroupCounts_7d_90d_similarity"].iloc[0]
-        0.8653846153846161
+        np.float64(0.8653846153846161)
         """
         series_operator = CountDictSeriesOperator(self._feature_obj, other)
         return series_operator.operate(
@@ -461,7 +461,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["Chips et Tortillas Value"].iloc[0]
-        1
+        np.int64(1)
         """
         additional_node_params = {}
         if is_scalar(key):
@@ -530,7 +530,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["Chips et Tortillas Rank"].iloc[0]
-        1.0
+        np.float64(1.0)
         """
         additional_node_params: Dict[str, Any] = {
             "descending": descending,
@@ -594,7 +594,7 @@ class CountDictAccessor:
         New feature:
 
         >>> df["Chips et Tortillas Relative Frequency"].iloc[0]
-        0.14285714285714302
+        np.float64(0.14285714285714302)
         """
         additional_node_params = {}
         if is_scalar(key):

@@ -63,7 +63,9 @@ class BaseRouter:
         routes_to_keep: List[BaseRoute] = []
         for route in self.router.routes:
             route = cast(APIRoute, route)
-            if set(route.methods).issubset(unwanted_path_to_method.get(route.path, [])):
+            if route.methods and set(route.methods).issubset(
+                unwanted_path_to_method.get(route.path, [])
+            ):
                 continue
             routes_to_keep.append(route)
         self.router.routes = routes_to_keep

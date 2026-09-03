@@ -16,6 +16,7 @@ import pytest
 import pytest_asyncio
 import redis
 from bson import ObjectId
+from feast.utils import _list_feature_views
 from sqlglot import parse_one
 
 import featurebyte as fb
@@ -857,7 +858,12 @@ async def test_feast_registry(
     # and has side effect on the following call, this should be Feast specific issue).
     assert {
         fv.name
-        for fv in feature_store._list_feature_views(allow_cache=False, hide_dummy_entity=False)
+        for fv in _list_feature_views(
+            feature_store.registry,
+            feature_store.project,
+            allow_cache=False,
+            hide_dummy_entity=False,
+        )
     } == {table.name for table in offline_store_feature_tables_all.values()}
 
     # Check feature services

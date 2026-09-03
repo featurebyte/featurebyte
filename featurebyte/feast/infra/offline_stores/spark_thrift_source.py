@@ -102,7 +102,7 @@ class SparkThriftSource(DataSource):
             owner=data_source.owner,
         )
 
-    def to_proto(self) -> DataSourceProto:
+    def _to_proto_impl(self) -> DataSourceProto:
         data_source_proto = DataSourceProto(
             name=self.name,
             type=DataSourceProto.CUSTOM_SOURCE,
@@ -118,6 +118,9 @@ class SparkThriftSource(DataSource):
         data_source_proto.created_timestamp_column = self.created_timestamp_column
 
         return data_source_proto
+
+    def source_type(self) -> DataSourceProto.SourceType.ValueType:
+        return DataSourceProto.CUSTOM_SOURCE
 
     def validate(self, config: RepoConfig) -> None:
         self.get_table_column_names_and_types(config)

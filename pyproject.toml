@@ -75,9 +75,7 @@ server = [
   "databricks-sdk",
   "databricks-sql-connector~=4.0.0",
   "fastapi",
-  # import changes 'feast.infra.online_stores.contrib'
-  # Change in RepoContents.__init__
-  "feast[snowflake,redis,mysql,gcp]==0.40.1",
+  "feast[snowflake,redis,mysql,gcp]==0.66.0",
   "featurebyte-freeware",
   "gevent",
   "google-cloud-bigquery",
@@ -291,3 +289,18 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
+
+# feast requires starlette>=1.0.1, whose Request.state uses a TypeVar default (PEP 696) that
+# mypy 1.0.1 cannot parse. This surfaces as spurious "StateT? has no attribute ..." [attr-defined]
+# errors on every `request.state.app_container`/`request.state.user` access, not real bugs -
+# upgrading mypy resolves it cleanly, but until then, silence attr-defined specifically in the
+# modules that hit this pattern rather than disabling it project-wide.
+[[tool.mypy.overrides]]
+module = [
+  "featurebyte.app",
+  "featurebyte.middleware",
+  "featurebyte.routes.base_router",
+  "featurebyte.routes.base_materialized_table_router",
+  "featurebyte.routes.*.api",
+]
+disable_error_code = ["attr-defined"]

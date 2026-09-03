@@ -21,7 +21,12 @@ from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
 from feast.infra.registry.registry import Registry
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from feast.repo_config import FeastConfigBaseModel, RegistryConfig, RepoConfig
+from feast.repo_config import (
+    FeastConfigBaseModel,
+    MaterializationConfig,
+    RegistryConfig,
+    RepoConfig,
+)
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
 from pydantic import Field as PydanticField
@@ -661,7 +666,11 @@ class FeastRegistryBuilder:
         """
         repo_config_kwargs = {
             "online_store": online_store_config,
-            "entity_key_serialization_version": 2,
+            "entity_key_serialization_version": 3,
+            # Our custom offline stores (BigQuery, Spark Thrift) only implement
+            # pull_latest_from_table_or_query, not pull_all_from_table_or_query, which is
+            # what feast's materialization compute engine calls by default.
+            "materialization_config": MaterializationConfig(pull_latest_features=True),
         }
         if offline_store_config:
             repo_config_kwargs["offline_store"] = offline_store_config
@@ -725,7 +734,7 @@ class FeastRegistryBuilder:
                 #  (COUNT_DICT or ARRAY types) this simulates feast apply command
                 apply_total_with_repo_instance(
                     store=feature_store,
-                    project=project_name,
+                    project_name=project_name,
                     registry=cast(Registry, registry),
                     repo=repo_content,
                     skip_source_validation=True,
@@ -748,12 +757,15 @@ class FeastRegistryBuilder:
 
         # prepare repo content by adding all feast assets
         repo_content = RepoContents(
+            projects=[],
             data_sources=[],
             entities=[],
             feature_views=[],
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
+            label_views=[],
+            permissions=[],
         )
         for data_source in feast_data_sources + feast_request_sources:
             repo_content.data_sources.append(data_source)
@@ -915,12 +927,15 @@ class FeastRegistryBuilder:
         RegistryProto
         """
         repo_content = RepoContents(
+            projects=[],
             data_sources=[],
             entities=[],
             feature_views=[],
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
+            label_views=[],
+            permissions=[],
         )
 
         first_store = feast_stores[0]

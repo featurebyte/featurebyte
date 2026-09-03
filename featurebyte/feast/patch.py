@@ -5,7 +5,7 @@ This module functions used to patch the Feast library.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union, cast
 
 import pandas as pd
 import pyarrow
@@ -24,6 +24,7 @@ def augment_response_with_on_demand_transforms(
     feature_refs: List[str],
     requested_on_demand_feature_views: List[OnDemandFeatureView],
     full_feature_names: bool,
+    feature_types: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     The main difference between this and the original Feast implementation is that
@@ -46,6 +47,9 @@ def augment_response_with_on_demand_transforms(
         A boolean that provides the option to add the feature view prefixes to the feature names,
         changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
         "customer_fv__daily_transactions").
+    feature_types: Optional[Dict[str, Any]]
+        Optional mapping of feature names to their Feast ValueType, passed by newer versions of Feast.
+        Unused here since the correct dtype is derived from odfv.features instead.
 
     Raises
     ------
@@ -123,7 +127,8 @@ def augment_response_with_on_demand_transforms(
                 python_values_to_proto_values(feature_vector, odfv_dtype_map[selected_feature])
                 if odfv.mode == "python"
                 else python_values_to_proto_values(
-                    feature_vector.to_numpy(), odfv_dtype_map[selected_feature]
+                    cast(pyarrow.ChunkedArray, feature_vector).to_numpy(),
+                    odfv_dtype_map[selected_feature],
                 )
             )
 
@@ -288,6 +293,7 @@ def transform_arrow(
                 df_with_features.add_column_alias(feature.name, full_feature_ref)
 
     # Compute transformed values and apply to each result row
+    assert feature_view.feature_transformation is not None
     df_with_transformed_features = feature_view.feature_transformation.transform(df_with_features)
     assert isinstance(df_with_transformed_features, pd.DataFrame)
 

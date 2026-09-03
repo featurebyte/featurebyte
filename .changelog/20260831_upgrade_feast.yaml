@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: feast
+
+issues: []
+
+note: "Upgrade the `feast` dependency from 0.40.1 to 0.66.0."
+
+subtext:
