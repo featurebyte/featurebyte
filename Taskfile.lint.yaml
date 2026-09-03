@@ -201,16 +201,21 @@ tasks:
       - uv run pip-licenses --partial-match --ignore-packages featurebyte featurebyte_freeware chardet gssapi pyphen --allow-only="${PERMISSIVE_LICENSES}"
 
   sbom:
-    desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling)"
+    desc: "Generate a CycloneDX SBOM for the distributed package (runtime + extras, not dev tooling), annotated with due-diligence data (distribution, manner of use, modification, license notes - see oss-annotations.yaml)"
     sources:
       - uv.lock
       - pyproject.toml
+      - oss-annotations.yaml
+      - scripts/annotate_sbom.py
+      - scripts/lockfile_facts.py
+      - scripts/oss_pkgname.py
     generates:
       - sbom.json
     cmds:
       - uv export --no-dev --all-extras --no-header --no-hashes --no-annotate | grep -v '^-e ' > .sbom-requirements.txt
       - uv run cyclonedx-py requirements .sbom-requirements.txt --output-format json --output-file sbom.json
       - rm -f .sbom-requirements.txt
+      - uv run python scripts/annotate_sbom.py sbom.json oss-annotations.yaml uv.lock
 
   notice:
     desc: "Generate THIRD-PARTY-NOTICES.txt attributing dependency licenses (whole synced environment, including dev tooling - over-inclusive is safer than under-inclusive for attribution)"
