@@ -143,6 +143,10 @@ tasks:
   #     theoretical risk: tried it, and the resulting docs-output diff is large enough to
   #     OOM-crash the `build-updated-docs` CI job's diff2html rendering step outright.
   #     Needs a dedicated pass on the mkdocs-material/mkdocs pin chain, not a CVE-fix bump.
+  #   - mkdocs-material (CVE-2026-73295): fix needs mkdocs-material>=9.7.7, but our
+  #     mkdocs==1.5.3 pin caps the resolvable mkdocs-material version at 9.5.18 (same
+  #     mkdocs/mkdocs-material pin-chain blocker as the pymdown-extensions entry above).
+  #     Needs the same dedicated pass on that pin chain, not a standalone bump.
   safety:
     desc: "Run the linter[safety]"
     sources:
@@ -162,6 +166,7 @@ tasks:
       --ignore-vuln PYSEC-2026-2999
       --ignore-vuln PYSEC-2026-3609
       --ignore-vuln PYSEC-2026-3654
+      --ignore-vuln CVE-2026-73295
 
   bandit:
     desc: "Run the linter[bandit]"
