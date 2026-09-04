@@ -1,0 +1,39 @@
+# Due-diligence annotations merged into sbom.json by scripts/annotate_sbom.py
+# (wired into `task lint:sbom`). Answers, for every dependency in the SBOM:
+#   - distributed / distributed_rationale: was it distributed by/on behalf of FeatureByte?
+#   - manner: how it's incorporated into/used with the product
+#   - modified: was it modified by/on behalf of FeatureByte?
+#   - license_note: present only when the raw SBOM-reported license needs
+#     correction or clarification (a licensing election, or wrong upstream metadata)
+#
+# `overrides` is keyed by package name (case/separator-insensitive) for anything
+# that deviates from `defaults`. annotate_sbom.py errors if an override here no
+# longer matches a component in the SBOM (stale entry - dependency removed, or typo).
+
+defaults:
+  distributed: true
+  distributed_rationale: >-
+    Runtime dependency of featurebyte, which is published as an installable
+    package on public PyPI; distributed to any user who installs featurebyte
+    (or the specific extra this dependency belongs to).
+  manner: >-
+    Imported as a Python library and invoked via direct function/API calls at
+    runtime; not modified, statically linked, or vendored.
+  modified: false
+
+overrides:
+  pyphen:
+    manner: >-
+      Transitive dependency of weasyprint, imported only to support one
+      PDF-export endpoint (GET /feature_job_setting_analysis/{id}/report).
+    license_note: >-
+      Genuinely tri-licensed GPL-2.0-or-later/LGPL-2.1-or-later/MPL-1.1 (a
+      choice-of-license package, not a compound requirement). FeatureByte
+      elects to consume it under its LGPL-2.1-or-later/MPL-1.1 option, not
+      GPL. This election is engineering-implemented but not yet formally
+      confirmed by legal.
+  gssapi:
+    license_note: >-
+      Upstream package metadata reports "License: LICENSE.txt" (a filename,
+      not a license identifier). Verified directly against the bundled
+      LICENSE.txt: this is the ISC License, verbatim.
