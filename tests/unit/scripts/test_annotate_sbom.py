@@ -40,7 +40,7 @@ def test_computed_facts_override_defaults_but_not_manual_overrides():
         "overrides": {"pyphen": {"license_note": "elected LGPL option"}},
     }
     computed = {
-        "pyphen": {
+        ("pyphen", "1.0.0"): {
             "modified": False,
             "modified_basis": "Verified: plain PyPI registry source.",
             "manner": "Transitive dependency, reached via weasyprint.",
@@ -60,7 +60,7 @@ def test_computed_facts_override_defaults_but_not_manual_overrides():
 
 def test_unresolved_flag_suppresses_default_for_that_field():
     annotations = {"defaults": DEFAULT_ANNOTATIONS["defaults"], "overrides": {}}
-    computed = {"orphan-pkg": {"manner_flag_reason": "No reachability path found."}}
+    computed = {("orphan-pkg", "1.0.0"): {"manner_flag_reason": "No reachability path found."}}
     sbom = {"components": [_component("orphan-pkg")]}
 
     result = annotate_sbom.annotate_sbom(sbom, annotations, computed=computed)
@@ -71,6 +71,36 @@ def test_unresolved_flag_suppresses_default_for_that_field():
     assert properties["featurebyte:manner_flag_reason"] == "No reachability path found."
     # unrelated fields are unaffected
     assert properties["featurebyte:distributed"] == "true"
+
+
+def test_computed_facts_looked_up_by_version_not_name_alone():
+    # two components share a name but have different versions and genuinely
+    # different computed facts - each must get its own facts, not whichever
+    # version's entry happens to be in the `computed` dict last.
+    annotations = {"defaults": DEFAULT_ANNOTATIONS["defaults"], "overrides": {}}
+    computed = {
+        ("cffi", "1.17.1"): {"modified": False, "modified_basis": "plain registry"},
+        ("cffi", "2.1.1"): {"modified_flag_reason": "source is not the plain registry"},
+    }
+    sbom = {
+        "components": [
+            _component("cffi", version="1.17.1"),
+            _component("cffi", version="2.1.1"),
+        ]
+    }
+
+    result = annotate_sbom.annotate_sbom(sbom, annotations, computed=computed)
+
+    properties_by_version = {
+        c["version"]: {p["name"]: p["value"] for p in c["properties"]}
+        for c in result["components"]
+    }
+    assert properties_by_version["1.17.1"]["featurebyte:modified"] == "false"
+    assert "featurebyte:modified" not in properties_by_version["2.1.1"]
+    assert (
+        properties_by_version["2.1.1"]["featurebyte:modified_flag_reason"]
+        == "source is not the plain registry"
+    )
 
 
 def test_main_annotates_sbom_file_in_place(tmp_path, monkeypatch):

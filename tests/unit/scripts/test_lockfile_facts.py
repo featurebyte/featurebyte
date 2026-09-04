@@ -43,8 +43,8 @@ def test_modified_verified_false_when_source_is_plain_registry():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert facts["numpy"]["modified"] is False
-    assert "plain PyPI registry" in facts["numpy"]["modified_basis"]
+    assert facts[("numpy", "1.0.0")]["modified"] is False
+    assert "plain PyPI registry" in facts[("numpy", "1.0.0")]["modified_basis"]
 
 
 def test_modified_flagged_when_source_is_not_plain_registry():
@@ -52,8 +52,8 @@ def test_modified_flagged_when_source_is_not_plain_registry():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert "modified" not in facts["some-fork"]
-    assert "git" in facts["some-fork"]["modified_flag_reason"]
+    assert "modified" not in facts[("some-fork", "1.0.0")]
+    assert "git" in facts[("some-fork", "1.0.0")]["modified_flag_reason"]
 
 
 def test_manner_direct_dependency():
@@ -61,7 +61,7 @@ def test_manner_direct_dependency():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert facts["numpy"]["manner"] == (
+    assert facts[("numpy", "1.0.0")]["manner"] == (
         "Direct dependency of featurebyte (see pyproject.toml); imported as a Python "
         "library and invoked via direct function/API calls at runtime."
     )
@@ -78,7 +78,7 @@ def test_manner_transitive_dependency_reached_via_direct_dep():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert facts["pyphen"]["manner"] == (
+    assert facts[("pyphen", "1.0.0")]["manner"] == (
         "Transitive dependency, reached via weasyprint (a direct dependency of "
         "featurebyte); imported as a Python library and invoked via direct "
         "function/API calls at runtime."
@@ -111,7 +111,7 @@ def test_manner_flag_reports_the_marker_that_actually_triggered_it():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert "sys_platform != 'win32'" in facts["gssapi"]["manner_flag_reason"]
+    assert "sys_platform != 'win32'" in facts[("gssapi", "1.0.0")]["manner_flag_reason"]
 
 
 def test_manner_flagged_when_reached_via_platform_conditional_marker():
@@ -133,9 +133,9 @@ def test_manner_flagged_when_reached_via_platform_conditional_marker():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert "manner" in facts["nvidia-nccl-cu12"]
-    assert "platform-conditional" in facts["nvidia-nccl-cu12"]["manner_flag_reason"]
-    assert "sys_platform == 'linux'" in facts["nvidia-nccl-cu12"]["manner_flag_reason"]
+    assert "manner" in facts[("nvidia-nccl-cu12", "1.0.0")]
+    assert "platform-conditional" in facts[("nvidia-nccl-cu12", "1.0.0")]["manner_flag_reason"]
+    assert "sys_platform == 'linux'" in facts[("nvidia-nccl-cu12", "1.0.0")]["manner_flag_reason"]
 
 
 def test_parse_lock_reads_real_toml_file(tmp_path):
@@ -184,12 +184,41 @@ def test_manner_reachable_via_dependents_activated_extra():
 
     facts = lockfile_facts.compute_facts(lock)
 
-    assert "manner_flag_reason" not in facts["gssapi"]
-    assert facts["gssapi"]["manner"] == (
+    assert "manner_flag_reason" not in facts[("gssapi", "1.0.0")]
+    assert facts[("gssapi", "1.0.0")]["manner"] == (
         "Transitive dependency, reached via requests-kerberos (a direct dependency "
         "of featurebyte); imported as a Python library and invoked via direct "
         "function/API calls at runtime."
     )
+
+
+def test_compute_facts_keeps_facts_separate_for_different_versions_of_same_package():
+    # uv.lock can resolve two versions of the same package for different
+    # environment markers, with genuinely different `source` - keying facts by
+    # name alone would let the second silently overwrite the first's facts.
+    lock = _lock(
+        [
+            _root(dependencies=[{"name": "cffi"}]),
+            {
+                "name": "cffi",
+                "version": "1.17.1",
+                "source": {"registry": "https://pypi.org/simple"},
+                "dependencies": [],
+            },
+            {
+                "name": "cffi",
+                "version": "2.1.1",
+                "source": {"git": "https://github.com/x/y"},
+                "dependencies": [],
+            },
+        ]
+    )
+
+    facts = lockfile_facts.compute_facts(lock)
+
+    assert facts[("cffi", "1.17.1")]["modified"] is False
+    assert "modified" not in facts[("cffi", "2.1.1")]
+    assert "git" in facts[("cffi", "2.1.1")]["modified_flag_reason"]
 
 
 def test_direct_dependency_names_includes_core_and_extras():

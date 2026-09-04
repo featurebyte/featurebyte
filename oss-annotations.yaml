@@ -30,8 +30,8 @@ overrides:
       Genuinely tri-licensed GPL-2.0-or-later/LGPL-2.1-or-later/MPL-1.1 (a
       choice-of-license package, not a compound requirement). FeatureByte
       elects to consume it under its LGPL-2.1-or-later/MPL-1.1 option, not
-      GPL. This election is engineering-implemented but not yet formally
-      confirmed by legal.
+      GPL. This licensing election has not yet received formal confirmation
+      from legal counsel.
   gssapi:
     license_note: >-
       Upstream package metadata reports "License: LICENSE.txt" (a filename,

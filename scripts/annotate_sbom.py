@@ -8,16 +8,14 @@ Adds these as `featurebyte:*` properties on each component, sourced from
 overrides.
 """
 
-from pathlib import Path
-from typing import Any, Dict, Optional
-
 import copy
 import json
 import sys
-
-import yaml
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 import lockfile_facts
+import yaml
 from oss_pkgname import normalize
 
 
@@ -42,14 +40,14 @@ def _suppress_unresolved_defaults(fields: Dict[str, Any], computed: Dict[str, An
 def annotate_sbom(
     sbom: Dict[str, Any],
     annotations: Dict[str, Any],
-    computed: Optional[Dict[str, Dict[str, Any]]] = None,
+    computed: Optional[Dict[Tuple[str, str], Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Return a copy of `sbom` with `featurebyte:*` properties added to each component.
 
     Per-component fields are layered, later sources winning: repo-wide
-    `defaults` < `computed` facts (mechanically derived from uv.lock, e.g. by
-    lockfile_facts.compute_facts) < manual `overrides` (hand-curated
-    exceptions in oss-annotations.yaml).
+    `defaults` < `computed` facts (mechanically derived from uv.lock, keyed by
+    (normalized name, version) - see lockfile_facts.compute_facts) < manual
+    `overrides` (hand-curated exceptions in oss-annotations.yaml).
     """
     defaults = annotations["defaults"]
     computed = computed or {}
@@ -62,7 +60,7 @@ def annotate_sbom(
     matched = set()
     for component in components:
         normalized_name = normalize(component["name"])
-        component_computed = computed.get(normalized_name, {})
+        component_computed = computed.get((normalized_name, component.get("version")), {})
         fields = dict(defaults)
         _suppress_unresolved_defaults(fields, component_computed)
         fields.update(component_computed)
