@@ -688,6 +688,71 @@ async def test_timeout(mock_fetch_query_stream_impl, snowflake_connector, snowfl
     mock_fetch_query_stream_impl.assert_not_called()
 
 
+class _CursorWithNewCancelMethod:
+    """
+    Cursor stand-in matching snowflake-connector-python>=4's cursor class layout, where
+    __cancel_query lives on SnowflakeCursorBase
+    """
+
+    def __init__(self):
+        self.canceled_with = None
+
+    def _SnowflakeCursorBase__cancel_query(self, query):
+        self.canceled_with = query
+
+
+class _CursorWithOldCancelMethod:
+    """
+    Cursor stand-in matching snowflake-connector-python<4's cursor class layout, where
+    __cancel_query lives directly on SnowflakeCursor
+    """
+
+    def __init__(self):
+        self.canceled_with = None
+
+    def _SnowflakeCursor__cancel_query(self, query):
+        self.canceled_with = query
+
+
+@pytest.mark.asyncio
+async def test_cancel_query__new_cursor_layout(snowflake_connector, snowflake_session_dict):
+    """
+    Test _cancel_query resolves the private method on the new (>=4.x) cursor class layout
+    """
+    session = SnowflakeSession(**snowflake_session_dict)
+    cursor = _CursorWithNewCancelMethod()
+
+    result = await session._cancel_query(cursor, "SELECT 1")
+
+    assert result is True
+    assert cursor.canceled_with == "SELECT 1"
+
+
+@pytest.mark.asyncio
+async def test_cancel_query__old_cursor_layout(snowflake_connector, snowflake_session_dict):
+    """
+    Test _cancel_query still resolves the private method on the old (<4.x) cursor class layout
+    """
+    session = SnowflakeSession(**snowflake_session_dict)
+    cursor = _CursorWithOldCancelMethod()
+
+    result = await session._cancel_query(cursor, "SELECT 1")
+
+    assert result is True
+    assert cursor.canceled_with == "SELECT 1"
+
+
+@pytest.mark.asyncio
+async def test_cancel_query__missing_method_raises(snowflake_connector, snowflake_session_dict):
+    """
+    Test _cancel_query raises clearly if neither cursor class layout is found
+    """
+    session = SnowflakeSession(**snowflake_session_dict)
+
+    with pytest.raises(AttributeError):
+        await session._cancel_query(object(), "SELECT 1")
+
+
 @pytest.mark.asyncio
 async def test_exception_handling_in_thread(snowflake_connector_cursor, snowflake_session_dict):
     """

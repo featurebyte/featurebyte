@@ -1,0 +1,18 @@
+change_type: bug_fix
+
+component: session
+
+issues: []
+
+note: "Fix AttributeError raised when cancelling a timed-out Snowflake query on snowflake-connector-python>=4."
+
+subtext: |
+  + `SnowflakeSession._cancel_query` called `cursor._SnowflakeCursor__cancel_query(query)`, a
+    name-mangled reference to `SnowflakeCursor`'s private `__cancel_query` method
+  + snowflake-connector-python 4.x moved that method onto a new `SnowflakeCursorBase` parent
+    class, so the mangled name no longer resolved
+  + this raised an unhandled `AttributeError` on every query that hit its execution timeout,
+    since cancellation is what runs on timeout - turning a recoverable timeout into a hard
+    crash
+  + now looks up the private method under either mangled name, so it works across both cursor
+    class layouts

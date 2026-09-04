@@ -129,7 +129,18 @@ class SnowflakeSession(BaseSession):
         return str(cursor._request_id) if cursor._request_id else None
 
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
-        cursor._SnowflakeCursor__cancel_query(query)  # pylint: disable=protected-access
+        # SnowflakeCursor's private __cancel_query method moved to a new SnowflakeCursorBase
+        # parent class in snowflake-connector-python 4.x, changing which name-mangled
+        # attribute it's accessible as. Look up both to support connector versions before
+        # and after that split.
+        cancel = getattr(cursor, "_SnowflakeCursor__cancel_query", None) or getattr(
+            cursor, "_SnowflakeCursorBase__cancel_query", None
+        )
+        if cancel is None:
+            raise AttributeError(
+                "Unable to locate Snowflake cursor's private __cancel_query method"
+            )
+        cancel(query)  # pylint: disable=protected-access
         return True
 
     def initializer(self) -> BaseSchemaInitializer:
