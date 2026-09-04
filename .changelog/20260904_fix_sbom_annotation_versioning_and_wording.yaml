@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: dependencies
+
+issues: []
+
+note: "Fix a latent same-name/multi-version bug in the SBOM annotation pipeline and reword its property text for external readers."
+
+subtext: |
+  + scripts/lockfile_facts.py's compute_facts keyed computed facts by package
+    name alone; when uv.lock resolves two versions of the same package for
+    different environment markers, the second silently overwrote the
+    first's facts. Now keyed by (name, version).
+  + manner_flag_reason/modified_flag_reason text and the pyphen license_note
+    no longer reference internal-only incidents/approvals or read as
+    unresolved TODOs, since these SBOMs may be shared outside the company.

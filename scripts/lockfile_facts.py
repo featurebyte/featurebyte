@@ -10,14 +10,18 @@ uv.lock, mechanically, rather than asserting them as a bulk default:
   via <chain>" for transitive dependencies, tracing the shortest path back to
   a direct dependency. Any edge on that path with a platform-conditional
   marker (sys_platform, platform_machine, platform_system) is flagged for
-  manual review, since that's exactly the pattern that hid nvidia-nccl-cu12
-  behind a Linux-only marker in a past review.
+  manual review, since a platform-restricted marker can obscure why a
+  dependency is present at all.
+
+Flag-reason text in this module is written to be readable by an external
+reader (e.g. as part of due-diligence materials shared outside the company):
+it states what was and wasn't mechanically verified, without referencing
+internal incidents, tools, or people.
 """
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
-
 from collections import deque
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from oss_pkgname import normalize
 
@@ -77,7 +81,8 @@ def _modified_fact(source: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "modified_flag_reason": (
             f"uv.lock records this package's source as '{source_kind}', not the plain "
-            "PyPI registry - verify by hand whether this reflects a modification."
+            "PyPI registry. Whether this reflects a modification from the upstream "
+            "release has not been independently verified."
         ),
     }
 
@@ -137,8 +142,8 @@ def _transitive_manner(
                 if edge_marker is not None:
                     result["manner_flag_reason"] = (
                         "Reached via a platform-conditional dependency marker "
-                        f"({edge_marker!r}) - verify manner/necessity for this "
-                        "platform, as with the past nvidia-nccl-cu12 finding."
+                        f"({edge_marker!r}); its necessity on that platform has not "
+                        "been independently verified."
                     )
                 return result
             if dependent not in visited:
@@ -146,18 +151,25 @@ def _transitive_manner(
                 queue.append((dependent, edge_marker))
     return {
         "manner_flag_reason": (
-            "No reachability path found back to a direct dependency of featurebyte "
-            "in uv.lock - verify this dependency is actually used."
+            "No reachability path was found back to a direct dependency of "
+            "featurebyte in uv.lock; its continued use has not been independently "
+            "verified."
         )
     }
 
 
-def compute_facts(lock: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    """Per-package (normalized name) facts mechanically derived from uv.lock."""
+def compute_facts(lock: Dict[str, Any]) -> Dict[Tuple[str, str], Dict[str, Any]]:
+    """Per-(normalized name, version) facts mechanically derived from uv.lock.
+
+    Keyed by version as well as name: uv.lock can resolve more than one version
+    of the same package for different environment markers, and their `source`
+    (hence `modified`) can legitimately differ between them - keying by name
+    alone would let one version's facts silently overwrite another's.
+    """
     direct = direct_dependency_names(lock)
     reverse_graph = _build_reverse_graph(lock)
 
-    facts: Dict[str, Dict[str, Any]] = {}
+    facts: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for package in lock["package"]:
         if package.get("source") == {"editable": "."}:
             continue
@@ -167,5 +179,5 @@ def compute_facts(lock: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             package_facts["manner"] = _DIRECT_MANNER
         else:
             package_facts.update(_transitive_manner(name, direct, reverse_graph))
-        facts[name] = package_facts
+        facts[(name, package["version"])] = package_facts
     return facts
