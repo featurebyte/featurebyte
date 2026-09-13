@@ -180,6 +180,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
         target_namespace = TargetNamespace.get(target_name)
+
         use_case = UseCase(
             name=name,
             target_id=target_namespace.default_target_id,

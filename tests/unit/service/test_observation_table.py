@@ -670,7 +670,11 @@ async def test_validate_columns__forecast_context_with_all_required_columns(
     available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
 
     # Should not raise any exception
-    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+    (
+        target_namespace_id,
+        exposure_namespace_id,
+        treatment_id,
+    ) = await observation_table_service._validate_columns(
         available_columns=available_columns,
         primary_entity_ids=None,
         target_column=None,
@@ -699,7 +703,11 @@ async def test_validate_columns__non_forecast_context_no_forecast_point_required
     available_columns = ["POINT_IN_TIME", "entity_col"]
 
     # Should not raise any exception
-    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+    (
+        target_namespace_id,
+        exposure_namespace_id,
+        treatment_id,
+    ) = await observation_table_service._validate_columns(
         available_columns=available_columns,
         primary_entity_ids=None,
         target_column=None,
@@ -780,7 +788,11 @@ async def test_validate_columns__forecast_point_dtype_match(observation_table_se
     }
 
     # Should not raise any exception
-    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+    (
+        target_namespace_id,
+        exposure_namespace_id,
+        treatment_id,
+    ) = await observation_table_service._validate_columns(
         available_columns=available_columns,
         primary_entity_ids=None,
         target_column=None,
@@ -869,7 +881,11 @@ async def test_validate_columns__timezone_column_dtype_valid(observation_table_s
     }
 
     # Should not raise any exception
-    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+    (
+        target_namespace_id,
+        exposure_namespace_id,
+        treatment_id,
+    ) = await observation_table_service._validate_columns(
         available_columns=available_columns,
         primary_entity_ids=None,
         target_column=None,
@@ -908,7 +924,11 @@ async def test_validate_columns__no_dtype_validation_when_dtypes_not_provided(
     available_columns = ["POINT_IN_TIME", "FORECAST_POINT", "FORECAST_TIMEZONE", "entity_col"]
 
     # Should not raise any exception even without dtype info
-    target_namespace_id, treatment_id = await observation_table_service._validate_columns(
+    (
+        target_namespace_id,
+        exposure_namespace_id,
+        treatment_id,
+    ) = await observation_table_service._validate_columns(
         available_columns=available_columns,
         primary_entity_ids=None,
         target_column=None,

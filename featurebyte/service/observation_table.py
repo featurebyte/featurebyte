@@ -32,7 +32,9 @@ from featurebyte.exception import (
     MissingForecastPointColumnError,
     MissingForecastTimezoneColumnError,
     MissingPointInTimeColumnError,
+    ObservationTableExposureDefinitionExistsError,
     ObservationTableInvalidContextError,
+    ObservationTableInvalidExposureNameError,
     ObservationTableInvalidRequestInputError,
     ObservationTableInvalidSamplingError,
     ObservationTableInvalidTargetNameError,
@@ -94,6 +96,7 @@ from featurebyte.schema.worker.task.observation_table_upload import (
 )
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.exposure_namespace import ExposureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
@@ -324,6 +327,7 @@ class ObservationTableService(
         redis: Redis[Any],
         target_namespace_service: TargetNamespaceService,
         target_service: TargetService,
+        exposure_namespace_service: ExposureNamespaceService,
         treatment_service: TreatmentService,
         managed_view_service: ManagedViewService,
     ):
@@ -345,6 +349,7 @@ class ObservationTableService(
         self.use_case_service = use_case_service
         self.target_namespace_service = target_namespace_service
         self.target_service = target_service
+        self.exposure_namespace_service = exposure_namespace_service
         self.treatment_service = treatment_service
         self.managed_view_service = managed_view_service
 
@@ -503,10 +508,11 @@ class ObservationTableService(
         available_columns: List[str],
         primary_entity_ids: Optional[List[PydanticObjectId]],
         target_column: Optional[str],
-        treatment_column: Optional[str],
+        exposure_column: Optional[str] = None,
+        treatment_column: Optional[str] = None,
         context: Optional[ContextModel] = None,
         column_dtypes: Optional[Dict[str, DBVarType]] = None,
-    ) -> Tuple[Optional[ObjectId], Optional[ObjectId]]:
+    ) -> Tuple[Optional[ObjectId], Optional[ObjectId], Optional[ObjectId]]:
         # Check if required column names are provided
         missing_columns = []
 
@@ -588,6 +594,36 @@ class ObservationTableService(
         else:
             target_namespace_id = None
 
+        # Check if exposure column is present
+        if exposure_column:
+            if exposure_column not in available_columns:
+                missing_columns.append(exposure_column)
+            exposure_namespaces = await self.exposure_namespace_service.list_documents_as_dict(
+                query_filter={"name": exposure_column}
+            )
+            if exposure_namespaces["total"] == 0:
+                raise ObservationTableInvalidExposureNameError(
+                    f"Exposure name not found: {exposure_column}"
+                )
+
+            # validate exposure namespace has same primary entity ids
+            exposure_namespace = exposure_namespaces["data"][0]
+            exposure_namespace_id = ObjectId(exposure_namespace["_id"])
+            if primary_entity_ids:
+                if exposure_namespace["entity_ids"] != primary_entity_ids:
+                    raise ObservationTableInvalidExposureNameError(
+                        f'Exposure "{exposure_column}" does not have matching primary entity ids.'
+                    )
+
+            # check if exposure namespace already has a definition
+            if exposure_namespace["exposure_ids"]:
+                raise ObservationTableExposureDefinitionExistsError(
+                    f'Exposure "{exposure_column}" already has a definition.'
+                )
+
+        else:
+            exposure_namespace_id = None
+
         # Check if treatment column is present
         if treatment_column:
             if treatment_column not in available_columns:
@@ -609,7 +645,7 @@ class ObservationTableService(
                 f"Required column(s) not found: {', '.join(missing_columns)}"
             )
 
-        return target_namespace_id, treatment_id
+        return target_namespace_id, exposure_namespace_id, treatment_id
 
     async def get_observation_table_task_payload(
         self, data: ObservationTableCreate, to_add_row_index: bool = True
@@ -656,6 +692,7 @@ class ObservationTableService(
             # set primary entity and target namespace ids in the payload using values from source observation table
             data.primary_entity_ids = source_observation_table.primary_entity_ids
             target_namespace_id = source_observation_table.target_namespace_id
+            exposure_namespace_id = source_observation_table.exposure_namespace_id
             treatment_id = source_observation_table.treatment_id
             # context and use case ids will be populated in the task and can be set to None in the payload
             data.context_id = None
@@ -735,10 +772,11 @@ class ObservationTableService(
             if context_id is not None:
                 context = await self.context_service.get_document(document_id=context_id)
 
-            target_namespace_id, treatment_id = await self._validate_columns(
+            target_namespace_id, exposure_namespace_id, treatment_id = await self._validate_columns(
                 available_columns=available_columns,
                 primary_entity_ids=data.primary_entity_ids,
                 target_column=data.target_column,
+                exposure_column=data.exposure_column,
                 treatment_column=data.treatment_column,
                 context=context,
                 column_dtypes=column_dtypes,
@@ -750,6 +788,7 @@ class ObservationTableService(
                 document_id=data.request_input.target_id
             )
             target_namespace_id = target.target_namespace_id
+            exposure_namespace_id = None
             if data.request_input.observation_table_id is not None:
                 observation_table_input = await self.get_document(
                     data.request_input.observation_table_id
@@ -759,6 +798,7 @@ class ObservationTableService(
                 treatment_id = None
         else:
             target_namespace_id = None
+            exposure_namespace_id = None
             treatment_id = None
 
         # Validate context and use case
@@ -771,6 +811,7 @@ class ObservationTableService(
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
             target_namespace_id=target_namespace_id,
+            exposure_namespace_id=exposure_namespace_id,
             treatment_id=treatment_id,
         )
 
@@ -817,10 +858,11 @@ class ObservationTableService(
             context = await self.context_service.get_document(document_id=context_id)
 
         # Check if required column names are provided
-        target_namespace_id, treatment_id = await self._validate_columns(
+        target_namespace_id, exposure_namespace_id, treatment_id = await self._validate_columns(
             available_columns=observation_set_dataframe.columns.tolist(),
             primary_entity_ids=data.primary_entity_ids,
             target_column=data.target_column,
+            exposure_column=data.exposure_column,
             treatment_column=data.treatment_column,
             context=context,
         )
@@ -843,6 +885,7 @@ class ObservationTableService(
             file_format=file_format,
             uploaded_file_name=uploaded_file_name,
             target_namespace_id=target_namespace_id,
+            exposure_namespace_id=exposure_namespace_id,
             treatment_id=treatment_id,
         )
 

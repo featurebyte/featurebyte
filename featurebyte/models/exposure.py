@@ -1,0 +1,151 @@
+"""
+This module contains Exposure related models
+"""
+
+from typing import Optional
+
+import pymongo
+from bson import ObjectId
+from pydantic import Field
+
+from featurebyte.common.model_util import parse_duration_string
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.feature import BaseFeatureModel
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.generic import (
+    ForwardAggregateAsAtNode,
+    ForwardAggregateNode,
+    LookupTargetNode,
+)
+
+
+class ExposureSourceColumn(FeatureByteBaseModel):
+    """Stores the table id and column name of the exposure source column."""
+
+    table_id: PydanticObjectId
+    column_name: str
+
+
+class ExposureModel(BaseFeatureModel):
+    """
+    Model for Exposure asset
+
+    id: PydanticObjectId
+        Exposure id of the object
+    name: str
+        Exposure name
+    dtype: DBVarType
+        Variable type of the exposure
+    graph: QueryGraph
+        Graph contains steps of transformation to generate the exposure
+    node_name: str
+        Node name of the graph which represent the exposure
+    tabular_source: TabularSource
+        Tabular source used to construct this exposure
+    version: VersionIdentifier
+        Exposure version
+    definition: str
+        Exposure definition
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the exposure
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the exposure
+    primary_table_ids: Optional[List[PydanticObjectId]]
+        Primary table IDs of the exposure (auto-derive from graph)
+    exposure_namespace_id: PydanticObjectId
+        Exposure namespace id of the object
+    created_at: Optional[datetime]
+        Datetime when the Exposure was first saved
+    updated_at: Optional[datetime]
+        When the Exposure get updated
+    """
+
+    # ID related fields associated with this exposure
+    exposure_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
+
+    def derive_window(self) -> Optional[str]:
+        """
+        Derive window from the graph, if there are multiple windows, return the largest one.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        window_to_durations = {}
+        target_node = self.graph.get_node_by_name(self.node_name)
+        # Iterate through forward aggregate nodes
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
+        ):
+            assert isinstance(node, ForwardAggregateNode)
+            if node.parameters.window:
+                duration = parse_duration_string(node.parameters.window)
+                window_to_durations[node.parameters.window] = duration
+
+        # Iterate through lookup target nodes
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.LOOKUP_TARGET
+        ):
+            assert isinstance(node, LookupTargetNode)
+            if node.parameters.offset:
+                duration = parse_duration_string(node.parameters.offset)
+                window_to_durations[node.parameters.offset] = duration
+
+        if not window_to_durations:
+            return None
+        return max(window_to_durations, key=window_to_durations.get)  # type: ignore
+
+    def get_exposure_source_column(self) -> Optional[ExposureSourceColumn]:
+        """
+        Extract the exposure source column from this exposure's query graph.
+        Returns the table_id and column_name if the exposure was created from a target
+        that uses as_target() (LookupTargetNode) or forward_aggregate_asat()
+        (ForwardAggregateAsAtNode).
+
+        Returns
+        -------
+        Optional[ExposureSourceColumn]
+        """
+        if self.internal_graph is None:
+            return None
+
+        target_node = self.graph.get_node_by_name(self.node_name)
+
+        # Check LookupTarget nodes (created via as_target)
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.LOOKUP_TARGET
+        ):
+            assert isinstance(node, LookupTargetNode)
+            input_column_name = str(node.parameters.input_column_names[0])
+            for table_id_col_names in self.table_id_column_names:
+                if input_column_name in table_id_col_names.column_names:
+                    return ExposureSourceColumn(
+                        table_id=table_id_col_names.table_id,
+                        column_name=input_column_name,
+                    )
+
+        # Check ForwardAggregateAsAt nodes (created via forward_aggregate_asat)
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE_AS_AT
+        ):
+            assert isinstance(node, ForwardAggregateAsAtNode)
+            if node.parameters.parent is not None:
+                value_column_name = str(node.parameters.parent)
+                for table_id_col_names in self.table_id_column_names:
+                    if value_column_name in table_id_col_names.column_names:
+                        return ExposureSourceColumn(
+                            table_id=table_id_col_names.table_id,
+                            column_name=value_column_name,
+                        )
+
+        return None
+
+    class Settings(BaseFeatureModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "exposure"
+        indexes = BaseFeatureModel.Settings.indexes + [
+            pymongo.operations.IndexModel("exposure_namespace_id"),
+        ]

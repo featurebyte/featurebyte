@@ -4,7 +4,10 @@ Target API object
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
+
+if TYPE_CHECKING:
+    from featurebyte.api.exposure import Exposure
 
 import pandas as pd
 from bson import ObjectId
@@ -544,6 +547,46 @@ class Target(
             self.target_namespace.update_positive_label(positive_label=positive_label)
         else:
             self.internal_positive_label = positive_label
+
+    @typechecked
+    def as_exposure(self, exposure_name: str) -> Exposure:
+        """
+        Create an Exposure from this Target definition. The Exposure reuses the same query graph
+        and computation logic as the Target, but is saved as a separate object that can be
+        associated with a Use Case. When associated, the Exposure is computed alongside the
+        Target during target computation.
+
+        Parameters
+        ----------
+        exposure_name: str
+            Name for the new Exposure
+
+        Returns
+        -------
+        Exposure
+            A new Exposure object sharing this Target's query graph
+
+        Examples
+        --------
+        >>> target = event_view.groupby("customer_id").forward_aggregate(  # doctest: +SKIP
+        ...     method="sum",
+        ...     value_column="amount",
+        ...     window="7d",
+        ...     target_name="sum_7d",
+        ... )
+        >>> exposure = target.as_exposure("sum_7d_exposure")  # doctest: +SKIP
+        >>> exposure.save()  # doctest: +SKIP
+        """
+        from featurebyte.api.exposure import Exposure
+
+        return Exposure(
+            name=exposure_name,
+            graph=self.graph,
+            node_name=self.node_name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            dtype=self.dtype,
+        )
 
     def delete(self) -> None:
         """

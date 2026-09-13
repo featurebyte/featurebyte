@@ -929,7 +929,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         with patch(
             "featurebyte.service.observation_table.ObservationTableService._validate_columns"
         ) as mock__validate_columns:
-            mock__validate_columns.return_value = ObjectId(), None
+            mock__validate_columns.return_value = ObjectId(), None, None
             response = self.post(test_api_client, payload)
 
         response_dict = response.json()

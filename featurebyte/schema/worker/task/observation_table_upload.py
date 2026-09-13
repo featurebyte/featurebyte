@@ -31,4 +31,5 @@ class ObservationTableUploadTaskPayload(BaseTaskPayload, ObservationTableUpload)
     uploaded_file_name: str  # the name of the file that was uploaded by the user
     primary_entity_ids: list[PydanticObjectId]
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    exposure_namespace_id: Optional[PydanticObjectId] = Field(default=None)
     treatment_id: Optional[PydanticObjectId] = Field(default=None)

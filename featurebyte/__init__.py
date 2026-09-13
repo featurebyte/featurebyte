@@ -28,6 +28,8 @@ from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.event_view import EventView
+from featurebyte.api.exposure import Exposure
+from featurebyte.api.exposure_namespace import ExposureNamespace
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis

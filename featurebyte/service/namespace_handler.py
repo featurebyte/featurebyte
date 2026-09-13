@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.common.utils import get_version
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
+from featurebyte.models.exposure import ExposureModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -113,14 +114,16 @@ class NamespaceHandler:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
         return pruned_graph, pruned_node_name_map[node.name]
 
-    async def prepare_definition(self, document: Union[FeatureModel, TargetModel]) -> str:
+    async def prepare_definition(
+        self, document: Union[FeatureModel, TargetModel, ExposureModel]
+    ) -> str:
         """
         Prepare the definition for the given document
 
         Parameters
         ----------
-        document: Union[FeatureModel, TargetModel]
-            FeatureModel or TargetModel document
+        document: Union[FeatureModel, TargetModel, ExposureModel]
+            FeatureModel, TargetModel or ExposureModel document
 
         Returns
         -------

@@ -6,6 +6,7 @@
     ],
     "_id": "68ccea50820076b52bbcceb5",
     "context_id": null,
+    "exposure_column": null,
     "feature_store_id": "646f6c190ed28a5271fb02a1",
     "name": "observation_table_from_managed_view",
     "primary_entity_ids": [

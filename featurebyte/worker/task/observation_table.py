@@ -41,7 +41,9 @@ from featurebyte.schema.worker.task.observation_table import (
     ObservationTableTaskPayload,
     SplitObservationTableTaskPayload,
 )
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.exposure import ExposureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.observation_table import ObservationTableService
@@ -76,7 +78,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         use_case_service: UseCaseService,
+        context_service: ContextService,
         target_service: TargetService,
+        exposure_service: ExposureService,
         target_computer: TargetComputer,
         treatment_service: TreatmentService,
     ):
@@ -88,7 +92,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.use_case_service = use_case_service
+        self.context_service = context_service
         self.target_service = target_service
+        self.exposure_service = exposure_service
         self.target_computer = target_computer
         self.treatment_service = treatment_service
 
@@ -159,6 +165,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         columns_to_exclude_missing_values: list[str],
         missing_data_table_details: TableDetails,
         has_row_index: bool,
+        exposure_id: Optional[ObjectId] = None,
     ) -> tuple[ObjectId, bool]:
         """
         Materialize the requested input with target column computed
@@ -193,6 +200,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             Table details of the table with missing data
         has_row_index: bool
             Whether the observation table has row index column
+        exposure_id: Optional[ObjectId]
+            Id of exposure to compute alongside the target
 
         Returns
         -------
@@ -204,6 +213,21 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         target_namespace_id = target.target_namespace_id
         graph = target.graph
         node_names = [target.node_name]
+
+        # If exposure_id is provided, merge exposure graph into computation
+        if exposure_id is not None:
+            try:
+                exposure = await self.exposure_service.get_document(document_id=exposure_id)
+                _, node_name_map = graph.load(exposure.graph)
+                mapped_exposure_node_name = node_name_map.get(
+                    exposure.node_name, exposure.node_name
+                )
+                node_names = node_names + [mapped_exposure_node_name]
+            except Exception:
+                logger.warning(
+                    "Exposure not found or failed to load, skipping exposure computation",
+                    extra={"exposure_id": str(exposure_id)},
+                )
 
         # ObservationTableObservationInput does not support materialize
         assert not isinstance(request_input, ObservationTableObservationInput)
@@ -305,6 +329,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 columns_to_exclude_missing_values.extend(entity.serving_names)
         if payload.target_column is not None:
             columns_to_exclude_missing_values.append(payload.target_column)
+        if payload.exposure_column is not None:
+            columns_to_exclude_missing_values.append(payload.exposure_column)
         if payload.treatment_column is not None:
             columns_to_exclude_missing_values.append(payload.treatment_column)
 
@@ -367,12 +393,21 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         # if use case is specified and observation table does not contain target,
         # try to compute the target column
         target_id_to_compute = None
+        exposure_id_to_compute = None
         target_namespace_id = payload.target_namespace_id
+        exposure_namespace_id = payload.exposure_namespace_id
         if target_namespace_id is None and use_case_ids:
             # check if use case has target definition
             use_case = await self.use_case_service.get_document(document_id=use_case_ids[0])
             if use_case.target_id is not None:
                 target_id_to_compute = use_case.target_id
+
+        # check if context has exposure definition (exposure is tied to context, not use case)
+        if exposure_namespace_id is None and context_id is not None:
+            context_doc = await self.context_service.get_document(document_id=context_id)
+            if context_doc.exposure_id is not None:
+                exposure_id_to_compute = context_doc.exposure_id
+                exposure_namespace_id = context_doc.exposure_namespace_id
 
         if target_id_to_compute is not None:
             target_namespace_id, is_view = await self.materialize_request_input_with_target(
@@ -390,6 +425,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 columns_to_exclude_missing_values=columns_to_exclude_missing_values,
                 missing_data_table_details=missing_data_table_details,
                 has_row_index=not payload.to_add_row_index,
+                exposure_id=exposure_id_to_compute,
             )
         else:
             # apply downsampling if target is available and sampling rates are provided
@@ -478,6 +514,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "has_row_index": True,
                 "has_row_weights": output_table_has_row_weights,
                 "target_namespace_id": target_namespace_id,
+                "exposure_namespace_id": exposure_namespace_id,
                 "sample_rows": payload.sample_rows,
                 "sample_from_timestamp": payload.sample_from_timestamp,
                 "sample_to_timestamp": payload.sample_to_timestamp,
@@ -667,6 +704,7 @@ class SplitObservationTableTask(DataWarehouseMixin, BaseTask[SplitObservationTab
                     has_row_index=True,
                     has_row_weights=source_table.has_row_weights,
                     target_namespace_id=source_table.target_namespace_id,
+                    exposure_namespace_id=source_table.exposure_namespace_id,
                     **additional_metadata,
                 )
                 observation_table = await self.observation_table_service.create_document(

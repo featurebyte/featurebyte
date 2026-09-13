@@ -1,0 +1,14 @@
+{
+    "_id": "64ae4be43a93459ede8c4000",
+    "default_exposure_id": "64a80107d667dd0c2b13d900",
+    "default_version_mode": "AUTO",
+    "dtype": "FLOAT",
+    "entity_ids": [
+        "63f94ed6ea1f050131379214"
+    ],
+    "name": "exposure_namespace",
+    "exposure_ids": [
+        "64a80107d667dd0c2b13d900"
+    ],
+    "window": "7d"
+}

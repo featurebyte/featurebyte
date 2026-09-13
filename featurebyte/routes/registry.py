@@ -58,6 +58,8 @@ from featurebyte.routes.development_dataset.controller import DevelopmentDataset
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_table.controller import EventTableController
+from featurebyte.routes.exposure.controller import ExposureController
+from featurebyte.routes.exposure_namespace.controller import ExposureNamespaceController
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.routes.feature_job_setting_analysis.controller import (
     FeatureJobSettingAnalysisController,
@@ -121,6 +123,8 @@ from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.event_table_validation import EventTableValidationService
+from featurebyte.service.exposure import ExposureService
+from featurebyte.service.exposure_namespace import ExposureNamespaceService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_job_history_service import FeatureJobHistoryService
@@ -507,6 +511,14 @@ app_container_config.register_class(TableFacadeService)
 app_container_config.register_class(TableInfoService)
 app_container_config.register_class(TableService)
 app_container_config.register_class(TableStatusService)
+app_container_config.register_class(
+    ExposureController, dependency_override={"service": "exposure_service"}
+)
+app_container_config.register_class(ExposureService)
+app_container_config.register_class(
+    ExposureNamespaceController, dependency_override={"service": "exposure_namespace_service"}
+)
+app_container_config.register_class(ExposureNamespaceService)
 app_container_config.register_class(
     TargetComputer, dependency_override={"query_executor": "target_executor"}
 )

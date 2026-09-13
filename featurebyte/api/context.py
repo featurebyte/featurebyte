@@ -10,6 +10,8 @@ from pandas import DataFrame
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.exposure import Exposure
+from featurebyte.api.exposure_namespace import ExposureNamespace
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
@@ -19,6 +21,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution, DBVarType, FeatureType, SpecialColumnName
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel, UserProvidedColumn
+from featurebyte.models.exposure import ExposureSourceColumn
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.forecast_point_schema import ForecastPointSchema
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -52,6 +55,34 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     treatment_id: Optional[PydanticObjectId] = None
     user_provided_columns: List[UserProvidedColumn] = []
     forecast_point_schema: Optional[ForecastPointSchema] = None
+    exposure_id: Optional[PydanticObjectId] = None
+    exposure_namespace_id: Optional[PydanticObjectId] = None
+
+    @property
+    def exposure(self) -> Optional[Exposure]:
+        """
+        Returns the exposure object of the Context, if any.
+
+        Returns
+        -------
+        Optional[Exposure]
+            The exposure object of the Context, or None if not set.
+        """
+        if self.exposure_id is None:
+            return None
+        return Exposure.get_by_id(self.exposure_id)
+
+    @property
+    def exposure_source_column(self) -> Optional[ExposureSourceColumn]:
+        """
+        Returns the exposure source column information.
+
+        Returns
+        -------
+        Optional[ExposureSourceColumn]
+            The table id and column name of the exposure source column, or None if not applicable.
+        """
+        return self.cached_model.exposure_source_column
 
     @property
     def primary_entities(self) -> List[Entity]:
@@ -152,6 +183,7 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         treatment_name: Optional[str] = None,
         user_provided_columns: Optional[List[UserProvidedColumn]] = None,
         forecast_point_schema: Optional[ForecastPointSchema] = None,
+        exposure_name: Optional[str] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -171,6 +203,11 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         forecast_point_schema: Optional[ForecastPointSchema]
             Schema for forecast point column if this is a forecasting context.
             Defines the granularity (day, week, etc.) and timezone handling.
+        exposure_name: Optional[str]
+            Optional exposure name to associate with the Context. The exposure's entities
+            must be the same as or parent entities of the context's primary entities.
+            When associated, the exposure is computed for observation tables created
+            from this context.
 
         Returns
         -------
@@ -252,6 +289,13 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         if treatment_name:
             treatment_id = Treatment.get(treatment_name).id
 
+        exposure_id: Optional[PydanticObjectId] = None
+        exposure_namespace_id: Optional[PydanticObjectId] = None
+        if exposure_name is not None:
+            exposure_ns = ExposureNamespace.get(exposure_name)
+            exposure_id = exposure_ns.default_exposure_id
+            exposure_namespace_id = exposure_ns.id
+
         context = Context(
             name=name,
             primary_entity_ids=entity_ids,
@@ -259,6 +303,8 @@ class Context(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             treatment_id=treatment_id,
             user_provided_columns=user_provided_columns or [],
             forecast_point_schema=forecast_point_schema,
+            exposure_id=exposure_id,
+            exposure_namespace_id=exposure_namespace_id,
         )
         context.save()
         return context

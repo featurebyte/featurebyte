@@ -131,6 +131,8 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             }
             if payload.target_namespace_id is not None:
                 override_model_params["target_namespace_id"] = payload.target_namespace_id
+            if payload.exposure_namespace_id is not None:
+                override_model_params["exposure_namespace_id"] = payload.exposure_namespace_id
             await self.observation_table_task.create_observation_table(
                 payload=obs_task_payload,
                 override_model_params=override_model_params,

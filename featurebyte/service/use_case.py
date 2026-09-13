@@ -4,7 +4,7 @@ UseCaseService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 from redis import Redis
@@ -19,6 +19,7 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
@@ -38,6 +39,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         context_service: ContextService,
+        entity_service: EntityService,
         target_service: TargetService,
         target_namespace_service: TargetNamespaceService,
         historical_feature_table_service: HistoricalFeatureTableService,
@@ -54,6 +56,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             redis=redis,
         )
         self.context_service = context_service
+        self.entity_service = entity_service
         self.target_service = target_service
         self.target_namespace_service = target_namespace_service
         self.historical_feature_table_service = historical_feature_table_service
@@ -70,7 +73,9 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         Raises
         ------
         DocumentCreationError
-            if target and context have different primary entities or target and target namespace have different target
+            if target and context have different primary entities,
+            target and target namespace have different target,
+            or context has an exposure but target is not regression.
 
         Returns
         -------
@@ -108,9 +113,16 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         else:
             data.target_id = target_namespace.default_target_id
 
-        # validate target and context have the same entities
-        if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
-            raise DocumentCreationError("Target and context must have the same entities")
+        # validate target entities are the same as or parent of context entities
+        await self._validate_entity_compatibility(
+            entity_ids=target_namespace.entity_ids,
+            context_entity_ids=context.primary_entity_ids,
+            object_name="Target",
+        )
+
+        # validate that if context has an exposure, the target type is regression
+        if context.exposure_id and target_namespace.target_type != TargetType.REGRESSION:
+            raise DocumentCreationError("Exposure is only supported for regression targets")
 
         if context.treatment_id:
             data.use_case_type = UseCaseType.CAUSAL
@@ -131,6 +143,43 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
                 use_case.forecasted_column = forecasted_column
 
         return use_case
+
+    async def _validate_entity_compatibility(
+        self,
+        entity_ids: List[PydanticObjectId],
+        context_entity_ids: List[PydanticObjectId],
+        object_name: str,
+    ) -> None:
+        """
+        Validate that entity_ids are the same as or parent entities of context_entity_ids.
+
+        Parameters
+        ----------
+        entity_ids: List[PydanticObjectId]
+            Entity IDs of the target
+        context_entity_ids: List[PydanticObjectId]
+            Entity IDs of the context
+        object_name: str
+            Name of the object being validated (for error messages)
+
+        Raises
+        ------
+        DocumentCreationError
+            If entity_ids are not compatible with context_entity_ids
+        """
+        if set(entity_ids) == set(context_entity_ids):
+            return
+
+        context_ancestor_ids: set[ObjectId] = set()
+        for ctx_entity_id in context_entity_ids:
+            entity = await self.entity_service.get_document(document_id=ctx_entity_id)
+            context_ancestor_ids.update(entity.ancestor_ids)
+
+        if not set(entity_ids).issubset(context_ancestor_ids | set(context_entity_ids)):
+            raise DocumentCreationError(
+                f"{object_name} and context must have the same entities or "
+                f"{object_name.lower()} entities must be parent entities of context entities"
+            )
 
     async def _derive_forecasted_column(
         self, target_id: PydanticObjectId
