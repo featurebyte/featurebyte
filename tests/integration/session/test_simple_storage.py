@@ -45,6 +45,7 @@ def test_s3_storage():
     storage.test_connection()
 
 
+@pytest.mark.skip(reason="Azure is not supported in CI")
 def test_azure_blob_storage():
     """
     Test Azure Blob storage
