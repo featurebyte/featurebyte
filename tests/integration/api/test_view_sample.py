@@ -177,7 +177,7 @@ def test_item_view_sample(item_table):
     Test sample for ItemView
     """
     item_view = item_table.get_view()
-    sample_df = item_view.sample(size=10, seed=1234)
+    sample_df = item_view.sample(size=100, seed=1234)
     assert sample_df.columns.tolist() == [
         "order_id",
         "item_id",
@@ -189,7 +189,7 @@ def test_item_view_sample(item_table):
         "TZ_OFFSET",
     ]
 
-    assert sample_df.shape == (10, 8)
+    assert sample_df.shape == (100, 8)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert maybe_tz_convert(actual_min) < pd.Timestamp("2001-02-05")
@@ -219,20 +219,20 @@ def test_item_view_sample_with_date_range(item_table, expected_min, expected_max
     """
     item_view = item_table.get_view()
     sample_params = {
-        "size": 15,
+        "size": 150,
         "seed": 1234,
         "from_timestamp": "2001-10-10",
         "to_timestamp": "2001-10-14",
     }
     sample_df = item_view.sample(**sample_params)
-    assert sample_df.shape == (15, 8)
+    assert sample_df.shape == (150, 8)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert maybe_tz_convert(actual_min) > pd.Timestamp("2001-10-10")
     assert maybe_tz_convert(actual_max) < pd.Timestamp("2001-10-15")
 
     col_sample_df = item_view["item_id"].sample(**sample_params)
-    assert col_sample_df.shape[0] == 15
+    assert col_sample_df.shape[0] == 150
     assert col_sample_df.columns.tolist() == ["item_id"]
 
 
