@@ -174,6 +174,7 @@ lint = [
 [tool.uv]
 constraint-dependencies = [
   "aiohttp>=3.14.1,<4",
+  "anyio>=4.14.2,<5",
   "azure-core>=1.38.0,<2",
   "click>=8.3.3,<9",
   "filelock>=3.20.3,<4",
