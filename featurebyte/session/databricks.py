@@ -36,7 +36,7 @@ try:
     from databricks.sdk import WorkspaceClient
     from databricks.sdk.mixins.files import DbfsExt
     from databricks.sql.exc import DatabaseError, ServerOperationError
-    from databricks.sql.thrift_backend import ThriftBackend as BaseThriftBackend
+    from databricks.sql.backend.thrift_backend import ThriftDatabricksClient as BaseThriftBackend
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
@@ -231,7 +231,7 @@ class DatabricksSession(BaseSparkSession):
         additional_connection_params: dict[str, Any] = {}
         # This patch is necessary for the query execution to be cancellable while the cursor is polling for results
         with self.exclude_env_credentials():
-            with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
+            with patch("databricks.sql.client.ThriftDatabricksClient", ThriftBackend):
                 if isinstance(self.database_credential, AccessTokenCredential):
                     additional_connection_params["access_token"] = (
                         self.database_credential.access_token
