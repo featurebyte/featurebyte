@@ -10,11 +10,6 @@ from pandas.testing import assert_series_equal
 from pydantic import ValidationError
 
 
-@pytest.fixture
-def item_view_expected_date_range():
-    return {"min_before": pd.Timestamp("2001-01-31"), "max_after": pd.Timestamp("2001-12-01")}
-
-
 def maybe_tz_convert(ts: Any):
     """
     If ts is time zone aware, convert it to UTC and remove timezone information
@@ -172,7 +167,8 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
 
 
 @pytest.mark.parametrize(
-    "source_type", ["snowflake", "spark"],
+    "source_type",
+    ["snowflake", "spark"],
     indirect=["source_type"],
     scope="session",
 )
