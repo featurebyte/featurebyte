@@ -111,7 +111,7 @@ jobs:
           - 3.10.11
     steps:
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install featurebyte
@@ -144,7 +144,7 @@ jobs:
         run: |
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_OAUTH }}

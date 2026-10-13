@@ -45,7 +45,7 @@ jobs:
         run: |-
           task lint:sbom
           task lint:notice
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           name: oss-compliance-artifacts
@@ -78,7 +78,7 @@ jobs:
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_OAUTH }}
