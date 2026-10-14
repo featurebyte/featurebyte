@@ -20,3 +20,4 @@ runs:
         TOKEN=$(aws codeartifact get-authorization-token --domain featurebyte --domain-owner 972678707440 --query authorizationToken --output text)
         echo "::add-mask::${TOKEN}"
         echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
+        echo "POETRY_HTTP_BASIC_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
