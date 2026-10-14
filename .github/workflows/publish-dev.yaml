@@ -8,15 +8,14 @@ name: publish
       - stable/*        # Allow stable branches       --> X.Y.Z.postN
 permissions:
   contents: write
+  id-token: write
 env:
-  GCR_DOCKER_LOCATION: us-central1
-  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
-  GCR_PYPI_REPO: featurebyte-pypi
-  GCR_PYPI_LOCATION: us-central1
+  CODEARTIFACT_DOMAIN: featurebyte
+  CODEARTIFACT_DOMAIN_OWNER: "972678707440"
+  CODEARTIFACT_REPOSITORY: featurebyte-pypi
   SERVER_IMAGE_REPO: us-central1-docker.pkg.dev/vpc-host-nonprod-xa739-xz970/docker/featurebyte-server
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  UV_INDEX_FEATUREBYTE_NP_USERNAME: _json_key_base64
-  UV_INDEX_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
+  UV_INDEX_FEATUREBYTE_NP_USERNAME: aws
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -32,6 +31,17 @@ jobs:
       DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
       - uses: actions/checkout@v7
+      - name: Configure AWS credentials for CodeArtifact
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: sts.amazonaws.com
+          aws-region: ap-southeast-1
+          role-to-assume: arn:aws:iam::972678707440:role/github-actions-codeartifact-featurebyte-pypi-publish
+      - name: Get CodeArtifact token
+        run: |-
+          TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
+          echo "::add-mask::${TOKEN}"
+          echo "UV_INDEX_FEATUREBYTE_NP_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
       - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,11 +57,6 @@ jobs:
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Run task install
         run: task install
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.GCR_PYPI_CREDENTIALS_R }}
       - name: Get Version to Publish
         id: get_version
         run: |
@@ -62,7 +67,8 @@ jobs:
           else
             export SUFFIX="post"
           fi
-          export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' --limit=100 --sort-by=~CREATE_TIME | \
+          export DEV_VERSION=$(aws codeartifact list-package-versions --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --repository "${CODEARTIFACT_REPOSITORY}" --format pypi --package "${PACKAGE}" --query 'versions[].version' --output text | \
+            tr '\t' '\n' | \
             sort --version-sort -r | \
             grep -P "${VERSION}.${SUFFIX}" | \
             head -n 1 | \
@@ -91,10 +97,10 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-worker.image = "${{ env.SERVER_IMAGE_REPO }}:${{ env.DEV_VERSION }}"' featurebyte/docker/featurebyte.yml
-      - name: Publish to non-prod artifact registry
+      - name: Publish to the CodeArtifact registry
         run: |-
           uv build
-          uv publish --index featurebyte_np --username="${UV_INDEX_FEATUREBYTE_NP_USERNAME}" --password="${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}"
+          uv publish --index featurebyte_np --username="${UV_INDEX_FEATUREBYTE_NP_USERNAME}" --password="${UV_INDEX_FEATUREBYTE_NP_PASSWORD}"
   test-install:
     runs-on: ${{ matrix.runner }}
     needs:
@@ -110,13 +116,25 @@ jobs:
           - 3.11.9
           - 3.10.11
     steps:
+      - name: Configure AWS credentials for CodeArtifact
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: sts.amazonaws.com
+          aws-region: ap-southeast-1
+          role-to-assume: arn:aws:iam::972678707440:role/github-actions-codeartifact-featurebyte-pypi-read
+      - name: Get CodeArtifact token
+        shell: bash
+        run: |-
+          TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
+          echo "::add-mask::${TOKEN}"
+          echo "UV_INDEX_FEATUREBYTE_NP_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install featurebyte
         run: |-
-          pip install --extra-index-url="https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}@${{ env.GCR_PYPI_LOCATION}}-python.pkg.dev/${{ env.GCR_PYPI_PROJECT_ID}}/${{ env.GCR_PYPI_REPO }}/simple" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
+          pip install --extra-index-url="https://aws:${{ env.UV_INDEX_FEATUREBYTE_NP_PASSWORD }}@${{ env.CODEARTIFACT_DOMAIN }}-${{ env.CODEARTIFACT_DOMAIN_OWNER }}.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/${{ env.CODEARTIFACT_REPOSITORY }}/simple/" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
           python -c "import featurebyte; print(featurebyte.version)"
   slack:
     runs-on: ubuntu-latest
