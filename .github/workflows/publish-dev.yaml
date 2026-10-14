@@ -15,7 +15,7 @@ env:
   CODEARTIFACT_REPOSITORY: featurebyte-pypi
   SERVER_IMAGE_REPO: us-central1-docker.pkg.dev/vpc-host-nonprod-xa739-xz970/docker/featurebyte-server
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  UV_INDEX_FEATUREBYTE_NP_USERNAME: aws
+  UV_INDEX_FEATUREBYTE_PYPI_USERNAME: aws
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -41,7 +41,7 @@ jobs:
         run: |-
           TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
           echo "::add-mask::${TOKEN}"
-          echo "UV_INDEX_FEATUREBYTE_NP_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
+          echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
       - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
       - name: Publish to the CodeArtifact registry
         run: |-
           uv build
-          uv publish --index featurebyte_np --username="${UV_INDEX_FEATUREBYTE_NP_USERNAME}" --password="${UV_INDEX_FEATUREBYTE_NP_PASSWORD}"
+          uv publish --index featurebyte_pypi --username="${UV_INDEX_FEATUREBYTE_PYPI_USERNAME}" --password="${UV_INDEX_FEATUREBYTE_PYPI_PASSWORD}"
   test-install:
     runs-on: ${{ matrix.runner }}
     needs:
@@ -127,14 +127,14 @@ jobs:
         run: |-
           TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
           echo "::add-mask::${TOKEN}"
-          echo "UV_INDEX_FEATUREBYTE_NP_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
+          echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install featurebyte
         run: |-
-          pip install --extra-index-url="https://aws:${{ env.UV_INDEX_FEATUREBYTE_NP_PASSWORD }}@${{ env.CODEARTIFACT_DOMAIN }}-${{ env.CODEARTIFACT_DOMAIN_OWNER }}.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/${{ env.CODEARTIFACT_REPOSITORY }}/simple/" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
+          pip install --extra-index-url="https://aws:${{ env.UV_INDEX_FEATUREBYTE_PYPI_PASSWORD }}@${{ env.CODEARTIFACT_DOMAIN }}-${{ env.CODEARTIFACT_DOMAIN_OWNER }}.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/${{ env.CODEARTIFACT_REPOSITORY }}/simple/" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
           python -c "import featurebyte; print(featurebyte.version)"
   slack:
     runs-on: ubuntu-latest
