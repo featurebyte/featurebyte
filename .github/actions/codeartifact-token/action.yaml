@@ -1,0 +1,22 @@
+name: CodeArtifact token
+description: Assume the CodeArtifact role and export a masked token for the featurebyte-pypi index
+inputs:
+  role:
+    description: Access level of the role to assume, read, or publish
+    required: false
+    default: read
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials for CodeArtifact
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        audience: sts.amazonaws.com
+        aws-region: ap-southeast-1
+        role-to-assume: arn:aws:iam::972678707440:role/github-actions-codeartifact-featurebyte-pypi-${{ inputs.role }}
+    - name: Get CodeArtifact token
+      shell: bash
+      run: |-
+        TOKEN=$(aws codeartifact get-authorization-token --domain featurebyte --domain-owner 972678707440 --query authorizationToken --output text)
+        echo "::add-mask::${TOKEN}"
+        echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"

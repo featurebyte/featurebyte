@@ -31,17 +31,9 @@ jobs:
       DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
       - uses: actions/checkout@v7
-      - name: Configure AWS credentials for CodeArtifact
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/codeartifact-token
         with:
-          audience: sts.amazonaws.com
-          aws-region: ap-southeast-1
-          role-to-assume: arn:aws:iam::972678707440:role/github-actions-codeartifact-featurebyte-pypi-publish
-      - name: Get CodeArtifact token
-        run: |-
-          TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
-          echo "::add-mask::${TOKEN}"
-          echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
+          role: publish
       - uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -116,18 +108,10 @@ jobs:
           - 3.11.9
           - 3.10.11
     steps:
-      - name: Configure AWS credentials for CodeArtifact
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/checkout@v7
         with:
-          audience: sts.amazonaws.com
-          aws-region: ap-southeast-1
-          role-to-assume: arn:aws:iam::972678707440:role/github-actions-codeartifact-featurebyte-pypi-read
-      - name: Get CodeArtifact token
-        shell: bash
-        run: |-
-          TOKEN=$(aws codeartifact get-authorization-token --domain "${CODEARTIFACT_DOMAIN}" --domain-owner "${CODEARTIFACT_DOMAIN_OWNER}" --query authorizationToken --output text)
-          echo "::add-mask::${TOKEN}"
-          echo "UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=${TOKEN}" >> "${GITHUB_ENV}"
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/codeartifact-token
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
