@@ -207,12 +207,12 @@ override-dependencies = [
 ]
 
 # Packaging source metadata, this points to the source code repository.
-#     Use UV_INDEX_FEATUREBYTE_NP_USERNAME=_json_key_base64
-#     and UV_INDEX_FEATUREBYTE_NP_PASSWORD={base64 encoded service account key}
+#     Use UV_INDEX_FEATUREBYTE_PYPI_USERNAME=aws
+#     and UV_INDEX_FEATUREBYTE_PYPI_PASSWORD=$(aws codeartifact get-authorization-token --domain featurebyte --domain-owner 972678707440 --region ap-southeast-1 --query authorizationToken --output text)
 [[tool.uv.index]]
-name = "featurebyte_np"
-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
-publish-url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/"
+name = "featurebyte_pypi"
+url = "https://featurebyte-972678707440.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/featurebyte-pypi/simple/"
+publish-url = "https://featurebyte-972678707440.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/featurebyte-pypi/"
 explicit = true
 
 [[tool.uv.index]]

@@ -18,10 +18,6 @@ permissions:
 concurrency:
   group: "${{ github.workflow }}-${{ github.head_ref }}"
   cancel-in-progress: true
-env:
-  GCR_DOCKER_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
 jobs:
   test-deep-dive-notebooks:
     runs-on: ubuntu-latest
