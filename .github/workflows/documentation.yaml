@@ -70,6 +70,10 @@ jobs:
           rm -rf site/
       - name: Install diff2html
         run: npm install -g diff2html-cli
+      - name: Checkout branch again
+        run: git checkout --force "origin/${{ github.head_ref }}"
+      - name: Reduce docs to page content
+        run: python3 scripts/reduce_docs_html.py docs-base docs-updated
       - name: Diff docs
         continue-on-error: true
         run: diff --new-file -ur docs-base/ docs-updated/ > diff.txt
