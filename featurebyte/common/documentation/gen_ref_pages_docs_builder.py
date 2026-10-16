@@ -906,22 +906,34 @@ class DocsBuilder:
             The populated nav.
         """
         core_objects_from_layout = []
+        paths = {}
         for item in get_overall_layout():
             # Handle core objects later
             if item.is_core_object:
                 core_objects_from_layout.append(item)
                 continue
 
-            markdown_path = _get_markdown_file_path_for_doc_layout_item(
+            paths[tuple(item.menu_header)] = _get_markdown_file_path_for_doc_layout_item(
                 item, proxied_path_to_markdown_path
             )
-            header = tuple(item.menu_header)
-            nav[header] = markdown_path
 
         # Handle core objects
         core_objects_to_use = core_objects_from_layout
         if self.doc_overrides is not None:
             core_objects_to_use = self.doc_overrides
+
+        # Core objects replace their own page, so use their final path when comparing with children
+        parent_paths = {**paths}
+        for core_object in core_objects_to_use:
+            parent_paths[tuple(core_object.menu_header)] = core_object.core_doc_path_override
+
+        for header, markdown_path in paths.items():
+            # mkdocs>=1.6 shares the Page between a parent and a child pointing at the same file,
+            # which breaks mkdocs-section-index, so skip children that just repeat a parent page.
+            if markdown_path in {parent_paths.get(header[:idx]) for idx in range(1, len(header))}:
+                continue
+            nav[header] = markdown_path
+
         return self._populate_nav_for_core_objects(nav, core_objects_to_use)
 
     def build_docs(self) -> Nav:
