@@ -164,5 +164,5 @@ async def test_session_lost(config, session_without_datasets):
     _ = config
     session = session_without_datasets
     # simulate the session handle has an invalid session id
-    session.connection._session_handle.sessionId.guid = uuid4().bytes
+    session.connection.session.session_id.guid = uuid4().bytes
     await session.list_tables(database_name="demo_datasets", schema_name="grocery")
