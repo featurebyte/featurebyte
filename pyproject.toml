@@ -101,7 +101,7 @@ dev = [
 test = [
   "freezegun",
   "junitparser",
-  "jupyterlab>=4.6.2,<5",
+  "jupyterlab>=4.6.4,<5",
   "mongomock-motor",
   "mongomock==4.1.2",
   "pytest",
@@ -194,9 +194,9 @@ constraint-dependencies = [
   "setuptools<82", # >=82 drops pkg_resources, needed by mongomock==4.1.2 (test dep); CVE fix needs >=83, so unfixable without a mongomock upgrade
   "snowflake-connector-python>=4.7.2,<5",
   "soupsieve>=2.8.4,<3",
-  "tornado>=6.5.8,<7",
-  "urllib3>=2.7.0,<3",
-  "virtualenv>=20.36.1,<21",
+  "tornado>=6.5.9,<7",
+  "urllib3>=2.8.0,<3",
+  "virtualenv>=21.7.13,<22",
   "weasyprint>=68.0,<69", # GHSA-jhhc-3hcp-qhm5 (CSS injection) unfixed upstream; not exploitable here - our only call site (featurebyte/routes/feature_job_setting_analysis/controller.py) never sets presentational_hints=True (default False), which the advisory requires
 ]
 # Drops rfc3987 (GPLv3+, pulled in via feast's jsonschema[format] requirement)
