@@ -11,12 +11,12 @@ from featurebyte.query_graph.model.timestamp_schema import (
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
 from featurebyte.query_graph.sql.ast.zip_timestamp import ZipTimestampTZTupleNode
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.unit.query_graph.util import make_context
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-@pytest.fixture(params=SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.fixture(params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type(request):
     """
     Fixture to parametrize source types

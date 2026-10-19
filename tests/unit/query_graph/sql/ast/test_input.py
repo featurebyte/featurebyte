@@ -23,12 +23,12 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.unit.query_graph.sql.ast.test_window_functions import make_lag_node
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 @pytest.mark.parametrize(
     "test_case_name,dtype,timestamp_schema",
     [
@@ -349,7 +349,7 @@ def test_development_datasets(global_graph, input_details, update_fixtures):
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def test_nested_field_metadata(global_graph, input_details, update_fixtures, source_type):
     """
     Test nested_field_metadata in column specifications

@@ -14,7 +14,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -84,7 +84,7 @@ def operation_structure_and_sample_sql_fixture(
 
 
 @pytest.mark.parametrize("sample_on_primary_table", [False, True])
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def test_graph_interpreter_describe(
     operation_structure_and_sample_sql, source_type, update_fixtures
 ):
