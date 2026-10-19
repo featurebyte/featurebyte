@@ -84,7 +84,7 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import truncate_timestamps
 
 # Override the default max duration for pytest-split plugin for legitimately expensive fixtures
@@ -419,9 +419,7 @@ def mock_get_persistent_fixture(persistent):
         yield
 
 
-@pytest.fixture(
-    name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
-)
+@pytest.fixture(name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type_fixture(request):
     """
     Fixture for the source_type parameter used to create all the other fixtures

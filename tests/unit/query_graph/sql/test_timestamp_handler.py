@@ -31,12 +31,12 @@ from featurebyte.query_graph.sql.timestamp_helper import (
     convert_timestamp_to_local,
     convert_timestamp_to_utc,
 )
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.mark.parametrize("method", ["convert_timestamp_to_utc", "convert_timestamp_to_local"])
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 @pytest.mark.parametrize(
     "test_case_name,timestamp_schema",
     [
@@ -97,7 +97,7 @@ def test_convert_timestamp(method, test_case_name, timestamp_schema, source_type
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 @pytest.mark.parametrize("target_tz", ["utc", "local"])
 @pytest.mark.parametrize(
     "test_case_name,timestamp_tuple_schema",
@@ -146,7 +146,7 @@ def test_convert_timestamp_timezone_tuple(
     assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 @pytest.mark.parametrize(
     "test_case_name,snapshots_datetime_join_key",
     [

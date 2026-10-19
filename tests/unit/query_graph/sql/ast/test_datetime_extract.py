@@ -17,11 +17,11 @@ from featurebyte.query_graph.model.timestamp_schema import (
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-@pytest.fixture(params=SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+@pytest.fixture(params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type(request):
     """
     Fixture to parametrize source types
