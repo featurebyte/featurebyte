@@ -127,7 +127,9 @@ docs = [
   "mkdocs-print-site-plugin",
   "mkdocs-section-index",
   "mkdocs-table-reader-plugin",
-  "mkdocs==1.5.3", # Failed to compile docs
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.7.7",
+  "pymdown-extensions>=11.0.1",
 ]
 lint = [
   "bandit",
