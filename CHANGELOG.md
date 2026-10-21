@@ -1,5 +1,42 @@
 # Changelog
 
+## v3.4.4 (2026-10-20)
+
+### 💡 Enhancements
+
++ `feast` Upgrade the `feast` dependency from 0.40.1 to 0.66.0.
+
+### 🐛 Bug Fixes
+
++ `dependencies` Fix a latent same-name/multi-version bug in the SBOM annotation pipeline and reword its property text for external readers.
+  + scripts/lockfile_facts.py's compute_facts keyed computed facts by package
+    name alone; when uv.lock resolves two versions of the same package for
+    different environment markers, the second silently overwrote the
+    first's facts. Now keyed by (name, version).
+  + manner_flag_reason/modified_flag_reason text and the pyphen license_note
+    no longer reference internal-only incidents/approvals or read as
+    unresolved TODOs, since these SBOMs may be shared outside the company.
++ `dependencies` Fix known CVEs across dependencies: cryptography, pyopenssl, snowflake-connector-python, protobuf, and gitpython.
+  + snowflake-connector-python 3.17.4 -> 4.7.2 (critical TLS hostname verification bypass);
+    cryptography, pyopenssl bumped alongside since snowflake-connector-python 3.x capped both
+  + protobuf 4.25.8 -> 5.29.6, gitpython 3.1.58 -> 3.1.59+
+  + thrift, setuptools, pygments, and pymdown-extensions CVEs remain open, documented in
+    Taskfile.lint.yaml's `safety` task: thrift's fix needs a databricks-sql-connector bump
+    that breaks an internal-API monkeypatch in featurebyte/session/databricks.py;
+    setuptools' fix drops pkg_resources, needed by our pinned mongomock test dependency;
+    pygments/pymdown-extensions' fix needs a mkdocs-material downgrade that OOM-crashes the
+    `build-updated-docs` CI job (confirmed by trying it, not just theorized)
++ `session` Fix AttributeError raised when cancelling a timed-out Snowflake query on snowflake-connector-python>=4.
+  + `SnowflakeSession._cancel_query` called `cursor._SnowflakeCursor__cancel_query(query)`, a
+    name-mangled reference to `SnowflakeCursor`'s private `__cancel_query` method
+  + snowflake-connector-python 4.x moved that method onto a new `SnowflakeCursorBase` parent
+    class, so the mangled name no longer resolved
+  + this raised an unhandled `AttributeError` on every query that hit its execution timeout,
+    since cancellation is what runs on timeout - turning a recoverable timeout into a hard
+    crash
+  + now looks up the private method under either mangled name, so it works across both cursor
+    class layouts
+
 ## v3.4.3 (2026-08-03)
 
 ### 💡 Enhancements
