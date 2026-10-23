@@ -579,7 +579,9 @@ class CodeGenerator(FeatureByteBaseModel):
                     import_pairs.update(right_hand_side.extract_import())
                 statement_lines.append(f"{var_name} = {right_hand_side}")
             elif isinstance(statement, CommentStr):
-                statement_lines.append(f"\n# {statement}")
+                # prefix every line with `#` so that newlines in the comment text cannot inject code
+                comment_lines = [f"# {line}" for line in statement.splitlines() or [""]]
+                statement_lines.append("\n" + "\n".join(comment_lines))
             elif isinstance(statement, str):
                 statement_lines.append(statement)
         statements = "\n".join(statement_lines)

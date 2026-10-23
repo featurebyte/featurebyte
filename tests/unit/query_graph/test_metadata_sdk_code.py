@@ -2,6 +2,7 @@
 Unit tests for featurebyte.query_graph.node.metadata.sdk_code
 """
 
+import ast
 import importlib
 import textwrap
 
@@ -13,6 +14,7 @@ from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerator,
+    CommentStr,
     ExpressionStr,
     StatementStr,
     ValueStr,
@@ -174,6 +176,23 @@ def test_code_generator():
         'event_table = EventTable(name="event_table")\n'
         'event_table_1 = EventTable(name="another_event_table")'
     )
+
+
+def test_code_generator__comment_with_newline_cannot_inject_code():
+    """Test that newline-bearing comment text cannot break out of the comment and inject code"""
+    code_gen = CodeGenerator()
+    code_gen.add_statements(
+        statements=[
+            CommentStr('event_table name: "x"\nimport os; os.environ["PWNED"] = "1"  #'),
+            (VariableNameStr("event_table"), ClassEnum.EVENT_TABLE(name="event_table")),
+        ],
+    )
+    code = code_gen.generate(remove_unused_variables=False)
+
+    # the injected text must stay inside comment lines, so only the intended statements are parsed
+    tree = ast.parse(code)
+    assert [type(node).__name__ for node in tree.body] == ["ImportFrom", "Assign"], code
+    assert "# import os; os.environ" in code, code
 
 
 def test_code_generator__on_demand_view():
