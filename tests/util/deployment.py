@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 from unittest.mock import patch
 
+import croniter
 import pandas as pd
 
 from featurebyte import FeatureList
@@ -40,8 +41,8 @@ def deploy_and_get_online_features(
 
         data = OnlineFeaturesRequestPayload(entity_serving_names=request_data)
         with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
-            with patch(
-                "croniter.croniter.get_prev"
+            with patch.object(
+                croniter.croniter, "get_prev"
             ) as mock_get_prev:  # for cron feature job settings
                 mock_datetime.utcnow.return_value = deploy_at
                 mock_get_prev.return_value = deploy_at.timestamp()

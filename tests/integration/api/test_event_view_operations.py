@@ -9,6 +9,7 @@ from datetime import datetime
 from unittest import mock
 from unittest.mock import patch
 
+import croniter
 import numpy as np
 import pandas as pd
 import pytest
@@ -1731,7 +1732,7 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     client = config.get_client()
     with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
         mock_datetime.utcnow.return_value = datetime(2001, 1, 10, 12)
-        with patch("croniter.croniter.timestamp_to_datetime") as mock_croniter:
+        with patch.object(croniter.croniter, "timestamp_to_datetime") as mock_croniter:
             mock_croniter.return_value = datetime(2001, 1, 10, 10)
             res = client.post(
                 f"/deployment/{deployment.id}/online_features",
