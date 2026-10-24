@@ -28,7 +28,7 @@ from oss_pkgname import normalize
 try:
     import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib
+    import tomli as tomllib  # type: ignore[no-redef]
 
 PLATFORM_MARKER_KEYWORDS = (
     "sys_platform",
