@@ -80,7 +80,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
     steps:
       - uses: actions/checkout@v7
       - uses: arduino/setup-task@v3
@@ -127,7 +127,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
         pytest-group:
           - 1
           - 2
@@ -191,7 +191,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
         pytest-group:
           - 1
     env:
@@ -258,7 +258,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
         spark-version:
           - 3.5.0
         pytest-group:
@@ -354,7 +354,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
         pytest-group:
           - 1
           - 2
@@ -414,7 +414,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
     steps:
       - uses: actions/checkout@v7
       - uses: arduino/setup-task@v3
@@ -451,7 +451,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
     steps:
       - uses: actions/checkout@v7
         with:
@@ -515,7 +515,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.10.14
+          - 3.11.9
     steps:
       - uses: actions/checkout@v7
         with:
