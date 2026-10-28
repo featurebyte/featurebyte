@@ -9,7 +9,11 @@ from bson import ObjectId
 from featurebyte.exception import InvalidEntityRelationshipError
 from featurebyte.models.relationship import RelationshipInfoModel, RelationshipType
 from featurebyte.schema.entity import EntityCreate
-from featurebyte.service.relationship_info_validation import RelationshipInfoValidationService
+from featurebyte.service.relationship_info_validation import (
+    RelationshipInfoGraph,
+    RelationshipInfoValidationService,
+    validate_relationships,
+)
 
 
 @pytest.fixture(name="service")
@@ -374,3 +378,103 @@ async def test_shortcut_with_skipped_connections(
         relationship_a_to_d.id,
         relationship_c_to_e.id,
     }
+
+
+def test_dense_chain_does_not_enumerate_all_paths(catalog_id):
+    """
+    Test a fully connected chain (every entity points to every later entity). The graph is valid
+    since every path is a shortcut of the full chain
+    """
+    num_entities = 60
+    entity_ids = [ObjectId() for _ in range(num_entities)]
+    relationships = []
+    for i in range(num_entities):
+        for j in range(i + 1, num_entities):
+            relationships.append(
+                RelationshipInfoModel(
+                    _id=ObjectId(),
+                    relationship_type=RelationshipType.CHILD_PARENT,
+                    entity_id=entity_ids[i],
+                    related_entity_id=entity_ids[j],
+                    relation_table_id=ObjectId(),
+                    catalog_id=catalog_id,
+                    enabled=True,
+                )
+            )
+    result = validate_relationships(relationships, {})
+
+    mapping = {
+        (info.from_entity_id, info.to_entity_id): info
+        for info in result.all_entity_pair_lookup_info
+    }
+    assert len(mapping) == num_entities * (num_entities - 1) // 2
+    first_to_last = mapping[(entity_ids[0], entity_ids[-1])]
+    assert first_to_last.entity_ids == entity_ids
+    assert len(first_to_last.relationship_info_ids) == num_entities - 1
+
+
+def test_layered_diamonds_rejected_without_enumerating_paths(catalog_id):
+    """
+    Test stacked diamonds (invalid) are rejected quickly despite exponentially many paths
+    """
+    num_layers = 60
+    layers = [[ObjectId(), ObjectId()] for _ in range(num_layers)]
+    relationships = []
+    for current_layer, next_layer in zip(layers[:-1], layers[1:]):
+        for from_id in current_layer:
+            for to_id in next_layer:
+                relationships.append(
+                    RelationshipInfoModel(
+                        _id=ObjectId(),
+                        relationship_type=RelationshipType.CHILD_PARENT,
+                        entity_id=from_id,
+                        related_entity_id=to_id,
+                        relation_table_id=ObjectId(),
+                        catalog_id=catalog_id,
+                        enabled=True,
+                    )
+                )
+    with pytest.raises(InvalidEntityRelationshipError):
+        validate_relationships(relationships, {})
+
+
+def _make_relationships(catalog_id, edges):
+    return [
+        RelationshipInfoModel(
+            _id=ObjectId(),
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=from_id,
+            related_entity_id=to_id,
+            relation_table_id=ObjectId(),
+            catalog_id=catalog_id,
+            enabled=True,
+        )
+        for from_id, to_id in edges
+    ]
+
+
+def test_graph_with_cycle_does_not_break(catalog_id):
+    """
+    Test the graph terminates and reports no longest path when a cycle lies between two entities
+    """
+    entity_a, entity_b, entity_c = ObjectId(), ObjectId(), ObjectId()
+    graph = RelationshipInfoGraph(
+        _make_relationships(
+            catalog_id, [(entity_a, entity_b), (entity_b, entity_c), (entity_c, entity_b)]
+        )
+    )
+    entity_ids = graph.get_entity_ids_between(entity_a, entity_c)
+    assert entity_ids == {entity_a, entity_b, entity_c}
+    assert graph.find_longest_path(entity_a, entity_c, entity_ids) is None
+
+
+def test_validate_relationships_with_cycle(catalog_id):
+    """
+    Test a cycle between two entities is rejected as invalid entity tagging
+    """
+    entity_a, entity_b, entity_c = ObjectId(), ObjectId(), ObjectId()
+    relationships = _make_relationships(
+        catalog_id, [(entity_a, entity_b), (entity_b, entity_c), (entity_c, entity_b)]
+    )
+    with pytest.raises(InvalidEntityRelationshipError):
+        validate_relationships(relationships, {})

@@ -4,7 +4,7 @@ RelationshipInfoValidationService class
 
 from dataclasses import dataclass
 from itertools import permutations
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from bson import ObjectId
 
@@ -53,6 +53,7 @@ class RelationshipInfoGraph:
     def __init__(self, all_relationship_info: list[RelationshipInfoModel]):
         nodes_set = set()
         self.edges: Dict[ObjectId, list[ObjectId]] = {}
+        self.reverse_edges: Dict[ObjectId, list[ObjectId]] = {}
         self.relationship_info_map: Dict[Tuple[ObjectId, ObjectId], ObjectId] = {}
 
         for relationship_info in all_relationship_info:
@@ -65,6 +66,7 @@ class RelationshipInfoGraph:
             if from_entity_id not in self.edges:
                 self.edges[from_entity_id] = []
             self.edges[from_entity_id].append(to_entity_id)
+            self.reverse_edges.setdefault(to_entity_id, []).append(from_entity_id)
 
             self.relationship_info_map[(from_entity_id, to_entity_id)] = relationship_info.id
 
@@ -97,11 +99,12 @@ class RelationshipInfoGraph:
         """
         return self.edges.get(entity_id, [])
 
-    def enumerate_paths(
+    def get_entity_ids_between(
         self, start_entity_id: ObjectId, end_entity_id: ObjectId
-    ) -> Iterable[LookupPath]:
+    ) -> set[ObjectId]:
         """
-        Enumerate all paths from start_entity_id to end_entity_id
+        Get the entity IDs that lie on at least one path from start_entity_id to end_entity_id
+        (both endpoints included). Empty if end_entity_id is not reachable from start_entity_id.
 
         Parameters
         ----------
@@ -110,29 +113,108 @@ class RelationshipInfoGraph:
         end_entity_id: ObjectId
             The target entity ID.
 
-        Yields
-        ------
-        Iterable[LookupPath]
-            Iterable of paths, each represented as a list of relationship info IDs.
+        Returns
+        -------
+        set[ObjectId]
         """
-        stack = [(start_entity_id, [start_entity_id])]
 
-        while stack:
-            current_entity_id, entity_ids = stack.pop()
+        def _reachable(source: ObjectId, edges: Dict[ObjectId, list[ObjectId]]) -> set[ObjectId]:
+            visited = {source}
+            stack = [source]
+            while stack:
+                for next_entity_id in edges.get(stack.pop(), []):
+                    if next_entity_id not in visited:
+                        visited.add(next_entity_id)
+                        stack.append(next_entity_id)
+            return visited
 
-            if current_entity_id == end_entity_id:
-                lookup_path = LookupPath(
-                    entity_ids=entity_ids,
-                    relationship_info_ids=self.convert_path_to_relationship_info_ids(entity_ids),
-                )
-                yield lookup_path
-                continue
+        from_start = _reachable(start_entity_id, self.edges)
+        if end_entity_id not in from_start:
+            return set()
+        return from_start & _reachable(end_entity_id, self.reverse_edges)
 
+    def _topological_sort(self, entity_ids: set[ObjectId]) -> Optional[list[ObjectId]]:
+        """
+        Topologically sort the subgraph induced by entity_ids using Kahn's algorithm.
+
+        Parameters
+        ----------
+        entity_ids: set[ObjectId]
+            Entity IDs to consider.
+
+        Returns
+        -------
+        Optional[list[ObjectId]]
+            Entity IDs in topological order, or None if the subgraph contains a cycle.
+        """
+        in_degree = {entity_id: 0 for entity_id in entity_ids}
+        for entity_id in entity_ids:
+            for next_entity_id in self.get_next_entity_ids(entity_id):
+                if next_entity_id in in_degree:
+                    in_degree[next_entity_id] += 1
+
+        queue = [entity_id for entity_id, degree in in_degree.items() if degree == 0]
+        ordered_entity_ids = []
+        while queue:
+            current_entity_id = queue.pop()
+            ordered_entity_ids.append(current_entity_id)
             for next_entity_id in self.get_next_entity_ids(current_entity_id):
-                if next_entity_id in entity_ids:
+                if next_entity_id not in in_degree:
                     continue
-                next_entity_ids = entity_ids + [next_entity_id]
-                stack.append((next_entity_id, next_entity_ids))
+                in_degree[next_entity_id] -= 1
+                if in_degree[next_entity_id] == 0:
+                    queue.append(next_entity_id)
+
+        if len(ordered_entity_ids) != len(entity_ids):
+            return None
+        return ordered_entity_ids
+
+    def find_longest_path(
+        self, start_entity_id: ObjectId, end_entity_id: ObjectId, entity_ids: set[ObjectId]
+    ) -> Optional[LookupPath]:
+        """
+        Find a longest path from start_entity_id to end_entity_id using dynamic programming over
+        the subgraph induced by entity_ids. Runs in O(V + E) time, where V is the number of
+        entity_ids and E is the number of relationships out of them.
+
+        Parameters
+        ----------
+        start_entity_id: ObjectId
+            The starting entity ID.
+        end_entity_id: ObjectId
+            The target entity ID.
+        entity_ids: set[ObjectId]
+            Entity IDs to consider, as returned by get_entity_ids_between.
+
+        Returns
+        -------
+        Optional[LookupPath]
+            A longest path, or None if the subgraph contains a cycle (the DP requires a DAG).
+        """
+        ordered_entity_ids = self._topological_sort(entity_ids)
+        if ordered_entity_ids is None:
+            return None
+
+        distance = {start_entity_id: 0}
+        parent: Dict[ObjectId, ObjectId] = {}
+        for current_entity_id in ordered_entity_ids:
+            if current_entity_id not in distance:
+                continue
+            for next_entity_id in self.get_next_entity_ids(current_entity_id):
+                if next_entity_id not in entity_ids:
+                    continue
+                if distance[current_entity_id] + 1 > distance.get(next_entity_id, -1):
+                    distance[next_entity_id] = distance[current_entity_id] + 1
+                    parent[next_entity_id] = current_entity_id
+
+        path = [end_entity_id]
+        while path[-1] != start_entity_id:
+            path.append(parent[path[-1]])
+        path.reverse()
+        return LookupPath(
+            entity_ids=path,
+            relationship_info_ids=self.convert_path_to_relationship_info_ids(path),
+        )
 
     def convert_path_to_relationship_info_ids(self, path: list[ObjectId]) -> list[ObjectId]:
         """
@@ -185,27 +267,25 @@ def validate_relationships_single_pair(
     InvalidEntityRelationshipError
         If invalid entity tagging is detected between entities.
     """
-    # Note: the implementation can be improved in terms of efficiency, such as memoization or
-    # streaming enumeration for the paths. But since the graph is typically small, the current
-    # implementation optimizes for flexibility and clarity.
-    all_paths = list(relationship_graph.enumerate_paths(from_entity_id, to_entity_id))
-
-    if not all_paths:
+    # Entities on any path from from_entity_id to to_entity_id
+    entity_ids_between = relationship_graph.get_entity_ids_between(from_entity_id, to_entity_id)
+    if not entity_ids_between:
         return None
 
-    longest_path = max(all_paths, key=lambda x: len(x.relationship_info_ids))
+    longest_path = relationship_graph.find_longest_path(
+        from_entity_id, to_entity_id, entity_ids_between
+    )
 
-    for path in all_paths:
-        # Shortcuts are allowed. A path is a shortcut if all its entities are included in the
-        # longest path.
-        if not set(path.entity_ids).issubset(longest_path.entity_ids):
-            from_entity_name = entity_names_mapping.get(from_entity_id)
-            to_entity_name = entity_names_mapping.get(to_entity_id)
-            raise InvalidEntityRelationshipError(
-                f"Invalid entity tagging detected between {from_entity_name} ({from_entity_id})"
-                f" and {to_entity_name} ({to_entity_id}). Please review the entities and their"
-                " relationships in the catalog."
-            )
+    # Shortcuts are allowed. Any path is a shortcut if all its entities are included in the longest
+    # path, i.e. no entity outside of the longest path can lie on a path between the two entities.
+    if longest_path is None or set(longest_path.entity_ids) != entity_ids_between:
+        from_entity_name = entity_names_mapping.get(from_entity_id)
+        to_entity_name = entity_names_mapping.get(to_entity_id)
+        raise InvalidEntityRelationshipError(
+            f"Invalid entity tagging detected between {from_entity_name} ({from_entity_id})"
+            f" and {to_entity_name} ({to_entity_id}). Please review the entities and their"
+            " relationships in the catalog."
+        )
 
     entity_pair_lookup_info = EntityPairLookupInfo(
         from_entity_id=from_entity_id,
