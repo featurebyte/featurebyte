@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.11.9
+          - 3.11.18
     steps:
       - uses: actions/checkout@v7
       - uses: arduino/setup-task@v3
