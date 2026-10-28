@@ -1,4 +1,4 @@
-FROM python:3.11.11-slim AS builder
+FROM python:3.11.18-slim AS builder
 
 # Increase PIP read timeout to 120 seconds to avoid timeout issues
 ENV PIP_DEFAULT_TIMEOUT=120
@@ -17,7 +17,7 @@ RUN pip install uv==0.7.3 && uv sync --all-groups --all-extras
 RUN uv build && uv run pip install dist/featurebyte-*.whl
 
 
-FROM python:3.11.11-slim AS runner
+FROM python:3.11.18-slim AS runner
 
 # Add runtime user and group and set permissions appropriately
 RUN groupadd -g 1000 runnergroup -o
