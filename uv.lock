@@ -1175,7 +1175,7 @@ version = "2.9.0"
 source = {registry = "https://pypi.org/simple"}
 sdist = {url = "https://files.pythonhosted.org/packages/ef/4a/50822184bd67cc6493f0fb6a880749158fcd31ab3fa07409acfd91f9fc85/dnspython-2.9.0.tar.gz", hash = "sha256:b44dc6b18f07a8b1c56676a19fbfdb5209415b046a9cece286baafa87ff3f7f1", size = 423560, upload-time = "2026-10-09T00:07:24.352Z"}
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/10/02/cdcc9b7c051786a103c3b09e1003a82fa0c66bcb91ffbdabcfbf7b4163b9/dnspython-2.9.0-py3-none-any.whl", hash = "sha256:9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9", size = 354822, upload-time = "2026-10-09T00:07:22.622Z"},
+  {url = "https://files.pythonhosted.org/packages/10/02/cdcc9b7c051786a103c3b09e1003a82fa0c66bcb91ffbdabcfbf7b4163b9/dnspython-2.9.0-py3-none-any.whl", hash = "sha256:9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9", size = 354822, upload-time = "2026-10-09T00:07:22.622Z"}
 ]
 
 [[package]]
@@ -3406,7 +3406,7 @@ wheels = [
   {url = "https://files.pythonhosted.org/packages/80/8e/851415b1a9264e6abf64d8a9617d856769d59e247fb9470106f133aedbae/msgpack-1.2.4-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:cbb8a677da3e845713925e9a203b8a120b1e9da9989836890ba4a4a187902701", size = 470951, upload-time = "2026-10-26T17:54:13.764Z"},
   {url = "https://files.pythonhosted.org/packages/c9/74/d75bf61aab9cb88b84f7d3a8eca8dd92e19a742b77ded300a1177e88d031/msgpack-1.2.4-cp312-cp312-win32.whl", hash = "sha256:2b0b7dff5beddc10f16ecea6b28c6b98014d1135d7015bd83adff5037f35848d", size = 68786, upload-time = "2026-10-26T17:54:15.049Z"},
   {url = "https://files.pythonhosted.org/packages/81/c5/dd0e78eb04f9a0773a810d25ef2cd8f16bb941487567d0c63f814881133c/msgpack-1.2.4-cp312-cp312-win_amd64.whl", hash = "sha256:6e38b123681df22373d545520f54bbeddc4706d9235a1161061f12bd6648497d", size = 77272, upload-time = "2026-10-26T17:54:16.491Z"},
-  {url = "https://files.pythonhosted.org/packages/65/e7/b38f63ae82777c0077daa56c4b09af39d29dcb8927ab2ff59268094069c5/msgpack-1.2.4-cp312-cp312-win_arm64.whl", hash = "sha256:6795c588b210b2f13d62c8fcc23bf779b509b839ec5c197a7ab4f5191459e126", size = 71884, upload-time = "2026-10-26T17:54:17.995Z"},
+  {url = "https://files.pythonhosted.org/packages/65/e7/b38f63ae82777c0077daa56c4b09af39d29dcb8927ab2ff59268094069c5/msgpack-1.2.4-cp312-cp312-win_arm64.whl", hash = "sha256:6795c588b210b2f13d62c8fcc23bf779b509b839ec5c197a7ab4f5191459e126", size = 71884, upload-time = "2026-10-26T17:54:17.995Z"}
 ]
 
 [[package]]
