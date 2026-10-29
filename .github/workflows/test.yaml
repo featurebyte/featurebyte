@@ -95,7 +95,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Download hive-udf
         uses: actions/download-artifact@v8
         with:
@@ -147,7 +147,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Download hive-udf
         uses: actions/download-artifact@v8
         with:
@@ -211,10 +211,6 @@ jobs:
         run: |-
           sudo apt-get update
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v8
         with:
@@ -282,7 +278,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Download hive-udf
         uses: actions/download-artifact@v8
         with:
@@ -377,7 +373,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Run tests
         env:
           PYTEST_GROUP: ${{ matrix.pytest-group }}
@@ -429,7 +425,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Download hive-udf
         uses: actions/download-artifact@v8
         with:
