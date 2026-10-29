@@ -105,7 +105,7 @@ jobs:
           - windows-latest
         python-version:
           - 3.12.4
-          - 3.11.18
+          - 3.11.9  # Newest 3.11 patch setup-python provides on macOS and Windows
     steps:
       - uses: actions/checkout@v7
         with:
