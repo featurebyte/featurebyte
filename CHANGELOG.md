@@ -1,5 +1,25 @@
 # Changelog
 
+## v3.4.5 (2026-10-29)
+
+### 🛑 Breaking Changes
+
++ `python` Drop support for Python 3.10. The minimum supported Python version is now 3.11.
+
+### 🐛 Bug Fixes
+
++ `service` Fix exponential path enumeration when validating relationships between entities.
+  + the validation enumerated every path between two entities, which grows exponentially on densely connected entity graphs
+  + now finds the entities between the two endpoints and computes the longest path in linear time, so validation time no longer depends on the number of paths
+  + graphs containing a cycle are handled without error
++ `sdk` Fix code injection through newlines in comments of the generated SDK code.
+  + every line of a multi-line comment is now prefixed with `#`
++ `dependencies` Fix known vulnerabilities across dependencies: aiohttp, brotli, brotlicffi, certifi, dnspython, filelock, msgpack, nbconvert, oauthlib, pillow, setuptools, and virtualenv.
+  + pillow 12.3.0 -> 13.0.0, filelock 3.25.2 -> 4.2.4, oauthlib 3.3.1 -> 4.0.0, setuptools 81.0.0 -> 84.2.1
+  + aiohttp 3.14.3 -> 3.14.5, brotli 1.2.0 -> 1.2.1, brotlicffi 1.2.0.0 -> 1.2.1.0, certifi 2025.8.3 -> 2026.10.23
+  + dnspython 2.8.0 -> 2.9.0, msgpack 1.2.1 -> 1.2.4, nbconvert 7.17.1 -> 7.17.2, virtualenv 21.14.5 -> 21.14.13
+  + mongomock (test dependency) 4.1.2 -> 4.3.0, which allows upgrading setuptools past 82
+
 ## v3.4.4 (2026-10-20)
 
 ### 💡 Enhancements
