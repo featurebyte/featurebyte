@@ -44,7 +44,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Extract results
         run: |-
           uv sync --all-groups --all-extras --frozen
