@@ -613,3 +613,33 @@ jobs:
 
                     validate: [${{ needs.validate.result }}]
                     ```
+  teams:
+    needs:
+      - test-unit
+      - test-integration-snowflake
+      - test-integration-spark
+      - test-integration-databricks-unity
+      - test-docs
+      - validate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: featurebyte/actions
+          ref: v1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          path: .actions
+          persist-credentials: false
+      - uses: ./.actions/notify-teams
+        with:
+          webhook-url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          results: |-
+            test_unit: [${{ needs.test-unit.result }}]
+            test_docs: [${{ needs.test-docs.result }}]
+            test_integration:
+              snowflake:        [${{ needs.test-integration-snowflake.result }}]
+              spark:            [${{ needs.test-integration-spark.result }}]
+              databricks-unity: [${{ needs.test-integration-databricks-unity.result }}]
+
+            validate: [${{ needs.validate.result }}]

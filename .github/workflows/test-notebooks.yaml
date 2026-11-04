@@ -172,3 +172,25 @@ jobs:
                     test-deep-dive-notebooks:   [${{ needs.test-deep-dive-notebooks.result }}]
                     test-playground-notebooks:  [${{ needs.test-playground-notebooks.result }}]
                     ```
+  teams:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - test-quick-start-notebooks
+      - test-deep-dive-notebooks
+      - test-playground-notebooks
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: featurebyte/actions
+          ref: v1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          path: .actions
+          persist-credentials: false
+      - uses: ./.actions/notify-teams
+        with:
+          webhook-url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          results: |-
+            test-quick-start-notebooks: [${{ needs.test-quick-start-notebooks.result }}]
+            test-deep-dive-notebooks:   [${{ needs.test-deep-dive-notebooks.result }}]
+            test-playground-notebooks:  [${{ needs.test-playground-notebooks.result }}]

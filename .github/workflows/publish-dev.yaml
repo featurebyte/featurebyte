@@ -155,3 +155,21 @@ jobs:
                 text:
                   type: mrkdwn
                   text: "```publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
+  teams:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - publish
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: featurebyte/actions
+          ref: v1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          path: .actions
+          persist-credentials: false
+      - uses: ./.actions/notify-teams
+        with:
+          webhook-url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          results: |-
+            publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]

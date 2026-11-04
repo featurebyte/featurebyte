@@ -141,3 +141,24 @@ jobs:
                       pypi:      [${{ github.event.inputs.pypi }}]
                       docker:    [${{ github.event.inputs.docker }}]
                     ```
+  teams:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - publish
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: featurebyte/actions
+          ref: v1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          path: .actions
+          persist-credentials: false
+      - uses: ./.actions/notify-teams
+        with:
+          webhook-url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          link: ${{ github.server_url }}/${{ github.repository }}
+          results: |-
+            publish: [${{ needs.publish.result }}]
+              test-pypi: [${{ github.event.inputs.test-pypi }}]
+              pypi:      [${{ github.event.inputs.pypi }}]
