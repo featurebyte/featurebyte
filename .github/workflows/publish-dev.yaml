@@ -31,6 +31,10 @@ jobs:
       DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
       - uses: ./.github/actions/codeartifact-token
         with:
           role: publish

@@ -47,7 +47,11 @@ class TestTempDataApi:
         # retrieve profile picture
         with test_api_client.stream("GET", f"/temp_data?path={dest_path}") as response:
             assert response.status_code == HTTPStatus.OK
-            assert response.headers["content-type"] == "application/octet-stream"
+            # parquet type depends on the host mime database
+            assert response.headers["content-type"] in {
+                "application/octet-stream",
+                "application/vnd.apache.parquet",
+            }
             assert (
                 response.headers["content-disposition"]
                 == "filename=62f301e841b9a757c9ff871b.parquet"
