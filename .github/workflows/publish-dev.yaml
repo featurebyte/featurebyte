@@ -123,7 +123,7 @@ jobs:
         run: |-
           pip install --extra-index-url="https://aws:${{ env.UV_INDEX_FEATUREBYTE_PYPI_PASSWORD }}@${{ env.CODEARTIFACT_DOMAIN }}-${{ env.CODEARTIFACT_DOMAIN_OWNER }}.d.codeartifact.ap-southeast-1.amazonaws.com/pypi/${{ env.CODEARTIFACT_REPOSITORY }}/simple/" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
           python -c "import featurebyte; print(featurebyte.version)"
-  slack:
+  teams:
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs:
@@ -131,27 +131,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
-      - name: Set Channel ID
-        run: |-
-          echo "CHANNEL_ID=${{ secrets.SLACK_CHANNEL_ID }}" >> $GITHUB_ENV
-      - name: Load REPOSITORY into env
-        run: |
-          echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
-      - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v4.0.0
+          repository: featurebyte/actions
+          ref: v1
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          path: .actions
+          persist-credentials: false
+      - uses: ./.actions/notify-teams
         with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_OAUTH }}
-          payload: |
-            channel: ${{ env.CHANNEL_ID }}
-            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "```publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
+          webhook-url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          results: |-
+            publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]
