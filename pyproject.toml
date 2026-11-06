@@ -79,6 +79,7 @@ server = [
   "gevent",
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
+  "mongoengine>=0.29.1", # earlier releases import pymongo.database._check_name, removed in newer pymongo
   "motor",
   "weasyprint",
   "pyhive[hive_pure_sasl]",
