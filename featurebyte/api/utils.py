@@ -68,20 +68,32 @@ def parquet_from_arrow_stream(buffer: Any, output_path: Path, num_rows: int) -> 
     num_rows: int
         Number of rows to write
     """
+    row_group_size = 128_000
+
     reader = pa.ipc.open_stream(buffer)
     batch = reader.read_next_batch()
     with pq.ParquetWriter(output_path, batch.schema) as writer:
         try:
+            buffered_batches = [batch]
+            buffered_rows = batch.num_rows
             with alive_bar(
                 total=num_rows,
                 title="Downloading table",
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
                 while True:
-                    table = pa.Table.from_batches([batch])
-                    writer.write_table(table)
-                    if table.num_rows > 0:
-                        progress_bar(table.num_rows)
+                    if buffered_batches[-1].num_rows > 0:
+                        progress_bar(buffered_batches[-1].num_rows)
                     batch = reader.read_next_batch()
+                    buffered_batches.append(batch)
+                    buffered_rows += batch.num_rows
+                    if buffered_rows >= row_group_size:
+                        table = pa.Table.from_batches(buffered_batches)
+                        writer.write_table(table)
+                        buffered_batches = []
+                        buffered_rows = 0
         except StopIteration:
             pass
+        if buffered_batches:
+            table = pa.Table.from_batches(buffered_batches)
+            writer.write_table(table)
