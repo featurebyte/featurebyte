@@ -19,6 +19,7 @@ from featurebyte.session.simple_storage import AzureBlobStorage, GCSStorage, S3S
 from featurebyte.session.spark import SparkSession
 
 
+@pytest.mark.skip(reason="GCS is not supported in CI")
 def test_gcs_storage():
     """
     Test GCSStorage
