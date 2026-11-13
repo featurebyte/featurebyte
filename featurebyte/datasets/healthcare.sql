@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/healthcare_20230509.tar.gz
+-- url: https://featurebyte-public-datasets.s3.ap-southeast-1.amazonaws.com/healthcare_20230509.tar.gz
 -- description: Healthcare Dataset
 
 DROP DATABASE IF EXISTS HEALTHCARE CASCADE;
