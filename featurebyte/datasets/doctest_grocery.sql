@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/doctest_grocery.tar.gz
+-- url: https://featurebyte-public-datasets.s3.ap-southeast-1.amazonaws.com/doctest_grocery.tar.gz
 -- description: Grocery dataset for docs testing
 
 DROP DATABASE IF EXISTS DOCTEST_GROCERY CASCADE;

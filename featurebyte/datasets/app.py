@@ -76,13 +76,15 @@ def import_dataset(dataset_name: str) -> None:
         sql = sql.format(staging_path=hive_staging_path)
 
     # extract url from first line in sql file. e.g.
-    # -- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz
+    # -- url: https://featurebyte-public-datasets.s3.ap-southeast-1.amazonaws.com/grocery.tar.gz
     # get contiguous string after "url: " that is unbroken by whitespace
     matches = re.findall(r"url:\s+(\S+)", sql.splitlines()[0])
     url = matches[0] if matches else None
 
     assert url is not None
-    assert url.lower().startswith("https://storage.googleapis.com/featurebyte-public-datasets/")
+    assert url.lower().startswith(
+        "https://featurebyte-public-datasets.s3.ap-southeast-1.amazonaws.com/"
+    )
 
     # Download and upload contents to spark container
     with tempfile.TemporaryDirectory() as download_folder:

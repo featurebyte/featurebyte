@@ -1,4 +1,4 @@
--- url: https://storage.googleapis.com/featurebyte-public-datasets/creditcard_20230506.tar.gz
+-- url: https://featurebyte-public-datasets.s3.ap-southeast-1.amazonaws.com/creditcard_20230506.tar.gz
 -- description: CreditCard Dataset
 
 DROP DATABASE IF EXISTS CREDITCARD CASCADE;
