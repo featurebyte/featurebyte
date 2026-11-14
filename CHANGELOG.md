@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.4.6 (2026-11-13)
+
+### 💡 Enhancements
+
++ `datasets` Download the public datasets (`grocery`, `creditcard`, `healthcare`, and `doctest_grocery`) from a new location.
+  + upgrade to 3.4.6 or later, since earlier versions can no longer download these datasets once the previous location is retired
+
+### 🐛 Bug Fixes
+
++ `dependencies` Fix compatibility with pymongo 4.19 by requiring `mongoengine` 0.29.1 or later.
+  + earlier `mongoengine` releases import `pymongo.database._check_name`, which was removed in newer pymongo
+
 ## v3.4.5 (2026-10-29)
 
 ### 🛑 Breaking Changes
